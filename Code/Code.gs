@@ -160,7 +160,6 @@ function scaffoldLookups_(ss) {
     });
     
     sh.getRange(2, 1, rows.length, 2).setValues(rows);
-    sh.getRange(2, 1, rows.length, 2).setValues(rows);
     sh.autoResizeColumns(1, 2);
   }
 }
@@ -286,37 +285,50 @@ function scaffoldFlights_(ss) {
     colIndex += groupLen;
   });
   
+  SpreadsheetApp.flush(); // Force write headers/groups before validation
+
   // Data Validation: Status
-  // Col 1 is Status
-  var ruleStatus = SpreadsheetApp.newDataValidation()
-    .requireValueInList(['Needs Review', 'Valid', 'Invalid', 'Duplicate'], true)
-    .setAllowInvalid(true)
-    .build();
-  sh.getRange(6, 1, sh.getMaxRows()-5, 1).setDataValidation(ruleStatus);
-  
+  var maxRows = sh.getMaxRows();
+  var valRows = maxRows - 5;
+  if (valRows < 1) valRows = 1; // Safety
+
+  try {
+    var ruleStatus = SpreadsheetApp.newDataValidation()
+      .requireValueInList(['Needs Review', 'Valid', 'Invalid', 'Duplicate'], true)
+      .setAllowInvalid(true)
+      .build();
+    sh.getRange(6, 1, valRows, 1).setDataValidation(ruleStatus);
+  } catch (e) {
+    console.warn('Status validation error', e); 
+  }
+
   // Conditional Formatting Status
-  var rules = sh.getConditionalFormatRules();
-  // Clear old status rules if any (simplistic: just append new ones)
-  // Needs Review: Yellow
-  rules.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('Needs Review').setBackground('#FFF9C4').setRanges([sh.getRange(6,1,sh.getMaxRows()-5,1)]).build());
-  // Valid: Green
-  rules.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('Valid').setBackground('#C8E6C9').setRanges([sh.getRange(6,1,sh.getMaxRows()-5,1)]).build());
-  // Invalid: Red
-  rules.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('Invalid').setBackground('#FFCDD2').setRanges([sh.getRange(6,1,sh.getMaxRows()-5,1)]).build());
-  // Duplicate: Orange
-  rules.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('Duplicate').setBackground('#FFE0B2').setRanges([sh.getRange(6,1,sh.getMaxRows()-5,1)]).build());
-  
-  sh.setConditionalFormatRules(rules);
+  try {
+    var rules = sh.getConditionalFormatRules();
+    // Clear old status rules if any (simplistic: just append new ones)
+    // Needs Review: Yellow
+    rules.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('Needs Review').setBackground('#FFF9C4').setRanges([sh.getRange(6,1,valRows,1)]).build());
+    // Valid: Green
+    rules.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('Valid').setBackground('#C8E6C9').setRanges([sh.getRange(6,1,valRows,1)]).build());
+    // Invalid: Red
+    rules.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('Invalid').setBackground('#FFCDD2').setRanges([sh.getRange(6,1,valRows,1)]).build());
+    // Duplicate: Orange
+    rules.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('Duplicate').setBackground('#FFE0B2').setRanges([sh.getRange(6,1,valRows,1)]).build());
+    
+    sh.setConditionalFormatRules(rules);
+  } catch (e) {
+    console.warn('CondFormat error', e);
+  }
   
   // Data Validation: Equipment
-  // Wing: Col 12? We need to calculate indices dynamically or hardcode if we trust order.
-  // Groups: FlightInfo(11) -> Gear starts at 12.
-  // Wing=12, Harness=13, Res1=14, Res2=15
-  
-  applyDropdownFromRange_(sh, 12, CFG.sheets.wings, 'A2:A');
-  applyDropdownFromRange_(sh, 13, CFG.sheets.harnesses, 'A2:A');
-  applyDropdownFromRange_(sh, 14, CFG.sheets.reserves, 'A2:A');
-  applyDropdownFromRange_(sh, 15, CFG.sheets.reserves, 'A2:A');
+  try {
+    applyDropdownFromRange_(sh, 12, CFG.sheets.wings, 'A2:A');
+    applyDropdownFromRange_(sh, 13, CFG.sheets.harnesses, 'A2:A');
+    applyDropdownFromRange_(sh, 14, CFG.sheets.reserves, 'A2:A');
+    applyDropdownFromRange_(sh, 15, CFG.sheets.reserves, 'A2:A');
+  } catch(e) {
+    console.warn('Equipment validation error', e);
+  }
 
   ss.toast('Flights sheet scaffolded with Groups & Validation.');
 }
@@ -324,11 +336,16 @@ function scaffoldFlights_(ss) {
 function applyDropdownFromRange_(shTarget, colIndex, sourceSheetName, sourceRangeA1) {
   var ss = SpreadsheetApp.getActive();
   var shSrc = ss.getSheetByName(sourceSheetName);
+  
   if (shSrc) {
+    var maxRows = shTarget.getMaxRows();
+    var valRows = maxRows - 5;
+    if (valRows < 1) return;
+    
     // Dynamic range
     var range = shSrc.getRange(sourceRangeA1);
     var rule = SpreadsheetApp.newDataValidation().requireValueInRange(range).setAllowInvalid(true).build();
-    shTarget.getRange(6, colIndex, shTarget.getMaxRows() - 5, 1).setDataValidation(rule);
+    shTarget.getRange(6, colIndex, valRows, 1).setDataValidation(rule);
   }
 }
 
