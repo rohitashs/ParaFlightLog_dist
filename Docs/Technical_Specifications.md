@@ -15,18 +15,19 @@ The solution is built on **Google Apps Script (GAS)** bound to a Google Sheet. I
 ---
 
 ## 2. Data Schema (`Flights` Sheet)
-The `Flights` sheet uses a fixed schema starting at **Row 6**. Headers are in **Row 5**.
+The `Flights` sheet uses a fixed schema starting at **Row 6**. Headers are in **Row 5** (Column Name) and **Row 4** (Category).
 
 ### Key Column Groups
 | Group | Fields | Notes |
 | :--- | :--- | :--- |
-| **Identity** | `FlightID`, `Flight No`, `Date` | `Flight No` is sequential integer (Max+1). `FlightID` is internal unique ref. |
-| **Status** | `Status`, `Auto Summary` | Status workflow: `OK`, `Needs review`, `Duplicate`. |
-| **Metrics** | `Duration`, `Track Length`, `Max Alt`, `Max Climb` | Calculated by Analysis Engine. |
-| **Gear** | `Wing`, `Harness`, `Reserve 1/2` | Validated against Equipment sheets. Snapshot logic used for Wing specs. |
-| **XC Score** | `XC Distance`, `FAI Triangle`, `Points (World/Nat)` | Computed by Scoring Engine. |
-| **Location** | `Launch Lat/Lon`, `Site`, `Town`, `Region` | Enriched via Geo Service. |
-| **Modes** | `Time Thermal %`, `Time Glide %`, etc. | Output of flight analysis. |
+| **Flight Info** | `Status`, `Flight No`, `Summary`, `FlightID`, `Type`, `Date`, `Times`, `Dur`, `Dist` | Primary identity columns. `Status` is color-coded. |
+| **Gear** | `Wing`, `Harness`, `Reserve 1/2`, `Other` | Dropdowns validated against Equipment sheets. Default selected via checkbox lookup. |
+| **XC Scoring** | `XC Score`, `XC Dist`, `Class`, `Triangle`, `Points` | Computed by Scoring Engine. |
+| **Launch/Land** | `Lat/Lon`, `Site`, `Town`, `Region`, `Alt` | Enriched via Geo Service. Separate groups for Launch and Landing. |
+| **Weather** | `Wind`, `Cloud`, `Temp`, `Notes` | Manual entry fields. |
+| **Analytics** | `Thermal %`, `Glide %`, `Efficiency`, `Sink %` | Output of flight analysis. |
+| **Validation** | `Status`, `Reason` | Output of heuristic checks. |
+| **Meta** | `Import File`, `ID`, `Timestamp` | Audit trail. |
 
 ---
 

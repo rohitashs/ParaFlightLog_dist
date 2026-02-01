@@ -55,7 +55,22 @@ This project is a Google Apps Script application for importing, analyzing, and l
     2.  Fill in "Lookups" with Folder ID and Email.
     3.  Run "Scan Watch Folder now" or manual import.
 
+## Ways of Working (Standard Operating Procedures)
+1.  **Start of Session**: 
+    - Always read `Reference/Context.md` to load project status and architecture.
+2.  **Change Tracking**:
+    - Major changes (Features, Architecture, Decisions) must be logged in `Reference/ChangeLog.md`.
+    - This file is for human-readable summaries, not low-level git logs.
+3.  **End of Session ("Update Project")**:
+    - When the user says **"Update Project"**, execute the workflow which includes:
+        - Updating `Docs/Features.md` and `Docs/Technical_Specifications.md`.
+        - Updating `Reference/ChangeLog.md` with the session's work.
+        - Updating `Reference/Context.md` (Status, Structure).
+        - Verifying `clasp push` and `git commit`.
+        - Providing a final report.
+
 ## Current Session Status
 *   **Source Control**: Configured. Linked to `RSParaFlightLog` (Pacific Time). `appsscript.json` tracked in `Code/`.
-*   **Codebase**: Fully implemented v2.0 MVP.
-*   **Next Action**: execute `walkthrough.md` to verify end-to-end functionality.
+*   **Codebase**: v0.5.0 - Scaffolding Overhaul and UI Enhancements complete.
+*   **Status**: Scaffolding fixes and Import fixes deployed. User verification pending.
+*   **Pending**: Final update of docs via "/update_project".

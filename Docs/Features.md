@@ -58,10 +58,12 @@
 - **Rate Limit Management**: Smarter backoff strategies for OpenStreetMap and Nominatim APIs to prevent failures during bulk processing.
 - **Test Harness**: A standalone testing suite to verify parser and scorer accuracy without polluting the main log.
 
-### 🔧 Usability
-- **Column Grouping**: Scaffolding automatically groups columns by category (Stats, Gear, Weather, etc.), allowing users to collapse/expand sections for a cleaner view.
-- **Settings Sheet**: Centralized `Lookups` tab for easy configuration of thresholds (e.g., thermal climb rate, search radius) without touching code.
-- **Recompute Tool**: "Recalculate Selected Rows" button to update stats after changing settings or correcting a manual entry.
+### 🔧 Usability (Implemented)
+- **Column Grouping**: Scaffolding groups columns by category (Flight Info, Gear, XC Scoring, etc.) and collapses secondary details.
+- **2-Row Headers**: Enhanced visual layout with Category (Row 4) + Column Name (Row 5).
+- **Settings Sheet**: Centralized `Lookups` tab for configuration (Thresholds, Scoring, Emails).
+- **Equipment Defaults**: Auto-detection of default Gear (Wing/Harness/Reserve) from Equipment sheets.
+- **Data Validation**: Dropdowns for Wing/Harness selection and Status fields.
 
 ---
 
