@@ -1,0 +1,689 @@
+# Paragliding Flight Log — User Guide (for everyday use)
+
+## What this is (purpose)
+
+A simple Google Sheet that turns your IGC track files into a clean, searchable flight diary. You drop IGCs into a Drive folder (or add them manually) and the sheet:
+
+- creates one row per flight (newest on top),
+- fills in times, distances, altitudes, speeds,
+- guesses launch/landing places and nearby PG sites,
+- scores XC/triangle distances and points,
+- analyzes your flying by mode (Thermal / Soar / Glide / Sink),
+- keeps your typical gear selected so logging stays quick.
+
+---
+
+## What it can do (features)
+
+- **Automatic import**
+    - Watches a Drive folder for new files (`.igc/.igx`, plus `.gz` and `.zip`).
+    - ZIP with many IGCs? → one row per inner IGC.
+    - Basic duplicate detection to flag repeats.
+- **Manual import**
+    - Paste a Drive link/ID or direct URL to an IGC/GZ/ZIP.
+    - Or insert a **blank row** if you’re logging without a file.
+- **Smart summaries**
+    - Track length, straight-line distance, duration.
+    - Max/min altitude, max climb/sink, max/avg groundspeed.
+    - Auto sentence like: `3h 02m, Track 46.8 km, max alt 2,745 m at Bir`.
+- **Location intelligence**
+    - Reverse-geocodes launch & landing to nearest town, country, region.
+    - Looks up closest paragliding **takeoff/landing** names from OpenStreetMap.
+- **XC scoring**
+    - Computes **XC distance**, **Flat triangle**, **FAI triangle**.
+    - Shows **World points** and **National points** (closed-triangle bonus).
+- **Flight analytics (modes)**
+    - Classifies time in **Thermal / Soar / Glide / Sink**.
+    - Thermal stats (count, average climb, best climb, longest).
+    - Soaring stats (time, distance, passes, efficiency).
+    - Glide stats (L/D distribution, mean groundspeed).
+    - Sink exposure (time < −3 m/s, worst 5-s sink).
+- **Gear-aware**
+    - Auto-fills **Wing/Harness/Reserve 1/2** from the file or your last flight.
+    - Each choice comes from your master lists (easy dropdowns).
+    - Wing specs (glide ratio, trim, full-bar) are snapshotted per flight.
+- **Friendly workflow**
+    - New flights always insert at row 6 (newest first).
+    - Status flag: OK / Needs review / Possible duplicate / Likely duplicate.
+    - Recompute action for selected rows if you tweak thresholds later.
+
+---
+
+## How to use it (day-to-day)
+
+### 1) Add your flights
+
+You have three options from the **Flight Log** menu:
+
+- **A) Watched folder (hands-off)**
+    1. Put your new IGCs into the watched Drive folder.
+    2. Each file (or inner file in a ZIP) becomes a new row at the top.
+    3. Rows are marked **Needs review** so you can glance and confirm.
+- **B) Add flight from IGC**
+    1. Click **Add flight from IGC**.
+    2. Paste a **Drive link/ID** or a **direct URL** to `.igc/.igx/.gz/.zip`.
+    3. The sheet imports and fills the row for you.
+- **C) Add blank flight row**
+    1. Click **Add blank flight row** to log a flight without a file.
+    2. Fill in the basics (date, duration, launch/landing, etc.).
+    3. You can attach the file later by editing the IGC link fields and running **Recompute**.
+
+> Tip: If your IGC doesn’t list the wing, the sheet copies your last flight’s gear so you only change it when needed.
+> 
+
+---
+
+### 2) Review the new row
+
+- **Auto Summary** gives a quick feel for the flight.
+- **Flight Type** (dropdown) — choose one: *Free Fly, XC, Soaring, Comp, SIV / Maneuvers, Training, Other*.
+- **Status**:
+    - **Needs review** → skim the row; if correct, leave as is (or switch to OK).
+    - **Possible/Likely duplicate** → compare with nearby rows; keep or merge as you prefer.
+
+---
+
+### 3) Check places & sites
+
+- Launch/Landing show **Lat/Lon**, **Nearest Town**, **Country/Region**, plus the closest **PG site** name if found.
+- If something looks off, you can still type your preferred site name in the cell.
+
+---
+
+### 4) XC & points
+
+- See **XC Distance**, **Flat Triangle**, **FAI Triangle**, and **Points (World/National)**.
+- The sheet automatically picks the **best** scoring result for “XC Flight Class” (Free / Flat / FAI) and notes if it’s **Closed**.
+
+---
+
+### 5) Flight analytics (modes)
+
+- Mode time split: **Thermal, Soar, Glide, Sink** (minutes and %).
+- Thermal metrics (count, avg climb, best, longest, total gain).
+- Soaring metrics (time, distance, passes, efficiency).
+- Glide quality (median/p90/best L/D; mean groundspeed).
+- Sink exposure (< −3 m/s time; worst 5-s).
+
+> These are computed from your track’s heading/vario and your wing’s glide ratio snapshot. If you later update wing specs, select the row(s) and Recompute.
+> 
+
+---
+
+### 6) Add your notes & weather
+
+- Use the **Weather** columns to record wind (dir/avg/gust) at launch/landing, cloud %, cloudbase/top of lift, temps, and any observations.
+- **Personal notes**: “What went well”, “What to improve”, general notes, incident & airspace flags.
+- **Photos**: paste a gallery URL (Drive/Photos) so future-you can find it.
+
+---
+
+### 7) Fixes & re-runs
+
+- If you change thresholds, wing specs, or site radius later:
+    - Select the rows → **Recompute selected flight(s)**.
+- If an import missed a site/town due to a slow lookup:
+    - Use **Recompute** on that row to retry.
+
+---
+
+## Quick FAQ
+
+**Q: I imported a ZIP and only some tracks appeared—why?**
+
+A: The sheet only processes files inside the ZIP that end with `.igc` or `.igx`. Non-IGC entries are ignored. Very large ZIPs may be partially processed (you’ll still get a note in the log).
+
+**Q: It says “Likely duplicate.” What should I do?**
+
+A: Compare the two rows (date, launch, duration). Keep your preferred one and delete the other—or keep both if they serve different purposes. The sheet won’t auto-merge.
+
+**Q: My wing didn’t appear automatically.**
+
+A: Some IGCs don’t include the glider name. The sheet copies your last flight’s gear to save time—use the dropdown to change it.
+
+**Q: The triangle/points look odd.**
+
+A: The sheet picks the best scoring option from your track. If you believe a triangle should score differently, check your track completeness (start/end), or select the row and **Recompute**.
+
+---
+
+## Glossary (short & sweet)
+
+- **Track Length**: Total distance flown along the path (sums all tiny segments).
+- **Straight Start→Finish**: Direct line distance from first to last point.
+- **FAI Triangle**: Triangle where the shortest leg is ≥ 28% of the total perimeter.
+- **World/National Points**: Standard XContest multipliers (World), plus optional closed-triangle bonus (National).
+- **Modes**:
+    - **Thermal**: Turning climb.
+    - **Soar**: Ridge/soaring pattern, gentle turns, small altitude changes.
+    - **Glide**: Straight flight near your wing’s expected L/D.
+    - **Sink**: Stronger-than-expected descent or poor L/D.
+
+---
+
+Enjoy the logging—and the insights. If anything looks off (a site name, a weather note, a duplicate), edit the cell or run **Recompute**. The goal is fast capture first, tidy details later.
+
+## System Specifications
+
+Here’s a clean, self-contained spec you can hand back to me later to recreate **exactly the same system** (no code included here).
+
+---
+
+# Paragliding Flight Log for Google Sheets — System Specification (v1.0)
+
+## 1) Purpose
+
+A Google Sheets–based flight log that:
+
+- Imports **IGC/IGX** flight files (plain, `.gz`, `.zip`) from Google Drive or URL.
+- Auto-inserts **one row per flight** at the top of the `Flights` sheet (headers on row 5; data from row 6).
+- Computes track/alt/speed metrics, **XC scoring** (Free/Flat/FAI + World & National points), **mode analytics** (Thermal/Soar/Glide/Sink).
+- Reverse-geocodes launch/landing to **country/admin/town** and finds nearest **paragliding site names** via **OSM Overpass**.
+- Manages a **watched Drive folder** and **dedupes** imports.
+- Prefills gear from **IGC** or previous row; gear validated from master lists; snapshots wing specs.
+
+---
+
+## 2) Sheets & structure
+
+Create the following tabs (exact names):
+
+1. **Flights** (primary log; one row per flight)
+    - **Header row is row 5**. Data starts at row 6.
+    - **New rows are inserted at row 6** (so newest stays on top).
+2. **Equipment_Wings** (master list)
+3. **Equipment_Harnesses** (master list)
+4. **Equipment_Reserves** (master list; supports Reserve 1 + Reserve 2 in Flights)
+5. **Sites** (optional; curated list)
+6. **Raw_Imports** (hidden; optional)
+7. **Lookups** (hidden; key/value settings)
+8. **Import_Log** (hidden; import audit & dedupe)
+9. **Dashboard** (optional)
+10. **READ_ME** (user guide; optional)
+
+---
+
+## 3) `Flights` tab — exact headers (row 5)
+
+### A) Basic Flight Info
+
+- `FlightID`
+- `Date`
+- `Launch Time`
+- `Flight Type` *(dropdown: Free Fly, XC, Soaring, Comp, SIV / Maneuvers, Training, Other; default = Free Fly)*
+- `Flight Duration (hh:mm:ss)`
+- `Track Length (km)` *(cumulative along IGC)*
+- `Straight Start→Finish (km)`
+- `Auto Summary` *(e.g., “3h 02m, Track 46.8 km, max alt 2,745 m at Bir”)*
+- `Status` *(OK / Needs review / Possible duplicate / Likely duplicate)*
+
+### B) Gear Info
+
+- `Wing` *(validated from Equipment_Wings)*
+- `Harness` *(validated)*
+- `Reserve 1` *(validated)*
+- `Reserve 2` *(validated)*
+- `Other equipment`
+- `GlideRatio_LD (snap)` *(hidden snapshot from wing master; plain number e.g., 9)*
+- `Trim_kmh (snap)` *(hidden snapshot)*
+- `FullBar_kmh (snap)` *(hidden snapshot)*
+
+### C) Flight Statistics (XC)
+
+- `XC Distance (km)` *(best non-triangle 3-TP path)*
+- `Flat Triangle (km)` *(triangle but not FAI)*
+- `FAI Triangle (km)` *(triangle with shortest leg ≥ 28% perimeter)*
+- `XContest Points (World)` *(Free 1.0×, Flat 1.2×, FAI 1.4×)*
+- `XContest Points (National)` *(World points × National bonus when closed within threshold)*
+- `XC Flight Class` *(Free / Flat / FAI)*
+- `Closed?` *(Y/N)*
+- `Max Alt (m)`
+- `Min Alt (m)`
+- `Total Height Gain (m)`
+- `Max Ascent (m/s)`
+- `Max Descent (m/s)`
+- `Max Groundspeed (km/h)`
+- `Avg Groundspeed (km/h)`
+
+### D) Launch & Landing
+
+**Launch:**
+
+- `Launch Lat`, `Launch Lon`, `Launch Site`, `Launch Nearest Town`, `Launch Country`, `Launch Admin1`, `Launch Alt (m)`, `Launch Time`
+
+**Landing:**
+
+- `Landing Lat`, `Landing Lon`, `Landing Site`, `Landing Nearest Town`, `Landing Country`, `Landing Admin1`, `Landing Alt (m)`, `Landing Time`
+- `Launch↔Landing (km)`
+
+### E) Weather (manual)
+
+- `Wind@Launch Dir (°)`, `Wind@Launch Avg (kt)`, `Wind@Launch Gust (kt)`
+- `Wind@Landing Dir (°)`, `Wind@Landing Avg (kt)`, `Wind@Landing Gust (kt)`
+- `Cloud %`, `Cloudbase (m MSL)`, `Top of lift (m MSL)`
+- `Temp Launch (°C)`, `Temp Landing (°C)`
+- `Observations`
+
+### F) Personal Notes
+
+- `What went well`, `What to improve`, `General notes`, `Photos URL`
+- `Incident flag`, `Airspace flag`
+
+### G) Flight Analytics (by mode)
+
+- `Time Thermal (min)`, `Time Soar (min)`, `Time Glide (min)`, `Time Sink (min)`
+- `Thermals Count`, `Thermal Avg Climb (m/s)`, `Thermal Longest (min)`, `Thermal Best (m/s)`, `Thermal Total Gain (m)`
+- `Soar Time (min)`, `Soar Distance (km)`, `Soar Net Gain (m)`, `Soar Passes (#)`, `Soar Mean Leg (km)`, `Soar Efficiency (m/km)`
+- `Glide Median L/D`, `Glide p90 L/D`, `Glide Best L/D`, `Glide Mean GS (km/h)`
+- `Sink Time < -3 (min)`, `Sink Worst 5s (m/s)`
+
+### H) Meta
+
+- `IGC file name`, `IGC Drive ID`, `IGC URL`
+- `Import timestamp`
+- `Parser version`
+- `Rev-geo provider`
+- `OSM radius (m)`
+- `Watch Folder ID`
+
+---
+
+## 4) Equipment master tabs
+
+### `Equipment_Wings` (first column used for validation)
+
+- `WingID` (or `Name`) **[validation key]**
+- `Make`, `Model`, `Size`, `Year`
+- `GlideRatio_LD` *(plain number e.g., 9 for 9:1)*
+- `Trim_kmh`, `FullBar_kmh`
+- `Serial`, `InServiceFrom`, `InServiceTo`, `RetiredFlag`, `Notes`
+
+### `Equipment_Harnesses`
+
+- `HarnessID` **[validation key]**, `Make`, `Model`, `Size`, `Category`, `InServiceFrom`, `InServiceTo`, `RetiredFlag`, `Notes`
+
+### `Equipment_Reserves`
+
+- `ReserveID` **[validation key]**, `Make`, `Model`, `Size`, `Certification`, `InServiceFrom`, `InServiceTo`, `RetiredFlag`, `Notes`
+
+> Each flight’s duration contributes hours to Wing/Harness/Reserve1/Reserve2 if within their in-service dates. (Displayed in Dashboard or helper later.)
+> 
+
+---
+
+## 5) Lookups (hidden; key/value)
+
+Minimum keys:
+
+- `WATCH_FOLDER_ID` *(Drive folder to watch)*
+- `WATCH_PERIOD_MIN` *(minutes; gate on actual work; default 15)*
+- `OSM_RADIUS_M` *(default 3000)*
+- `CONTACT_EMAIL` *(for Nominatim/Overpass user agent)*
+
+Optional/Defaults:
+
+- `REVGEO_PROVIDER` = `nominatim` (or `opencage`, `geonames`)
+- `FLIGHT_TYPES` = `Free Fly, XC, Soaring, Comp, SIV / Maneuvers, Training, Other`
+- **Mode thresholds** (defaults below):
+    - `THERMAL_MIN_CLIMB`=0.3, `THERMAL_MIN_TURN`=8
+    - `SOAR_TURN_MAX`=5, `SOAR_VARIO_MIN`=-0.2, `SOAR_VARIO_MAX`=1.5
+    - `GLIDE_TURN_MAX`=5, `GLIDE_LD_TOL_PCT`=30, `GLIDE_VARIO_MAX`=0.2
+    - `SINK_TURN_MAX`=10, `SINK_VARIO`=-2.5
+    - `MODE_WINDOW_SEC`=10, `REVERSAL_WINDOW_SEC`=30, `MODE_HYSTERESIS_SEC`=6
+- **XContest**:
+    - `NATIONAL_BONUS_WITHIN_PCT`=5 *(closed within)*
+    - `NATIONAL_BONUS_MULTIPLIER`=1.2
+
+---
+
+## 6) File intake & formats
+
+Accepted:
+
+- `.igc`, `.igx`
+- `.igc.gz`, `.igx.gz` (single gzip)
+- `.igc.zip`, `.igx.zip` (ZIP with one or many IGC/IGX files)
+
+Behavior:
+
+- **Each inner IGC/IGX = one flight row** (inserted at row 6).
+- **ZIP dedupe uses inner IGC content hash**, not outer archive.
+- Non-IGC files inside ZIP are ignored (logged).
+
+Sources:
+
+- **Watched Drive folder** (Folder ID in Lookups)
+- **Manual import** (menu: paste Drive URL/ID or direct URL; supports .gz/.zip)
+- **Blank row** (menu)
+
+---
+
+## 7) Watcher & scheduling
+
+- Create a **time-driven trigger** in Apps Script for `scanWatchFolder_` (e.g., every 5 minutes).
+- Actual work is throttled by `WATCH_PERIOD_MIN` (Lookups).
+    
+    Manual “Scan now” ignores throttling.
+    
+
+---
+
+## 8) Dedupe & Import Log
+
+`Import_Log` records: `When`, `FileId`, `OuterName`, `InnerName`, `Status`.
+
+Dedupe keys:
+
+- **File ID** (outer) and **content checksum** (inner IGC text).
+- If seen before → skip.
+
+Duplicate detection across Flights (to flag duplicates from different devices/paths):
+
+- Score from:
+    - **Start time proximity** (≤15 min; higher score if ≤5 min),
+    - **Launch proximity** (≤500 m; higher score if ≤150 m),
+    - **Duration similarity** (≤5%),
+    - *(optional later)* track overlap %.
+- Decision:
+    - Score ≥ 0.80 → **Likely duplicate** (still create row; flag red).
+    - 0.50–0.79 → **Possible duplicate** (amber).
+    - < 0.50 → OK.
+
+---
+
+## 9) Parsing & metrics
+
+### IGC parsing
+
+- Read metadata: date (`HFDTE`), pilot (`HFPLT/HOPLT`), glider (`HFGTY/HOGTY`), registration (`HFGID/HOGID`), timezone notes.
+- Parse `B` records into fixes: `ts`, `lat`, `lon`, `gAlt` (GNSS) or `pAlt` (pressure).
+
+### Core computations
+
+- **Track Length (km)**: sum haversine over downsampled fixes (1–2 s).
+- **Straight Start→Finish (km)**.
+- **Duration**: `end ts − start ts`.
+- **Max/Min Alt**, **Max Ascent/Descent** (m/s), **Max/Avg GS (km/h)**.
+
+### Launch & landing
+
+- Takeoff: first fix; Landing: last fix (simple version).
+- **Reverse-geocode** each to `Country`, `Admin1`, `Nearest Town` (provider from Lookups, default Nominatim).
+- **OSM Overpass** query (radius from Lookups; default 3 km) for nearest paragliding **`takeoff/landing`** features; record **Site Name** for launch/landing.
+
+---
+
+## 10) Gear autofill & validation
+
+- **Wing**: try from IGC header; if missing, **copy from previous flight (row 7)**; dropdown from `Equipment_Wings` first column.
+- **Harness/Reserve 1/Reserve 2**: copy from previous row; dropdowns from their master tabs.
+- Snapshot wing specs (`GlideRatio_LD`, `Trim_kmh`, `FullBar_kmh`) into hidden “(snap)” columns per flight.
+
+---
+
+## 11) Modes & analytics (XC-centric)
+
+**Signals** (windowed; default 10 s):
+
+- `vario_s` (smoothed climb m/s from alt deltas),
+- `turn_rate_med` (°/s; median heading change),
+- `L/D_obs` (window horizontal distance / vertical loss),
+- `heading_reversals` (count over 30 s).
+
+**Defaults (editable in Lookups):**
+
+- **Thermal**: `vario_s ≥ +0.3` **and** `turn_rate_med ≥ 8`.
+- **Soar**: `turn_rate_med ≤ 5` **and** `−0.2 ≤ vario_s ≤ +1.5` **and** `heading_reversals ≥ 2`.
+- **Glide**: `turn_rate_med ≤ 5` **and** `vario_s ≤ +0.2` **and** `L/D_obs` within **±30%** of **GlideRatio_LD (snap)**.
+- **Sink**: otherwise, if `vario_s ≤ −2.5` **or** `L/D_obs < 0.5 × GlideRatio_LD`.
+
+**Hysteresis**: require ≥6 s stability before changing modes (ignore 1–2 sample blips).
+
+**Outputs** (per §3G): time/distance/% in each mode; thermals count/avg/best/longest/gain; soaring time/distance/net gain/passes/mean leg/efficiency; glides L/D (median/p90/best) & mean GS; sink time < −3 m/s and worst 5 s sink.
+
+---
+
+## 12) XContest scoring
+
+**Rules**
+
+- Compute best **free distance** with up to 3 turnpoints along the ordered track (start + up to 3 TPs + finish).
+- **Triangle** valid if closing gap ≤ **20%** of triangle perimeter.
+- **FAI triangle** if shortest leg ≥ **28%** of perimeter.
+- **World points multipliers**: Free=1.0×, Flat=1.2×, FAI=1.4×.
+- **National points**: if triangle is **closed within** `NATIONAL_BONUS_WITHIN_PCT` (default 5%), multiply by `NATIONAL_BONUS_MULTIPLIER` (default 1.2). Always output both World & National points.
+
+**Implementation notes**
+
+- Downsample to ~1–2 s.
+- Pruned search / heuristics for 0–3 TPs.
+- Store: `XC Distance (km)`, `Flat Triangle (km)`, `FAI Triangle (km)`, `XContest Points (World)`, `XContest Points (National)`, `XC Flight Class` (Free/Flat/FAI), `Closed?` Y/N.
+
+---
+
+## 13) Auto summary
+
+- Format: `"<Hh MMm>, Track <X.Y km>, max alt <Z m> at <Place>"`.
+- `Place` priority: Launch Site (OSM) → Nearest Town → Country.
+- Written once at import and on recompute.
+
+---
+
+## 14) Status & UX
+
+- **Status**: `Needs review` (default), `Possible duplicate`, `Likely duplicate`, `OK`, `No file`, `Parse fail`, `Fetch fail`.
+- Color cues (e.g., yellow/amber/red) based on Status.
+- Menu actions:
+    - **Add flight from IGC…** (Drive URL/ID or direct URL; supports .gz/.zip)
+    - **Add blank flight row**
+    - **Scan Watch Folder now**
+    - **Recompute selected flight(s)**
+    - **Settings / Lookups**
+    - *(Optional convenience)* Scaffold tabs & headers; Create 5-min watcher trigger.
+
+---
+
+## 15) Defaults & tunables
+
+- **Downsample**: 2 s (for scoring/modes).
+- **Mode windows**: 10 s smoothing, 30 s reversal, 6 s hysteresis.
+- **OSM radius**: 3000 m.
+- **Watch period**: 15 min (throttle; actual trigger can run every 5 min).
+- **Flight Types**: list above, default = `Free Fly`.
+
+---
+
+## 16) External services
+
+- **Reverse-geocoding**: Nominatim (default) / OpenCage / GeoNames.
+    - Respect etiquette: set `CONTACT_EMAIL` in Lookups; light rate limiting.
+- **OSM Overpass** for paragliding sites: tags `paragliding=takeoff|landing`, or `sport=paragliding + site=takeoff|landing`.
+- **Caching**: per lat/lon (rounded 5–6 decimals), 1–24 h.
+
+---
+
+## 17) Error handling & limits
+
+- Unsupported archives: password-protected ZIPs → log “encrypted ZIP”.
+- Nested archives ignored.
+- Large ZIPs: process up to a reasonable cap (e.g., 200 inner IGCs).
+- Network hiccups: mark Status; user can “Recompute selected”.
+
+---
+
+If you feed me this spec later (even summarized as “Build the paragliding flight log per v1.0 spec”), I’ll recreate the same system: same tabs, headers, behaviors, thresholds, XC rules, mode logic, watch + dedupe, OSM/Nominatim lookups, compressed file handling, gear autofill, and auto summary.
+
+## System Setup Guide
+
+Here’s a clean, step-by-step **Setup Guide** to get the flight log running from scratch. No prior Apps Script experience needed.
+
+---
+
+# Paragliding Flight Log — First-Time Setup
+
+## What you’ll need
+
+- A Google account
+- A new or existing Google Sheet to host the log
+- A Google Drive folder to “watch” for IGC files
+
+---
+
+## 1) Make (or open) your Google Sheet
+
+- Create a new sheet (e.g., “Paragliding Flight Log”), or open the one you want to use.
+
+---
+
+## 2) Add the Apps Script
+
+1. In the Sheet, go to **Extensions → Apps Script**.
+2. Delete any starter code in `Code.gs`.
+3. Copy the full script from the canvas and **paste it** into the editor.
+4. Click **Save** (⌘/Ctrl-S).
+5. In the left sidebar, click **Triggers (clock icon)** later—we’ll use it in step 9.
+
+> The script builds menus and has scaffolding helpers, so you don’t have to hand-create all the tabs/headers.
+> 
+
+---
+
+## 3) Authorize the script
+
+1. In the Apps Script editor, run **`onOpen`** once (select it from the top dropdown and click ▶ Run).
+2. Approve the permission prompts (Drive read, URL fetch, spreadsheet access).
+    - These are needed to read IGCs from Drive/URLs and write to your sheet.
+
+> If you see “This app isn’t verified,” click Advanced → Go to (unsafe). This is normal for your own scripts.
+> 
+
+---
+
+## 4) Return to your Sheet (new “Flight Log” menu)
+
+- Refresh the Sheet (or just wait a couple of seconds).
+- You’ll see a new top menu: **Flight Log**.
+
+---
+
+## 5) One-click scaffolding (tabs, headers, dropdowns)
+
+1. Click **Flight Log → Scaffold: Create tabs & headers**.
+    
+    This will:
+    
+    - Create/prepare these tabs:
+        - `Flights` (adds **all** column headers on **row 5**, freezes row 5)
+        - `Equipment_Wings`, `Equipment_Harnesses`, `Equipment_Reserves` (headers + one example row each)
+        - `Lookups` (adds default key/values if missing)
+        - `Import_Log` (headers)
+    - Apply dropdowns in `Flights` for Wing/Harness/Reserves (from the Equipment tabs)
+    - Add a dropdown for **Flight Type** (Free Fly, XC, Soaring, Comp, SIV / Maneuvers, Training, Other)
+
+> You can re-run any scaffold item later; it won’t overwrite your existing Lookups keys or data rows.
+> 
+
+---
+
+## 6) Fill the **Lookups** sheet (minimal settings)
+
+Open the `Lookups` tab and set:
+
+- **WATCH_FOLDER_ID** → the Google Drive **folder ID** you want to watch
+    - How to get it: open the folder in Drive → the URL looks like
+        
+        `https://drive.google.com/drive/folders/XXXXXXXXXXXXXXXXXXXXXXXXX`
+        
+        The long string after `/folders/` is the ID. Paste that into the value cell.
+        
+- **WATCH_PERIOD_MIN** → `15` (or your preferred minutes)
+- **OSM_RADIUS_M** → `3000` (default; meters around launch/landing to search PG sites)
+- **CONTACT_EMAIL** → your real email (polite user agent for map services)
+
+(Optional, can do later)
+
+- **REVGEO_PROVIDER** → `nominatim` (default), or `opencage` / `geonames`
+- **NATIONAL_BONUS_WITHIN_PCT** → `5`
+- **NATIONAL_BONUS_MULTIPLIER** → `1.2`
+- Thresholds like `THERMAL_MIN_CLIMB`, etc., if you want custom values now.
+
+---
+
+## 7) Seed your **Equipment** tabs
+
+Open:
+
+- `Equipment_Wings` → edit the example row or add your wings.
+    - **WingID/Name** (first column) is what appears in the `Flights` dropdown.
+    - Fill **GlideRatio_LD** as a **number** (e.g., `9` for 9:1), plus `Trim_kmh` and `FullBar_kmh` if you know them.
+- `Equipment_Harnesses` → add your harness IDs.
+- `Equipment_Reserves` → add your reserve IDs (you can select two per flight).
+
+> You only need one row per item to start. You can add more anytime.
+> 
+
+---
+
+## 8) Test a manual import (quick win)
+
+1. Click **Flight Log → Add flight from IGC**.
+2. Paste a **Drive file link/ID** or a **direct URL** to an `.igc` / `.igx` / `.igc.gz` / `.igx.gz` / `.igc.zip` / `.igx.zip`.
+3. The script inserts a **new row at row 6** (newest on top), fills metrics, tries to name launch/landing, and marks **Status = Needs review**.
+
+If your IGC doesn’t include the wing name, the script copies Wing/Harness/Reserves from the **previous row** (row 7).
+
+---
+
+## 9) Turn on the watcher (automatic imports)
+
+**Option A (one click inside the Sheet):**
+
+- Click **Flight Log → Setup 5-min watcher trigger**.
+    - This creates an Apps Script trigger to run every 5 minutes.
+    - The script still **self-throttles** using `WATCH_PERIOD_MIN` from Lookups (e.g., 15 minutes), so it won’t over-scan.
+
+**Option B (manually in Apps Script):**
+
+- In the script editor, open **Triggers** (clock icon) → **Add Trigger**
+    - Function: `scanWatchFolder_`
+    - Event source: **Time-driven**
+    - Select a schedule (e.g., every 5 minutes)
+    - Save.
+
+Now, whenever you drop IGCs (including ZIPs with multiple IGCs) into the watch folder, the sheet will create **one flight row per inner IGC**.
+
+---
+
+## 10) (Optional) Recompute and tweak later
+
+- If you change wing specs, thresholds, or site radius, select rows in `Flights` and click
+    
+    **Flight Log → Recompute selected flight(s)** to update analytics and summaries.
+    
+
+---
+
+## 11) Quick troubleshooting
+
+- **No new rows?**
+    - Check `Lookups.WATCH_FOLDER_ID` (is it a valid folder ID?).
+    - Verify the trigger exists (step 9).
+    - Try **Flight Log → Scan Watch Folder now**.
+- **Permissions error (DriveApp.getFileById)**
+    - Re-run any menu action and **re-authorize** when prompted.
+- **ZIP imported only some tracks**
+    - Only `.igc`/`.igx` files inside the ZIP are processed. Very large ZIPs may be capped to keep within quotas.
+- **Sites/Towns missing or odd**
+    - Temporary map API hiccups happen; select the row and **Recompute selected flight(s)**.
+
+---
+
+## 12) You’re ready
+
+- Use **watched folder** for hands-off logging.
+- Use **Add flight from IGC** for manual uploads/links.
+- Use **Add blank flight row** when you want to log without a file.
+- Fill **Weather** and **Notes** columns after flying.
+- Keep your **Equipment** lists up to date for accurate glide/mode analytics.
+
+If you want me to bundle a one-click “Create example Dashboard” next, say the word and I’ll add a starter KPI/chart sheet you can customize.

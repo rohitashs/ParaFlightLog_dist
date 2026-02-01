@@ -1,0 +1,16 @@
+# Nodes
+node_modules
+.DS_Store
+
+# CLASP credentials
+.clasp.json
+.clasp-dev.json
+
+# Image/Video artifacts
+*.webp
+*.png
+*.jpg
+*.jpeg
+
+# OS generated files
+Thumbs.db
