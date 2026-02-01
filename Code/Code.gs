@@ -278,12 +278,15 @@ function scaffoldFlights_(ss) {
            if (['Gear', 'Analytics', 'Meta', 'Validation', 'Flight Info'].indexOf(g.name) > -1) {
               sh.getColumnGroup(startCollapse, 1).collapse();
            }
-         } catch(e) { console.warn('Group exist', e); }
+         } catch(e) { 
+           console.warn('Grouping failed for ' + g.name + ' (non-critical)', e); 
+         }
        }
     }
     
     colIndex += groupLen;
-    SpreadsheetApp.flush(); // Flush after each group to prevent timeout
+    SpreadsheetApp.flush(); 
+    Utilities.sleep(800); // Breathe
   });
   
   SpreadsheetApp.flush(); // Force write headers/groups before validation
