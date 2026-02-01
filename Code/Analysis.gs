@@ -249,3 +249,5 @@ function aggregateModeStats_(modes, derived) {
     }
   };
 }
+// Export to Namespace
+ANALYSIS.analyzeFlight = analyzeFlight;

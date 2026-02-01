@@ -213,3 +213,6 @@ function bearing_(lat1, lon1, lat2, lon2) {
   var brg = Math.atan2(y, x) * toDeg;
   return (brg + 360) % 360;
 }
+
+// Export to Namespace
+PARSER.parseIgc = parseIgc;
