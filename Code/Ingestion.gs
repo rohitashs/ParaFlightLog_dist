@@ -231,58 +231,6 @@ function insertFlightRow_(data, fileId, outerName, status, notes, analysis, scor
   // Col 1=Status, 2=FlightNo, 3=AutoSummary, 4=FlightID, 5=Date, 6=Time, 7=Type
   // ...
   
-  // Group Mapping (Must match `scaffoldFlights_` order)
-  // Col 1=Status, 2=FlightNo, 3=AutoSummary, 4=FlightID, 5=Date, 6=Time, 7=Type
-  // ...
-  
-  // Generate IDs
-  var flightIdStr = 'F-' + data.meta.dateIso.replace(/-/g,'') + '-' + Math.floor(Math.random()*10000);
-  var flightNo = getNextFlightNo_(sh);
-  
-  // Auto Summary
-  var hrs = Math.floor(data.stats.durationSec / 3600);
-  var mins = Math.floor((data.stats.durationSec % 3600) / 60);
-  var summary = hrs + 'h ' + mins + 'm, ' + data.stats.trackLenKm.toFixed(1) + 'km';
-  if (analysis.stats.maxAlt > -Infinity) summary += ', Max Alt ' + Math.round(analysis.stats.maxAlt) + 'm';
-  
-  // Gear Autofill (Previous Row)
-  var prevGear = getPreviousGear_(sh); // {wing, harness, res1, res2}
-  
-  // Construct Row Array (matching headers in Code.gs)
-  // 1. Identity
-  var row = [
-    status,
-    flightNo,
-    summary,
-    flightIdStr,
-    data.meta.dateIso,
-    formatTime_(data.stats.startTime), 
-    'Free Fly' // Default Type
-  ];
-  
-  // 2. Metrics
-  row.push(formatDuration_(data.stats.durationSec));
-  row.push(data.stats.trackLenKm);
-  row.push(data.stats.straightDistKm);
-  
-  // 3. Gear (8 cols)
-  row.push(prevGear.wing || '');
-  row.push(prevGear.harness || '');
-  row.push(prevGear.res1 || '');
-  row.push(prevGear.res2 || '');
-  row.push(''); // Other
-  row.push(''); // Snap LD
-  row.push(''); // Snap Trim
-  row.push(''); // Snap Full
-  
-  // 4. XC Scoring
-  row.push(scoring ? scoring.free.dist : '');
-  row.push(scoring ? scoring.best.score : '');
-  row.push(scoring ? scoring.best.type : '');
-  row.push(scoring ? scoring.triangle.dist : '');
-  row.push(scoring ? scoring.best.pointsWorld : '');
-  row.push(''); // Pts Nat (TODO)
-  row.push(scoring ? (scoring.triangle.closed ? 'Yes' : 'No') : '');
   row.push(analysis.stats.maxAlt);
   row.push(analysis.stats.minAlt);
   row.push(analysis.stats.maxAlt - analysis.stats.minAlt); // Gain
@@ -391,4 +339,33 @@ function getDriveIdFromUrl_(url) {
     return match[0];
   }
   return null;
+}
+
+function lookupDefaultEquipment_() {
+  var ss = SpreadsheetApp.getActive();
+  var eq = { wing: '', harness: '', res1: '', res2: '' };
+  
+  // Helper to find default in a sheet
+  // Default col is 5 (E). Data starts row 2.
+  var findDef = function(sheetName) {
+    var sh = ss.getSheetByName(sheetName);
+    if (!sh || sh.getLastRow() < 2) return '';
+    // Get all data: A2:E
+    var data = sh.getRange(2, 1, sh.getLastRow()-1, 5).getValues();
+    // Loop valid rows
+    for (var i=0; i<data.length; i++) {
+      if (data[i][4] === true) { // Col 5 is boolean checkbox
+         return data[i][0]; // ID is Col 1
+      }
+    }
+    return '';
+  };
+  
+  eq.wing = findDef(CFG.sheets.wings);
+  eq.harness = findDef(CFG.sheets.harnesses);
+  eq.res1 = findDef(CFG.sheets.reserves);
+  // res2? usually same sheet, logic might need check "Second Default?" or just leave blank.
+  // For now leave res2 blank.
+  
+  return eq;
 }

@@ -49,7 +49,9 @@ var CFG = {
     VALIDATION_MAX_SPEED_KMH: 120,      // Driving?
     VALIDATION_MAX_AVG_SPEED_KMH: 60,   // Fast driving?
 
-    FLIGHT_TYPES: 'Free Fly, XC, Soaring, Comp, SIV / Maneuvers, Training, Other'
+    FLIGHT_TYPES: 'Free Fly, XC, Soaring, Comp, SIV / Maneuvers, Training, Other',
+    DATE_FORMAT: 'yyyy-MM-dd',
+    TIME_FORMAT: 'HH:mm:ss'
   }
 };
 
@@ -158,6 +160,7 @@ function scaffoldLookups_(ss) {
     });
     
     sh.getRange(2, 1, rows.length, 2).setValues(rows);
+    sh.getRange(2, 1, rows.length, 2).setValues(rows);
     sh.autoResizeColumns(1, 2);
   }
 }
@@ -166,28 +169,31 @@ function scaffoldEquipment_(ss) {
   // Wings
   var shW = ensureSheet_(ss, CFG.sheets.wings);
   if (shW.getLastRow() === 0) {
-    var head = ['WingID', 'Make', 'Model', 'Size', 'GlideRatio_LD', 'Trim_kmh', 'FullBar_kmh', 'Serial', 'InServiceFrom', 'InServiceTo', 'RetiredFlag', 'Notes'];
+    var head = ['WingID', 'Make', 'Model', 'Size', 'Default?', 'GlideRatio_LD', 'Trim_kmh', 'FullBar_kmh', 'Serial', 'InServiceFrom', 'InServiceTo', 'RetiredFlag', 'Notes'];
     shW.appendRow(head);
     shW.getRange(1, 1, 1, head.length).setFontWeight('bold').setBackground('#E0F7FA');
-    shW.appendRow(['Example-Wing', 'Ozone', 'Photon', 'MS', 10.5, 39, 58, '', '', '', false, 'Edit this row']);
+    shW.appendRow(['Example-Wing', 'Ozone', 'Photon', 'MS', false, 10.5, 39, 58, '', '', '', false, 'Edit this row']);
+    shW.getRange(2, 5).insertCheckboxes(); // Default? col
   }
   
   // Harnesses
   var shH = ensureSheet_(ss, CFG.sheets.harnesses);
   if (shH.getLastRow() === 0) {
-    var head = ['HarnessID', 'Make', 'Model', 'Category', 'InServiceFrom', 'InServiceTo', 'RetiredFlag', 'Notes'];
+    var head = ['HarnessID', 'Make', 'Model', 'Category', 'Default?', 'InServiceFrom', 'InServiceTo', 'RetiredFlag', 'Notes'];
     shH.appendRow(head);
     shH.getRange(1, 1, 1, head.length).setFontWeight('bold').setBackground('#E0F2F1');
-    shH.appendRow(['Example-Harness', 'SupAir', 'Delight 4', 'Pod', '', '', false, 'Edit this row']);
+    shH.appendRow(['Example-Harness', 'SupAir', 'Delight 4', 'Pod', false, '', '', false, 'Edit this row']);
+    shH.getRange(2, 5).insertCheckboxes();
   }
   
   // Reserves
   var shR = ensureSheet_(ss, CFG.sheets.reserves);
   if (shR.getLastRow() === 0) {
-    var head = ['ReserveID', 'Make', 'Model', 'Size', 'PackDate', 'InServiceFrom', 'InServiceTo', 'RetiredFlag', 'Notes'];
+    var head = ['ReserveID', 'Make', 'Model', 'Size', 'Default?', 'PackDate', 'InServiceFrom', 'InServiceTo', 'RetiredFlag', 'Notes'];
     shR.appendRow(head);
     shR.getRange(1, 1, 1, head.length).setFontWeight('bold').setBackground('#FFFDE7');
-    shR.appendRow(['Example-Reserve', 'Beamer', '3', '130', '', '', '', false, '']);
+    shR.appendRow(['Example-Reserve', 'Beamer', '3', '130', false, '', '', '', false, '']);
+    shR.getRange(2, 5).insertCheckboxes();
   }
 }
 
@@ -208,65 +214,122 @@ function scaffoldImportLog_(ss) {
 function scaffoldFlights_(ss) {
   var sh = ensureSheet_(ss, CFG.sheets.flights);
   
-  // Headers row 5
-  if (sh.getMaxRows() < 6) sh.insertRows(1, 6 - sh.getMaxRows());
+  // Headers row 4 & 5
+  // We need 5 frozen rows (1-3 optional info, 4 Category, 5 Header)
+  if (sh.getMaxRows() < 10) sh.insertRows(1, 10);
   sh.setFrozenRows(5);
   
   // Define Groups & Columns
-  // Group Structure: { name: 'Basic', cols: ['Status', ...] }
-  
+  // Group Structure: { name: 'Basic', color: '#...', cols: ['Status', ...] }
   var groups = [
-    { name: 'Identity', cols: ['Status', 'Flight No', 'Auto Summary', 'FlightID', 'Date', 'Launch Time', 'Flight Type'] },
-    { name: 'Metrics', cols: ['Flight Duration', 'Track Length (km)', 'Straight Dist (km)'] },
-    { name: 'Gear', cols: ['Wing', 'Harness', 'Reserve 1', 'Reserve 2', 'Other equipment', 'GlideRatio_LD (snap)', 'Trim_kmh (snap)', 'FullBar_kmh (snap)'] },
-    { name: 'XC Scoring', cols: ['XC Distance (km)', 'XC Score', 'XC Flight Class', 'FAI Triangle (km)', 'Points (World)', 'Points (National)', 'Closed?', 'Max Alt (m)', 'Min Alt (m)', 'Total Height Gain (m)', 'Max Ascent (m/s)', 'Max Descent (m/s)', 'Max Groundspeed (km/h)', 'Avg Groundspeed (km/h)'] },
-    { name: 'Launch', cols: ['Launch Lat', 'Launch Lon', 'Launch Site', 'Launch Town', 'Launch Country', 'Launch Region', 'Launch Alt (m)'] },
-    { name: 'Landing', cols: ['Landing Lat', 'Landing Lon', 'Landing Site', 'Landing Town', 'Landing Country', 'Landing Region', 'Landing Alt (m)', 'Launch-Landing Dist (km)'] },
-    { name: 'Weather', cols: ['Wind@Launch', 'Wind@Landing', 'Cloud %', 'Cloudbase', 'Temp (C)', 'Observations'] },
-    { name: 'Analytics', cols: ['Thermal %', 'Thermals Count', 'Thermal Avg (m/s)', 'Thermal Best (m/s)', 'Soar %', 'Efficiency', 'Glide %', 'Glide L/D', 'Sink %', 'Sink Time'] },
-    { name: 'Validation', cols: ['Validation Status', 'Val: Reason'] }, // New validation cols
-    { name: 'Meta', cols: ['Import File', 'Import ID', 'Timestamp', 'Parser Ver'] }
+    { name: 'Flight Info', color: '#D1C4E9', cols: ['Status', 'Flight No', 'Auto Summary', 'FlightID', 'Flight Type', 'Date', 'Launch Time', 'Landing Time', 'Flight Duration', 'Track Length (km)', 'Straight Dist (km)'] },
+    { name: 'Gear', color: '#B3E5FC', cols: ['Wing', 'Harness', 'Reserve 1', 'Reserve 2', 'Other equipment', 'GlideRatio_LD (snap)', 'Trim_kmh (snap)', 'FullBar_kmh (snap)'] },
+    { name: 'XC Scoring', color: '#FFCCBC', cols: ['XC Distance (km)', 'XC Score', 'XC Flight Class', 'FAI Triangle (km)', 'Points (World)', 'Points (National)', 'Closed?', 'Max Alt (m)', 'Min Alt (m)', 'Total Height Gain (m)', 'Max Ascent (m/s)', 'Max Descent (m/s)', 'Max Groundspeed (km/h)', 'Avg Groundspeed (km/h)'] },
+    { name: 'Launch', color: '#C8E6C9', cols: ['Launch Lat', 'Launch Lon', 'Launch Site', 'Launch Town', 'Launch Country', 'Launch Region', 'Launch Alt (m)'] },
+    { name: 'Landing', color: '#DCEDC8', cols: ['Landing Lat', 'Landing Lon', 'Landing Site', 'Landing Town', 'Landing Country', 'Landing Region', 'Landing Alt (m)', 'Launch-Landing Dist (km)'] },
+    { name: 'Weather', color: '#F0F4C3', cols: ['Wind@Launch', 'Wind@Landing', 'Cloud %', 'Cloudbase', 'Temp (C)', 'Observations'] },
+    { name: 'Analytics', color: '#E1BEE7', cols: ['Thermal %', 'Thermals Count', 'Thermal Avg (m/s)', 'Thermal Best (m/s)', 'Soar %', 'Efficiency', 'Glide %', 'Glide L/D', 'Sink %', 'Sink Time'] },
+    { name: 'Validation', color: '#FFCDD2', cols: ['Validation Status', 'Val: Reason'] },
+    { name: 'Meta', color: '#CFD8DC', cols: ['Import File', 'Import ID', 'Timestamp', 'Parser Ver'] }
   ];
   
   var flatHeaders = [];
-  groups.forEach(function(g) {
-    flatHeaders = flatHeaders.concat(g.cols); 
-  });
-  
-  // Set headers
-  sh.getRange(5, 1, 1, flatHeaders.length).setValues([flatHeaders]);
-  sh.getRange(5, 1, 1, flatHeaders.length).setFontWeight('bold').setBorder(true, true, true, true, true, true);
-  
-  // Create Column Groups
-  // We want to collapse everything except the first column of the group
   var colIndex = 1;
+  
   groups.forEach(function(g) {
-    var groupSize = g.cols.length;
-    if (groupSize > 1) {
-      // Create group from colIndex+1 to colIndex+groupSize-1
-      // e.g. if group starts at 1 and has 3 cols (1, 2, 3), we group 2-3.
-      var startGroup = colIndex + 1;
-      var numGroup = groupSize - 1;
-      
-      // Check if group already exists to avoid errors (naive check: just try/catch)
-      try {
-        var range = sh.getRange(1, startGroup, sh.getMaxRows(), numGroup);
-        // Apps Script doesn't have a direct "hasGroup" check easily, removing all groups first is cleaner but destructive.
-        // For now, we attempt to shift group. Ideally we'd clear groups first.
-        range.shiftColumnGroupDepth(1);
-        // Collapse by default? User choice. Lets collapse Gear/Analytics/Meta by default
-        if (['Gear', 'Analytics', 'Meta', 'Validation'].indexOf(g.name) > -1) {
-           sh.getColumnGroup(startGroup, 1).collapse();
-        }
-      } catch (e) {
-        // limit reached or overlap
-        console.warn('Grouping skip', e);
-      }
+    var groupLen = g.cols.length;
+    flatHeaders = flatHeaders.concat(g.cols);
+    
+    // Row 4: Category Header
+    var rangeCat = sh.getRange(4, colIndex, 1, groupLen);
+    rangeCat.merge();
+    rangeCat.setValue(g.name);
+    rangeCat.setBackground(g.color);
+    rangeCat.setHorizontalAlignment('center');
+    rangeCat.setBorder(true, true, true, true, false, false, "medium", null); // Box border
+    
+    // Row 5: Column Headers
+    var rangeHead = sh.getRange(5, colIndex, 1, groupLen);
+    rangeHead.setValues([g.cols]);
+    rangeHead.setFontWeight('bold');
+    rangeHead.setBorder(true, true, true, true, true, true); // All borders
+    
+    // Grouping
+    if (groupLen > 1) {
+       // Start from colIndex + 3 (Keep first 3 visible for Flight Info)
+       // Flight Info has 11 cols. We want to keep Status(1), No(2), Summary(3) visible. Collapse 4..11.
+       var startCollapse = -1;
+       var endCollapse = -1;
+       
+       if (g.name === 'Flight Info') {
+          startCollapse = colIndex + 3;
+          endCollapse = colIndex + groupLen - 1;
+       } else {
+          // Flatten specific groups by default
+          if (['Gear', 'Analytics', 'Meta', 'Validation'].indexOf(g.name) > -1) {
+            startCollapse = colIndex + 1;
+            endCollapse = colIndex + groupLen - 1;
+          }
+       }
+       
+       if (startCollapse > 0 && endCollapse >= startCollapse) {
+         try {
+           var grpRange = sh.getRange(1, startCollapse, sh.getMaxRows(), (endCollapse - startCollapse + 1));
+           grpRange.shiftColumnGroupDepth(1);
+           if (['Gear', 'Analytics', 'Meta', 'Validation', 'Flight Info'].indexOf(g.name) > -1) {
+              sh.getColumnGroup(startCollapse, 1).collapse();
+           }
+         } catch(e) { console.warn('Group exist', e); }
+       }
     }
-    colIndex += groupSize;
+    
+    colIndex += groupLen;
   });
+  
+  // Data Validation: Status
+  // Col 1 is Status
+  var ruleStatus = SpreadsheetApp.newDataValidation()
+    .requireValueInList(['Needs Review', 'Valid', 'Invalid', 'Duplicate'], true)
+    .setAllowInvalid(true)
+    .build();
+  sh.getRange(6, 1, sh.getMaxRows()-5, 1).setDataValidation(ruleStatus);
+  
+  // Conditional Formatting Status
+  var rules = sh.getConditionalFormatRules();
+  // Clear old status rules if any (simplistic: just append new ones)
+  // Needs Review: Yellow
+  rules.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('Needs Review').setBackground('#FFF9C4').setRanges([sh.getRange(6,1,sh.getMaxRows()-5,1)]).build());
+  // Valid: Green
+  rules.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('Valid').setBackground('#C8E6C9').setRanges([sh.getRange(6,1,sh.getMaxRows()-5,1)]).build());
+  // Invalid: Red
+  rules.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('Invalid').setBackground('#FFCDD2').setRanges([sh.getRange(6,1,sh.getMaxRows()-5,1)]).build());
+  // Duplicate: Orange
+  rules.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('Duplicate').setBackground('#FFE0B2').setRanges([sh.getRange(6,1,sh.getMaxRows()-5,1)]).build());
+  
+  sh.setConditionalFormatRules(rules);
+  
+  // Data Validation: Equipment
+  // Wing: Col 12? We need to calculate indices dynamically or hardcode if we trust order.
+  // Groups: FlightInfo(11) -> Gear starts at 12.
+  // Wing=12, Harness=13, Res1=14, Res2=15
+  
+  applyDropdownFromRange_(sh, 12, CFG.sheets.wings, 'A2:A');
+  applyDropdownFromRange_(sh, 13, CFG.sheets.harnesses, 'A2:A');
+  applyDropdownFromRange_(sh, 14, CFG.sheets.reserves, 'A2:A');
+  applyDropdownFromRange_(sh, 15, CFG.sheets.reserves, 'A2:A');
 
-  ss.toast('Flights sheet scaffolded with Groups.');
+  ss.toast('Flights sheet scaffolded with Groups & Validation.');
+}
+
+function applyDropdownFromRange_(shTarget, colIndex, sourceSheetName, sourceRangeA1) {
+  var ss = SpreadsheetApp.getActive();
+  var shSrc = ss.getSheetByName(sourceSheetName);
+  if (shSrc) {
+    // Dynamic range
+    var range = shSrc.getRange(sourceRangeA1);
+    var rule = SpreadsheetApp.newDataValidation().requireValueInRange(range).setAllowInvalid(true).build();
+    shTarget.getRange(6, colIndex, shTarget.getMaxRows() - 5, 1).setDataValidation(rule);
+  }
 }
 
 /* ==========================================================================================
