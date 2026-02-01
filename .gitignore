@@ -3,7 +3,7 @@ node_modules
 .DS_Store
 
 # CLASP credentials
-.clasp.json
+
 .clasp-dev.json
 
 # Image/Video artifacts
