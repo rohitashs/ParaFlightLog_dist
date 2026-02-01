@@ -216,7 +216,9 @@ function scaffoldFlights_(ss) {
   // Headers row 4 & 5
   // We need 5 frozen rows (1-3 optional info, 4 Category, 5 Header)
   if (sh.getMaxRows() < 10) sh.insertRows(1, 10);
-  sh.setFrozenRows(5);
+  // We need 5 frozen rows (1-3 optional info, 4 Category, 5 Header)
+  if (sh.getMaxRows() < 10) sh.insertRows(1, 10);
+  // sh.setFrozenRows(5); // Moved to end to avoid repaint overhead
   
   // Define Groups & Columns
   // Group Structure: { name: 'Basic', color: '#...', cols: ['Status', ...] }
@@ -235,40 +237,40 @@ function scaffoldFlights_(ss) {
   var flatHeaders = [];
   var colIndex = 1;
   
+    colIndex += groupLen;
+  }); // End Loop
+  
+  // 3. Batch Write Headers (One API Call)
+  // Row 4: Category Headers (Merged) - We still need to loop for merge/color, but maybe we do it AFTER data set.
+  // Actually, setting values is cheap. Formatting is expensive.
+  // Let's write the flat headers first.
+  sh.getRange(5, 1, 1, flatHeaders.length).setValues([flatHeaders]);
+  sh.getRange(5, 1, 1, flatHeaders.length).setFontWeight('bold').setBorder(true, true, true, true, true, true);
+  SpreadsheetApp.flush();
+
+  // 4. Batched Category Formatting & Grouping (The Expensive Part)
+  colIndex = 1;
   groups.forEach(function(g) {
     var groupLen = g.cols.length;
-    flatHeaders = flatHeaders.concat(g.cols);
     
-    // Row 4: Category Header
-    var rangeCat = sh.getRange(4, colIndex, 1, groupLen);
-    rangeCat.merge();
-    rangeCat.setValue(g.name);
-    rangeCat.setBackground(g.color);
-    rangeCat.setHorizontalAlignment('center');
-    rangeCat.setBorder(true, true, true, true, false, false, "medium", null); // Box border
-    
-    // Row 5: Column Headers
-    var rangeHead = sh.getRange(5, colIndex, 1, groupLen);
-    rangeHead.setValues([g.cols]);
-    rangeHead.setFontWeight('bold');
-    rangeHead.setBorder(true, true, true, true, true, true); // All borders
-    
-    // Grouping
+    // Category Header (Row 4)
+    try {
+      var rangeCat = sh.getRange(4, colIndex, 1, groupLen);
+      rangeCat.merge();
+      rangeCat.setValue(g.name);
+      rangeCat.setBackground(g.color);
+      rangeCat.setHorizontalAlignment('center');
+      rangeCat.setBorder(true, true, true, true, false, false, "medium", null);
+    } catch(e) { console.warn('CatHeader fail', g.name); }
+
+    // Grouping (Collapse)
     if (groupLen > 1) {
-       // Start from colIndex + 3 (Keep first 3 visible for Flight Info)
-       // Flight Info has 11 cols. We want to keep Status(1), No(2), Summary(3) visible. Collapse 4..11.
-       var startCollapse = -1;
+       var startCollapse = -1; 
        var endCollapse = -1;
-       
        if (g.name === 'Flight Info') {
-          startCollapse = colIndex + 3;
-          endCollapse = colIndex + groupLen - 1;
-       } else {
-          // Flatten specific groups by default
-          if (['Gear', 'Analytics', 'Meta', 'Validation'].indexOf(g.name) > -1) {
-            startCollapse = colIndex + 1;
-            endCollapse = colIndex + groupLen - 1;
-          }
+          startCollapse = colIndex + 3; endCollapse = colIndex + groupLen - 1;
+       } else if (['Gear', 'Analytics', 'Meta', 'Validation'].indexOf(g.name) > -1) {
+          startCollapse = colIndex + 1; endCollapse = colIndex + groupLen - 1;
        }
        
        if (startCollapse > 0 && endCollapse >= startCollapse) {
@@ -278,16 +280,17 @@ function scaffoldFlights_(ss) {
            if (['Gear', 'Analytics', 'Meta', 'Validation', 'Flight Info'].indexOf(g.name) > -1) {
               sh.getColumnGroup(startCollapse, 1).collapse();
            }
-         } catch(e) { 
-           console.warn('Grouping failed for ' + g.name + ' (non-critical)', e); 
-         }
+         } catch(e) { /* ignore grouping errors */ }
        }
     }
-    
     colIndex += groupLen;
-    SpreadsheetApp.flush(); 
-    Utilities.sleep(800); // Breathe
+    // No flush here. Let Apps Script batch it naturally, or flush every 3 groups?
+    if (colIndex % 10 === 0) SpreadsheetApp.flush(); 
   });
+  
+  // 5. Freeze Rows at the very end
+  sh.setFrozenRows(5);
+  SpreadsheetApp.flush();
   
   SpreadsheetApp.flush(); // Force write headers/groups before validation
 
