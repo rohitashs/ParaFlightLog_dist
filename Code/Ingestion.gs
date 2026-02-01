@@ -64,11 +64,16 @@ function uiAddFlightFromIgc_() {
   var ctx = { source: 'Manual' };
   
   try {
-    if (input.match(/^https?:\/\//)) {
-      // URL import
+    var driveId = getDriveIdFromUrl_(input);
+    if (driveId) {
+      // It's a Drive URL or ID
+      var file = DriveApp.getFileById(driveId);
+      processDriveFile_(file, config);
+    } else if (input.match(/^https?:\/\//)) {
+      // External URL (non-Drive)
       handleUrlImport_(input, ctx, config);
     } else {
-      // Assume Drive ID
+      // Raw ID fallback
       var file = DriveApp.getFileById(input);
       processDriveFile_(file, config);
     }
@@ -374,4 +379,16 @@ function formatDuration_(sec) {
   var m = Math.floor((sec % 3600) / 60);
   var s = Math.floor(sec % 60);
   return h + ':' + ('0'+m).slice(-2) + ':' + ('0'+s).slice(-2);
+}
+
+function getDriveIdFromUrl_(url) {
+  // Matches /file/d/ID/ or ?id=ID patterns
+  var re = /[-\w]{25,}/;
+  var match = url.match(re);
+  // Simple check: if input is a URL containing a long ID, assumes it's that ID. 
+  // Specifically for drive.google.com
+  if (url.indexOf('drive.google.com') > -1 && match) {
+    return match[0];
+  }
+  return null;
 }
