@@ -229,8 +229,59 @@ function insertFlightRow_(data, fileId, outerName, status, notes, analysis, scor
   
   // Group Mapping (Must match `scaffoldFlights_` order)
   // Col 1=Status, 2=FlightNo, 3=AutoSummary, 4=FlightID, 5=Date, 6=Time, 7=Type
-  // ...
+  // Flight ID: Short Format F_YY_XXXX
+  var dateObj = new Date(data.meta.dateIso || Date.now());
+  var yy = dateObj.getFullYear().toString().slice(-2);
+  var idSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
+  var flightId = 'F_' + yy + '_' + idSuffix;
+
+  // Flight No
+  var flightNo = getNextFlightNo_(sh);
   
+  // Equipment Defaults
+  var eq = lookupDefaultEquipment_();
+  
+  // ROW INITIALIZATION
+  // 1. Flight Info
+  var row = [];
+  row.push(status); // Status
+  row.push(flightNo);
+  row.push(''); // Auto Summary
+  row.push(flightId);
+  row.push('Free Fly'); // Type
+  row.push(data.meta.dateIso); // Date
+  
+  // Times - Use helper if needed, but data.stats.startTime is seconds?
+  // Let's rely on formatTime_ if consistent.
+  row.push(formatTime_(data.stats.startTime)); // Launch Time
+  row.push(formatTime_(data.stats.endTime)); // Land Time
+  
+  row.push(formatDuration_(data.stats.durationSec)); // Duration
+  row.push((data.stats.trackLenKm).toFixed(2));
+  row.push((data.stats.straightDistKm).toFixed(2));
+  
+  // 2. Gear
+  row.push(eq.wing);
+  row.push(eq.harness);
+  row.push(eq.res1);
+  row.push(eq.res2);
+  row.push(''); // Other
+  row.push(''); // Snap LD
+  row.push(''); // Snap Trim
+  row.push(''); // Snap Full
+  
+  // 3. XC Scoring
+  if (scoring && scoring.best) {
+    row.push((scoring.free.dist ? scoring.free.dist/1000 : 0).toFixed(2)); // XC Dist
+    row.push((scoring.best.score).toFixed(2)); // Score
+    row.push(scoring.best.type);
+    row.push(scoring.triangle ? (scoring.triangle.dist/1000).toFixed(2) : 0);
+    row.push(scoring.best.pointsWorld || '');
+    row.push(''); // National
+    row.push(scoring.triangle && scoring.triangle.isClosed ? 'Yes' : 'No');
+  } else {
+     row.push(''); row.push(''); row.push(''); row.push(''); row.push(''); row.push(''); row.push('');
+  }
   row.push(analysis.stats.maxAlt);
   row.push(analysis.stats.minAlt);
   row.push(analysis.stats.maxAlt - analysis.stats.minAlt); // Gain
