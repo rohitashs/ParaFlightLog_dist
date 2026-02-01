@@ -9,6 +9,14 @@ This project is a Google Apps Script application for importing, analyzing, and l
 3.  Flight Analysis (Mode detection: Thermal, Soar, Glide).
 4.  Automation (Watch folder scanning).
 
+## Project Organization
+*   **`Code/`**: Apps Script code (`.gs`) and manifest (`appsscript.json`). Pushed to server.
+*   **`Docs/`**: Permanent documentation (Specifications, Features, Setup Guide).
+*   **`Plans/`**: Transient artifacts (Task lists, Walkthroughs) and `Archive/` for completed plans.
+*   **`Reference/`**: Project context (`Context.md`) and config backups.  
+    *(Note: `.clasp.json` and `.gitignore` reside in Root for tool compatibility, but are conceptually "Reference" files)*.
+*   **`Old Files/`**: Legacy reference material.
+
 ## File Structure (`Code/`)
 *   **`Code.gs`**: Main entry point, menus, configuration (`Lookups` sheet), scaffolding.
 *   **`Ingestion.gs`**: Handles file imports (Drive/URL), ZIP extraction, Deduplication (MD5), and row insertion.
@@ -37,3 +45,17 @@ This project is a Google Apps Script application for importing, analyzing, and l
 *   **Configuration**: All tunable params (Thresholds, Radius, etc.) are in the `Lookups` Google Sheet, read by `Code.gs`.
 *   **Caching**: `Geo.gs` uses `CacheService` to respect API limits.
 *   **Deduplication**: Uses `PropertiesService` to store MD5 hashes of processed files.
+
+## Resume / Verification Guide
+*   **Restore Context**: Read this file to understand the architecture.
+*   **Verify Logic**: Run `Test.gs` -> `runAllTests()` in the Apps Script Editor.
+*   **Verify Deploy**: Check `clasp status` or `clasp push` to sync.
+*   **First Run**:
+    1.  Open Sheet -> "Flight Log" Menu -> "Setup & Tools" -> "Scaffold".
+    2.  Fill in "Lookups" with Folder ID and Email.
+    3.  Run "Scan Watch Folder now" or manual import.
+
+## Current Session Status
+*   **Source Control**: Configured. Linked to `RSParaFlightLog` (Pacific Time). `appsscript.json` tracked in `Code/`.
+*   **Codebase**: Fully implemented v2.0 MVP.
+*   **Next Action**: execute `walkthrough.md` to verify end-to-end functionality.
