@@ -235,10 +235,9 @@ function scaffoldFlights_(ss) {
   ];
   
   var flatHeaders = [];
-  var colIndex = 1;
-  
-    colIndex += groupLen;
-  }); // End Loop
+  groups.forEach(function(g) {
+    flatHeaders = flatHeaders.concat(g.cols);
+  });
   
   // 3. Batch Write Headers (One API Call)
   // Row 4: Category Headers (Merged) - We still need to loop for merge/color, but maybe we do it AFTER data set.
