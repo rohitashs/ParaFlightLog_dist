@@ -283,6 +283,7 @@ function scaffoldFlights_(ss) {
     }
     
     colIndex += groupLen;
+    SpreadsheetApp.flush(); // Flush after each group to prevent timeout
   });
   
   SpreadsheetApp.flush(); // Force write headers/groups before validation
