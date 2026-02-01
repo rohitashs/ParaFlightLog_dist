@@ -24,7 +24,7 @@ function calculateXcScore(fixes) {
   // This is critical for Apps Script performance.
   var simplified = simplifyTrack_(fixes, 0.0005); // Tolerance ~50m? degrees. 0.0001 deg is ~11m. 0.0005 ~50m.
   
-  if (simplified.length < 3) return null;
+  if (simplified.length < 2) return null;
   
   // 2. Calculate Distances
   var free = optimizeFreeDistance_(simplified);
