@@ -268,7 +268,8 @@ function scaffoldFlights_(ss) {
        var endCollapse = -1;
        if (g.name === 'Flight Info') {
           startCollapse = colIndex + 3; endCollapse = colIndex + groupLen - 1;
-       } else if (['Gear', 'Analytics', 'Meta', 'Validation'].indexOf(g.name) > -1) {
+       } else {
+          // Default: Group cols 2..N (Keep col 1 visible)
           startCollapse = colIndex + 1; endCollapse = colIndex + groupLen - 1;
        }
        
