@@ -229,14 +229,14 @@ function insertFlightRow_(data, fileId, outerName, status, notes, analysis, scor
   
   // Group Mapping (Must match `scaffoldFlights_` order)
   // Col 1=Status, 2=FlightNo, 3=AutoSummary, 4=FlightID, 5=Date, 6=Time, 7=Type
-  // Flight ID: Short Format F_YY_XXXX
+  // Flight ID: Format F_YYYY_nnnnn
   var dateObj = new Date(data.meta.dateIso || Date.now());
-  var yy = dateObj.getFullYear().toString().slice(-2);
-  var idSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
-  var flightId = 'F_' + yy + '_' + idSuffix;
+  var yyyy = dateObj.getFullYear();
+  var idSuffix = Math.floor(10000 + Math.random() * 90000); // 5 digit number
+  var flightId = 'F_' + yyyy + '_' + idSuffix;
 
-  // Flight No
-  var flightNo = getNextFlightNo_(sh);
+  // Flight No: Formula
+  var flightNo = '=IFERROR(MAX(B7:B),0)+1';
   
   // Equipment Defaults
   var eq = lookupDefaultEquipment_();
@@ -244,31 +244,53 @@ function insertFlightRow_(data, fileId, outerName, status, notes, analysis, scor
   // ROW INITIALIZATION
   // 1. Flight Info
   var row = [];
-  row.push(status); // Status
+  row.push('Needs Review'); // Status (Title Case)
   row.push(flightNo);
   row.push(''); // Auto Summary
   row.push(flightId);
   row.push('Free Fly'); // Type
   row.push(data.meta.dateIso); // Date
+  row.push(''); // Time Zone
   
-  // Times - Use helper if needed, but data.stats.startTime is seconds?
-  // Let's rely on formatTime_ if consistent.
-  row.push(formatTime_(data.stats.startTime)); // Launch Time
-  row.push(formatTime_(data.stats.endTime)); // Land Time
+  // Times
+  // Check for NaN in times
+  var tLaunchStr = formatTime_(data.stats.startTime);
+  var tLandStr = '';
+  
+  if (data.stats.endTime && !isNaN(data.stats.endTime)) {
+     tLandStr = formatTime_(data.stats.endTime);
+  } else {
+     // Fallback: Start + Duration
+     tLandStr = formatTime_(data.stats.startTime + data.stats.durationSec);
+  }
+  
+  row.push(tLaunchStr); // Launch Time
+  row.push(tLandStr); // Land Time
   
   row.push(formatDuration_(data.stats.durationSec)); // Duration
   row.push((data.stats.trackLenKm).toFixed(2));
   row.push((data.stats.straightDistKm).toFixed(2));
   
   // 2. Gear
-  row.push(eq.wing);
-  row.push(eq.harness);
-  row.push(eq.res1);
-  row.push(eq.res2);
+  // Logic: Previous Row -> Default -> Empty
+  var prevGear = getPreviousGear_(sh);
+  var defGear = lookupDefaultEquipment_();
+  var wingStr = prevGear.wing || defGear.wing || '';
+  var harnStr = prevGear.harness || defGear.harness || '';
+  var res1Str = prevGear.res1 || defGear.res1 || '';
+  var res2Str = prevGear.res2 || defGear.res2 || '';
+  
+  row.push(wingStr);
+  row.push(harnStr);
+  row.push(res1Str);
+  row.push(res2Str);
   row.push(''); // Other
-  row.push(''); // Snap LD
-  row.push(''); // Snap Trim
-  row.push(''); // Snap Full
+  
+  // Wing Specs Lookup
+  var wSpecs = lookupWingSpecs_(wingStr);
+  row.push(wSpecs.glide);
+  row.push(wSpecs.trim);
+  row.push(wSpecs.full);
   
   // 3. XC Scoring
   if (scoring && scoring.best) {
@@ -419,4 +441,30 @@ function lookupDefaultEquipment_() {
   // For now leave res2 blank.
   
   return eq;
+}
+
+function lookupWingSpecs_(wingName) {
+  if (!wingName) return { glide:'', trim:'', full:'' };
+  var ss = SpreadsheetApp.getActive();
+  var sh = ss.getSheetByName(CFG.sheets.wings);
+  if (!sh) return { glide:'', trim:'', full:'' };
+  
+  // Columns: A=ID(0)... F=Glide(5), G=Trim(6), H=Full(7) (?)
+  // Let's check scaffoldEquipment_:
+  // ['Brand', 'Model', 'Size', 'Color', 'Default?', 'Glide Ratio', 'Trim Speed', 'Full Bar Speed']
+  // Indices: 0, 1, 2, 3, 4, 5, 6, 7.
+  
+  // Ideally use a Finder logic or loop.
+  // Performance: Read all data once.
+  var data = sh.getRange(2, 1, sh.getLastRow()-1, 8).getValues();
+  for (var i=0; i<data.length; i++) {
+    if (data[i][0] === wingName) {
+      return {
+        glide: data[i][5],
+        trim: data[i][6],
+        full: data[i][7]
+      };
+    }
+  }
+  return { glide:'', trim:'', full:'' };
 }

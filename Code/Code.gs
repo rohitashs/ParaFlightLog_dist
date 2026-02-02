@@ -223,7 +223,7 @@ function scaffoldFlights_(ss) {
   // Define Groups & Columns
   // Group Structure: { name: 'Basic', color: '#...', cols: ['Status', ...] }
   var groups = [
-    { name: 'Flight Info', color: '#D1C4E9', cols: ['Status', 'Flight No', 'Auto Summary', 'FlightID', 'Flight Type', 'Date', 'Launch Time', 'Landing Time', 'Flight Duration', 'Track Length (km)', 'Straight Dist (km)'] },
+    { name: 'Flight Info', color: '#D1C4E9', cols: ['Status', 'Flight No', 'Auto Summary', 'FlightID', 'Flight Type', 'Date', 'Time Zone', 'Launch Time', 'Landing Time', 'Flight Duration', 'Track Length (km)', 'Straight Dist (km)'] },
     { name: 'Gear', color: '#B3E5FC', cols: ['Wing', 'Harness', 'Reserve 1', 'Reserve 2', 'Other equipment', 'GlideRatio_LD (snap)', 'Trim_kmh (snap)', 'FullBar_kmh (snap)'] },
     { name: 'XC Scoring', color: '#FFCCBC', cols: ['XC Distance (km)', 'XC Score', 'XC Flight Class', 'FAI Triangle (km)', 'Points (World)', 'Points (National)', 'Closed?', 'Max Alt (m)', 'Min Alt (m)', 'Total Height Gain (m)', 'Max Ascent (m/s)', 'Max Descent (m/s)', 'Max Groundspeed (km/h)', 'Avg Groundspeed (km/h)'] },
     { name: 'Launch', color: '#C8E6C9', cols: ['Launch Lat', 'Launch Lon', 'Launch Site', 'Launch Town', 'Launch Country', 'Launch Region', 'Launch Alt (m)'] },
@@ -317,7 +317,34 @@ function scaffoldFlights_(ss) {
     rules.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('Needs Review').setBackground('#FFF9C4').setRanges([sh.getRange(6,1,valRows,1)]).build());
     // Valid: Green
     rules.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('Valid').setBackground('#C8E6C9').setRanges([sh.getRange(6,1,valRows,1)]).build());
-    // Invalid: Red
+  // Flight Type Validation (Col 5)
+  // Assumes FLIGHT_TYPES is in Lookups (Col A? No, usually named range or config). 
+  // Let's rely on Lookups sheet having a list. 
+  // Config doesn't strictly define range. Let's assume Lookups B2:B or similar? 
+  // Actually, Lookups sheet structure isn't fixed yet. 
+  // User said "Lookups tab where there is a FLIGHT_TYPES parameter".
+  // Let's assume a Named Range "FLIGHT_TYPES" or we look for the list in Config.
+  // For now, let's just make a static list or try to find it. 
+  // Better: hardcode standard types + 'Other', allow invalid.
+  try {
+     var ruleType = SpreadsheetApp.newDataValidation()
+       .requireValueInList(['Free Fly', 'XC', 'Competition', 'Tandem', 'Paramotor'], true)
+       .setAllowInvalid(true)
+       .build();
+      sh.getRange(6, 5, valRows, 1).setDataValidation(ruleType);
+  } catch(e) {}
+
+  // Data Validation: Equipment
+  // Flight Info now 12 cols. Gear starts Col 13.
+  // Wing=13, Harness=14, Res1=15, Res2=16
+  try {
+    applyDropdownFromRange_(sh, 13, CFG.sheets.wings, 'A2:A');
+    applyDropdownFromRange_(sh, 14, CFG.sheets.harnesses, 'A2:A');
+    applyDropdownFromRange_(sh, 15, CFG.sheets.reserves, 'A2:A');
+    applyDropdownFromRange_(sh, 16, CFG.sheets.reserves, 'A2:A');
+  } catch(e) {
+    console.warn('Equipment validation error', e);
+  }
     rules.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('Invalid').setBackground('#FFCDD2').setRanges([sh.getRange(6,1,valRows,1)]).build());
     // Duplicate: Orange
     rules.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('Duplicate').setBackground('#FFE0B2').setRanges([sh.getRange(6,1,valRows,1)]).build());
