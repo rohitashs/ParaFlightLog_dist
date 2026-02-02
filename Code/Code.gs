@@ -223,11 +223,11 @@ function scaffoldFlights_(ss) {
   // Define Groups & Columns
   // Group Structure: { name: 'Basic', color: '#...', cols: ['Status', ...] }
   var groups = [
-    { name: 'Flight Info', color: '#D1C4E9', cols: ['Status', 'Flight No', 'Auto Summary', 'FlightID', 'Flight Type', 'Date', 'Time Zone', 'Launch Time', 'Landing Time', 'Flight Duration', 'Track Length (km)', 'Straight Dist (km)'] },
+    { name: 'Flight Info', color: '#D1C4E9', cols: ['FlightID', 'Status', 'Flight No', 'Auto Summary', 'Notes', 'Flight Type', 'Date', 'Time Zone', 'Launch Time', 'Landing Time', 'Flight Duration', 'Track Length (km)', 'Straight Dist (km)'] },
     { name: 'Gear', color: '#B3E5FC', cols: ['Wing', 'Harness', 'Reserve 1', 'Reserve 2', 'Other equipment', 'GlideRatio_LD (snap)', 'Trim_kmh (snap)', 'FullBar_kmh (snap)'] },
     { name: 'XC Scoring', color: '#FFCCBC', cols: ['XC Distance (km)', 'XC Score', 'XC Flight Class', 'FAI Triangle (km)', 'Points (World)', 'Points (National)', 'Closed?', 'Max Alt (m)', 'Min Alt (m)', 'Total Height Gain (m)', 'Max Ascent (m/s)', 'Max Descent (m/s)', 'Max Groundspeed (km/h)', 'Avg Groundspeed (km/h)'] },
-    { name: 'Launch', color: '#C8E6C9', cols: ['Launch Lat', 'Launch Lon', 'Launch Site', 'Launch Town', 'Launch Country', 'Launch Region', 'Launch Alt (m)'] },
-    { name: 'Landing', color: '#DCEDC8', cols: ['Landing Lat', 'Landing Lon', 'Landing Site', 'Landing Town', 'Landing Country', 'Landing Region', 'Landing Alt (m)', 'Launch-Landing Dist (km)'] },
+    { name: 'Launch', color: '#C8E6C9', cols: ['Launch Alt (m)', 'Launch Lat', 'Launch Lon', 'Launch Site', 'Launch Town', 'Launch Country', 'Launch Region'] },
+    { name: 'Landing', color: '#DCEDC8', cols: ['Landing Alt (m)', 'Landing Lat', 'Landing Lon', 'Landing Site', 'Landing Town', 'Landing Country', 'Landing Region', 'Launch-Landing Dist (km)'] },
     { name: 'Weather', color: '#F0F4C3', cols: ['Wind@Launch', 'Wind@Landing', 'Cloud %', 'Cloudbase', 'Temp (C)', 'Observations'] },
     { name: 'Analytics', color: '#E1BEE7', cols: ['Thermal %', 'Thermals Count', 'Thermal Avg (m/s)', 'Thermal Best (m/s)', 'Soar %', 'Efficiency', 'Glide %', 'Glide L/D', 'Sink %', 'Sink Time'] },
     { name: 'Validation', color: '#FFCDD2', cols: ['Validation Status', 'Val: Reason'] },
@@ -252,22 +252,31 @@ function scaffoldFlights_(ss) {
   groups.forEach(function(g) {
     var groupLen = g.cols.length;
     
-    // Category Header (Row 4)
+    // Category Header (Row 4) & Column Headers (Row 5)
     try {
+      // Row 4 (Category)
       var rangeCat = sh.getRange(4, colIndex, 1, groupLen);
       rangeCat.merge();
       rangeCat.setValue(g.name);
       rangeCat.setBackground(g.color);
       rangeCat.setHorizontalAlignment('center');
+      rangeCat.setFontWeight('bold'); // Bold Row 4
       rangeCat.setBorder(true, true, true, true, false, false, "medium", null);
-    } catch(e) { console.warn('CatHeader fail', g.name); }
+
+      // Row 5 (Columns) - Apply Color
+      var rangeCols = sh.getRange(5, colIndex, 1, groupLen);
+      rangeCols.setBackground(g.color);
+      rangeCols.setFontWeight('bold'); // Bold Row 5
+    } catch(e) { console.warn('Header format fail', g.name); }
 
     // Grouping (Collapse)
     if (groupLen > 1) {
        var startCollapse = -1; 
        var endCollapse = -1;
        if (g.name === 'Flight Info') {
-          startCollapse = colIndex + 3; endCollapse = colIndex + groupLen - 1;
+          // Keep first 4 visible: FlightID, Status, Flight No, Auto Summary
+          // Collapse from Col 5 (Notes) onwards
+          startCollapse = colIndex + 4; endCollapse = colIndex + groupLen - 1;
        } else {
           // Default: Group cols 2..N (Keep col 1 visible)
           startCollapse = colIndex + 1; endCollapse = colIndex + groupLen - 1;
@@ -310,47 +319,46 @@ function scaffoldFlights_(ss) {
   }
 
   // Conditional Formatting Status
-  try {
-    var rules = sh.getConditionalFormatRules();
-    // Clear old status rules if any (simplistic: just append new ones)
-    // Needs Review: Yellow
-    rules.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('Needs Review').setBackground('#FFF9C4').setRanges([sh.getRange(6,1,valRows,1)]).build());
-    // Valid: Green
-    rules.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('Valid').setBackground('#C8E6C9').setRanges([sh.getRange(6,1,valRows,1)]).build());
-  // Flight Type Validation (Col 5)
-  // Assumes FLIGHT_TYPES is in Lookups (Col A? No, usually named range or config). 
-  // Let's rely on Lookups sheet having a list. 
-  // Config doesn't strictly define range. Let's assume Lookups B2:B or similar? 
-  // Actually, Lookups sheet structure isn't fixed yet. 
-  // User said "Lookups tab where there is a FLIGHT_TYPES parameter".
-  // Let's assume a Named Range "FLIGHT_TYPES" or we look for the list in Config.
-  // For now, let's just make a static list or try to find it. 
-  // Better: hardcode standard types + 'Other', allow invalid.
+  // Flight Type Validation (Col 6 - FlightType)
+  // Flight Info: ID, Status, No, Auto, Notes, Type(6)
+  
   try {
      var ruleType = SpreadsheetApp.newDataValidation()
        .requireValueInList(['Free Fly', 'XC', 'Competition', 'Tandem', 'Paramotor'], true)
        .setAllowInvalid(true)
        .build();
-      sh.getRange(6, 5, valRows, 1).setDataValidation(ruleType);
+      sh.getRange(6, 6, valRows, 1).setDataValidation(ruleType); // Col 6
   } catch(e) {}
 
   // Data Validation: Equipment
-  // Flight Info now 12 cols. Gear starts Col 13.
-  // Wing=13, Harness=14, Res1=15, Res2=16
+  // Flight Info (13 cols) -> Gear starts 14. 
+  // Wing(14), Harness(15), Res1(16), Res2(17)
   try {
-    applyDropdownFromRange_(sh, 13, CFG.sheets.wings, 'A2:A');
-    applyDropdownFromRange_(sh, 14, CFG.sheets.harnesses, 'A2:A');
-    applyDropdownFromRange_(sh, 15, CFG.sheets.reserves, 'A2:A');
+    applyDropdownFromRange_(sh, 14, CFG.sheets.wings, 'A2:A');
+    applyDropdownFromRange_(sh, 15, CFG.sheets.harnesses, 'A2:A');
     applyDropdownFromRange_(sh, 16, CFG.sheets.reserves, 'A2:A');
+    applyDropdownFromRange_(sh, 17, CFG.sheets.reserves, 'A2:A');
   } catch(e) {
     console.warn('Equipment validation error', e);
   }
-    rules.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('Invalid').setBackground('#FFCDD2').setRanges([sh.getRange(6,1,valRows,1)]).build());
+  
+  // Conditional Formatting Status - Col 2 is Status? 
+  // Wait, New Order: FlightID(1), Status(2)
+  var rangeStatus = sh.getRange(6, 2, valRows, 1);
+  try {
+    var rules = sh.getConditionalFormatRules();
+    // Clear old status rules if any (simplistic: just append new ones)
+    // Needs Review: Yellow
+    rules.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('Needs Review').setBackground('#FFF9C4').setRanges([rangeStatus]).build());
+    // Valid: Green
+    rules.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('Valid').setBackground('#C8E6C9').setRanges([rangeStatus]).build());
+    // Invalid: Red
+    rules.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('Invalid').setBackground('#FFCDD2').setRanges([rangeStatus]).build());
     // Duplicate: Orange
-    rules.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('Duplicate').setBackground('#FFE0B2').setRanges([sh.getRange(6,1,valRows,1)]).build());
+    rules.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('Duplicate').setBackground('#FFE0B2').setRanges([rangeStatus]).build());
     
     sh.setConditionalFormatRules(rules);
-  } catch (e) {
+  } catch(e) {}
     console.warn('CondFormat error', e);
   }
   

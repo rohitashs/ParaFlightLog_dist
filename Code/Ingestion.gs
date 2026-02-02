@@ -217,6 +217,53 @@ function logImport_(date, fileId, outer, inner, status, notes) {
   }
 }
 
+function addManualFlight() {
+  var ss = SpreadsheetApp.getActive();
+  var sh = ss.getSheetByName(CFG.sheets.flights);
+  if (!sh) return;
+  
+  // 1. Generate ID
+  var dateObj = new Date();
+  var yyyy = dateObj.getFullYear();
+  var mm = ('0' + (dateObj.getMonth() + 1)).slice(-2);
+  var dd = ('0' + dateObj.getDate()).slice(-2);
+  var dateStr = yyyy + mm + dd;
+  var idSuffix = getNextDailyId_(sh, dateStr);
+  var flightId = 'F' + dateStr + '_' + idSuffix;
+  
+  // 2. Flight No
+  var flightNo = '=IFERROR(MAX(C7:C),0)+1';
+  
+  // 3. Defaults
+  var eq = lookupDefaultEquipment_();
+  var prevGear = getPreviousGear_(sh);
+  
+  var row = [];
+  row.push(flightId);          // 1. ID
+  row.push('Needs Review');    // 2. Status
+  row.push(flightNo);          // 3. No
+  row.push('Manual Entry');    // 4. Summary
+  row.push('');                // 5. Notes
+  row.push('Free Fly');        // 6. Type
+  row.push(dateObj);           // 7. Date
+  row.push(Session.getScriptTimeZone()); // 8. TimeZone
+  row.push(formatTime_(dateObj.getTime()/1000)); // 9. Launch Time
+  row.push('');                // 10. Land Time
+  row.push('');                // 11. Dur
+  row.push('');                // 12. Dist
+  row.push('');                // 13. Dist
+  
+  // Gear
+  row.push(prevGear.wing || eq.wing);
+  row.push(prevGear.harness || eq.harness);
+  row.push(prevGear.res1 || eq.res1);
+  row.push(prevGear.res2 || eq.res2);
+  
+  sh.insertRowBefore(6);
+  sh.getRange(6, 1, 1, row.length).setValues([row]);
+  SpreadsheetApp.flush();
+}
+
 /**
  * Inserts the Data Row into 'Flights' Sheet.
  */
@@ -229,47 +276,60 @@ function insertFlightRow_(data, fileId, outerName, status, notes, analysis, scor
   
   // Group Mapping (Must match `scaffoldFlights_` order)
   // Col 1=Status, 2=FlightNo, 3=AutoSummary, 4=FlightID, 5=Date, 6=Time, 7=Type
-  // Flight ID: Format F_YYYY_nnnnn
+  // Flight ID: Format FYYYYMMDD_nn
   var dateObj = new Date(data.meta.dateIso || Date.now());
   var yyyy = dateObj.getFullYear();
-  var idSuffix = Math.floor(10000 + Math.random() * 90000); // 5 digit number
-  var flightId = 'F_' + yyyy + '_' + idSuffix;
+  var mm = ('0' + (dateObj.getMonth() + 1)).slice(-2);
+  var dd = ('0' + dateObj.getDate()).slice(-2);
+  var dateStr = yyyy + mm + dd;
+  
+  // Find next suffix for this date
+  var idSuffix = getNextDailyId_(sh, dateStr);
+  var flightId = 'F' + dateStr + '_' + idSuffix;
 
   // Flight No: Formula
-  var flightNo = '=IFERROR(MAX(B7:B),0)+1';
+  var flightNo = '=IFERROR(MAX(C7:C),0)+1'; // Note: Flight No is now Col 3 (C)
   
   // Equipment Defaults
   var eq = lookupDefaultEquipment_();
   
+  // Auto Summary
+  // Logic: Duration + Type + Site
+  var site = geo.ls || geo.l.town || '';
+  var durStr = formatDuration_(data.stats.durationSec);
+  // Simplify duration? 1230 -> 20m? Lets stick to H:MM:SS for now or simplify.
+  // User asked "Like 12 mins or 1.3 hrs".
+  var durFriendly = friendlyDuration_(data.stats.durationSec);
+  var autoSummary = durFriendly + ' ' + ('Free Fly') + (site ? ' at ' + site : '');
+
   // ROW INITIALIZATION
-  // 1. Flight Info
+  // 1. Flight Info (13 cols)
+  // ['FlightID', 'Status', 'Flight No', 'Auto Summary', 'Notes', 'Flight Type', 'Date', 'Time Zone', 'Launch Time', 'Landing Time', 'Flight Duration', 'Track Length (km)', 'Straight Dist (km)']
   var row = [];
-  row.push('Needs Review'); // Status (Title Case)
-  row.push(flightNo);
-  row.push(''); // Auto Summary
   row.push(flightId);
-  row.push('Free Fly'); // Type
-  row.push(data.meta.dateIso); // Date
-  row.push(''); // Time Zone
+  row.push('Needs Review');
+  row.push(flightNo);
+  row.push(autoSummary);
+  row.push(notes || ''); // Notes
+  row.push('Free Fly');  // Flight Type default
+  row.push(data.meta.dateIso);
+  row.push('UTC');       // Time Zone (Default)
   
   // Times
-  // Check for NaN in times
   var tLaunchStr = formatTime_(data.stats.startTime);
   var tLandStr = '';
-  
   if (data.stats.endTime && !isNaN(data.stats.endTime)) {
      tLandStr = formatTime_(data.stats.endTime);
   } else {
-     // Fallback: Start + Duration
      tLandStr = formatTime_(data.stats.startTime + data.stats.durationSec);
   }
+  row.push(tLaunchStr);
+  row.push(tLandStr);
   
-  row.push(tLaunchStr); // Launch Time
-  row.push(tLandStr); // Land Time
-  
-  row.push(formatDuration_(data.stats.durationSec)); // Duration
+  row.push(formatDuration_(data.stats.durationSec));
   row.push((data.stats.trackLenKm).toFixed(2));
   row.push((data.stats.straightDistKm).toFixed(2));
+
   
   // 2. Gear
   // Logic: Previous Row -> Default -> Empty
@@ -312,23 +372,25 @@ function insertFlightRow_(data, fileId, outerName, status, notes, analysis, scor
   row.push(analysis.stats.maxGs);
   row.push(analysis.stats.avgGs);
   
-  // 5. Launch (7 cols)
+  // 5. Launch (7 cols) - Alt first
+  // ['Launch Alt (m)', 'Launch Lat', 'Launch Lon', 'Launch Site', 'Launch Town', 'Launch Country', 'Launch Region']
+  row.push(data.fixes[0].alt);
   row.push(data.fixes[0].lat);
   row.push(data.fixes[0].lon);
   row.push(geo.ls); // Site
   row.push(geo.l.town);
   row.push(geo.l.country);
   row.push(geo.l.region);
-  row.push(data.fixes[0].alt);
   
-  // 6. Landing (8 cols)
+  // 6. Landing (8 cols) - Alt first
+  // ['Landing Alt (m)', 'Landing Lat', 'Landing Lon', 'Landing Site', 'Landing Town', 'Landing Country', 'Landing Region', 'Launch-Landing Dist (km)']
+  row.push(data.fixes[data.fixes.length-1].alt);
   row.push(data.fixes[data.fixes.length-1].lat);
   row.push(data.fixes[data.fixes.length-1].lon);
   row.push(geo.ds); // Site
   row.push(geo.d.town);
   row.push(geo.d.country);
   row.push(geo.d.region);
-  row.push(data.fixes[data.fixes.length-1].alt);
   row.push(analysis.stats.straightDistKm); // Launch-Landing Dist
   
   // 7. Weather (6 cols)
@@ -467,4 +529,32 @@ function lookupWingSpecs_(wingName) {
     }
   }
   return { glide:'', trim:'', full:'' };
+}
+
+function getNextDailyId_(sh, dateStr) {
+  // Heuristic: Check last few rows. If they match dateStr, increment suffix.
+  // Col 1 is FlightID.
+  var maxSuffix = 0;
+  // Limit check to last 20 rows for performance
+  var lastRow = sh.getLastRow();
+  if (lastRow < 6) return '01';
+  var startRow = Math.max(6, lastRow - 19);
+  var vals = sh.getRange(startRow, 1, lastRow - startRow + 1, 1).getValues();
+  
+  var prefix = 'F' + dateStr + '_';
+  
+  for (var i = 0; i < vals.length; i++) {
+    var val = String(vals[i][0]);
+    if (val.indexOf(prefix) === 0) {
+      var suf = parseInt(val.replace(prefix, ''), 10);
+      if (!isNaN(suf) && suf > maxSuffix) maxSuffix = suf;
+    }
+  }
+  return ('0' + (maxSuffix + 1)).slice(-2);
+}
+
+function friendlyDuration_(sec) {
+  var m = Math.round(sec / 60);
+  if (m < 60) return m + ' min';
+  return (m / 60).toFixed(1) + ' hrs';
 }
