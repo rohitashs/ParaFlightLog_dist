@@ -1,5 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
+ * Updated: 2026-02-02 11:50:00
  * 
  * CORE MODULE: Configuration, Menus, Scaffolding, Helpers.
  */
@@ -358,7 +359,7 @@ function scaffoldFlights_(ss) {
     rules.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('Duplicate').setBackground('#FFE0B2').setRanges([rangeStatus]).build());
     
     sh.setConditionalFormatRules(rules);
-  } catch(e) {}
+  } catch(e) {
     console.warn('CondFormat error', e);
   }
   
@@ -395,9 +396,7 @@ function applyDropdownFromRange_(shTarget, colIndex, sourceSheetName, sourceRang
    PLACEHOLDER ACTIONS
    ========================================================================================== */
 
-function uiAddManualFlight_() {
-  SpreadsheetApp.getUi().alert('Manual entry not yet implemented.');
-}
+
 
 function uiRecomputeSelected_() {
   SpreadsheetApp.getUi().alert('Recompute not yet implemented.');

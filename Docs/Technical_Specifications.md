@@ -82,6 +82,7 @@ Heuristic checks run after parsing to flag potential non-flights. These threshol
 ### F. Manual Entry & Scaffolding
 *   **Manual Row**: Insert blank row at top.
     *   `Flight No` = Max(Existing IDs) + 1.
+    *   `Flight ID` = `FYYYYMMDD_nn` (Auto-incrementing daily ID).
     *   `Gear` = Copied from most recent valid flight row.
 *   **Column Grouping**:
     *   Columns are physically grouped in Sheets (CMD+Option+G equivalent).
@@ -110,7 +111,7 @@ System behavior is controlled by key-value pairs in the `Lookups` sheet.
 
 **Core Settings:**
 *   `WATCH_FOLDER_ID`: Drive ID for automation.
-*   `WATCH_PERIOD_MIN`: 15
+*   `WATCH_PERIOD_MIN`: 5
 *   `OSM_RADIUS_M`: 3000
 *   `CONTACT_EMAIL`: Required for API User-Agent etiquette.
 *   `REVGEO_PROVIDER`: nominatim

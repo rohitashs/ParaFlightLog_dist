@@ -1,6 +1,6 @@
 # Project Change Log
 
-## [Unreleased] - Work in Progress
+## [v0.6.1] - 2026-02-05
 ### Fixed
 - **Scaffolding Robustness**: Overhauled `scaffoldFlights_` to prevent "Service Spreadsheets failed" errors.
     - Implemented batch header writing.
@@ -10,7 +10,19 @@
 - **Import Failures**: 
     - Fixed `row is not defined` ReferenceError in `Ingestion.gs` by restoring missing row initialization logic.
     - Fixed "Grouping" logic to ensure all multi-column categories (XC Scoring, Launch, etc.) are grouped, not just default-collapsed ones.
-- **Drive Link Import**: Added regex logic to extract File IDs from `drive.google.com/file/d/` URLs to fix 401 Unauthorized errors.
+    - Fixed "Drive Link Import" regex for 401 Unauthorized errors.
+
+## [v0.6.0] - 2026-02-02
+### Added
+- **Manual Flight Entry**: Menu item to create valid blank rows with System Time and Default Gear.
+- **Auto-Summary**: Logic to generate "Duration, Dist, Site" string (e.g. "1.2 hrs Free Fly at Dunlap").
+- **Time Zone**: Added Time Zone column (defaults to UTC).
+- **Daily Flight IDs**: New format `FYYYYMMDD_nn` which auto-increments based on existing flights that day.
+
+### Changed
+- **Column Layout**: `FlightID` moved to Column 1. Added `Notes` column (Col 5). `Alt` moved to start of Launch/Land groups.
+- **UI Styling**: Header Row 5 now matches Group Colors. Rows 4 & 5 are Bold.
+- **Validation**: Fixed dropdown mappings for new column structure.
 
 ## [v0.5.0] - 2026-02-01
 ### Added

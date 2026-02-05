@@ -64,6 +64,9 @@
 - **Settings Sheet**: Centralized `Lookups` tab for configuration (Thresholds, Scoring, Emails).
 - **Equipment Defaults**: Auto-detection of default Gear (Wing/Harness/Reserve) from Equipment sheets.
 - **Data Validation**: Dropdowns for Wing/Harness selection and Status fields.
+- **Manual Entry**: Menu item to create new flight rows valid defaults.
+- **Auto Summary**: Automatic "Duration / Type / Site" string generation.
+- **Time Zone**: Flight rows include Time Zone column (default UTC).
 
 ---
 

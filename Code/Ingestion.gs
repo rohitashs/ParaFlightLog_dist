@@ -217,7 +217,7 @@ function logImport_(date, fileId, outer, inner, status, notes) {
   }
 }
 
-function addManualFlight() {
+function uiAddManualFlight_() {
   var ss = SpreadsheetApp.getActive();
   var sh = ss.getSheetByName(CFG.sheets.flights);
   if (!sh) return;

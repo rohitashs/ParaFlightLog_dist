@@ -37,9 +37,8 @@ This project is a Google Apps Script application for importing, analyzing, and l
 *   **Deployment**: Ready for Apps Script.
 *   **Next Steps (Phase 3/Future)**: 
     *   Deployment to live sheet.
-    *   Real-world testing with diverse IGC files.
     *   Enhancing "Site Detection" reliability.
-    *   UI for Manual Entry (currently placeholder).
+    *   **Manual Entry UI**: Fully implemented (v0.6.0).
 
 ## Developer Notes
 *   **Configuration**: All tunable params (Thresholds, Radius, etc.) are in the `Lookups` Google Sheet, read by `Code.gs`.
@@ -70,7 +69,7 @@ This project is a Google Apps Script application for importing, analyzing, and l
         - Providing a final report.
 
 ## Current Session Status
-*   **Source Control**: Configured. Linked to `RSParaFlightLog` (Pacific Time). `appsscript.json` tracked in `Code/`.
-*   **Codebase**: v0.5.0 - Scaffolding Overhaul and UI Enhancements complete.
-*   **Status**: Scaffolding fixes and Import fixes deployed. User verification pending.
-*   **Pending**: Final update of docs via "/update_project".
+*   **Source Control**: Configured. Linked to `RSParaFlightLog`.
+*   **Codebase**: v0.6.1 - Scaffolding & Import fixes deployed.
+*   **Status**: Documentation updated. Ready for live usage.
+*   **Pending**: None.
