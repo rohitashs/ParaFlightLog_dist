@@ -1,36 +1,45 @@
-# Paragliding Flight Log Project Reboot
+# Project Tasks & Status
+*This file tracks the active tasks for the Paragliding Flight Log Project.*
 
-## Phase 1: Analysis & Documentation
-- [x] **Analyze Source Materials**
-    - [x] Review `Code_1.gs` and `Code_2.gs` for logic, overlaps, and conflicts.
-    - [x] Review `OrigFeatures_specs.txt` and `features2.md` for requirements.
-- [x] **Create Documentation**
-    - [x] Create `Features.md`: Comprehensive feature list (Phase 1, 2, 3).
-    - [x] Create `Technical_Specifications.md`: Detailed implementation logic and algorithms.
-    - [x] Create `Setup_Guide.md`: Instructions for setting up from scratch.
-- [x] **Review & Refine**
-    - [x] Incorporate user feedback on documentation.
+## Current Session
+- [x] **[PM-002]** Plan UI & Upload Features
+- [x] **[IMP-UI-001]** Implement Menu & Admin Changes
+- [x] **[IMP-UPL-001]** Implement File Upload Feature
+- [x] **[VER-001]** Verify & Deploy
+- [x] **[BUG-ING-002]** Fix Column Shift in Ingestion
+- [x] **[REF-ING-001]** Robust Row Insertion
+- [x] **[BUG-ING-003]** Fix Data Population & Validation
+- [x] **[BUG-ING-004]** Fix FlightID Scope & Logging
+- [x] **[BUG-UPL-001]** Multi-file Upload Fails (Fixed Picker loop)
+- [x] **[BUG-SCO-001]** XC Scoring Columns Not Populating (Fixed Mapping)
+- [x] **[BUG-UI-004]** "Enter" Key in URL Dialog (Implemented Custom Dialog)
+- [x] **[CR-UI-006]** Collapse all Group columns except 'Flight Info' by default.
+- [x] **[CR-UI-007]** Tab Coloring (Consolidated Equipment Blue).
+- [x] **[CR-SYS-001]** Rename `Import_Log` -> `App_Log`.
+- [x] **[CR-UI-008]** Tab Ordering.
+- [x] **[PLAN-REF-001]** Design Equipment Consolidation
+- [x] **[IMP-REF-001]** Update Scaffolding (`Code.gs`)
+- [x] **[IMP-REF-002]** Update Ingestion Logic (`Ingestion.gs`)
+- [x] **[VER-REF-001]** Verify & Deploy
+- [x] **[PLAN-STR-001]** Design Structural Changes
+- [x] **[IMP-STR-001]** Update `Code.gs` Scaffolding (Structure)
+- [x] **[IMP-STR-002]** Update Ingestion Logic (Lookups)
 
-## Phase 2: Implementation (Fresh Start)
-- [x] **Core Setup**
-    - [x] Project scaffolding (Sheet structure, Properties, Menu).
-    - [x] File watcher & Import logic (MD5 deduplication).
-- [x] **Parser Module**
-    - [x] Robust IGC parser (Header, Fix records, B-record validation).
-    - [x] Support for ZIP/GZ archives.
-- [x] **Analysis Engine**
-    - [x] Track stats (Dist, Duration, Max Alt).
-    - [x] Flight mode detection (Thermal, Glide, Soar).
-    - [x] Flight Validation (Driving, Kiting, Short hop).
-    - [x] XC Scoring (Free, Flat, FAI).
-- [x] **Enrichment Services**
-    - [x] Geocoding (Nominatim/OSM) & Site detection.
-- [x] **Test Harness**
-    - [x] Dedicated debug functions.
-    - [x] Unit tests for parser and scoring logic.
+## New Request (Fix Scaffolding & Validation)
+- [x] **[BUG-SCF-001]** Equipment Column Order
+    - [x] Insert "Type" at Col 6 (`F`). Move Default/Retired to 7/8.
+    - [x] Update `scaffoldEquipment_`.
+    - [x] Update `Ingestion.js` Lookups (Col indices).
+- [x] **[BUG-SCF-002]** Category Dropdown Missing
+    - [x] Fix validation rule in `scaffoldEquipment_`.
+- [x] **[BUG-SCF-003]** Lookups Query `#N/A`
+    - [x] Wrap `QUERY` in `IFERROR`.
+- [x] **[BUG-SCF-004]** App_Log Naming/Color
+    - [x] Fix `scaffoldAppLog_` to ensure correct name and color.
 
-## Phase 3: Deployment & Handoff
-- [ ] **Deployment**
-    - [ ] App Script Copy-Paste.
-    - [ ] Run `scaffoldAll_`.
-    - [ ] Run `runAllTests`.
+## Backlog Highlights
+### Bugs
+- [ ] **[BUG-GEO-003]** Persistent Location Failure (Sites/Towns empty)
+
+### Future
+- [ ] Dashboards in 'Overview' tab.

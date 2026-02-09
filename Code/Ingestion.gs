@@ -1,5 +1,6 @@
-/**
+﻿/**
  * Paragliding Flight Log v2.0
+ * Updated: 2026-02-08 20:38:56
  * 
  * MODULE: Ingestion Service
  * Handles File inputs (Drive, URL), ZIP extraction, Deduplication, and calls Parser.
@@ -14,7 +15,15 @@
  * Scans the Watch Folder for new files.
  */
 function scanWatchFolderNow_() {
-  var config = getLookups_();
+  var config = getParameters_();
+  
+  // Check Enable Switch
+  var enabled = String(config.ENABLE_WATCH_FOLDER).toUpperCase();
+  if (enabled !== 'TRUE' && enabled !== 'YES') {
+     console.log('Watch Folder is DISABLED. Skipping scan.');
+     return;
+  }
+
   var folderId = config.WATCH_FOLDER_ID;
   
   if (!folderId) {
@@ -40,8 +49,13 @@ function scanWatchFolderNow_() {
       
       // We process .igc, .igx, .zip, .gz
       if (fName.match(/\.(igc|igx|zip|gz)$/i)) {
-         var result = processDriveFile_(file, config);
-         if (result.processed) processedCount++;
+         try {
+           var result = processDriveFile_(file, config);
+           if (result.processed) processedCount++;
+         } catch (e) {
+           logImport_(new Date(), fId, fName, fName, 'Scan Error', e.message);
+           console.error('Error processing ' + fName, e);
+         }
       }
     }
   } catch (e) {
@@ -60,7 +74,7 @@ function uiAddFlightFromIgc_() {
   var input = resp.getResponseText().trim();
   if (!input) return;
   
-  var config = getLookups_();
+  var config = getParameters_();
   var ctx = { source: 'Manual' };
   
   try {
@@ -79,8 +93,58 @@ function uiAddFlightFromIgc_() {
     }
     SpreadsheetApp.getActive().toast('Import finished.');
   } catch (e) {
+    logImport_(new Date(), 'Manual URL/ID', 'UI Import', input, 'Error', e.message);
     ui.alert('Import Failed: ' + e.message);
   }
+  }
+
+
+/**
+ * Handle form submission from Picker.html
+ */
+function handleFileUpload(form) {
+  var config = getParameters_();
+  var folderId = config.UPLOAD_FOLDER_ID;
+  var folder;
+  
+  try {
+    if (folderId) {
+      folder = DriveApp.getFolderById(folderId);
+    } else {
+      folder = DriveApp.getRootFolder();
+    }
+  } catch (e) {
+    return { error: 'Invalid Upload Folder ID: ' + e.message };
+  }
+  
+  var files = form.files;
+  // If single file, it's not an array? Apps Script form object behavior varies.
+  // Usually if multiple=true, it's an array. If one file, might be single blob.
+  if (!Array.isArray(files)) {
+     files = [files];
+  }
+  
+  var results = { uploaded: 0, processed: 0, flights: 0, errors: [] };
+  
+  for (var i = 0; i < files.length; i++) {
+    var blob = files[i];
+    if (!blob) continue;
+    
+    try {
+      var file = folder.createFile(blob);
+      results.uploaded++;
+      
+      var res = processDriveFile_(file, config);
+      if (res) {
+         results.processed++;
+         results.flights++; // One flight per file roughly (ignoring zip checks details for summary)
+      }
+    } catch (e) {
+      results.errors.push(blob.getName() + ': ' + e.message);
+    }
+  }
+  
+  return results;
 }
 
 
@@ -161,36 +225,53 @@ function processSingleIgcBlob_(blob, fileName, fileId, outerName, config) {
   var analysis = ANALYSIS.analyzeFlight(parsed.fixes, config);
   var scoring = SCORING.calculateXcScore(parsed.fixes);
   
-  // D. Enrichment (Geo)
-  var geoLaunch = GEO.getReverseGeo(parsed.meta.lat, parsed.meta.lon, config) || {}; // meta usually doesn't have lat/lon, fixes[0] does.
-  // Actually parsed.fixes[0] is start.
+  var noteLog = []; // Accumulate notes here
+  
+  // D. Geo Enrichment
   var launchFix = parsed.fixes[0];
   var landFix = parsed.fixes[parsed.fixes.length-1];
-  
-  var geoLaunch = GEO.getReverseGeo(launchFix.lat, launchFix.lon, config) || {};
+  var geoLaunch = GEO.getReverseGeo(launchFix.lat, launchFix.lon, config);
+  if (geoLaunch && geoLaunch.error) { noteLog.push(geoLaunch.error); } // Don't null it out, just log error.
+  geoLaunch = geoLaunch || {}; // But if it was an error object, it's still an object. We might need to handle empty fields in row push.
+  // Actually getReverseGeo now returns { error: ... } OR valid object.
+  // If error, we want to log it, but treat data as empty.
+  if (geoLaunch.error) { geoLaunch = {}; } 
+
   var siteLaunch = GEO.getNearestSite(launchFix.lat, launchFix.lon, config.OSM_RADIUS_M, config);
   
-  var geoLand = GEO.getReverseGeo(landFix.lat, landFix.lon, config) || {};
+  var geoLand = GEO.getReverseGeo(landFix.lat, landFix.lon, config);
+  if (geoLand && geoLand.error) { noteLog.push(geoLand.error); }
+  if (geoLand.error) { geoLand = {}; }
+  geoLand = geoLand || {};
+
   var siteLand = GEO.getNearestSite(landFix.lat, landFix.lon, config.OSM_RADIUS_M, config);
+  
+  // TimeZone
+  var timeZone = GEO.getTimezone(launchFix.lat, launchFix.lon, config); // Pass config
+  if (!timeZone) noteLog.push('Geo/Timezone: Lookup failed, using UTC');
+  timeZone = timeZone || 'UTC';
   
   // E. Validation Check
   var status = 'Needs review';
-  var notes = '';
+  // notes handled by array
   
   if (analysis.validation.status !== 'OK') {
      status = analysis.validation.status;
-     notes = analysis.validation.reason;
+     if (analysis.validation.reason) noteLog.push(analysis.validation.reason);
   }
   
+  var finalNotes = noteLog.length > 0 ? noteLog.join(' | ') : '';
+  
   // F. Insert Flight
-  insertFlightRow_(parsed, fileId, outerName, status, notes, analysis, scoring, {
+  insertFlightRow_(parsed, fileId, outerName, status, finalNotes, analysis, scoring, {
     l: geoLaunch, ls: siteLaunch,
-    d: geoLand, ds: siteLand
+    d: geoLand, ds: siteLand,
+    tz: timeZone
   });
   
   // G. Mark Hard Hash as Seen
   markHashSeen_(hashStr);
-  logImport_(new Date(), fileId, outerName, fileName, 'Success', notes || 'OK');
+  logImport_(new Date(), fileId, outerName, fileName, 'Success', finalNotes || 'OK');
   
   return true;
 }
@@ -211,7 +292,7 @@ function markHashSeen_(hashStr) {
 
 function logImport_(date, fileId, outer, inner, status, notes) {
   var ss = SpreadsheetApp.getActive();
-  var sh = ss.getSheetByName(CFG.sheets.importLog);
+  var sh = ss.getSheetByName(TABS.APP_LOG.name);
   if (sh) {
     sh.appendRow([date, fileId, outer, inner, status, notes]);
   }
@@ -219,7 +300,7 @@ function logImport_(date, fileId, outer, inner, status, notes) {
 
 function uiAddManualFlight_() {
   var ss = SpreadsheetApp.getActive();
-  var sh = ss.getSheetByName(CFG.sheets.flights);
+  var sh = ss.getSheetByName(TABS.FLIGHTS.name);
   if (!sh) return;
   
   // 1. Generate ID
@@ -231,36 +312,41 @@ function uiAddManualFlight_() {
   var idSuffix = getNextDailyId_(sh, dateStr);
   var flightId = 'F' + dateStr + '_' + idSuffix;
   
-  // 2. Flight No
-  var flightNo = '=IFERROR(MAX(C7:C),0)+1';
+  // 2. Flight No Formula
+  var flightNoFormula = '=IFERROR(MAX(INDIRECT("C" & (ROW()+1) & ":C")), 0) + 1';
   
   // 3. Defaults
   var eq = lookupDefaultEquipment_();
   var prevGear = getPreviousGear_(sh);
   
-  var row = [];
-  row.push(flightId);          // 1. ID
-  row.push('Needs Review');    // 2. Status
-  row.push(flightNo);          // 3. No
-  row.push('Manual Entry');    // 4. Summary
-  row.push('');                // 5. Notes
-  row.push('Free Fly');        // 6. Type
-  row.push(dateObj);           // 7. Date
-  row.push(Session.getScriptTimeZone()); // 8. TimeZone
-  row.push(formatTime_(dateObj.getTime()/1000)); // 9. Launch Time
-  row.push('');                // 10. Land Time
-  row.push('');                // 11. Dur
-  row.push('');                // 12. Dist
-  row.push('');                // 13. Dist
+  // 4. Map to Columns safely
+  var map = getColumnMap_(sh);
+  var lastCol = sh.getLastColumn();
+  var row = new Array(lastCol).fill('');
   
-  // Gear
-  row.push(prevGear.wing || eq.wing);
-  row.push(prevGear.harness || eq.harness);
-  row.push(prevGear.res1 || eq.res1);
-  row.push(prevGear.res2 || eq.res2);
+  var setVal = function(header, value) {
+    if (map[header]) {
+      row[map[header] - 1] = value;
+    }
+  };
   
-  sh.insertRowBefore(6);
-  sh.getRange(6, 1, 1, row.length).setValues([row]);
+  setVal('FlightID', flightId);
+  setVal('Status', 'Needs Review');
+  setVal('Flight No', flightNoFormula);
+  setVal('Auto Summary', 'Manual Entry');
+  setVal('Notes', '');
+  setVal('Flight Type', 'Free Fly');
+  setVal('Date', dateObj);
+  setVal('Time Zone', Session.getScriptTimeZone());
+  setVal('Launch Time', formatTime_(dateObj.getTime()/1000));
+  
+  setVal('Wing', prevGear.wing || eq.wing);
+  setVal('Harness', prevGear.harness || eq.harness);
+  setVal('Reserve 1', prevGear.res1 || eq.res1);
+  setVal('Reserve 2', prevGear.res2 || eq.res2);
+  
+  sh.insertRowBefore(5);
+  sh.getRange(5, 1, 1, row.length).setValues([row]);
   SpreadsheetApp.flush();
 }
 
@@ -269,14 +355,27 @@ function uiAddManualFlight_() {
  */
 function insertFlightRow_(data, fileId, outerName, status, notes, analysis, scoring, geo) {
   var ss = SpreadsheetApp.getActive();
-  var sh = ss.getSheetByName(CFG.sheets.flights);
+  var sh = ss.getSheetByName(TABS.FLIGHTS.name);
   
   // Geo Fallbacks
-  geo = geo || { l:{}, ls:'', d:{}, ds:'' };
+  geo = geo || { l:{}, ls:'', d:{}, ds:'', tz:'UTC' };
   
-  // Group Mapping (Must match `scaffoldFlights_` order)
-  // Col 1=Status, 2=FlightNo, 3=AutoSummary, 4=FlightID, 5=Date, 6=Time, 7=Type
-  // Flight ID: Format FYYYYMMDD_nn
+  // 1. Get Column Map
+  var map = getColumnMap_(sh);
+  var lastCol = sh.getLastColumn();
+  // Initialize empty row array
+  var row = new Array(lastCol).fill('');
+  
+  // Helper to set value safely
+  var setVal = function(header, value) {
+    if (map[header]) {
+      row[map[header] - 1] = value;
+    } else {
+      console.warn('Column not found: ' + header);
+    }
+  };
+
+  // 2. Prepare Data
   var dateObj = new Date(data.meta.dateIso || Date.now());
   var yyyy = dateObj.getFullYear();
   var mm = ('0' + (dateObj.getMonth() + 1)).slice(-2);
@@ -287,165 +386,156 @@ function insertFlightRow_(data, fileId, outerName, status, notes, analysis, scor
   var idSuffix = getNextDailyId_(sh, dateStr);
   var flightId = 'F' + dateStr + '_' + idSuffix;
 
-  // Flight No: Formula
-  var flightNo = '=IFERROR(MAX(C7:C),0)+1'; // Note: Flight No is now Col 3 (C)
-  
-  // Equipment Defaults
-  var eq = lookupDefaultEquipment_();
+  var flightNoFormula = '=IFERROR(MAX(INDIRECT("C" & (ROW()+1) & ":C")), 0) + 1';
   
   // Auto Summary
-  // Logic: Duration + Type + Site
   var site = geo.ls || geo.l.town || '';
-  var durStr = formatDuration_(data.stats.durationSec);
-  // Simplify duration? 1230 -> 20m? Lets stick to H:MM:SS for now or simplify.
-  // User asked "Like 12 mins or 1.3 hrs".
   var durFriendly = friendlyDuration_(data.stats.durationSec);
-  var autoSummary = durFriendly + ' ' + ('Free Fly') + (site ? ' at ' + site : '');
+  var maxAlt = analysis.stats.maxAlt ? analysis.stats.maxAlt.toFixed(0) + 'm' : '';
+  var autoSummary = durFriendly + ' ' + (scoring.flightType || 'Free Fly') + (site ? ' at ' + site : '') + ' ' + maxAlt;
 
-  // ROW INITIALIZATION
-  // 1. Flight Info (13 cols)
-  // ['FlightID', 'Status', 'Flight No', 'Auto Summary', 'Notes', 'Flight Type', 'Date', 'Time Zone', 'Launch Time', 'Landing Time', 'Flight Duration', 'Track Length (km)', 'Straight Dist (km)']
-  var row = [];
-  row.push(flightId);
-  row.push('Needs Review');
-  row.push(flightNo);
-  row.push(autoSummary);
-  row.push(notes || ''); // Notes
-  row.push('Free Fly');  // Flight Type default
-  row.push(data.meta.dateIso);
-  row.push('UTC');       // Time Zone (Default)
-  
   // Times
-  var tLaunchStr = formatTime_(data.stats.startTime);
-  var tLandStr = '';
-  if (data.stats.endTime && !isNaN(data.stats.endTime)) {
-     tLandStr = formatTime_(data.stats.endTime);
-  } else {
-     tLandStr = formatTime_(data.stats.startTime + data.stats.durationSec);
+  var startTimeTz = GEO.formatInTimezone(new Date(data.stats.startTime * 1000), geo.tz, 'HH:mm');
+  var endTimeTz = '';
+  var tEnd = data.stats.endTime;
+  if (!tEnd || isNaN(tEnd)) { tEnd = data.stats.startTime + data.stats.durationSec; }
+  if (tEnd && !isNaN(tEnd)) {
+     endTimeTz = GEO.formatInTimezone(new Date(tEnd * 1000), geo.tz, 'HH:mm');
   }
-  row.push(tLaunchStr);
-  row.push(tLandStr);
-  
-  row.push(formatDuration_(data.stats.durationSec));
-  row.push((data.stats.trackLenKm).toFixed(2));
-  row.push((data.stats.straightDistKm).toFixed(2));
 
-  
-  // 2. Gear
-  // Logic: Previous Row -> Default -> Empty
+  // Duration
+  var durMin = Math.round(data.stats.durationSec / 60);
+  var durStr = Math.floor(durMin / 60) + ':' + ('0' + (durMin % 60)).slice(-2);
+
+  // Defaults
   var prevGear = getPreviousGear_(sh);
   var defGear = lookupDefaultEquipment_();
   var wingStr = prevGear.wing || defGear.wing || '';
-  var harnStr = prevGear.harness || defGear.harness || '';
-  var res1Str = prevGear.res1 || defGear.res1 || '';
-  var res2Str = prevGear.res2 || defGear.res2 || '';
-  
-  row.push(wingStr);
-  row.push(harnStr);
-  row.push(res1Str);
-  row.push(res2Str);
-  row.push(''); // Other
-  
-  // Wing Specs Lookup
   var wSpecs = lookupWingSpecs_(wingStr);
-  row.push(wSpecs.glide);
-  row.push(wSpecs.trim);
-  row.push(wSpecs.full);
-  
-  // 3. XC Scoring
-  if (scoring && scoring.best) {
-    row.push((scoring.free.dist ? scoring.free.dist/1000 : 0).toFixed(2)); // XC Dist
-    row.push((scoring.best.score).toFixed(2)); // Score
-    row.push(scoring.best.type);
-    row.push(scoring.triangle ? (scoring.triangle.dist/1000).toFixed(2) : 0);
-    row.push(scoring.best.pointsWorld || '');
-    row.push(''); // National
-    row.push(scoring.triangle && scoring.triangle.isClosed ? 'Yes' : 'No');
-  } else {
-     row.push(''); row.push(''); row.push(''); row.push(''); row.push(''); row.push(''); row.push('');
-  }
-  row.push(analysis.stats.maxAlt);
-  row.push(analysis.stats.minAlt);
-  row.push(analysis.stats.maxAlt - analysis.stats.minAlt); // Gain
-  row.push(analysis.stats.maxClimb);
-  row.push(analysis.stats.maxSink);
-  row.push(analysis.stats.maxGs);
-  row.push(analysis.stats.avgGs);
-  
-  // 5. Launch (7 cols) - Alt first
-  // ['Launch Alt (m)', 'Launch Lat', 'Launch Lon', 'Launch Site', 'Launch Town', 'Launch Country', 'Launch Region']
-  row.push(data.fixes[0].alt);
-  row.push(data.fixes[0].lat);
-  row.push(data.fixes[0].lon);
-  row.push(geo.ls); // Site
-  row.push(geo.l.town);
-  row.push(geo.l.country);
-  row.push(geo.l.region);
-  
-  // 6. Landing (8 cols) - Alt first
-  // ['Landing Alt (m)', 'Landing Lat', 'Landing Lon', 'Landing Site', 'Landing Town', 'Landing Country', 'Landing Region', 'Launch-Landing Dist (km)']
-  row.push(data.fixes[data.fixes.length-1].alt);
-  row.push(data.fixes[data.fixes.length-1].lat);
-  row.push(data.fixes[data.fixes.length-1].lon);
-  row.push(geo.ds); // Site
-  row.push(geo.d.town);
-  row.push(geo.d.country);
-  row.push(geo.d.region);
-  row.push(analysis.stats.straightDistKm); // Launch-Landing Dist
-  
-  // 7. Weather (6 cols)
-  row.push(''); row.push(''); row.push(''); row.push(''); row.push(''); row.push(notes);
-  
-  // 8. Analytics (10 cols)
-  // Thermal %, Count, Avg, Best, Soar %, Efficiency, Glide %, LD, Sink %, Sink Time
+
+  // Analytics
   var pct = analysis.modes.pct;
   var raw = analysis.modes.raw;
+
+  // 3. Map Data to Headers
   
-  row.push(pct.thermal);
-  row.push(raw.thermal.count);
-  row.push(raw.thermal.avg);
-  row.push(raw.thermal.best);
-  row.push(pct.soar);
-  row.push(''); // Soar efficiency (TODO)
-  row.push(pct.glide);
-  row.push(''); // Glide LD (TODO)
-  row.push(pct.sink);
-  row.push(raw.sink.time / 60); // Sink time in min
+  // -- Flight Info --
+  setVal('FlightID', flightId);
+  setVal('Status', status);
+  setVal('Flight No', flightNoFormula);
+  setVal('Auto Summary', autoSummary);
+  setVal('Notes', ''); // Blank for user
+  setVal('Flight Type', scoring.flightType || 'Free Fly');
+  setVal('Date', data.meta.dateIso);
+  setVal('Time Zone', geo.tz || 'UTC');
+  setVal('Launch Time', startTimeTz);
+  setVal('Landing Time', endTimeTz);
+  setVal('Flight Duration', durStr);
+  setVal('Track Length (km)', (data.stats.trackLenKm).toFixed(1));
+  setVal('Straight Dist (km)', (data.stats.straightDistKm || 0).toFixed(1));
+
+  // -- Gear --
+  setVal('Wing', wingStr);
+  setVal('Harness', prevGear.harness || defGear.harness || '');
+  setVal('Reserve 1', prevGear.res1 || defGear.res1 || '');
+  setVal('Reserve 2', prevGear.res2 || defGear.res2 || '');
+  setVal('Other equipment', '');
+  setVal('GlideRatio_LD (snap)', wSpecs.glide);
+  setVal('Trim_kmh (snap)', wSpecs.trim);
+  setVal('FullBar_kmh (snap)', wSpecs.full);
+
+  // -- XC Scoring --
+  // -- XC Scoring --
+  // Use scoring object or default to empty
+  var sc = scoring || {}; 
+  setVal('XC Distance (km)', sc.freeDist ? (sc.freeDist / 1000).toFixed(1) : '');
+  setVal('XC Score', sc.score ? sc.score.toFixed(1) : '');
+  setVal('XC Flight Class', sc.flightType || '');
+  setVal('FAI Triangle (km)', sc.faiTriangle ? (sc.faiTriangle / 1000).toFixed(1) : '');
+  setVal('Points (World)', sc.pointsWorld ? sc.pointsWorld.toFixed(1) : '');
+  setVal('Points (National)', sc.pointsNational ? sc.pointsNational.toFixed(1) : '');
+  setVal('Closed?', sc.closed ? 'Yes' : 'No');
   
-  // 9. Validation (2 cols)
-  row.push(analysis.validation.status);
-  row.push(analysis.validation.reason);
-  
-  // 10. Meta
-  row.push(outerName);
-  row.push(fileId);
-  row.push(new Date());
-  row.push('v2.0');
-  
-  sh.insertRowBefore(6);
-  sh.getRange(6, 1, 1, row.length).setValues([row]);
+  setVal('Max Alt (m)', analysis.stats.maxAlt.toFixed(1));
+  setVal('Min Alt (m)', analysis.stats.minAlt.toFixed(1));
+  setVal('Total Height Gain (m)', (analysis.stats.maxAlt - analysis.stats.minAlt).toFixed(1));
+  setVal('Max Ascent (m/s)', analysis.stats.maxClimb.toFixed(1));
+  setVal('Max Descent (m/s)', analysis.stats.maxSink.toFixed(1));
+  setVal('Max Groundspeed (km/h)', analysis.stats.maxGs.toFixed(1));
+  setVal('Avg Groundspeed (km/h)', analysis.stats.avgGs.toFixed(1));
+
+  // -- Launch --
+  setVal('Launch Alt (m)', data.fixes[0].alt.toFixed(1));
+  setVal('Launch Lat', data.fixes[0].lat);
+  setVal('Launch Lon', data.fixes[0].lon);
+  setVal('Launch Site', geo.ls);
+  setVal('Launch Town', geo.l.town || '');
+  setVal('Launch Country', geo.l.country || '');
+  setVal('Launch Region', geo.l.region || '');
+
+  // -- Landing --
+  var landFix = data.fixes[data.fixes.length-1];
+  setVal('Landing Alt (m)', landFix.alt.toFixed(1));
+  setVal('Landing Lat', landFix.lat);
+  setVal('Landing Lon', landFix.lon);
+  setVal('Landing Site', geo.ds);
+  setVal('Landing Town', geo.d.town || '');
+  setVal('Landing Country', geo.d.country || '');
+  setVal('Landing Region', geo.d.region || '');
+  setVal('Launch-Landing Dist (km)', analysis.stats.straightDistKm ? analysis.stats.straightDistKm.toFixed(1) : '');
+
+  // -- Weather (Blank) --
+  // 'Wind@Launch', 'Wind@Landing', 'Cloud %', 'Cloudbase', 'Temp (C)', 'Observations'
+
+  // -- Analytics --
+  setVal('Thermal %', (pct.thermal * 100).toFixed(2) + '%');
+  setVal('Thermals Count', raw.thermal.count);
+  setVal('Thermal Avg (m/s)', raw.thermal.avg.toFixed(1));
+  setVal('Thermal Best (m/s)', raw.thermal.best.toFixed(1));
+  setVal('Soar %', (pct.soar * 100).toFixed(2) + '%');
+  setVal('Glide %', (pct.glide * 100).toFixed(2) + '%');
+  setVal('Sink %', (pct.sink * 100).toFixed(2) + '%');
+  setVal('Sink Time', Math.round(raw.sink.time/60) + ' min');
+
+  // -- Validation --
+  setVal('Validation Status', analysis.validation.status);
+  setVal('Val: Reason', analysis.validation.reason);
+
+  // -- Meta --
+  setVal('Import File', outerName);
+  setVal('Import ID', fileId);
+  setVal('Timestamp', new Date());
+  setVal('Parser Ver', 'v2.0');
+
+  // Insert
+  sh.insertRowBefore(5);
+  sh.getRange(5, 1, 1, row.length).setValues([row]);
 }
 
 function getNextFlightNo_(sh) {
-  // Check row 7 (previous top)
-  if (sh.getLastRow() < 7) return 1;
-  var val = sh.getRange(7, 2).getValue(); // Col 2 is Flight No
+  // Check row 5 (previous top)
+  if (sh.getLastRow() < 5) return 1;
+  var val = sh.getRange(5, 2).getValue(); // Col 2 is Flight No
   return (typeof val === 'number') ? val + 1 : 1;
 }
 
 function getPreviousGear_(sh) {
-  if (sh.getLastRow() < 7) return {};
-  // Gear is Col 11? (Identity 7 + Metrics 3 = 10. So Gear starts 11)
-  // Let's verify index.
-  // Identity: 7 cols
-  // Metrics: 3 cols. Total 10.
-  // Gear starts at 11. End at 18.
-  var rng = sh.getRange(7, 11, 1, 4).getValues()[0];
+  if (sh.getLastRow() < 5) return {};
+  
+  var map = getColumnMap_(sh);
+  // Default to old locations (14,15,16,17) if map fails, but prefer map.
+  var colW = map['Wing'] || 14;
+  var colH = map['Harness'] || 15;
+  var colR1 = map['Reserve 1'] || 16;
+  var colR2 = map['Reserve 2'] || 17;
+  
+  var lastRowData = sh.getRange(5, 1, 1, sh.getLastColumn()).getValues()[0];
+  
   return {
-    wing: rng[0],
-    harness: rng[1],
-    res1: rng[2],
-    res2: rng[3]
+    wing: lastRowData[colW-1],
+    harness: lastRowData[colH-1],
+    res1: lastRowData[colR1-1],
+    res2: lastRowData[colR2-1]
   };
 }
 
@@ -476,55 +566,56 @@ function getDriveIdFromUrl_(url) {
   return null;
 }
 
+
 function lookupDefaultEquipment_() {
   var ss = SpreadsheetApp.getActive();
   var eq = { wing: '', harness: '', res1: '', res2: '' };
   
-  // Helper to find default in a sheet
-  // Default col is 5 (E). Data starts row 2.
-  var findDef = function(sheetName) {
-    var sh = ss.getSheetByName(sheetName);
-    if (!sh || sh.getLastRow() < 2) return '';
-    // Get all data: A2:E
-    var data = sh.getRange(2, 1, sh.getLastRow()-1, 5).getValues();
-    // Loop valid rows
-    for (var i=0; i<data.length; i++) {
-      if (data[i][4] === true) { // Col 5 is boolean checkbox
-         return data[i][0]; // ID is Col 1
+  var sh = ss.getSheetByName(TABS.EQUIPMENT.name);
+  if (!sh || sh.getLastRow() < 2) return eq;
+  
+  // Data: A2:LastCol. 
+  // Cols: Category(A/0), ID(B/1), ... Type(F/5), Default?(G/6)
+  // Indices: 0=Cat, 1=ID, 6=Default
+  var data = sh.getRange(2, 1, sh.getLastRow()-1, 7).getValues();
+  
+  for (var i=0; i<data.length; i++) {
+    var type = String(data[i][0]).toLowerCase(); // Wing, Harness, Reserve...
+    var id = data[i][1];
+    var isDef = data[i][6]; // Col G (index 6)
+    
+    if (isDef === true) {
+      if (type === 'wing') eq.wing = id;
+      if (type === 'harness') eq.harness = id;
+      // Reserve logic: if we have multiple default reserves? 
+      // Populate res1 then res2.
+      if (type === 'reserve') {
+         if (!eq.res1) eq.res1 = id;
+         else if (!eq.res2) eq.res2 = id;
       }
     }
-    return '';
-  };
-  
-  eq.wing = findDef(CFG.sheets.wings);
-  eq.harness = findDef(CFG.sheets.harnesses);
-  eq.res1 = findDef(CFG.sheets.reserves);
-  // res2? usually same sheet, logic might need check "Second Default?" or just leave blank.
-  // For now leave res2 blank.
-  
+  }
   return eq;
 }
 
-function lookupWingSpecs_(wingName) {
-  if (!wingName) return { glide:'', trim:'', full:'' };
+function lookupWingSpecs_(wingID) {
+  if (!wingID) return { glide:'', trim:'', full:'' };
   var ss = SpreadsheetApp.getActive();
-  var sh = ss.getSheetByName(CFG.sheets.wings);
-  if (!sh) return { glide:'', trim:'', full:'' };
+  var sh = ss.getSheetByName(TABS.EQUIPMENT.name);
+  if (!sh || sh.getLastRow() < 2) return { glide:'', trim:'', full:'' };
   
-  // Columns: A=ID(0)... F=Glide(5), G=Trim(6), H=Full(7) (?)
-  // Let's check scaffoldEquipment_:
-  // ['Brand', 'Model', 'Size', 'Color', 'Default?', 'Glide Ratio', 'Trim Speed', 'Full Bar Speed']
-  // Indices: 0, 1, 2, 3, 4, 5, 6, 7.
+  // Data: A2:LastCol. 
+  // Col 2 (B) is EquipmentID. 
+  // Cols: Glide(I/8), Trim(J/9), Full(K/10)
+  // Indices (0-based): ID=1, Glide=8, Trim=9, Full=10
+  var data = sh.getRange(2, 1, sh.getLastRow()-1, 11).getValues();
   
-  // Ideally use a Finder logic or loop.
-  // Performance: Read all data once.
-  var data = sh.getRange(2, 1, sh.getLastRow()-1, 8).getValues();
   for (var i=0; i<data.length; i++) {
-    if (data[i][0] === wingName) {
+    if (data[i][1] === wingID) {
       return {
-        glide: data[i][5],
-        trim: data[i][6],
-        full: data[i][7]
+        glide: data[i][8],
+        trim: data[i][9],
+        full: data[i][10]
       };
     }
   }

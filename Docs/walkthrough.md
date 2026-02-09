@@ -51,3 +51,8 @@ You can find these in the `Code/` folder:
 -   **Validation**: Flags flights as `Invalid?` if they look like driving (Speed > 120km/h) or kiting.
 -   **XC Scoring**: Automatically calculates Free Distance and Triangles for every flight.
 -   **Full Stats**: Captures Thermal %, Glide L/D, and more in the `Analytics` group (collapsed by default).
+
+## 🛠️ Troubleshooting & Fixes (v0.6.2)
+If your dropdowns (Flight Type, Equipment) are not showing correctly:
+1.  Go to **Flight Log** > **Admin** > **Update Dropdowns & Validation (Safe)**.
+2.  This will re-apply the latest validation rules to both `Flights` and `Equipment` sheets without affecting your data.

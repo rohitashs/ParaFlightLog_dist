@@ -1,5 +1,32 @@
 # Project Change Log
 
+## [v0.7.0] - 2026-02-08
+### Added
+- **Workflows**: Added automated workflows for Code Check, Sync Project, and Session Summary.
+- **Config.gs**: Dedicates file for Global Configuration (`CFG`) and Tab Definitions (`TABS`).
+- **Scaffold.gs**: Dedicated file for all Sheet creation, layout, and validation logic.
+
+### Changed
+- **Refactoring**: Extracted Scaffolding and Validation logic from `Code.gs` to `Scaffold.gs`.
+- **Refactoring**: Centralized configuration in `Config.gs` (replaced scattered `CFG` objects).
+- **Renaming**: Standardized naming convention `Lookup` -> `Parameter` (e.g. `getParameters_`).
+- **Optimization**: Validation logic (`applyFlightsValidation_`) now limits range to `dataStartRow` to `dataEndRow` (configurable) to improve performance.
+- **Source of Truth**: `Backlog.md` is now the single source of truth for Requirements and Bugs.
+
+## [v0.6.4] - 2026-02-08
+### Fixed
+- **Parameter Validation**: Fixed `Update Watch/Upload Folder` menu actions to correctly target the `Parameters` sheet instead of the legacy `Lookups` sheet.
+
+## [v0.6.3] - 2026-02-08
+### Fixed
+- **Flight Type Validation**: Fixed a `TypeError` where `getSheetByName` was called on the Sheet object instead of the Spreadsheet object.
+
+## [v0.6.2] - 2026-02-08
+### Fixed
+- **Flight Type Validation**: Switched dropdown to use a filtered List of values instead of a Range, preventing blank rows from cluttering the dropdown.
+- **Equipment Category Dropdown**: Fixed range to `A3:A` to exclude the "Categories" header from the dropdown list.
+- **Validation Helper**: Added `applyEquipmentValidation_` and linked it to `updateValidationOnly_` for easier maintenance.
+
 ## [v0.6.1] - 2026-02-05
 ### Fixed
 - **Scaffolding Robustness**: Overhauled `scaffoldFlights_` to prevent "Service Spreadsheets failed" errors.

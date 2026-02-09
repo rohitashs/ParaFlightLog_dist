@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <base target="_top">
+    <link rel="stylesheet" href="https://ssl.gstatic.com/docs/script/css/add-ons1.css">
+    <style>
+        body {
+            padding: 15px;
+            font-family: sans-serif;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 15px;
+            box-sizing: border-box;
+        }
+
+        #status {
+            margin-top: 10px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <div>
+        <p>Enter IGC/Zip URL:</p>
+        <input type="text" id="urlInput" placeholder="https://..." autofocus>
+
+        <div class="block">
+            <button class="action" onclick="submitUrl()">Import</button>
+            <button onclick="google.script.host.close()">Cancel</button>
+        </div>
+
+        <div id="status"></div>
+    </div>
+
+    <script>
+        // Support "Enter" key
+        document.getElementById('urlInput').addEventListener('keyup', function (event) {
+            if (event.key === 'Enter') {
+                submitUrl();
+            }
+        });
+
+        function submitUrl() {
+            var input = document.getElementById('urlInput').value.trim();
+            var status = document.getElementById('status');
+            var btn = document.querySelector('button.action');
+
+            if (!input) return;
+
+            btn.disabled = true;
+            btn.textContent = 'Importing...';
+            status.innerHTML = 'Processing...';
+            status.style.color = '#333';
+
+            google.script.run
+                .withSuccessHandler(function (res) {
+                    if (res && res.error) {
+                        status.innerHTML = 'Error: ' + res.error;
+                        status.style.color = 'red';
+                        btn.disabled = false;
+                        btn.textContent = 'Import';
+                    } else {
+                        google.script.host.close(); // Close on success
+                    }
+                })
+                .withFailureHandler(function (err) {
+                    status.innerHTML = 'Error: ' + err;
+                    status.style.color = 'red';
+                    btn.disabled = false;
+                    btn.textContent = 'Import';
+                })
+                .handleUrlImportAction(input);
+        }
+    </script>
+</body>
+
+</html>

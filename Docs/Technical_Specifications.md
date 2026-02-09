@@ -4,13 +4,14 @@
 The solution is built on **Google Apps Script (GAS)** bound to a Google Sheet. It follows a modular service-oriented architecture.
 
 ### Modules
-1.  **Controller (Main)**: Triggers, Menu handlers, and UI orchestration.
-2.  **Ingestion Service**: Handles File input (Drive/URL/Upload), ZIP extraction, and Parsing. Supports Watch Folder and Targeted File/Folder processing.
-3.  **Flight Service**: Manages row creation, data mapping, and sheet updates.
-4.  **Analysis Engine**: Computes geometry, statistics, and identifies flight modes.
-5.  **Scoring Engine**: Implements XC rules (Free, Flat, FAI triangles).
-6.  **Geo Service**: Interfaces with Nominatim and OSM Overpass interfaces with caching.
-7.  **Configuration**: Centralized getter/setter for `Lookups` sheet.
+1.  **Code (Controller)**: Orchestration, Menu handlers, and Triggers.
+2.  **Config**: Centralized Definitions (`TABS`, `CFG`).
+3.  **Scaffold**: UI Setup, Sheet Creation, and Validation logic.
+4.  **Ingestion Service**: Handles File input (Drive/URL/Upload), ZIP extraction, and Parsing.
+5.  **Flight Service**: Manages row creation, data mapping, and sheet updates.
+6.  **Analysis Engine**: Computes geometry, statistics, and identifies flight modes.
+7.  **Scoring Engine**: Implements XC rules (Free, Flat, FAI triangles).
+8.  **Geo Service**: Interfaces with Nominatim and OSM Overpass interfaces with caching.
 
 ---
 
@@ -51,7 +52,7 @@ The track is analyzed in a sliding window (default 10s) to classify state:
 *   **Sink**: Sink rate > 2.5m/s (or poor L/D).
 
 ### D. Flight Validation Logic
-Heuristic checks run after parsing to flag potential non-flights. These thresholds are defined in the `Lookups` sheet (Validation Thresholds section) and can be adjusted by the user.
+Heuristic checks run after parsing to flag potential non-flights. These thresholds are defined in the `Parameters` sheet.
 
 1.  **Short Flight**: Duration < `VALIDATION_MIN_DURATION_SEC` (default 120s).
 2.  **Kiting/Ground Handling**: (Max Alt - Min Alt) < `VALIDATION_MIN_HEIGHT_CHANGE_M` (default 20m).
@@ -60,6 +61,12 @@ Heuristic checks run after parsing to flag potential non-flights. These threshol
     *   Avg Ground Speed > `VALIDATION_MAX_AVG_SPEED_KMH` (default 60 km/h).
     *   *Action*: If any met, Status -> `Invalid? [Reason]`.
 
+### 3.4 Data Processing Rules
+*   **Time Zone**: Resolved via `timeapi.io`.
+*   **Landing Time**: Calculated from Start + Duration if missing.
+*   **Rounding**: 1 Decimal for most metrics.
+*   **Deduplication**: Hard MD5 Hash + Soft Temporal Overlap.
+
 ### E. XC Scoring Rules (XContest-style)
 1.  **Optimization**: Find 3 Turnpoints (TPs) that maximize distance.
 2.  **Free Distance**: Start -> TP1 -> TP2 -> TP3 -> Finish.
@@ -67,79 +74,59 @@ Heuristic checks run after parsing to flag potential non-flights. These threshol
     *   Distance between Start and Finish < 20% of total distance.
     *   **Flat**: No specific leg constraints.
     *   **FAI**: Shortest leg ≥ 28% of total triangle perimeter.
-4.  **Multipliers**:
-    *   Free: 1.0
-    *   Flat Triangle: 1.2
-    *   FAI Triangle: 1.4
-
-### E. Deduplication Strategy
-*   **Primary (Hard) Dedupe**: Content Hash (MD5) check.
-*   **Secondary (Soft) Dedupe**:
-    *   **Proximity**: Start Time < 15 mins AND Launch Dist < 500m of existing.
-    *   **Overlap**: New Flight Start < Existing Flight End (temporal overlap).
-    *   Action: Mark as `Likely Duplicate` or `Possible Duplicate`.
-
-### F. Manual Entry & Scaffolding
-*   **Manual Row**: Insert blank row at top.
-    *   `Flight No` = Max(Existing IDs) + 1.
-    *   `Flight ID` = `FYYYYMMDD_nn` (Auto-incrementing daily ID).
-    *   `Gear` = Copied from most recent valid flight row.
-*   **Column Grouping**:
-    *   Columns are physically grouped in Sheets (CMD+Option+G equivalent).
-    *   collapsed state shows only the first column of the group (e.g., 'Wing' for Gear group).
+4.  **Multipliers**: Free 1.0, Flat 1.2, FAI 1.4.
 
 ---
 
 ## 4. API Integration
 ### Geocoding (Reverse)
-*   **Provider**: Nominatim (OSM).
-*   **Query**: `lat`, `lon` -> Returns `address` object.
-*   **Fields Mapping**:
-    *   `Town` <- `town` || `village` || `city`
-    *   `Region` <- `state` || `county`
-    *   `Country` <- `country_code` (ISO)
+*   **Providers**: `nominatim_osm`, `big_data_cloud`.
+*   **Logic**: Chain of Responsibility.
 
 ### Site Detection (Overpass Turbo)
-*   **Query**: Search for nodes/ways within `OSM_RADIUS` (default 3km).
-*   **Filter**: `sport=paragliding` AND (`site=takeoff` OR `site=landing`).
-*   **Selection**: Nearest result to the Launch/Landing coordinate.
+*   **Provider**: `overpass_api`.
+*   **Query**: Search for `sport=paragliding` AND (`site=takeoff` OR `site=landing`) within `OSM_RADIUS`.
+
+### Time Zone
+*   **Provider**: `timeapi_io`.
 
 ---
 
-## 5. Configuration (`Lookups` Sheet)
-System behavior is controlled by key-value pairs in the `Lookups` sheet.
+## 5. Configuration (`Parameters` Sheet)
+System behavior is controlled by key-value pairs in the `Parameters` sheet.
+*   **Ingestion**: `WATCH_FOLDER_ID`, `UPLOAD_FOLDER_ID`, `ENABLE_WATCH_FOLDER`.
+*   **Geo**: Providers and Radius.
+*   **Validation**: Thresholds for duration, speed, height.
+*   **Analysis**: Vario/Turn thresholds for modes.
+*   **Scoring**: Multipliers.
 
-**Core Settings:**
-*   `WATCH_FOLDER_ID`: Drive ID for automation.
-*   `WATCH_PERIOD_MIN`: 5
-*   `OSM_RADIUS_M`: 3000
-*   `CONTACT_EMAIL`: Required for API User-Agent etiquette.
-*   `REVGEO_PROVIDER`: nominatim
-*   `FLIGHT_TYPES`: List of valid types (Free Fly, XC, etc.)
+---
 
-**Scoring & Bonuses:**
-*   `NATIONAL_BONUS_WITHIN_PCT`: 5
-*   `NATIONAL_BONUS_MULTIPLIER`: 1.2
+## 6. Data Validation (`Lookups` Sheet)
+*   **Wings/Harnesses/Reserves**: Dynamic queries from `Equipment` sheet.
+*   **Status/Types**: Static lists.
 
-**Flight Mode Thresholds:**
-*   `THERMAL_MIN_CLIMB`: 0.3
-*   `THERMAL_MIN_TURN`: 8
-*   `SOAR_TURN_MAX`: 5
-*   `SOAR_VARIO_MIN`: -0.2
-*   `SOAR_VARIO_MAX`: 1.5
-*   `GLIDE_TURN_MAX`: 5
-*   `GLIDE_LD_TOL_PCT`: 30
-*   `GLIDE_VARIO_MAX`: 0.2
-*   `SINK_TURN_MAX`: 10
-*   `SINK_VARIO`: -2.5
+---
 
-**Validation Thresholds:**
-*   `VALIDATION_MIN_DURATION_SEC`: 120
-*   `VALIDATION_MIN_HEIGHT_CHANGE_M`: 20
-*   `VALIDATION_MAX_SPEED_KMH`: 120
-*   `VALIDATION_MAX_AVG_SPEED_KMH`: 60
+## 7. Code Organization
 
-**Analysis Windows:**
-*   `MODE_WINDOW_SEC`: 10
-*   `REVERSAL_WINDOW_SEC`: 30
-*   `MODE_HYSTERESIS_SEC`: 6
+The solution is split into distinct Google Apps Script files (`.gs`).
+
+### `Code.gs` (Orchestration)
+*   **Purpose**: Entry point for UI, Menus, Triggers.
+*   **Key Functions**: `onOpen()`, `scanWatchFolderNow_()`.
+
+### `Config.gs` (Definitions)
+*   **Purpose**: Centralized `CFG` and `TABS` objects.
+*   **Key Objects**: `TABS` (Sheet properties, columns), `CFG` (Defaults).
+
+### `Scaffold.gs` (UI & Setup)
+*   **Purpose**: Sheet creation, layout, formatting, and validation application.
+*   **Key Functions**: `scaffoldAll_()`, `applyFlightsValidation_()`, `updateValidationOnly_()`.
+
+### `Ingestion.gs` (Data Pipeline)
+*   **Purpose**: IGC File -> Parsed Data -> Sheet Row.
+*   **Key Functions**: `processDriveFile_()`, `handleFileUpload()`, `insertFlightRow_()`.
+
+### `Geo.gs`, `Parser.gs`, `Analysis.gs`, `Scoring.gs`
+*   **Purpose**: Logic modules for specific domains.

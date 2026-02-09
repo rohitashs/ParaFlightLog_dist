@@ -4,72 +4,39 @@
 This project is a Google Apps Script application for importing, analyzing, and logging Paragliding flights from `.igc` files into a Google Sheet.
 
 **Key Goals**:
-1.  Robust IGC Parsing (handling headers, fixes, validation).
-2.  XC Scoring (Free Distance, Flat/FAI Triangles).
-3.  Flight Analysis (Mode detection: Thermal, Soar, Glide).
+1.  Robust IGC Parsing.
+2.  XC Scoring (XContest rules).
+3.  Flight Analysis (Thermal/Soar/Glide).
 4.  Automation (Watch folder scanning).
 
 ## Project Organization
-*   **`Code/`**: Apps Script code (`.gs`) and manifest (`appsscript.json`). Pushed to server.
-*   **`Docs/`**: Permanent documentation (Specifications, Features, Setup Guide).
-*   **`Plans/`**: Transient artifacts (Task lists, Walkthroughs) and `Archive/` for completed plans.
-*   **`Reference/`**: Project context (`Context.md`) and config backups.  
-    *(Note: `.clasp.json` and `.gitignore` reside in Root for tool compatibility, but are conceptually "Reference" files)*.
-*   **`Old Files/`**: Legacy reference material.
+*   **`Code/`**: Apps Script code (`.gs`) and manifest.
+*   **`Docs/`**: Documentation (`Specifications.md`, `Functions.md`).
+*   **`Plans/`**: Project Management (`task.md` is Source of Truth).
+*   **`Reference/`**: `Backlog.md` (Reqs/Bugs), `ChangeLog.md`, `Context.md`.
 
 ## File Structure (`Code/`)
-*   **`Code.gs`**: Main entry point, menus, configuration (`Lookups` sheet), scaffolding.
-*   **`Ingestion.gs`**: Handles file imports (Drive/URL), ZIP extraction, Deduplication (MD5), and row insertion.
-*   **`Parser.gs`**: Raw IGC parsing logic.
-*   **`Analysis.gs`**: Flight physics, mode detection, and validation checks.
-*   **`Scoring.gs`**: XC optimization logic.
-*   **`Geo.gs`**: Interface for Nominatim (Reverse Geo) and Overpass (Site detection).
-*   **`Test.gs`**: Standalone test harness.
+*   **`Code.gs`**: Orchestration (Menus, Triggers).
+*   **`Config.gs`**: Configuration Definitions (`TABS`, `CFG`).
+*   **`Scaffold.gs`**: Scaffolding, Sheet Creation, Validation Logic.
+*   **`Ingestion.gs`**: IGC Pipeline (Input -> Parse -> Sheet).
+*   **`Parser.gs`, `Analysis.gs`, `Scoring.gs`, `Geo.gs`**: Domain Logic.
+*   **`Test.gs`**: Unit Tests.
 
-## Key Artifacts
-*   `Docs/Features.md`: Feature roadmap.
-*   `Docs/Technical_Specifications.md`: Detailed algorithm specs.
-*   `Docs/Setup_Guide.md`: User installation guide.
-*   `Docs/walkthrough.md`: Deployment instructions.
-
-## State of Project (Phase 2 Complete)
-*   **Core Systems**: All implemented and verified via `Test.gs`.
-*   **Deployment**: Ready for Apps Script.
-*   **Next Steps (Phase 3/Future)**: 
-    *   Deployment to live sheet.
-    *   Enhancing "Site Detection" reliability.
-    *   **Manual Entry UI**: Fully implemented (v0.6.0).
-
-## Developer Notes
-*   **Configuration**: All tunable params (Thresholds, Radius, etc.) are in the `Lookups` Google Sheet, read by `Code.gs`.
-*   **Caching**: `Geo.gs` uses `CacheService` to respect API limits.
-*   **Deduplication**: Uses `PropertiesService` to store MD5 hashes of processed files.
-
-## Resume / Verification Guide
-*   **Restore Context**: Read this file to understand the architecture.
-*   **Verify Logic**: Run `Test.gs` -> `runAllTests()` in the Apps Script Editor.
-*   **Verify Deploy**: Check `clasp status` or `clasp push` to sync.
-*   **First Run**:
-    1.  Open Sheet -> "Flight Log" Menu -> "Setup & Tools" -> "Scaffold".
-    2.  Fill in "Lookups" with Folder ID and Email.
-    3.  Run "Scan Watch Folder now" or manual import.
+## State of Project (v0.7.0)
+*   **Refactoring**: Completed. Separation of concerns (`Scaffold`, `Config`) achieved.
+*   **Automation**: Workflows added for `Code Check`, `Sync`, `Summarize`.
+*   **Status**: Documentation synced. Ready for live usage.
+*   **Next Steps**: 
+    *   Address Change Requests (RDP Config, Large Ingestion).
+    *   Deploy to live environment.
 
 ## Ways of Working (Standard Operating Procedures)
-1.  **Start of Session**: 
-    - Always read `Reference/Context.md` to load project status and architecture.
-2.  **Change Tracking**:
-    - Major changes (Features, Architecture, Decisions) must be logged in `Reference/ChangeLog.md`.
-    - This file is for human-readable summaries, not low-level git logs.
-3.  **End of Session ("Update Project")**:
-    - When the user says **"Update Project"**, execute the workflow which includes:
-        - Updating `Docs/Features.md` and `Docs/Technical_Specifications.md`.
-        - Updating `Reference/ChangeLog.md` with the session's work.
-        - Updating `Reference/Context.md` (Status, Structure).
-        - Verifying `clasp push` and `git commit`.
-        - Providing a final report.
+1.  **Start/End Session**: Read `Context.md`. Run `/summarize_session` at end.
+2.  **Task Tracking**: `Plans/task.md` for active tasks. `Reference/Backlog.md` for Reqs/Bugs.
+3.  **Documentation**: Keep `Specs`, `Functions`, `ChangeLog` updated via workflows.
 
 ## Current Session Status
-*   **Source Control**: Configured. Linked to `RSParaFlightLog`.
-*   **Codebase**: v0.6.1 - Scaffolding & Import fixes deployed.
-*   **Status**: Documentation updated. Ready for live usage.
-*   **Pending**: None.
+*   **Codebase**: v0.7.0 - Refactored & Workflows added.
+*   **Backlog**: Updated. `Backlog.md` is Source of Truth.
+*   **Pending**: CRs for Utils, RDP, Large Ingestion.

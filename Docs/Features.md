@@ -6,8 +6,8 @@
 ### 📂 File Ingestion & Automation
 - **Watch Folder**: Automatically scans a specific Google Drive folder for new flight logs.
 - **One-Time Process**: Ability to point to a specific file (IGC/ZIP) or folder for an immediate, one-off import.
-- **Upload & Process**: "Upload" functionality to save a local file to the Watch Folder and trigger processing immediately.
-- **Multi-Format Support**: 
+- **Upload & Process**: "Add Flight from Upload" menu item allows selecting local files to upload to Drive and process immediately.
+- **Multi-Format Support**:  
     - Accepted: `.igc`, `.igx`
     - Compressed: `.zip`, `.gz` (single or multiple IGCs per archive)
 - **Deduplication**: 
@@ -62,6 +62,7 @@
 - **Column Grouping**: Scaffolding groups columns by category (Flight Info, Gear, XC Scoring, etc.) and collapses secondary details.
 - **2-Row Headers**: Enhanced visual layout with Category (Row 4) + Column Name (Row 5).
 - **Settings Sheet**: Centralized `Lookups` tab for configuration (Thresholds, Scoring, Emails).
+- **Admin Tools**: Menu access to update Watch/Upload folders and Enable/Disable automation.
 - **Equipment Defaults**: Auto-detection of default Gear (Wing/Harness/Reserve) from Equipment sheets.
 - **Data Validation**: Dropdowns for Wing/Harness selection and Status fields.
 - **Manual Entry**: Menu item to create new flight rows valid defaults.

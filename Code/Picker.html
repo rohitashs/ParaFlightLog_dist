@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <base target="_top">
+  <link rel="stylesheet" href="https://ssl.gstatic.com/docs/script/css/add-ons1.css">
+  <style>
+    body {
+      padding: 15px;
+      font-family: sans-serif;
+    }
+
+    .branding-below {
+      bottom: 56px;
+      top: 0;
+    }
+
+    #status {
+      margin-top: 15px;
+      font-weight: bold;
+    }
+
+    .p-small {
+      font-size: 12px;
+      color: #666;
+      margin-top: 5px;
+    }
+
+    .btn {
+      margin-top: 15px;
+    }
+  </style>
+</head>
+
+<body>
+  <div>
+    <p>Select IGC or ZIP files to upload and import.</p>
+
+    <form id="uploadForm">
+      <input type="file" name="files" id="files" multiple accept=".igc,.igx,.zip,.gz">
+      <br>
+      <p class="p-small">Supported: IGC, ZIP, GZ</p>
+
+      <input type="button" value="Upload & Process" class="action" onclick="uploadFiles(this)">
+      <input type="button" value="Close" onclick="google.script.host.close()">
+    </form>
+
+    <div id="status"></div>
+  </div>
+
+  <script>
+    function uploadFiles(btn) {
+      var fileInput = document.getElementById('files');
+      var status = document.getElementById('status');
+
+      if (fileInput.files.length === 0) {
+        status.innerHTML = 'Please select a file.';
+        status.style.color = 'red';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.value = 'Uploading...';
+      status.innerHTML = 'Uploading ' + fileInput.files.length + ' file(s)...';
+      status.style.color = '#333';
+
+      // Pass the parent form element to handleFileUpload
+      // Apps Script will automatically map 'files' input to an array of blobs if multiple=true
+      google.script.run
+        .withSuccessHandler(function (res) {
+          btn.disabled = false;
+          btn.value = 'Upload & Process';
+          status.innerHTML = 'Result: ' + JSON.stringify(res);
+          if (res.error) {
+            status.style.color = 'red';
+            status.innerHTML = 'Error: ' + res.error;
+          } else {
+            status.style.color = 'green';
+            status.innerHTML = '<b>Success!</b><br>' +
+              'Uploaded: ' + res.uploaded + '<br>' +
+              'Processed: ' + res.processed + '<br>' +
+              'Flights Created: ' + res.flights;
+
+            if (res.errors && res.errors.length > 0) {
+              status.innerHTML += '<br><span style="color:orange">Partial Errors: ' + res.errors.join(', ') + '</span>';
+            }
+          }
+        })
+        .withFailureHandler(function (err) {
+          btn.disabled = false;
+          btn.value = 'Retry';
+          status.innerHTML = 'Fatal Error: ' + err;
+          status.style.color = 'red';
+        })
+        .handleFileUpload(document.getElementById('uploadForm'));
+    }
+  </script>
+</body>
+
+</html>
