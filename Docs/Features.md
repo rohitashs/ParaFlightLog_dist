@@ -1,87 +1,58 @@
-# Paragliding Flight Log - Features Roadmap
+# Features & Capabilities
 
-## Phase 1: Core Implementation (Restoration & Cleanup)
-*The baseline features present in the legacy v1.0 code, to be re-implemented with cleaner architecture.*
-
-### 📂 File Ingestion & Automation
-- **Watch Folder**: Automatically scans a specific Google Drive folder for new flight logs.
-- **One-Time Process**: Ability to point to a specific file (IGC/ZIP) or folder for an immediate, one-off import.
-- **Upload & Process**: "Add Flight from Upload" menu item allows selecting local files to upload to Drive and process immediately.
-- **Multi-Format Support**:  
-    - Accepted: `.igc`, `.igx`
-    - Compressed: `.zip`, `.gz` (single or multiple IGCs per archive)
-- **Deduplication**: 
-    - **Content Hash**: MD5 hash check to prevent exact duplicate imports.
-    - **Time Overlap**: Flags potential duplicates if a new flight's time range overlaps with an existing flight (e.g., Start Time < Existing End Time).
-
-### ✈️ Flight Logging & Management
-- **Row Insertion**: New flights insert at the top (Row 6), preserving header definitions.
-- **Flight ID**: Numeric, sequential identifier (Previous ID + 1). Static value that persists even if duplicate rows are deleted.
-- **Manual Entry**: Menu option/Button to insert a blank row with auto-generated Flight ID and gear pre-filled from the previous valid flight.
-- **Auto-Summary**: Generates a readable summary string (e.g., "3h 15m, 45km, Max Alt 2400m at Bir").
-- **Status Workflow**: Automates status flagging (`OK`, `Needs Review`, `Possible Duplicate`, `Fetch Fail`).
-- **Gear Autofill**: Inherits Glider/Harness/Reserve from the previous flight if missing in the IGC header.
-- **Snapshotting**: Records wing performance specs (Glide Ratio, Trim Speed) at the time of flight.
-
-### 📍 Location & Enrichment
-- **Reverse Geocoding**: Converts Turnpoints to Country, Region, and Nearest Town (via Nominatim).
-- **Site Detection**: Identifies known Paragliding Takeoffs/Landings within a 3km radius using OSM Overpass API.
-
-### 📊 Flight Analysis
-- **Flight Validation**: Heuritic analysis to flag non-flight tracks:
-    - **Short Hop**: Flag if duration is too short (e.g., < 2 min).
-    - **Ground Handling/Kiting**: Flag if vertical range is minimal (e.g., < 20m height variation).
-    - **Driving/Impossible Speed**: Flag if ground speeds exceed paragliding limits (e.g., > 100km/h or high average speed).
-- **Mode Detection**: auto-classifies flight segments into:
-    - **Thermal**: Climbing in circles.
-    - **Soar**: Ridge soaring (maintained altitude, S-turns).
-    - **Glide**: Linear flight segments.
-    - **Sink**: Excessive sink rate or degradation.
-- **Calculated Metrics**: Max/Min Altitude, Max Climb/Sink, Track Length, Duration.
-
-### 🏆 XC Scoring (XContest Standards)
-- **Distance Calculations**:
-    - **Free Distance**: Best distance via 3 turnpoints.
-    - **Flat Triangle**: Standard triangle closure.
-    - **FAI Triangle**: Triangle with strict leg proportion rules (shortest leg ≥ 28%).
-- **Points System**:
-    - World Points (Standard multipliers).
-    - National Points (Bonus for closed circuits).
+## Overview
+This document describes the *intent* and *capabilities* of the Paragliding Flight Log system.
+*   **Technical Spec**: See `Technical_Specification.md` for *how* it works.
+*   **Requirements**: See `Backlog.md` for the status of these features (`RQ-*`).
 
 ---
 
-## Phase 2: Structural Enhancements & Reliability
-*Improvements to be added during the refactor to address known limitations.*
+## 1. 📂 Intelligent File Ingestion
+*Maps to `RQ-ING-001`*
 
-### 🛡️ Robustness
-- **Better Error Handling**: Dedicated "Import Log" with detailed error messages for malformed files or API timeouts.
-- **Rate Limit Management**: Smarter backoff strategies for OpenStreetMap and Nominatim APIs to prevent failures during bulk processing.
-- **Test Harness**: A standalone testing suite to verify parser and scorer accuracy without polluting the main log.
+The system automates the import of flight logs (IGC) to reduce manual entry.
+*   **Watch Folder**: Automatically detects and processes new files dropped into a designated Google Drive folder.
+*   **Smart Deduplication**: Uses MD5 hashing and time-overlap detection to prevent duplicate entries.
+*   **Multi-Source**: Supports Drag-and-Drop Uploads, Drive URL imports, and Bulk ZIP extraction.
+*   **Parsing**: Extracts pilot details, glider type, and high-fidelity G-Record data (GNSS/Pressure altitude).
 
-### 🔧 Usability (Implemented)
-- **Column Grouping**: Scaffolding groups columns by category (Flight Info, Gear, XC Scoring, etc.) and collapses secondary details.
-- **2-Row Headers**: Enhanced visual layout with Category (Row 4) + Column Name (Row 5).
-- **Settings Sheet**: Centralized `Lookups` tab for configuration (Thresholds, Scoring, Emails).
-- **Admin Tools**: Menu access to update Watch/Upload folders and Enable/Disable automation.
-- **Equipment Defaults**: Auto-detection of default Gear (Wing/Harness/Reserve) from Equipment sheets.
-- **Data Validation**: Dropdowns for Wing/Harness selection and Status fields.
-- **Manual Entry**: Menu item to create new flight rows valid defaults.
-- **Auto Summary**: Automatic "Duration / Type / Site" string generation.
-- **Time Zone**: Flight rows include Time Zone column (default UTC).
+## 2. ✈️ Automated Flight Logging
+*Maps to `RQ-ING-002`*
 
----
+Converts raw data into a structured Pilot Logbook in Google Sheets.
+*   **Auto-Summary**: Generates human-readable summaries (e.g. "2h 10m XC at Bir Billing").
+*   **Data Validation**: Flags flights as `Needs Review`, `Valid`, or `Invalid` based on heuristic checks (e.g. Flight looks like a car drive).
+*   **Gear Tracking**: Auto-fills Wing, Harness, and Reserve based on the last valid flight ("Sticky Defaults") or IGC headers.
+*   **Snapshotting**: Records equipment performance metrics (e.g. Trim Speed, Glide) at the time of the flight.
 
-## Phase 3: Future Capabilities
-*New features planned for subsequent updates.*
+## 3. 📊 Flight Analysis
+*Maps to `RQ-ANA-001`, `RQ-ANA-002`*
 
-### 📈 Advanced Analytics
-- **Pilot Dashboard**: Visual charts showing:
-    - Hours flown per Wing/Harness.
-    - Yearly progression (Distance/Hours).
-    - Map of visited launch sites.
-- **Polar Curve Estimation**: Estimate wing polar derived from glide segments in flight data.
-- **Formation Flight**: Detect if multiple pilots (in the same log folder) flew together.
+Analyzes the track log to understand *how* you flew.
+*   **Mode Detection**: Automatically classifies segments as **Thermal** (Circling), **Soaring** (Ridge), **Glide** (Transition), or **Sink**.
+*   **Performance Metrics**: accurate calculation of Max Climb rates, Height Gains, and Thermal efficiency.
+*   **Safety Checks**: Flags abnormally high sink rates or ground proximity events.
 
-### 🌍 Advanced Mapping
-- **Heatmaps**: Visualizing thermal hotspots.
-- **Airspace Checking**: (Complex) Warning if a track enters restricted airspace during the flight.
+## 4. 🏆 XC Scoring (League Rules)
+*Maps to `RQ-SCR-001`*
+
+Applies standard XContest/FAI scoring rules to every flight.
+*   **Optimization**: Finds the optimal 3 Turnpoints to maximize distance.
+*   **Triangle Detection**: Identifies **Flat Triangles** (<20% gap) and **FAI Triangles** (strict leg geometry).
+*   **Scoring**: Calculates points with appropriate multipliers (e.g. 1.4x for FAI Triangle).
+
+## 5. 📍 Geo-Spatial Enrichment
+*Maps to `RQ-SCR-002`*
+
+Adds location context to raw GPS coordinates.
+*   **Reverse Geocoding**: Converts Lat/Lon to "Nearest Town, Region, Country".
+*   **Site Detection**: Identifies known Paragliding Takeoffs/Landings within 3km using OpenStreetMap data.
+*   **Interactive Links**: Generates links to view the flight on SeeYou Cloud (planned).
+
+## 6. 🔧 System & UI
+*Maps to `RQ-SYS-001`, `RQ-SYS-002`*
+
+A robust, user-friendly interface built on Google Sheets.
+*   **Visual Grouping**: Columns are logically grouped (Scoring, Gear, Weather) and color-coded.
+*   **Configuration**: Centralized `Parameters` sheet for tweaking thresholds (e.g. Min Flight Duration, Thermal strength).
+*   **Equipment Manager**: Manage inventory of Wings/Harnesses in dedicated tabs; values sync to dropdowns automatically.
