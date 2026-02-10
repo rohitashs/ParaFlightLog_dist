@@ -1,6 +1,6 @@
 ﻿/**
  * Paragliding Flight Log v2.0
- * Updated: 2026-02-09 19:30:01
+ * Updated: 2026-02-09 19:35:59
  * 
  * MODULE: Ingestion Service
  * Handles File inputs (Drive, URL), ZIP extraction, Deduplication, and calls Parser.
@@ -742,4 +742,14 @@ function friendlyDuration_(sec) {
   var m = Math.round(sec / 60);
   if (m < 60) return m + ' min';
   return (m / 60).toFixed(1) + ' hrs';
+}
+
+function isHashSeen_(hashStr) {
+  var p = PropertiesService.getDocumentProperties();
+  return p.getProperty('HASH_' + hashStr) === '1';
+}
+
+function markHashSeen_(hashStr) {
+  var p = PropertiesService.getDocumentProperties();
+  p.setProperty('HASH_' + hashStr, '1');
 }
