@@ -1,6 +1,6 @@
 ﻿/**
  * Paragliding Flight Log v2.0
- * Updated: 2026-02-09 19:41:56
+ * Updated: 2026-02-09 19:59:46
  * 
  * MODULE: Ingestion Service
  * Handles File inputs (Drive, URL), ZIP extraction, Deduplication, and calls Parser.

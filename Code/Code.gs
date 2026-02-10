@@ -1,6 +1,6 @@
 ﻿/**
  * Paragliding Flight Log v2.0
- * Updated: 2026-02-09 19:41:56
+ * Updated: 2026-02-09 19:59:46
  */
 /**
  * Paragliding Flight Log v2.0
@@ -61,7 +61,10 @@ function getParameters_() {
           var key = String(row[0]).trim();
           var val = row[1];
           if (key && key.indexOf('[') !== 0 && val !== '') { 
-             if (!isNaN(Number(val)) && val !== '') {
+             // Fix: Don't convert Booleans to Numbers (Number(true) === 1)
+             if (typeof val === 'boolean') {
+               config[key] = val;
+             } else if (!isNaN(Number(val)) && val !== '') {
                config[key] = Number(val);
              } else {
                config[key] = val;
