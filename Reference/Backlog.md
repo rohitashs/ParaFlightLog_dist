@@ -122,9 +122,9 @@ This file is the single source of truth for Requirements, Bugs, and Change Reque
 - [x] **[BUG-UI-002]** (Links: [REQ-UI-001]) **Flight No Formula**: `#Ref!` error on row deletion. Needs robust `MAX` formula. *Status: Fixed*
 - [x] **[CR-LOG-002]** (Links: [REQ-ING-002]) **Clean Notes**: Ingestion should leave `Flight Notes` blank; detailed errors go to `Import_Log`. *Status: Implemented (v0.7.11 - System Notes now go to Notes column)*
 
-- [ ] **[CR-ING-001]** (Links: [REQ-ANA-003]) **Landing Time Fallback**: If IGC misses landing time, calculate `Launch + Duration`. *Status: Implemented*
-- [ ] **[CR-UI-002]** (Links: [REQ-UI-003]) **Data Formatting**: Round Speed/Dist/Alt/Score (1 dec), % (2 dec), Times (nearest min). *Status: Implemented*
-- [ ] **[CR-LOG-001]** (Links: [REQ-ING-002]) **Enhanced Logging**: Append partial failures (e.g. Geo errors) to `Import_Log` Notes. *Status: Implemented*
+- [x] **[CR-ING-001]** (Links: [REQ-ANA-003]) **Landing Time Fallback**: If IGC misses landing time, calculate `Launch + Duration`. *Status: Implemented*
+- [x] **[CR-UI-002]** (Links: [REQ-UI-003]) **Data Formatting**: Round Speed/Dist/Alt/Score (1 dec), % (2 dec), Times (nearest min). *Status: Implemented*
+- [x] **[CR-LOG-001]** (Links: [REQ-ING-002]) **Enhanced Logging**: Append partial failures (e.g. Geo errors) to `Import_Log` Notes. *Status: Implemented*
 
 - [ ] **[CR-UI-001]** (Links: [REQ-UI-003]) **Smart Chip Dropdowns**: Use new Oval/Chip style for dropdowns. *Status: Blocked by Google Apps Script API limitations (cannot set Chip style programmatically).*
 
