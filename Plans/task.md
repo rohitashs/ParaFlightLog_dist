@@ -37,9 +37,24 @@
 - [x] **[BUG-SCF-004]** App_Log Naming/Color
     - [x] Fix `scaffoldAppLog_` to ensure correct name and color.
 
-## Backlog Highlights
-### Bugs
-- [ ] **[BUG-GEO-003]** Persistent Location Failure (Sites/Towns empty)
+## Active Backlog
+### Change Requests (Prioritized)
+- [ ] **CR-ING-004**: Master Log Folder (Menu, Logic, Permissions).
+- [ ] **CR-UI-009**: SeeYou Cloud Integration (View Link).
+- [ ] **CR-UI-010**: Manual Flight Form (Sidebar/Dialog).
+- [ ] **CR-UI-011**: Flight Detail View (Sidebar).
+- [ ] **CR-UI-012**: Quick Action Buttons (Header).
+- [ ] **CR-LOG-003**: Enhanced Logging.
+- [ ] **CR-SCR-003**: XContest Verification.
+- [ ] **CR-UI-004**: Menu Restructure (Admin Tools).
+- [ ] **CR-CFG-002**: Configurable RDP Tolerance.
+- [ ] **CR-GEO-001**: Multi-Provider Geo Support.
+- [ ] **CR-CODE-001**: Centralize Utils (`Utils.gs`).
 
-### Future
-- [ ] Dashboards in 'Overview' tab.
+### Bugs
+- [ ] **Bug-GEO-002**: Missing Location Data (Launch/Land Site empty).
+
+### Future / Blocked
+- [ ] **RQ-ING-001.4**: Large Scale Ingestion.
+- [ ] **RQ-ANA-002.2**: Polar Curve Estimation.
+- [ ] **CR-UI-001**: Smart Chip Dropdowns (Blocked).

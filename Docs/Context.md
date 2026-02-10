@@ -1,9 +1,9 @@
 # Project Context & Ways of Working (Source of Truth)
 
 ## 🧠 Agent Memory & Context
-**Status**: Active Development (v0.7.11)
-**Last Session Focus**: Watch Folder reliability, Config Architecture, Data Logging.
-**Next Focus**: Master Log Folder, SeeYou Cloud Integration, Enhanced Logging.
+**Status**: Active Development (v0.7.12)
+**Last Session Focus**: Project Reorganization, Workflow Standardization, Backlog Grooming.
+**Next Focus**: Master Log Folder (CR-ING-004), UI Enhancements.
 
 This file is the **long-term memory** for the project. Read this first to understand *how* we work and *where* we are.
 

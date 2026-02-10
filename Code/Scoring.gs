@@ -1,6 +1,6 @@
-﻿/**
+/**
  * Paragliding Flight Log v2.0
- * Updated: 2026-02-09 20:45:44
+ * Updated: 2026-02-10 11:50:06
  */
 /**
  * Paragliding Flight Log v2.0

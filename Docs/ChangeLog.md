@@ -1,5 +1,16 @@
 # Project Change Log
 
+## Session: Structure & Planning
+**Date**: 2026-02-10
+**Versions**: v0.7.11 - v0.7.12
+**Focus**: Project Reorg (`Docs/` vs `Plans/`), Workflows, Backlog.
+
+*   `[Refactor]` **Structure**: Separated Persistent Docs from Transient Plans.
+*   `[Imp]` **Workflows**: Standardized `sync_project`, `summarize_session`, `code_check`.
+*   `[Fixed]` **Bug-SCF-004**: Fixed `App_Log` scaffolding color/name.
+*   `[Added]` **Backlog**: Master Log, SeeYou Cloud, Manual Form, Quick Actions.
+*   `[Docs]` **Refactor**: Split `Features.md` into modules; Merged `Functions.md` to `Technical_Specification.md`.
+
 ## Session: Watch Folder & Logging Reliability
 **Date**: 2026-02-09
 **Versions**: v0.7.8 - v0.7.11
