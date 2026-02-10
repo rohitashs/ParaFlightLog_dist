@@ -10,27 +10,30 @@ This file is the **long-term memory** for the project. Read this first to unders
 ---
 
 ## 📂 Project Organization & File Structure
-The project follows a strict folder hierarchy. `Plans/Context.md` is the source of truth for this structure.
+The project follows a strict folder hierarchy. `Docs/Context.md` is the source of truth for this structure.
 
-### 1. `Plans/` (Project Management)
-*   **`Context.md`**: **(Source of Truth)**. Project organization, Ways of Working, Agent Memory.
-*   **`task.md`**: *Session-specific* task tracking (ephemeral).
+### 1. `Docs/` (Persistent Documentation)
+*   **Status**: **Git Tracked**.
+*   **Purpose**: Long-term, evolving documentation. Source of Truth.
+*   **Files**:
+    *   **`Context.md`**: Project Context, Ways of Working.
+    *   **`Features.md`**: Functional capabilities (Admin, UI, System).
+    *   **`Technical_Specification.md`**: detailed Tech Specs & Code Reference.
+    *   **`Backlog.md`**: Requirements, CRs, Bugs.
+    *   **`ChangeLog.md`**: Historical record.
 
-### 2. `Docs/` (Documentation)
-*   **`Features.md`**: **(Human View)**. Describes Modules, Features, and Functionality. API for the "What". Maps to Tech Spec & Backlog.
-*   **`Technical_Specification.md`**: **(Technical View)**. Source of truth for Code Organization, Algorithms, Naming Standards. Maps to Features.
-*   **`Backlog.md`**: **(Requirements & ToDos)**. Source of truth for Requirements (`RQ`), Change Requests (`CR`), Bug Reports (`Bug`), and ToDos.
-*   **`ChangeLog.md`**: **(History)**. Log of Features/CRs/Bugs implemented, organized by Session/Date.
+### 2. `Plans/` (Transient Execution)
+*   **Status**: **NOT Git Tracked** (Local only).
+*   **Purpose**: Disposable planning documents and session artifacts.
+*   **Files**: `implementation_plan.md`, `task.md`, `walkthrough.md`.
+*   **Sub-folders**:
+    *   **`Acrchive/`**: Old plans/tasks.
+    *   **`SessionSummary/`**: Session Summary Reports (`YYYY-MM-DD_SessionSummary.md`).
 
 ### 3. `Code/` (Implementation)
-*   **`Code.gs`**: Orchestrator (Menu, Triggers).
-*   **`Config.gs`**: Configuration Definitions (Tabs, Defaults).
-*   **`Scaffold.gs`**: UI Construction & Validation.
-*   **`Ingestion.gs`**: File Processing Pipeline.
-*   **`Geo.gs`, `Parser.gs`, `Analysis.gs`, `Scoring.gs`**: Domain Logic.
+*   **Status**: **Git Tracked**.
+*   **Files**: All `.gs` files and `appsscript.json`.
 
-### 4. `Reference/` (Archive)
-*   *Deprecated*. Old documentation is moved to `Docs/` or archived here.
 
 ---
 

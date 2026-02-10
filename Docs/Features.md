@@ -49,10 +49,29 @@ Adds location context to raw GPS coordinates.
 *   **Site Detection**: Identifies known Paragliding Takeoffs/Landings within 3km using OpenStreetMap data.
 *   **Interactive Links**: Generates links to view the flight on SeeYou Cloud (planned).
 
-## 6. 🔧 System & UI
-*Maps to `RQ-SYS-001`, `RQ-SYS-002`*
+## 6. �️ User Interface (UI)
+*Maps to `RQ-SYS-002`*
 
-A robust, user-friendly interface built on Google Sheets.
-*   **Visual Grouping**: Columns are logically grouped (Scoring, Gear, Weather) and color-coded.
-*   **Configuration**: Centralized `Parameters` sheet for tweaking thresholds (e.g. Min Flight Duration, Thermal strength).
-*   **Equipment Manager**: Manage inventory of Wings/Harnesses in dedicated tabs; values sync to dropdowns automatically.
+The visual layer where users interact with the data.
+*   **Flights Tab**: The main logbook view. Uses a **2-Row Header** design (Category + Field) for clarity.
+*   **Column Grouping**: Columns are physically grouped and colored by function (e.g. *Flight Info* is Blue, *Scoring* is Orange). Groups can be collapsed to reduce clutter.
+*   **Menus**: A custom "Flight Log" menu provides one-click access to common actions (Add Flight, Upload, Update validation).
+*   **Dialogs**: Custom HTML interfaces for File Uploads and URL imports, capable of handling complex interactions.
+
+## 7. 🛡️ Administration & Setup
+*Maps to `RQ-SYS-001`*
+
+Tools for managing the system's lifecycle.
+*   **First Time Setup**: A "Scaffold" feature automatically creates all necessary sheets, headers, and validation rules if they are missing or deleted.
+*   **Configuration**: A simpler `Parameters` sheet allows users to change system behavior (e.g. "Min Height Gain", "Watch Folder ID") without touching code.
+*   **Maintenance**: Admin tools to "Reset System", "Reformat Sheets", and "Backup Data".
+*   **Equipment Manager**: dedicated tabs for `Wings`, `Harnesses`, and `Reserves`. Rows added here immediately appear in the Flights dropdowns.
+
+## 8. ⚙️ System Internals
+*Maps to `RQ-ING-001`, `RQ-ANA-001`*
+
+Under-the-hood capabilities that drive reliability.
+*   **Automated Triggers**: Time-based triggers checking for new files in the background every hour (if enabled).
+*   **Robust Logging**: A dedicated `Import_Log` tab (or `App_Log`) captures detailed success/failure messages, including specific API errors or validation reasons.
+*   **Rate Limiting**: Intelligent caching and throttling to prevent hitting Google or OpenStreetMap API quotas.
+*   **Unit Tests**: A comprehensive suite of tests (`Test.gs`) ensures parsing and scoring logic remains accurate during updates.
