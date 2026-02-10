@@ -1,6 +1,6 @@
 ﻿/**
  * Paragliding Flight Log v2.0
- * Updated: 2026-02-09 18:19:49
+ * Updated: 2026-02-09 18:30:45
  * 
  * MODULE: Ingestion Service
  * Handles File inputs (Drive, URL), ZIP extraction, Deduplication, and calls Parser.
@@ -130,9 +130,10 @@ function handleUrlImportAction(url) {
 
 
 /**
- * Handle form submission from Picker.html
+ * Handle Client-Side Upload (Base64)
+ * files = [ { name: 'foo.igc', data: 'base64...', type: 'application/...' }, ... ]
  */
-function handleFileUpload(form) {
+function handleClientSideUpload(files) {
   var config = getParameters_();
   var folderId = config.UPLOAD_FOLDER_ID;
   var folder;
@@ -147,50 +148,38 @@ function handleFileUpload(form) {
     return { error: 'Invalid Upload Folder ID: ' + e.message };
   }
   
-  var files = form.files;
-  var processedFiles = [];
+  var results = { uploaded: 0, processed: 0, flights: 0, errors: [], log: [] };
   
-  // Robust Array Handling for GAS Form Objects
-  if (!files) {
-     return { error: 'No files received' };
-  } else if (!Array.isArray(files)) {
-     // Single file object
-     processedFiles = [files];
-  } else {
-     // Array of file objects
-     processedFiles = files;
+  if (!files || !Array.isArray(files)) {
+      return { error: 'Invalid data format (expected array)' };
   }
   
-  var results = { uploaded: 0, processed: 0, flights: 0, errors: [], log: [] };
-  results.log.push('Files received: ' + processedFiles.length);
+  results.log.push('Received ' + files.length + ' files via Client-Side Upload');
   
-  for (var i = 0; i < processedFiles.length; i++) {
-    var blob = processedFiles[i];
-    // Check if valid blob
-    if (!blob || !blob.getName) {
-       results.log.push('Item ' + i + ' invalid blob');
-       continue;
-    }
-    
-    var bName = blob.getName();
-    results.log.push('Processing ' + (i+1) + '/' + processedFiles.length + ': ' + bName);
+  for (var i = 0; i < files.length; i++) {
+    var f = files[i];
+    if (!f.data || !f.name) continue;
     
     try {
+      // Decode Base64
+      var decoded = Utilities.base64Decode(f.data);
+      var blob = Utilities.newBlob(decoded, f.type || 'application/octet-stream', f.name);
+      
       var file = folder.createFile(blob);
       results.uploaded++;
       
       var res = processDriveFile_(file, config);
       if (res && res.processed) {
          results.processed++;
-         results.flights++; 
-         results.log.push('Success: ' + bName);
+         results.flights++;
+         results.log.push('Success: ' + f.name);
       } else {
-         results.errors.push(bName + ': Skipped (Duplicate?)');
-         results.log.push('Skipped: ' + bName);
+         results.errors.push(f.name + ': Skipped');
+         results.log.push('Skipped: ' + f.name);
       }
     } catch (e) {
-      results.errors.push(bName + ': ' + e.message);
-      results.log.push('Error: ' + bName + ' ' + e.message);
+      results.errors.push(f.name + ': ' + e.message);
+      results.log.push('Error: ' + f.name + ' ' + e.message);
     }
   }
   

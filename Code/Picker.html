@@ -60,29 +60,65 @@
       }
 
       btn.disabled = true;
-      btn.value = 'Uploading...';
-      status.innerHTML = 'Uploading ' + fileInput.files.length + ' file(s)...';
+      btn.value = 'Reading Files...';
+      status.innerHTML = 'Preparing ' + fileInput.files.length + ' file(s)...';
       status.style.color = '#333';
 
-      // Pass the parent form element to handleFileUpload
-      // Apps Script will automatically map 'files' input to an array of blobs if multiple=true
+      var fileList = Array.from(fileInput.files);
+      var payload = [];
+      var readCount = 0;
+
+      // Client-Side Read Loop
+      fileList.forEach(function (file) {
+        var reader = new FileReader();
+        reader.onload = function (e) {
+          var dataUrl = e.target.result; // "data:application/zip;base64,....."
+          var base64 = dataUrl.split(',')[1];
+
+          payload.push({
+            name: file.name,
+            type: file.type,
+            data: base64
+          });
+
+          readCount++;
+          if (readCount === fileList.length) {
+            sendToServer(payload, btn, status);
+          }
+        };
+        reader.onerror = function (e) {
+          console.error('Read Error', e);
+          status.innerHTML = 'Error reading file: ' + file.name;
+          status.style.color = 'red';
+          btn.disabled = false;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function sendToServer(payload, btn, status) {
+      btn.value = 'Uploading...';
+      status.innerHTML = 'Uploading ' + payload.length + ' file(s)...';
+
       google.script.run
         .withSuccessHandler(function (res) {
           btn.disabled = false;
           btn.value = 'Upload & Process';
-          status.innerHTML = 'Result: ' + JSON.stringify(res);
+
           if (res.error) {
             status.style.color = 'red';
             status.innerHTML = 'Error: ' + res.error;
           } else {
             status.style.color = 'green';
+            var logHtml = (res.log || []).join('<br>');
             status.innerHTML = '<b>Success!</b><br>' +
               'Uploaded: ' + res.uploaded + '<br>' +
               'Processed: ' + res.processed + '<br>' +
-              'Flights Created: ' + res.flights;
+              'Flights Created: ' + res.flights + '<br><br>' +
+              '<small>' + logHtml + '</small>';
 
             if (res.errors && res.errors.length > 0) {
-              status.innerHTML += '<br><span style="color:orange">Partial Errors: ' + res.errors.join(', ') + '</span>';
+              status.innerHTML += '<br><span style="color:orange">Errors: ' + res.errors.join(', ') + '</span>';
             }
           }
         })
@@ -92,7 +128,7 @@
           status.innerHTML = 'Fatal Error: ' + err;
           status.style.color = 'red';
         })
-        .handleFileUpload(document.getElementById('uploadForm'));
+        .handleClientSideUpload(payload);
     }
   </script>
 </body>
