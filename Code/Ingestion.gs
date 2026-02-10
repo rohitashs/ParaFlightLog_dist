@@ -1,6 +1,6 @@
 ﻿/**
  * Paragliding Flight Log v2.0
- * Updated: 2026-02-09 18:06:12
+ * Updated: 2026-02-09 18:19:49
  * 
  * MODULE: Ingestion Service
  * Handles File inputs (Drive, URL), ZIP extraction, Deduplication, and calls Parser.
@@ -161,12 +161,19 @@ function handleFileUpload(form) {
      processedFiles = files;
   }
   
-  var results = { uploaded: 0, processed: 0, flights: 0, errors: [] };
+  var results = { uploaded: 0, processed: 0, flights: 0, errors: [], log: [] };
+  results.log.push('Files received: ' + processedFiles.length);
   
   for (var i = 0; i < processedFiles.length; i++) {
     var blob = processedFiles[i];
     // Check if valid blob
-    if (!blob || !blob.getName) continue;
+    if (!blob || !blob.getName) {
+       results.log.push('Item ' + i + ' invalid blob');
+       continue;
+    }
+    
+    var bName = blob.getName();
+    results.log.push('Processing ' + (i+1) + '/' + processedFiles.length + ': ' + bName);
     
     try {
       var file = folder.createFile(blob);
@@ -176,11 +183,14 @@ function handleFileUpload(form) {
       if (res && res.processed) {
          results.processed++;
          results.flights++; 
+         results.log.push('Success: ' + bName);
       } else {
-         results.errors.push(blob.getName() + ': Skipped/Duplicate');
+         results.errors.push(bName + ': Skipped (Duplicate?)');
+         results.log.push('Skipped: ' + bName);
       }
     } catch (e) {
-      results.errors.push(blob.getName() + ': ' + e.message);
+      results.errors.push(bName + ': ' + e.message);
+      results.log.push('Error: ' + bName + ' ' + e.message);
     }
   }
   

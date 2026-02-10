@@ -1,6 +1,6 @@
 ﻿/**
  * Paragliding Flight Log v2.0
- * Updated: 2026-02-09 18:06:12
+ * Updated: 2026-02-09 18:19:49
  */
 /**
  * Paragliding Flight Log v2.0 - Configuration
@@ -33,7 +33,7 @@ var CFG = {
     { section: 'Ingestion', key: 'WATCH_PERIOD_MIN', val: 15, desc: 'How often (mins) the trigger runs' },
     
     // Geo & Time
-    { section: 'Geo & Time', key: 'GEO_REV_PROVIDERS', val: 'nominatim_osm, big_data_cloud', desc: 'Reverse Geo Providers (comma-sep)' },
+    { section: 'Geo & Time', key: 'GEO_REV_PROVIDERS', val: 'big_data_cloud, nominatim_osm', desc: 'Reverse Geo Providers (comma-sep)' },
     { section: 'Geo & Time', key: 'GEO_SITE_PROVIDERS', val: 'overpass_api', desc: 'Site Name Providers' },
     { section: 'Geo & Time', key: 'GEO_TZ_PROVIDERS', val: 'timeapi_io', desc: 'Time Zone Providers' },
     { section: 'Geo & Time', key: 'OSM_RADIUS_M', val: 3000, desc: 'Radius (m) to search for sites' },
