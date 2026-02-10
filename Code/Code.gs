@@ -1,6 +1,6 @@
 ﻿/**
  * Paragliding Flight Log v2.0
- * Updated: 2026-02-09 19:24:14
+ * Updated: 2026-02-09 19:30:01
  */
 /**
  * Paragliding Flight Log v2.0
@@ -149,8 +149,24 @@ function uiDisableWatch_() {
  * Manual trigger for Watch Folder Scan
  */
 function scanWatchFolder() {
-  SpreadsheetApp.getActive().toast('Scanning Watch Folder in background...', 'Ingestion', 5);
-  scanWatchFolderNow_();
+  var ui = SpreadsheetApp.getUi();
+  SpreadsheetApp.getActive().toast('Scanning Watch Folder in background...', 'Ingestion', 3);
+  
+  var stats = scanWatchFolderNow_();
+  
+  if (stats) {
+    var msg = 'Scan Complete.\n\n' +
+              'Processed: ' + stats.processed + '\n' +
+              'Skipped: ' + stats.skipped + '\n' +
+              'Errors: ' + stats.errors + '\n\n' +
+              '--- Logs ---\n' +
+              stats.log.join('\n');
+              
+    ui.alert('Watch Folder Scan', msg, ui.ButtonSet.OK);
+  } else {
+    // Should not happen if Ingestion.gs is updated
+    ui.alert('Watch Folder Scan', 'Scan finished (No details returned). Check Logs.', ui.ButtonSet.OK);
+  }
 }
 
 function uiUpdateFolder_(paramName, friendlyName) {

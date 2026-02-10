@@ -1,6 +1,6 @@
 ﻿/**
  * Paragliding Flight Log v2.0
- * Updated: 2026-02-09 19:24:14
+ * Updated: 2026-02-09 19:30:01
  * 
  * MODULE: Ingestion Service
  * Handles File inputs (Drive, URL), ZIP extraction, Deduplication, and calls Parser.
@@ -15,6 +15,8 @@
  * Scans the Watch Folder for new files.
  */
 function scanWatchFolderNow_() {
+  var stats = { processed: 0, skipped: 0, errors: 0, log: [] };
+  
   console.log('Starting Watch Folder Scan...');
   var config = getParameters_();
   var folderId = config.WATCH_FOLDER_ID;
@@ -24,23 +26,27 @@ function scanWatchFolderNow_() {
   console.log('Watch Config: Enable=' + enabled + ', FolderID=' + folderId);
 
   if (enabled !== 'TRUE' && enabled !== 'YES') {
-     console.warn('Watch Folder is DISABLED in Config. Skipping.');
-     return;
+     var msg = 'Watch Folder is DISABLED in Config. Skipping.';
+     console.warn(msg);
+     stats.log.push(msg);
+     return stats;
   }
   
   if (!folderId) {
-    console.error('No Watch Folder ID configured.');
-    return;
+    var msg = 'No Watch Folder ID configured.';
+    console.error(msg);
+    stats.log.push(msg);
+    stats.errors++;
+    return stats;
   }
   
   try {
     var folder = DriveApp.getFolderById(folderId);
     var files = folder.getFiles();
-    var processedCount = 0;
     var maxProcess = 5; // Cap to avoid timeouts per execution
     var foundAny = false;
     
-    while (files.hasNext() && processedCount < maxProcess) {
+    while (files.hasNext() && stats.processed < maxProcess) {
       foundAny = true;
       var file = files.next();
       var fId = file.getId();
@@ -53,24 +59,37 @@ function scanWatchFolderNow_() {
            var result = processDriveFile_(file, config);
            if (result && result.processed) {
              console.log('Processed: ' + fName);
-             processedCount++;
+             stats.processed++;
+             stats.log.push('Processed: ' + fName);
            } else {
              console.log('Skipped (Duplicate/Error): ' + fName);
+             stats.skipped++;
+             stats.log.push('Skipped: ' + fName);
            }
          } catch (e) {
            logImport_(new Date(), fId, fName, fName, 'Scan Error', e.message);
            console.error('Error processing ' + fName, e);
+           stats.errors++;
+           stats.log.push('Error (' + fName + '): ' + e.message);
          }
       } else {
-         console.log('Ignored file type: ' + fName);
+         // console.log('Ignored file type: ' + fName);
       }
     }
     
-    if (!foundAny) console.log('Watch Folder is empty.');
+    if (!foundAny) {
+      stats.log.push('Watch Folder is empty.');
+    } else if (stats.processed === 0 && stats.skipped === 0 && stats.errors === 0) {
+      stats.log.push('No relevant files found (only ignored types).'); 
+    }
     
   } catch (e) {
     console.error('Watch Scan Error:', e);
+    stats.errors++;
+    stats.log.push('Fatal Error: ' + e.message);
   }
+  
+  return stats;
 }
 
 /**
