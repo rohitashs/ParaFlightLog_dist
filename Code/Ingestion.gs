@@ -1,6 +1,6 @@
 ﻿/**
  * Paragliding Flight Log v2.0
- * Updated: 2026-02-09 19:59:46
+ * Updated: 2026-02-09 20:10:23
  * 
  * MODULE: Ingestion Service
  * Handles File inputs (Drive, URL), ZIP extraction, Deduplication, and calls Parser.
@@ -15,7 +15,7 @@
  * Scans the Watch Folder for new files.
  */
 function scanWatchFolderNow_() {
-  var stats = { processed: 0, skipped: 0, errors: 0, log: [] };
+  var stats = { processed: 0, skipped: 0, errors: 0, flights: 0, log: [] };
   
   console.log('Starting Watch Folder Scan...');
   var config = getParameters_();
@@ -60,7 +60,8 @@ function scanWatchFolderNow_() {
            if (result && result.processed) {
              console.log('Processed: ' + fName);
              stats.processed++;
-             stats.log.push('Processed: ' + fName);
+             stats.flights += (result.count || 0);
+             stats.log.push('Processed: ' + fName + ' (' + (result.count||1) + ' flights)');
            } else {
              console.log('Skipped (Duplicate/Error): ' + fName);
              stats.skipped++;
@@ -515,7 +516,7 @@ function insertFlightRow_(data, fileId, outerName, status, notes, analysis, scor
   setVal('Status', status);
   setVal('Flight No', flightNoFormula);
   setVal('Auto Summary', autoSummary);
-  setVal('Notes', ''); // Blank for user
+  setVal('Notes', notes); // Write System Notes (Geo errors, Validation, etc)
   setVal('Flight Type', scoring.flightType || 'Free Fly');
   setVal('Date', data.meta.dateIso);
   setVal('Time Zone', geo.tz || 'UTC');

@@ -1,6 +1,6 @@
 ﻿/**
  * Paragliding Flight Log v2.0
- * Updated: 2026-02-09 19:59:46
+ * Updated: 2026-02-09 20:10:23
  */
 /**
  * Paragliding Flight Log v2.0
@@ -153,13 +153,14 @@ function uiDisableWatch_() {
  */
 function scanWatchFolder() {
   var ui = SpreadsheetApp.getUi();
-  SpreadsheetApp.getActive().toast('Scanning Watch Folder in background...', 'Ingestion', 3);
+  // removed toast as per request
   
   var stats = scanWatchFolderNow_();
   
   if (stats) {
     var msg = 'Scan Complete.\n\n' +
-              'Processed: ' + stats.processed + '\n' +
+              'Processed: ' + stats.processed + ' files\n' +
+              'Flights Created: ' + (stats.flights || 0) + '\n' +
               'Skipped: ' + stats.skipped + '\n' +
               'Errors: ' + stats.errors + '\n\n' +
               '--- Logs ---\n' +
