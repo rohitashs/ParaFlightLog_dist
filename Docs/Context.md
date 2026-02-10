@@ -74,7 +74,17 @@ The backlog has 5 strict sections:
     5.  **Open Issues / Next Steps**: What was left undone or added to backlog.
     6.  **References**: Links to relevant artifacts or docs.
 
-### 4. Code Standards
+### 5. Code Check Reports (`Plans/CodeCheckReports/`)
+*   **Naming**: `YYYY-MM-DD_CodeCheck.md`.
+*   **Purpose**: Result of automated or manual code reviews.
+*   **Structure**:
+    1.  **Metadata**: Date, Scope (All files or specific module).
+    2.  **Summary**: Pass/Fail/Warn status.
+    3.  **Critical Issues**: Bugs, Logic Errors (Must Fix).
+    4.  **Warnings**: Style, Optimization, Readability (Should Fix).
+    5.  **Suggestions**: Refactoring ideas (Nice to have).
+
+### 6. Code Standards
 *   **Naming**: `Service.gs` for modules. `privateFunction_` (trailing underscore) for non-exported helpers.
 *   **Config**: Separation of Concerns. `Code.gs` = Logic, `Config.gs` = Constants, `Parameters Sheet` = Runtime Values.
 *   **Validation**: Validate early. Fail gracefully with logs.
