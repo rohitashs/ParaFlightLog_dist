@@ -1,6 +1,6 @@
 ﻿/**
  * Paragliding Flight Log v2.0
- * Updated: 2026-02-09 18:30:45
+ * Updated: 2026-02-09 19:06:33
  * 
  * MODULE: Ingestion Service
  * Handles File inputs (Drive, URL), ZIP extraction, Deduplication, and calls Parser.
@@ -171,8 +171,10 @@ function handleClientSideUpload(files) {
       var res = processDriveFile_(file, config);
       if (res && res.processed) {
          results.processed++;
-         results.flights++;
-         results.log.push('Success: ' + f.name);
+         // Use accumulated count if available (for ZIPs), else 1
+         var count = res.count || 1; 
+         results.flights += count;
+         results.log.push('Success: ' + f.name + ' (' + count + ' flights)');
       } else {
          results.errors.push(f.name + ': Skipped');
          results.log.push('Skipped: ' + f.name);
@@ -211,30 +213,51 @@ function handleUrlImport_(url, ctx, config) {
 
 function processBlob_(blob, fileName, fileId, config) {
   var lowerName = fileName.toLowerCase();
+  var result = { processed: false, count: 0 };
   
   // 1. ZIP Handling
   if (lowerName.endsWith('.zip')) {
-    var zipBlobs = Utilities.unzip(blob);
-    var anyProcessed = false;
-    zipBlobs.forEach(function(b) {
-      var bName = b.getName();
-      if (bName.match(/\.(igc|igx)$/i)) {
-        var res = processSingleIgcBlob_(b, bName, fileId, fileName, config); // pass outer name
-        if (res) anyProcessed = true;
-      }
-    });
-    return { processed: anyProcessed };
+    try {
+      var zipBlobs = Utilities.unzip(blob);
+      zipBlobs.forEach(function(b) {
+        var bName = b.getName();
+        if (bName.match(/\.(igc|igx)$/i)) {
+          var success = processSingleIgcBlob_(b, bName, fileId, fileName, config); // pass outer name
+          if (success) {
+             result.processed = true;
+             result.count++;
+          }
+        }
+      });
+    } catch (e) {
+      console.warn('ZIP extraction failed: ' + fileName, e);
+    }
+    return result;
   }
   
   // 2. GZIP Handling
   if (lowerName.endsWith('.gz')) {
-    var rawBlob = Utilities.gunzip(blob);
-    var innerName = fileName.replace(/\.gz$/i, '');
-    return { processed: processSingleIgcBlob_(rawBlob, innerName, fileId, fileName, config) };
+    try {
+      var rawBlob = Utilities.gunzip(blob);
+      var innerName = fileName.replace(/\.gz$/i, '');
+      var success = processSingleIgcBlob_(rawBlob, innerName, fileId, fileName, config);
+      if (success) {
+         result.processed = true;
+         result.count = 1;
+      }
+    } catch (e) {
+       console.warn('GZIP failed', e);
+    }
+    return result;
   }
   
   // 3. Plain IGC
-  return { processed: processSingleIgcBlob_(blob, fileName, fileId, fileName, config) };
+  var success = processSingleIgcBlob_(blob, fileName, fileId, fileName, config);
+  if (success) {
+     result.processed = true;
+     result.count = 1;
+  }
+  return result;
 }
 
 /**
