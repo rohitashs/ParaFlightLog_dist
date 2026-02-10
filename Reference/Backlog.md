@@ -132,6 +132,10 @@ This file is the single source of truth for Requirements, Bugs, and Change Reque
 - [ ] **[CR-CFG-002]** (Links: [REQ-SCR-001]) **Configurable RDP Tolerance**: Make Ramer-Douglas-Peucker tolerance configurable (Move from `Scoring.gs` hardcoded value). *Status: Open*
 - [ ] **[CR-ING-003]** (Links: [REQ-ING-001]) **Large Scale Ingestion**: Support >5 files/ZIPs via background processing queue/trigger. *Status: Open*
 - [ ] **[CR-CODE-001]** (Links: [REQ-SYS-001]) **Centralize Common Utilities**: Create `Utils.gs` for shared Math/Haversine functions. *Status: Open*
+- [ ] **[CR-ING-004]** (Links: [REQ-SYS-002]) **Master Log Folder**: Auto-copy successful IGCs to `MASTER_LOG_FOLDER_ID`, set public permission ("Anyone with link"), and centralize files. *Status: Open*
+- [ ] **[CR-UI-009]** (Links: [REQ-UI-001]) **SeeYou Cloud Link**: Add "View Flight" column. Generate `https://seeyou.cloud/api/open?igc=<drive_link>` for public IGCs. *Status: Open*
+- [ ] **[CR-LOG-003]** (Links: [REQ-ING-002]) **Enhance Logging**: General improvements to logging visibility (Files processed, specific errors, summary stats). *Status: Open*
+- [ ] **[CR-SCR-003]** (Links: [REQ-SCR-001]) **XContest Verification**: Check if flight is already uploaded to XContest (via API or profile scan). *Status: Open*
 
 ## 4. Future / Deferred
 *Items explicitly moved to future phases.*
