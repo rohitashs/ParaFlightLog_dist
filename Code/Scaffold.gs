@@ -1,6 +1,6 @@
 ﻿/**
  * Paragliding Flight Log v2.0
- * Updated: 2026-02-09 19:35:59
+ * Updated: 2026-02-09 19:41:56
  */
 /**
  * Paragliding Flight Log v2.0 - Scaffolding & Setup
@@ -98,8 +98,29 @@ function scaffoldParameters_(ss) {
   if (sh.getLastRow() > 2) {
       try {
         var vals = sh.getRange(3, 1, sh.getLastRow()-2, 2).getValues();
-        vals.forEach(function(r) { if(r[0]) existingMap[r[0]] = r[1]; });
-      } catch(e) {}
+        var paramMap = {};
+        // Build map of Config Keys for fuzzy matching
+        CFG.parameters.forEach(function(p) { paramMap[p.key] = p.key; });
+        
+        vals.forEach(function(r) { 
+           var key = r[0];
+           var val = r[1];
+           if (key) {
+             // Direct Match
+             if (paramMap[key]) {
+               existingMap[key] = val; 
+             } else {
+               // Migration / Friendly Name Mapping
+               // Handle cases where user or old version used Friendly Names
+               if (key.match(/Watch Folder ID/i)) existingMap['WATCH_FOLDER_ID'] = val;
+               else if (key.match(/Upload Folder ID/i)) existingMap['UPLOAD_FOLDER_ID'] = val;
+               else if (key.match(/Enable.*Watch/i)) existingMap['ENABLE_WATCH_FOLDER'] = val;
+               else if (key.match(/Watch.*Period/i)) existingMap['WATCH_PERIOD_MIN'] = val;
+               else if (key.match(/Email/i)) existingMap['CONTACT_EMAIL'] = val;
+             }
+           }
+        });
+      } catch(e) { console.warn('Param preservation error', e); }
   }
   
   sh.clear();
