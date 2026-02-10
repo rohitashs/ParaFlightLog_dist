@@ -1,6 +1,6 @@
 ﻿/**
  * Paragliding Flight Log v2.0
- * Updated: 2026-02-09 19:19:06
+ * Updated: 2026-02-09 19:24:14
  * 
  * MODULE: Ingestion Service
  * Handles File inputs (Drive, URL), ZIP extraction, Deduplication, and calls Parser.
@@ -15,19 +15,21 @@
  * Scans the Watch Folder for new files.
  */
 function scanWatchFolderNow_() {
+  console.log('Starting Watch Folder Scan...');
   var config = getParameters_();
-  
-  // Check Enable Switch
-  var enabled = String(config.ENABLE_WATCH_FOLDER).toUpperCase();
-  if (enabled !== 'TRUE' && enabled !== 'YES') {
-     console.log('Watch Folder is DISABLED. Skipping scan.');
-     return;
-  }
-
   var folderId = config.WATCH_FOLDER_ID;
   
+  // Check Enable Switch (Handle boolean or string)
+  var enabled = String(config.ENABLE_WATCH_FOLDER).toUpperCase();
+  console.log('Watch Config: Enable=' + enabled + ', FolderID=' + folderId);
+
+  if (enabled !== 'TRUE' && enabled !== 'YES') {
+     console.warn('Watch Folder is DISABLED in Config. Skipping.');
+     return;
+  }
+  
   if (!folderId) {
-    console.warn('No Watch Folder ID configured.');
+    console.error('No Watch Folder ID configured.');
     return;
   }
   
@@ -36,28 +38,36 @@ function scanWatchFolderNow_() {
     var files = folder.getFiles();
     var processedCount = 0;
     var maxProcess = 5; // Cap to avoid timeouts per execution
+    var foundAny = false;
     
     while (files.hasNext() && processedCount < maxProcess) {
+      foundAny = true;
       var file = files.next();
       var fId = file.getId();
       var fName = file.getName();
       
-      // Basic check: Only process files modified recently? 
-      // Or relies entirely on Dedupe Hash. Relying on Hash is safer but slower if folder huge.
-      // Optimization: Could check property 'PROCESSED' on file, but read-only access prevents writing to file metadata potentially.
-      // So we use our internal Dedupe Cache (MD5) as the primary gate.
-      
       // We process .igc, .igx, .zip, .gz
       if (fName.match(/\.(igc|igx|zip|gz)$/i)) {
+         console.log('Checking file: ' + fName);
          try {
            var result = processDriveFile_(file, config);
-           if (result.processed) processedCount++;
+           if (result && result.processed) {
+             console.log('Processed: ' + fName);
+             processedCount++;
+           } else {
+             console.log('Skipped (Duplicate/Error): ' + fName);
+           }
          } catch (e) {
            logImport_(new Date(), fId, fName, fName, 'Scan Error', e.message);
            console.error('Error processing ' + fName, e);
          }
+      } else {
+         console.log('Ignored file type: ' + fName);
       }
     }
+    
+    if (!foundAny) console.log('Watch Folder is empty.');
+    
   } catch (e) {
     console.error('Watch Scan Error:', e);
   }

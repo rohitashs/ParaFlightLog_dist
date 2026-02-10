@@ -1,6 +1,6 @@
 ﻿/**
  * Paragliding Flight Log v2.0
- * Updated: 2026-02-09 19:19:06
+ * Updated: 2026-02-09 19:24:14
  */
 /**
  * Paragliding Flight Log v2.0
@@ -22,7 +22,7 @@ function onOpen(e) {
     .addItem('Add flight from IGC (URL/Drive ID)...', 'showUrlDialog_')
     .addItem('Add flight from Upload (Local File)...', 'showUploadDialog_')
     .addSeparator()
-    .addItem('Scan Watch Folder now', 'scanWatchFolderNow_')
+    .addItem('Scan Watch Folder now', 'scanWatchFolder')
     .addItem('Recompute selected flight(s)', 'uiRecomputeSelected_')
     .addSeparator()
     .addSubMenu(SpreadsheetApp.getUi().createMenu('Admin')
@@ -143,6 +143,14 @@ function uiEnableWatch_() {
 function uiDisableWatch_() {
   setParameter_('ENABLE_WATCH_FOLDER', 'FALSE');
   SpreadsheetApp.getActive().toast('Watch Folder DISABLED.');
+}
+
+/**
+ * Manual trigger for Watch Folder Scan
+ */
+function scanWatchFolder() {
+  SpreadsheetApp.getActive().toast('Scanning Watch Folder in background...', 'Ingestion', 5);
+  scanWatchFolderNow_();
 }
 
 function uiUpdateFolder_(paramName, friendlyName) {
