@@ -63,6 +63,17 @@ The backlog has 5 strict sections:
 *   Group by **Session** and **Date**.
 *   List all `[Imp]` (Implemented) items from Backlog.
 
+### 4. Session Summary Reports (`Plans/SessionSummary/`)
+*   **Naming**: `YYYY-MM-DD_SessionSummary.md` (e.g. `2026-02-10_SessionSummary.md`).
+*   **Purpose**: A snapshot of the session's achievements, discussions, and decisions.
+*   **Structure**:
+    1.  **Metadata**: Date, Time, Goal.
+    2.  **Key Discussions**: Brief bullet points of what was discussed.
+    3.  **Decisions Made**: Architectural or Product decisions.
+    4.  **Work Completed**: Files changed, Features implemented, Bugs fixed.
+    5.  **Open Issues / Next Steps**: What was left undone or added to backlog.
+    6.  **References**: Links to relevant artifacts or docs.
+
 ### 4. Code Standards
 *   **Naming**: `Service.gs` for modules. `privateFunction_` (trailing underscore) for non-exported helpers.
 *   **Config**: Separation of Concerns. `Code.gs` = Logic, `Config.gs` = Constants, `Parameters Sheet` = Runtime Values.
