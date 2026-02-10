@@ -1,6 +1,6 @@
 ﻿/**
  * Paragliding Flight Log v2.0
- * Updated: 2026-02-08 20:38:56
+ * Updated: 2026-02-09 18:06:12
  */
 /**
  * Paragliding Flight Log v2.0
@@ -27,7 +27,11 @@ function onOpen(e) {
     .addSeparator()
     .addSubMenu(SpreadsheetApp.getUi().createMenu('Admin')
         .addItem('First Time Setup (Full Scaffold)', 'scaffoldAll_')
-        .addItem('Update Dropdowns & Validation (Safe)', 'updateValidationOnly_')
+        .addItem('Admin: Update Validation & Params', 'updateValidationOnly_')
+        .addItem('Admin: Reapply Formatting (Safe)', 'reapplyFormatting_')
+        .addItem('Admin: Backup Data', 'backupSystemSheets_')
+        .addSeparator()
+        .addItem('Admin: Delete System Sheets (Reset)', 'deleteSystemSheets_')
         .addSeparator()
         .addItem('Update Watch Folder...', 'uiUpdateWatchFolder_')
         .addItem('Update Upload Folder...', 'uiUpdateUploadFolder_')

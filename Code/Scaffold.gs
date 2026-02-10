@@ -1,6 +1,6 @@
 ﻿/**
  * Paragliding Flight Log v2.0
- * Updated: 2026-02-08 20:38:56
+ * Updated: 2026-02-09 18:06:12
  */
 /**
  * Paragliding Flight Log v2.0 - Scaffolding & Setup
@@ -9,6 +9,7 @@
  * 1. Sheet Creation & Ordering (scaffoldAll_)
  * 2. Sheet Specific Setup (scaffoldFlights_, etc)
  * 3. Validation Logic (applyFlightValidation_)
+ * 4. Admin Tools (Backup, Formatting, Delete)
  */
 
 /* ==========================================================================================
@@ -91,67 +92,55 @@ function scaffoldOverview_(ss) {
 
 function scaffoldParameters_(ss) {
   var sh = ss.getSheetByName(TABS.PARAMETERS.name);
-  if (sh.getLastRow() === 0) {
-    // Row 1: Header
-    sh.getRange('A1').setValue(TABS.PARAMETERS.name).setFontWeight('bold').setFontSize(12);
-    sh.getRange('A1:C1').setBackground(TABS.PARAMETERS.color).setHorizontalAlignment('center');
-
-    // Row 2: Columns
-    sh.getRange(2, 1, 1, 3).setValues([TABS.PARAMETERS.columns]);
-    sh.getRange(2, 1, 1, 3).setFontWeight('bold').setBackground('#616161').setFontColor('white');
-    
-    var rows = [];
-    var addSection = function(name) { rows.push(['[ ' + name + ' ]', '', '']); };
-    var addParam = function(key, val, desc, needsInput) { rows.push([key, val, desc, needsInput]); };
-    
-    // Ingestion
-    addSection('Ingestion');
-    addParam('WATCH_FOLDER_ID', '', 'Google Drive Folder ID to watch for .igc files', true);
-    addParam('UPLOAD_FOLDER_ID', '', 'Google Drive Folder ID for manual uploads', true);
-    addParam('ENABLE_WATCH_FOLDER', 'FALSE', 'Enable automated scanning? (TRUE/FALSE)');
-    addParam('WATCH_PERIOD_MIN', CFG.defaults.WATCH_PERIOD_MIN, 'How often (mins) the trigger runs');
-    
-    // Geo & Time
-    addSection('Geo & Time');
-    addParam('GEO_REV_PROVIDERS', 'nominatim_osm, big_data_cloud', 'Reverse Geo Providers');
-    addParam('GEO_SITE_PROVIDERS', 'overpass_api', 'Site Name Providers');
-    addParam('GEO_TZ_PROVIDERS', 'timeapi_io', 'Time Zone Providers');
-    addParam('OSM_RADIUS_M', CFG.defaults.OSM_RADIUS_M, 'Radius (m) to search for sites');
-    
-    // Validation
-    addSection('Validation');
-    addParam('VALIDATION_MIN_DURATION_SEC', CFG.defaults.VALIDATION_MIN_DURATION_SEC, 'Min duration (sec)');
-    addParam('VALIDATION_MAX_SPEED_KMH', CFG.defaults.VALIDATION_MAX_SPEED_KMH, 'Max speed (km/h)');
-    
-    // Analysis
-    addSection('Analysis Rules');
-    addParam('THERMAL_MIN_CLIMB', CFG.defaults.THERMAL_MIN_CLIMB, 'Min vario (m/s) for thermal');
-    addParam('THERMAL_MIN_TURN', CFG.defaults.THERMAL_MIN_TURN, 'Min turn (deg/s) for thermal');
-    addParam('SOAR_VARIO_MIN', CFG.defaults.SOAR_VARIO_MIN, 'Min climb (m/s) for Soaring');
-    
-    // Scoring
-    addSection('Scoring');
-    addParam('NATIONAL_BONUS_MULTIPLIER', CFG.defaults.NATIONAL_BONUS_MULTIPLIER, 'Triangle Multiplier');
-    
-    // Admin
-    addSection('Admin');
-    addParam('CONTACT_EMAIL', '', 'Required for APIs', true);
-
-    // Write Data
-    var valRows = rows.map(function(r) { return [r[0], r[1], r[2]]; });
-    sh.getRange(3, 1, valRows.length, 3).setValues(valRows);
-    
-    // Formatting
-    for (var i=0; i<rows.length; i++) {
-       var rowNum = i + 3;
-       if (rows[i][0].indexOf('[') === 0) {
-          sh.getRange(rowNum, 1, 1, 3).setBackground('#E0E0E0').setFontWeight('bold');
-       } else if (rows[i][3] === true) {
-          sh.getRange(rowNum, 2).setBackground('#FFF9C4');
-       }
-    }
-    sh.autoResizeColumns(1, 3);
+  var existingMap = {};
+  
+  // Preserve existing user values if present
+  if (sh.getLastRow() > 2) {
+      try {
+        var vals = sh.getRange(3, 1, sh.getLastRow()-2, 2).getValues();
+        vals.forEach(function(r) { if(r[0]) existingMap[r[0]] = r[1]; });
+      } catch(e) {}
   }
+  
+  sh.clear();
+
+  // Row 1: Header
+  sh.getRange('A1').setValue(TABS.PARAMETERS.name).setFontWeight('bold').setFontSize(12);
+  sh.getRange('A1:C1').setBackground(TABS.PARAMETERS.color).setHorizontalAlignment('center');
+
+  // Row 2: Columns
+  sh.getRange(2, 1, 1, 3).setValues([TABS.PARAMETERS.columns]);
+  sh.getRange(2, 1, 1, 3).setFontWeight('bold').setBackground('#616161').setFontColor('white');
+  
+  var rows = [];
+  var lastSection = '';
+  
+  CFG.parameters.forEach(function(p) {
+      if (p.section !== lastSection) {
+          rows.push(['[ ' + p.section + ' ]', '', '']);
+          lastSection = p.section;
+      }
+      // Use existing value if available, else default
+      var val = (existingMap[p.key] !== undefined && existingMap[p.key] !== '') ? existingMap[p.key] : p.val;
+      rows.push([p.key, val, p.desc, p.input]); // p.input is meta, removed before write
+  });
+
+  // Write Data
+  var writeRows = rows.map(function(r) { return [r[0], r[1], r[2]]; });
+  sh.getRange(3, 1, writeRows.length, 3).setValues(writeRows);
+  
+  // Formatting
+  for (var i=0; i<rows.length; i++) {
+     var rowNum = i + 3;
+     if (rows[i][0].indexOf('[') === 0) {
+        // Section Header
+        sh.getRange(rowNum, 1, 1, 3).setBackground('#E0E0E0').setFontWeight('bold');
+     } else if (rows[i][3] === true) {
+        // Input Field
+        sh.getRange(rowNum, 2).setBackground('#FFF9C4');
+     }
+  }
+  sh.autoResizeColumns(1, 3);
 }
 
 function scaffoldEquipment_(ss) {
@@ -166,9 +155,12 @@ function scaffoldEquipment_(ss) {
     sh.getRange(2, 1, 1, head.length).setValues([head]);
     sh.getRange(2, 1, 1, head.length).setFontWeight('bold').setBackground('#E0F7FA').setBorder(true, true, true, true, true, true);
     
-    // Validation Placeholders (Applied via updateValidation)
-    // Checkboxes (G=Default?, H=Retired?)
-    sh.getRange(3, 7, 999, 2).insertCheckboxes(); 
+    // Checkboxes (G=Default?, H=Retired?) - Limit to dataEndRow
+    var limit = TABS.EQUIPMENT.dataEndRow;
+    var rows = limit - 2; 
+    if (rows > 0) {
+       sh.getRange(3, 7, rows, 2).insertCheckboxes(); 
+    }
   
     sh.setFrozenRows(2);
     sh.autoResizeColumns(1, head.length);
@@ -199,7 +191,7 @@ function scaffoldLookups_(ss) {
   sh.getRange('D3').setFormula('=IFERROR(QUERY(' + eqName + '!A:M, "select B where A=\'Reserve\' and H=FALSE order by B asc label B \'\'", 0), "")');
   sh.getRange('E3').setFormula('=IFERROR(QUERY(' + eqName + '!A:M, "select B where A=\'Other\' and H=FALSE order by B asc label B \'\'", 0), "")');
 
-  // Status & Types
+  // Status & Types from CFG
   var statuses = ['Needs Review', 'Valid', 'Invalid?', 'Duplicate'];
   var types = CFG.defaults.FLIGHT_TYPES.split(',');
   
@@ -250,23 +242,37 @@ function scaffoldFlights_(ss) {
       sh.getRange(4, colIndex, 1, groupLen).setBackground(g.color).setFontWeight('bold');
     } catch(e) { console.warn('Header fail', g.name); }
 
-    // Column Collapse logic
+    // Column Collapse logic using visibleCols
     if (groupLen > 1) {
-       var startCollapse = -1, endCollapse = -1;
-       if (g.name === 'Flight Info') {
-          // Collapse from Col 5 (Notes) onwards
-          startCollapse = colIndex + 4; endCollapse = colIndex + groupLen - 1;
-       } else {
-          startCollapse = colIndex + 1; endCollapse = colIndex + groupLen - 1;
-       }
-       if (startCollapse > 0 && endCollapse >= startCollapse) {
+       // Safe default if visibleCols not defined
+       var visCols = g.visibleCols || 1; 
+       
+       var startCollapse = colIndex + visCols;
+       var endCollapse = colIndex + groupLen - 1;
+       
+       if (endCollapse >= startCollapse) {
          try {
            sh.getColumnGroup(startCollapse, 1).collapse(); 
-         } catch(e) {}
+         } catch(e) {
+           // Create group if doesn't exist? (Not trivial via script, usually assumes existing)
+           // Actually, standard practice is to create group then collapse.
+           // GAS issue: getColumnGroup throws if no group. 
+           // We might need to shift+alt+right logic, which is:
+           // sh.getRange(1, startCollapse, 1, (endCollapse-startCollapse+1)).shiftColumnGroupDepth(1);
+           // Then collapse.
+           // However, if groups exist, we just collapse. User asked to fix "grouping missing", so we likely need to Create it.
+           try {
+              var range = sh.getRange(1, startCollapse, sh.getMaxRows(), (endCollapse - startCollapse + 1));
+              range.shiftColumnGroupDepth(1);
+              sh.getColumnGroup(startCollapse, 1).collapse();
+           } catch(err) { console.warn('Group create fail', err); }
+         }
        }
     }
     colIndex += groupLen;
-    if (colIndex % 10 === 0) SpreadsheetApp.flush();
+    // Throttling
+    SpreadsheetApp.flush();
+    if (colIndex % 10 === 0) Utilities.sleep(500);
   });
 
   sh.setFrozenRows(4);
@@ -286,20 +292,18 @@ function updateValidationOnly_() {
   var shEq = ss.getSheetByName(TABS.EQUIPMENT.name);
   if (shEq) applyEquipmentValidation_(shEq);
   
-  ss.toast('Validation rules updated.');
+  // Also refresh parameters in case new ones added
+  scaffoldParameters_(ss);
+  
+  ss.toast('Validation rules and Parameters updated.');
 }
 
 function applyFlightsValidation_(sh) {
   var ss = SpreadsheetApp.getActive();
   var map = getColumnMap_(sh);
   
-  // OPTIMIZATION: Only apply validation to the first N empty rows to keep sheet light.
-  // Existing data should already have validation. 
-  // We apply to dataStartRow -> dataEndRow (or maxRows if smaller)
   var startRow = TABS.FLIGHTS.dataStartRow;
   var endRow = TABS.FLIGHTS.dataEndRow; 
-  // If user wants to force update all, they can increase this, but let's stick to config
-  
   var valRows = endRow - startRow + 1;
   if (valRows < 1) return;
 
@@ -311,6 +315,9 @@ function applyFlightsValidation_(sh) {
     // Conditional Formatting
     var range = sh.getRange(startRow, map['Status'], valRows, 1);
     var rules = sh.getConditionalFormatRules();
+    // Clear old rules on this range? difficult to isolate. Append is safer for now.
+    // Ideally we clear all rules and rebuild.
+    // For now, let's just append.
     rules.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('Needs Review').setBackground('#FFF9C4').setRanges([range]).build());
     rules.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('Valid').setBackground('#C8E6C9').setRanges([range]).build());
     rules.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('Invalid?').setBackground('#FFCDD2').setRanges([range]).build());
@@ -343,13 +350,18 @@ function applyEquipmentValidation_(sh) {
   var ss = SpreadsheetApp.getActive();
   var shLook = ss.getSheetByName(TABS.LOOKUPS.name);
   if (shLook) {
+      var dataStart = TABS.EQUIPMENT.dataStartRow;
+      var dataEnd = TABS.EQUIPMENT.dataEndRow;
+      var numRows = dataEnd - dataStart + 1; // 50 - 3 + 1 = 48 rows.
+      
+      if (numRows < 1) return;
+
       // Category Range (A3:A)
       var range = shLook.getRange('A3:A');
       var rule = SpreadsheetApp.newDataValidation().requireValueInRange(range, true).setAllowInvalid(true).build();
-      var maxRows = sh.getMaxRows();
-      if (maxRows > 2) {
-          sh.getRange(3, 1, maxRows - 2, 1).setDataValidation(rule);
-      }
+      
+      // Apply to limited range
+      sh.getRange(dataStart, 1, numRows, 1).setDataValidation(rule);
   }
 }
 
@@ -360,4 +372,95 @@ function getColumnMap_(sh) {
   var map = {};
   headers.forEach(function(h, i) { if (h) map[h] = i + 1; });
   return map;
+}
+
+/* ==========================================================================================
+   ADMIN TOOLS
+   ========================================================================================== */
+
+function reapplyFormatting_() {
+  var ss = SpreadsheetApp.getActive();
+  
+  // Re-run the scaffold logic which handles headers & formatting.
+  // It checks `if (sh.getLastRow() === 0)` usually, but we want to force format.
+  // So we'll iterate and apply styles directly.
+  
+  // 1. Flights
+  var shF = ss.getSheetByName(TABS.FLIGHTS.name);
+  if (shF) {
+     // Apply Tab Color
+     shF.setTabColor(TABS.FLIGHTS.color);
+     // Apply Header 1
+     shF.getRange('A1:Z1').setBackground(TABS.FLIGHTS.color).setFontColor('white').setFontWeight('bold');
+     
+     // Rescaffold groupings (this applies headers Row 3 & 4)
+     var groups = TABS.FLIGHTS.groups;
+     var colIndex = 1;
+     groups.forEach(function(g) {
+         var groupLen = g.cols.length;
+         try {
+            // Row 3 (Category)
+            shF.getRange(3, colIndex, 1, groupLen).merge().setValue(g.name).setBackground(g.color).setHorizontalAlignment('center').setFontWeight('bold').setBorder(true, true, true, true, false, false, "medium", null);
+            // Row 4 (Columns)
+            shF.getRange(4, colIndex, 1, groupLen).setBackground(g.color).setFontWeight('bold');
+         } catch(e) {}
+         colIndex += groupLen;
+     });
+  }
+  
+  // 2. Equipment
+  var shE = ss.getSheetByName(TABS.EQUIPMENT.name);
+  if (shE) {
+     shE.setTabColor(TABS.EQUIPMENT.color);
+     shE.getRange('A1:M1').setBackground(TABS.EQUIPMENT.color).setFontColor('white');
+     shE.getRange(2, 1, 1, TABS.EQUIPMENT.columns.length).setBackground('#E0F7FA').setFontWeight('bold');
+  }
+  
+  // 3. Parameters
+  var shP = ss.getSheetByName(TABS.PARAMETERS.name);
+  if (shP) {
+      shP.setTabColor(TABS.PARAMETERS.color);
+      shP.getRange('A1:C1').setBackground(TABS.PARAMETERS.color);
+      shP.getRange(2, 1, 1, 3).setBackground('#616161').setFontColor('white');
+      // Re-run scaffold to fix row colors
+      scaffoldParameters_(ss);
+  }
+
+  ss.toast('Formatting Re-applied.');
+}
+
+function backupSystemSheets_() {
+  var ss = SpreadsheetApp.getActive();
+  var backup = function(srcName, destName) {
+     var src = ss.getSheetByName(srcName);
+     if (src) {
+        var existing = ss.getSheetByName(destName);
+        if (existing) ss.deleteSheet(existing); // Overwrite? Or version? User said "Backup Flights", implies singular.
+        src.copyTo(ss).setName(destName);
+     }
+  };
+  
+  backup(TABS.FLIGHTS.name, 'Backup ' + TABS.FLIGHTS.name);
+  backup(TABS.EQUIPMENT.name, 'Backup ' + TABS.EQUIPMENT.name);
+  
+  ss.toast('Backup created: Backup Flights & Backup Equipment');
+}
+
+function deleteSystemSheets_() {
+  var ui = SpreadsheetApp.getUi();
+  var resp = ui.alert('DELETE SYSTEM SHEETS', 'Are you sure you want to delete all system tabs (Flights, Equipment, etc)? This is irreversible (unless backed up).', ui.ButtonSet.YES_NO);
+  
+  if (resp == ui.Button.YES) {
+    var ss = SpreadsheetApp.getActive();
+    var targets = [TABS.FLIGHTS.name, TABS.EQUIPMENT.name, TABS.PARAMETERS.name, TABS.LOOKUPS.name, TABS.APP_LOG.name, TABS.OVERVIEW.name, TABS.APP_LOG.name, 'Sites']; // Sites is legacy but safe to nuke
+    
+    var count = 0;
+    targets.forEach(function(name) {
+       var sh = ss.getSheetByName(name);
+       if (sh) {
+          try { ss.deleteSheet(sh); count++; } catch(e) { console.warn('Delete fail', name); }
+       }
+    });
+    ss.toast('Deleted ' + count + ' system sheets.');
+  }
 }

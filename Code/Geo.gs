@@ -1,6 +1,6 @@
 ﻿/**
  * Paragliding Flight Log v2.0
- * Updated: 2026-02-08 20:38:56
+ * Updated: 2026-02-09 18:06:12
  * 
  * MODULE: Geo Service
  * Handles Reverse Geocoding (Nominatim) and Site Detection (Overpass API).
@@ -22,17 +22,20 @@ function getReverseGeo(lat, lon, config) {
   var cached = CacheService.getScriptCache().get(key);
   if (cached) return JSON.parse(cached);
   
-  var email = config.CONTACT_EMAIL || 'appscript_user@example.com';
+  // Ensure valid User-Agent
+  var email = (config.CONTACT_EMAIL && config.CONTACT_EMAIL.indexOf('@') > 0) ? config.CONTACT_EMAIL : 'appscript_user@example.com';
   var providers = (config.GEO_REV_PROVIDERS || 'nominatim_osm, big_data_cloud').split(',');
+  
+  var errors = [];
   
   for (var i = 0; i < providers.length; i++) {
     var provider = providers[i].trim().toLowerCase();
     
     // 1. Nominatim OSM
-    if (provider === 'nominatim_osm' || provider === 'nominatim') {
+    if (provider.indexOf('nominatim') === 0) { // Matches 'nominatim', 'nominatim_osm'
       try {
         var url = 'https://nominatim.openstreetmap.org/reverse?format=json&lat=' + lat.toFixed(6) + '&lon=' + lon.toFixed(6) + '&zoom=10&addressdetails=1';
-        var userAgent = 'Mozilla/5.0 (compatible; ParaFlightLog/2.0; +' + email + ')';
+        var userAgent = 'ParaFlightLog/2.0 (' + email + ')';
         
         Utilities.sleep(1000); // Rate limit throttling (1 per sec)
         var res = UrlFetchApp.fetch(url, { headers: { 'User-Agent': userAgent }, muteHttpExceptions: true });
@@ -50,14 +53,16 @@ function getReverseGeo(lat, lon, config) {
           return result;
         } else {
           console.warn('Nominatim Failed (' + res.getResponseCode() + '), continuing chain.');
+          errors.push('Nominatim:' + res.getResponseCode());
         }
       } catch (e) {
         console.warn('Nominatim Error: ' + e.message);
+        errors.push('Nominatim:' + e.message);
       }
     }
     
     // 2. BigDataCloud (Free)
-    if (provider === 'big_data_cloud' || provider === 'bigdatacloud') {
+    if (provider.indexOf('big') === 0) { // Matches 'big_data_cloud', 'bigdatacloud'
       try {
         var urlFb = 'https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=' + lat.toFixed(6) + '&longitude=' + lon.toFixed(6) + '&localityLanguage=en';
         var resFb = UrlFetchApp.fetch(urlFb, { muteHttpExceptions: true });
@@ -69,18 +74,20 @@ function getReverseGeo(lat, lon, config) {
             country: dataFb.countryCode || '',
             full: (dataFb.locality || '') + ', ' + (dataFb.countryName || '')
           };
-          if (resultFb.country || resultFb.town) {
+          // Only cache if we got something useful
+          if (resultFb.country || resultFb.town || resultFb.region) {
             CacheService.getScriptCache().put(key, JSON.stringify(resultFb), 21600);
             return resultFb;
           }
         }
       } catch (e2) {
         console.warn('BigDataCloud Error: ' + e2.message);
+        errors.push('BigDataCloud:' + e2.message);
       }
     }
   } // End Loop
   
-  return { error: 'Geo: All providers failed (' + providers.join(',') + ')' };
+  return { error: 'Geo: All providers failed (' + errors.join('; ') + ')' };
 }
 
 /**

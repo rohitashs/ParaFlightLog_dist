@@ -1,6 +1,6 @@
 ﻿/**
  * Paragliding Flight Log v2.0
- * Updated: 2026-02-08 20:38:56
+ * Updated: 2026-02-09 18:06:12
  * 
  * MODULE: Ingestion Service
  * Handles File inputs (Drive, URL), ZIP extraction, Deduplication, and calls Parser.
@@ -96,7 +96,37 @@ function uiAddFlightFromIgc_() {
     logImport_(new Date(), 'Manual URL/ID', 'UI Import', input, 'Error', e.message);
     ui.alert('Import Failed: ' + e.message);
   }
+}
+
+/**
+ * Called from UrlEntry.html
+ * Returns object { success: true } or { error: 'msg' }
+ */
+function handleUrlImportAction(url) {
+  try {
+    var config = getParameters_();
+    if (!url) throw new Error('No URL provided');
+    
+    // Check if it's a Drive ID or URL
+    var driveId = getDriveIdFromUrl_(url);
+    if (driveId) {
+       // Drive File
+       var file = DriveApp.getFileById(driveId);
+       var res = processDriveFile_(file, config);
+       if (!res.processed) return { error: 'Skipped (Duplicate or Error)' };
+       return { success: true };
+    } else {
+       // Direct Import
+       // Use a simple context
+       var res = handleUrlImport_(url, { source: 'Dialog' }, config);
+       if (!res.processed) return { error: 'Skipped (Duplicate or Error)' };
+       return { success: true };
+    }
+  } catch (e) {
+    console.error('handleUrlImportAction Error', e);
+    return { error: e.message };
   }
+}
 
 
 /**
@@ -118,26 +148,36 @@ function handleFileUpload(form) {
   }
   
   var files = form.files;
-  // If single file, it's not an array? Apps Script form object behavior varies.
-  // Usually if multiple=true, it's an array. If one file, might be single blob.
-  if (!Array.isArray(files)) {
-     files = [files];
+  var processedFiles = [];
+  
+  // Robust Array Handling for GAS Form Objects
+  if (!files) {
+     return { error: 'No files received' };
+  } else if (!Array.isArray(files)) {
+     // Single file object
+     processedFiles = [files];
+  } else {
+     // Array of file objects
+     processedFiles = files;
   }
   
   var results = { uploaded: 0, processed: 0, flights: 0, errors: [] };
   
-  for (var i = 0; i < files.length; i++) {
-    var blob = files[i];
-    if (!blob) continue;
+  for (var i = 0; i < processedFiles.length; i++) {
+    var blob = processedFiles[i];
+    // Check if valid blob
+    if (!blob || !blob.getName) continue;
     
     try {
       var file = folder.createFile(blob);
       results.uploaded++;
       
       var res = processDriveFile_(file, config);
-      if (res) {
+      if (res && res.processed) {
          results.processed++;
-         results.flights++; // One flight per file roughly (ignoring zip checks details for summary)
+         results.flights++; 
+      } else {
+         results.errors.push(blob.getName() + ': Skipped/Duplicate');
       }
     } catch (e) {
       results.errors.push(blob.getName() + ': ' + e.message);
@@ -445,16 +485,19 @@ function insertFlightRow_(data, fileId, outerName, status, notes, analysis, scor
   setVal('FullBar_kmh (snap)', wSpecs.full);
 
   // -- XC Scoring --
-  // -- XC Scoring --
   // Use scoring object or default to empty
   var sc = scoring || {}; 
-  setVal('XC Distance (km)', sc.freeDist ? (sc.freeDist / 1000).toFixed(1) : '');
-  setVal('XC Score', sc.score ? sc.score.toFixed(1) : '');
-  setVal('XC Flight Class', sc.flightType || '');
-  setVal('FAI Triangle (km)', sc.faiTriangle ? (sc.faiTriangle / 1000).toFixed(1) : '');
-  setVal('Points (World)', sc.pointsWorld ? sc.pointsWorld.toFixed(1) : '');
-  setVal('Points (National)', sc.pointsNational ? sc.pointsNational.toFixed(1) : '');
-  setVal('Closed?', sc.closed ? 'Yes' : 'No');
+  var best = sc.best || {};
+  var free = sc.free || {};
+  var tri  = sc.triangle || {};
+
+  setVal('XC Distance (km)', best.dist ? best.dist.toFixed(1) : (free.dist ? free.dist.toFixed(1) : ''));
+  setVal('XC Score', best.score ? best.score.toFixed(1) : '');
+  setVal('XC Flight Class', best.type || '');
+  setVal('FAI Triangle (km)', (tri.valid && tri.dist) ? tri.dist.toFixed(1) : '');
+  setVal('Points (World)', best.pointsWorld ? best.pointsWorld.toFixed(1) : '');
+  setVal('Points (National)', best.score ? best.score.toFixed(1) : ''); // Map national to score for now
+  setVal('Closed?', tri.closed ? 'Yes' : 'No');
   
   setVal('Max Alt (m)', analysis.stats.maxAlt.toFixed(1));
   setVal('Min Alt (m)', analysis.stats.minAlt.toFixed(1));

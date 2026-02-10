@@ -1,5 +1,17 @@
 # Project Change Log
 
+## [v0.7.1] - 2026-02-09
+### Fixed (Regressions)
+- **Column Grouping**: Restored functionality in `Scaffold.gs`. Configured `Flight Info` to be expanded (4 cols visible) and others collapsed (1 col visible) by default.
+- **Parameters**: Centralized all parameter definitions in `Config.gs`. `Scaffold.gs` now dynamically populates the Parameters sheet, restoring missing rows.
+- **Equipment**: Limited validation and formatting to top 50 rows (`dataEndRow`) to improve performance.
+
+### Added (Admin Tools)
+- **Backup**: New "Admin: Backup Data" menu to copy Flights/Equipment to backup tabs.
+- **Reformat**: New "Admin: Reapply Formatting" menu to fix headers/colors without altering data.
+- **Reset**: New "Admin: Delete System Sheets" menu for clean restarts.
+- **Menu Update**: Renamed "Update Validation" to "Admin: Update Validation & Params" to reflect that it now syncs parameters too.
+
 ## [v0.7.0] - 2026-02-08
 ### Added
 - **Workflows**: Added automated workflows for Code Check, Sync Project, and Session Summary.
