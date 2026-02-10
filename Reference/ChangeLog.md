@@ -1,5 +1,27 @@
 # Project Change Log
 
+## [v0.7.11] - 2026-02-09
+### Fixed
+- **Notes Logic**: Updated `insertFlightRow_` to properly capture System Notes (Geo Errors, Validation Warnings) in the "Notes" column instead of leaving it blank.
+- **Watch Folder UI**: Removed redundant "Scanning in background" toast. Updated Alert to show "Flights Created" count.
+
+## [v0.7.10] - 2026-02-09
+### Fixed
+- **Config Logic**: Fixed a critical bug in `getParameters_` where Boolean `TRUE` was coerced to Number `1`, causing the "Enable Watch Folder" check to fail. Configuration now strictly respects Boolean types.
+
+## [v0.7.9] - 2026-02-09
+### Fixed
+- **Parameter Migration**: Updated `Scaffold.gs` to map legacy "Friendly Names" (e.g. "Enable Watch Folder") to System Keys (`ENABLE_WATCH_FOLDER`) during sheet updates, preventing user settings from being wiped or ignored.
+
+## [v0.7.8] - 2026-02-09
+### Fixed
+- **Watch Folder Crash**: Fixed a silent failure caused by a missing helper function (`isHashSeen_`) in the deduplication logic.
+
+## [v0.7.6] - [v0.7.7] - 2026-02-09
+### Added
+- **Debug Logging**: Added verbose logging to Watch Folder scan.
+- **Verbose Alerts**: Updated Scan Alert to show detailed file counts (Processed/Skipped/Errors).
+
 ## [v0.7.5] - 2026-02-09
 ### Fixed
 - **Upload Reporting**: Upload dialog now accurately reports the number of flights created from ZIP files (e.g. "3 flights created" instead of "1 file processed").

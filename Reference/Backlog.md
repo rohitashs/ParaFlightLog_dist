@@ -105,6 +105,9 @@ This file is the single source of truth for Requirements, Bugs, and Change Reque
 - [x] **[BUG-UPL-001]** (Links: [REQ-ING-003]) **Upload Fail**: Multi-file upload only processed 1 file. *Status: Fixed (v0.7.4 Client-Side Upload)*
 - [x] **[IMP-UPL-002]** (Links: [REQ-ING-003]) **ZIP Reporting**: Accurately count flights from ZIPs. *Status: Implemented (v0.7.5)*
 - [x] **[BUG-SCR-001]** (Links: [REQ-SCR-001]) **XC Scoring Missing**: Regression fixed in v0.7.2. *Status: Fixed*
+- [x] **[BUG-ING-002]** (Links: [REQ-SYS-002]) **Watch Folder Silent Fail**: Missing Dedupe Helper + Missing Alert. *Status: Fixed (v0.7.8/v0.7.11)*
+- [x] **[BUG-CFG-002]** (Links: [REQ-SYS-001]) **Parameter Mismatch**: Boolean `TRUE` coerced to Number `1` in `getParameters_`. *Status: Fixed (v0.7.10)*
+- [x] **[BUG-ING-003]** (Links: [REQ-ING-002]) **Notes Overwrite**: System Notes (Geo/Validation) were not writing to Notes column. *Status: Fixed (v0.7.11)*
 
 ## 3. Change Requests (CRs)
 *Enhancements or modifications.*
@@ -117,7 +120,7 @@ This file is the single source of truth for Requirements, Bugs, and Change Reque
 - [x] **[CR-CFG-001]** (Links: [REQ-SYS-001]) **Lookups Refactor**: Group parameters by section, add warnings/descriptions, split Geo providers. *Status: Implemented*
 - [ ] **[CR-GEO-001]** (Links: [REQ-SCR-002]) **Multi-Provider Geo**: Support comma-separated providers for RevGeo, Sites, and Timezone. *Status: Open*
 - [x] **[BUG-UI-002]** (Links: [REQ-UI-001]) **Flight No Formula**: `#Ref!` error on row deletion. Needs robust `MAX` formula. *Status: Fixed*
-- [ ] **[CR-LOG-002]** (Links: [REQ-ING-002]) **Clean Notes**: Ingestion should leave `Flight Notes` blank; detailed errors go to `Import_Log`. *Status: Open*
+- [x] **[CR-LOG-002]** (Links: [REQ-ING-002]) **Clean Notes**: Ingestion should leave `Flight Notes` blank; detailed errors go to `Import_Log`. *Status: Implemented (v0.7.11 - System Notes now go to Notes column)*
 
 - [ ] **[CR-ING-001]** (Links: [REQ-ANA-003]) **Landing Time Fallback**: If IGC misses landing time, calculate `Launch + Duration`. *Status: Implemented*
 - [ ] **[CR-UI-002]** (Links: [REQ-UI-003]) **Data Formatting**: Round Speed/Dist/Alt/Score (1 dec), % (2 dec), Times (nearest min). *Status: Implemented*
