@@ -102,13 +102,16 @@ This file is the single source of truth for Requirements, Bugs, and Change Reque
 - [x] **[BUG-GEO-001]** (Links: [REQ-UI-002]) **Timezone Failure**: Time Zone defaults to UTC. *Status: Fixed / Verified*
 - [ ] **[BUG-GEO-002]** (Links: [REQ-SCR-002]) **Missing Location Data**: Launch/Land Site, Town, Region are empty. *Status: Re-opened (Logic fixed, but likely API rejection)*
 - [x] **[BUG-ING-001]** (Links: [REQ-UI-002]) **Column Shift**: Start Date repeated in TimeZone column, shifting everything right. *Status: Fixed*
+- [x] **[BUG-UPL-001]** (Links: [REQ-ING-003]) **Upload Fail**: Multi-file upload only processed 1 file. *Status: Fixed (v0.7.4 Client-Side Upload)*
+- [x] **[IMP-UPL-002]** (Links: [REQ-ING-003]) **ZIP Reporting**: Accurately count flights from ZIPs. *Status: Implemented (v0.7.5)*
+- [x] **[BUG-SCR-001]** (Links: [REQ-SCR-001]) **XC Scoring Missing**: Regression fixed in v0.7.2. *Status: Fixed*
 
 ## 3. Change Requests (CRs)
 *Enhancements or modifications.*
 
 - [ ] **[CR-UI-004]** (Links: [REQ-UI-004]) **Menu Restructure**: Rename `Setup` to `Admin`, `Scaffold` to `First Time Setup`. Add Admin tools. *Status: Open*
 - [x] **[CR-CFG-003]** (Links: [REQ-SYS-002]) **Watch Folder Toggle**: Add `ENABLE_WATCH_FOLDER` param and Menu toggles. Update trigger logic. *Status: Implemented*
-- [x] **[CR-ING-002]** (Links: [REQ-ING-003]) **File Upload UI**: New "Add Flight from Upload" menu with multi-file picker. Uploads to `UPLOAD_FOLDER_ID`. *Status: Implemented*
+- [x] **[CR-ING-002]** (Links: [REQ-ING-003]) **File Upload UI**: New "Add Flight from Upload" menu with multi-file picker. Uploads to `UPLOAD_FOLDER_ID`. *Status: Implemented (v0.7.4)*
 - [x] **[CR-UI-005]** (Links: [REQ-UI-005]) **Dialog Usability**: Support "Enter" key for OK in all input dialogs. *Status: Implemented*
 
 - [x] **[CR-CFG-001]** (Links: [REQ-SYS-001]) **Lookups Refactor**: Group parameters by section, add warnings/descriptions, split Geo providers. *Status: Implemented*

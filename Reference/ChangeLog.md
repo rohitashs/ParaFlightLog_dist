@@ -1,5 +1,23 @@
 # Project Change Log
 
+## [v0.7.5] - 2026-02-09
+### Fixed
+- **Upload Reporting**: Upload dialog now accurately reports the number of flights created from ZIP files (e.g. "3 flights created" instead of "1 file processed").
+
+## [v0.7.4] - 2026-02-09
+### Fixed
+- **Multi-File Upload**: Replaced flaky form submission with Client-Side `FileReader` strategy. Files are now read in the browser and sent as Base64, resolving the issue where only the first file was processed.
+
+## [v0.7.3] - 2026-02-09
+### Fixed
+- **Geo Validation**: Switched default Reverse Geocoding provider to `big_data_cloud` (prioritizing it over `nominatim`) to resolve "Address unavailable" errors.
+- **Upload Logic**: Improved robustness of server-side file loop (precursor to v0.7.4).
+
+## [v0.7.2] - 2026-02-09
+### Fixed
+- **URL Import Hang**: Implemented missing `handleUrlImportAction` in `Ingestion.gs`, fixing the infinite loading state.
+- **XC Scoring**: Fixed a regression where XC Distance, Score, and Points were not populating.
+
 ## [v0.7.1] - 2026-02-09
 ### Fixed (Regressions)
 - **Column Grouping**: Restored functionality in `Scaffold.gs`. Configured `Flight Info` to be expanded (4 cols visible) and others collapsed (1 col visible) by default.
