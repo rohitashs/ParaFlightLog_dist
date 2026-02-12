@@ -37,6 +37,8 @@ This file is the single source of truth for **ToDos**, **Requirements**, **Chang
     - [x] **RQ-ING-002.2** | **Status**: Implemented | **Phase**: 1 | **Description**: Duplicate Detection (MD5 + Overlap).
     - [x] **RQ-ING-002.3** | **Status**: Implemented | **Phase**: 1 | **Description**: Validation System (Status/Notes population).
 
+- [x] **RQ-ING-003** | **Status**: Implemented | **Phase**: 1 | **Description**: **Master Log Folder**: Add `MASTER_LOG_FOLDER_ID` param. Add Menu to set folder. Auto-copy valid IGCs, rename standardized, and set public permission ("Anyone with link").
+
 ### 📊 Module: Analysis (ANA)
 - [x] **RQ-ANA-001** | **Status**: Implemented | **Phase**: 1 | **Description**: Flight Mode Detection
     - [x] **RQ-ANA-001.1** | **Status**: Implemented | **Phase**: 1 | **Description**: Thermal Detection.
@@ -70,7 +72,6 @@ This file is the single source of truth for **ToDos**, **Requirements**, **Chang
 ## 4. Change Requests (`CR`)
 *Enhancements to Implemented Requirements.*
 
-- [x] **CR-ING-004** | **Status**: Implemented | **Date**: 2026-02-09 | **Req**: RQ-ING-002 | **Description**: **Master Log Folder**: Add `MASTER_LOG_FOLDER_ID` param. Add Menu to set folder. Auto-copy valid IGCs, rename standardized, and set public permission ("Anyone with link").
 - [ ] **CR-UI-009** | **Status**: Open | **Date**: 2026-02-09 | **Req**: RQ-SYS-002 | **Description**: **SeeYou Cloud Link**: Integration with SeeYou Cloud for visualization. Add "View Flight" column with generated link (`https://seeyou.cloud/api/open?igc=<drive_link>`).
 - [ ] **CR-UI-010** | **Status**: Open | **Date**: 2026-02-10 | **Req**: RQ-SYS-002 | **Description**: **Manual Flight Form**: HTML Sidebar/Dialog for manual entry (Date, Duration, Notes, Glider) replacing current "Blank Row" macro.
 - [ ] **CR-UI-011** | **Status**: Open | **Date**: 2026-02-10 | **Req**: RQ-SYS-002 | **Description**: **Flight Detail View**: Sidebar to view full details of selected flight (Metadata, Stats, Map/Link) in a read-only format.
