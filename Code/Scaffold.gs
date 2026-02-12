@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-02-11 11:53:00
+ * Updated: 2026-02-12 13:19:59
  */
 /**
  * Paragliding Flight Log v2.0 - Scaffolding & Setup
@@ -29,9 +29,9 @@ function scaffoldAll_() {
   
   // 2. Scaffolding Content
   scaffoldOverview_(ss);
-  scaffoldParameters_(ss);
   scaffoldEquipment_(ss);
-  scaffoldLookups_(ss);
+  scaffoldLookups_(ss); // Must run before Parameters to populate lists
+  scaffoldParameters_(ss);
   scaffoldFlights_(ss);
   scaffoldAppLog_(ss);
   
@@ -162,6 +162,23 @@ function scaffoldParameters_(ss) {
      }
   }
   sh.autoResizeColumns(1, 3);
+  
+  // Validation for Date/Time Formats
+  var shLook = ss.getSheetByName(TABS.LOOKUPS.name);
+  if (shLook) {
+      // Use Range instead of List for dynamic updates
+      var dateRange = shLook.getRange('I3:I8');
+      var timeRange = shLook.getRange('J3:J5');
+      
+      var dateRule = SpreadsheetApp.newDataValidation().requireValueInRange(dateRange, true).build();
+      var timeRule = SpreadsheetApp.newDataValidation().requireValueInRange(timeRange, true).build();
+      
+      // Find rows for DATE_FORMAT and TIME_FORMAT
+      for (var i=0; i<rows.length; i++) {
+         if (rows[i][0] === 'DATE_FORMAT') sh.getRange(i+3, 2).setDataValidation(dateRule);
+         if (rows[i][0] === 'TIME_FORMAT') sh.getRange(i+3, 2).setDataValidation(timeRule);
+      }
+  }
 }
 
 function scaffoldEquipment_(ss) {
@@ -199,8 +216,9 @@ function scaffoldLookups_(ss) {
   sh.getRange('A1:G1').setBackground(TABS.LOOKUPS.color);
   
   // Row 2
-  sh.getRange('A2:G2').setValues([TABS.LOOKUPS.columns]);
-  sh.getRange('A2:G2').setFontWeight('bold').setBackground('#EEEEEE');
+  // Row 2
+  sh.getRange('A2:J2').setValues([TABS.LOOKUPS.columns.concat(['XC Classes', 'Date Formats', 'Time Formats'])]);
+  sh.getRange('A2:J2').setFontWeight('bold').setBackground('#EEEEEE');
   
   // Static Categories
   sh.getRange('A3:A6').setValues([['Wing'], ['Harness'], ['Reserve'], ['Other']]);
@@ -213,13 +231,19 @@ function scaffoldLookups_(ss) {
   sh.getRange('E3').setFormula('=IFERROR(QUERY(' + eqName + '!A:M, "select B where A=\'Other\' and H=FALSE order by B asc label B \'\'", 0), "")');
 
   // Status & Types from CFG
-  var statuses = ['Needs Review', 'Valid', 'Invalid?', 'Duplicate'];
+  var statuses = ['Review?', 'Valid', 'Invalid?', 'Duplicate'];
   var types = CFG.defaults.FLIGHT_TYPES.split(',');
+  var xcClasses = ['Open', 'Triangle', 'FAI Triangle', 'Out-and-Return'];
+  var dateFormats = ['yyyy-MM-dd', 'MM/dd/yyyy', 'dd/MM/yyyy', 'MMM dd, yyyy', 'ddd, MMM dd'];
+  var timeFormats = ['HH:mm', 'h:mm a'];
   
   if (statuses.length > 0) sh.getRange(3, 6, statuses.length, 1).setValues(statuses.map(function(s) { return [s]; }));
   if (types.length > 0) sh.getRange(3, 7, types.length, 1).setValues(types.map(function(t) { return [t]; }));
+  if (xcClasses.length > 0) sh.getRange(3, 8, xcClasses.length, 1).setValues(xcClasses.map(function(t) { return [t]; }));
+  if (dateFormats.length > 0) sh.getRange(3, 9, dateFormats.length, 1).setValues(dateFormats.map(function(t) { return [t]; }));
+  if (timeFormats.length > 0) sh.getRange(3, 10, timeFormats.length, 1).setValues(timeFormats.map(function(t) { return [t]; }));
   
-  sh.autoResizeColumns(1, 7);
+  sh.autoResizeColumns(1, 10);
 }
 
 function scaffoldAppLog_(ss) {
@@ -248,7 +272,7 @@ function scaffoldFlights_(ss) {
   
   // Write Headers (Row 4)
   sh.getRange(4, 1, 1, flatHeaders.length).setValues([flatHeaders]);
-  sh.getRange(4, 1, 1, flatHeaders.length).setFontWeight('bold').setBorder(true, true, true, true, true, true);
+  sh.getRange(4, 1, 1, flatHeaders.length).setFontWeight('bold').setBorder(true, true, true, true, true, true).setWrapStrategy(SpreadsheetApp.WrapStrategy.WRAP).setVerticalAlignment("top");
   
   // Grouping & Formatting
   var colIndex = 1;
@@ -329,17 +353,16 @@ function applyFlightsValidation_(sh) {
   if (valRows < 1) return;
 
   // Status
+  // Status
   if (map['Status']) {
-    var rule = SpreadsheetApp.newDataValidation().requireValueInList(['Needs Review', 'Valid', 'Invalid?', 'Duplicate'], true).setAllowInvalid(true).build();
+    var rule = SpreadsheetApp.newDataValidation().requireValueInList(['Review?', 'Valid', 'Invalid?', 'Duplicate'], true).setAllowInvalid(true).build();
     sh.getRange(startRow, map['Status'], valRows, 1).setDataValidation(rule);
     
     // Conditional Formatting
     var range = sh.getRange(startRow, map['Status'], valRows, 1);
     var rules = sh.getConditionalFormatRules();
-    // Clear old rules on this range? difficult to isolate. Append is safer for now.
-    // Ideally we clear all rules and rebuild.
-    // For now, let's just append.
-    rules.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('Needs Review').setBackground('#FFF9C4').setRanges([range]).build());
+
+    rules.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('Review?').setBackground('#FFF9C4').setRanges([range]).build());
     rules.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('Valid').setBackground('#C8E6C9').setRanges([range]).build());
     rules.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('Invalid?').setBackground('#FFCDD2').setRanges([range]).build());
     sh.setConditionalFormatRules(rules);
@@ -365,6 +388,23 @@ function applyFlightsValidation_(sh) {
   apply('Harness', 'C3:C');
   apply('Reserve 1', 'D3:D');
   apply('Reserve 2', 'D3:D');
+  
+  // XC Flight Class (New)
+  if (map['XC Flight Class']) {
+      var shLook = ss.getSheetByName(TABS.LOOKUPS.name);
+      var rule = SpreadsheetApp.newDataValidation().requireValueInList(shLook.getRange('H3:H6').getValues().flat(), true).build();
+      sh.getRange(startRow, map['XC Flight Class'], valRows, 1).setDataValidation(rule);
+  }
+  
+  // Closed? (Checkbox)
+  if (map['Closed?']) {
+     sh.getRange(startRow, map['Closed?'], valRows, 1).insertCheckboxes();
+  }
+  
+  // Formatting: Wrap & Top Align ALL data cells
+  var allData = sh.getRange(startRow, 1, valRows, sh.getLastColumn());
+  allData.setWrapStrategy(SpreadsheetApp.WrapStrategy.WRAP);
+  allData.setVerticalAlignment("top");
 }
 
 function applyEquipmentValidation_(sh) {

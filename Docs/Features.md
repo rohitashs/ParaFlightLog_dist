@@ -49,6 +49,7 @@ Adds location context to raw GPS coordinates.
 *   **Reverse Geocoding**: Converts Lat/Lon to "Nearest Town, Region, Country".
 *   **Site Detection**: Identifies known Paragliding Takeoffs/Landings within 3km using OpenStreetMap data.
 *   **Interactive Links**: Generates links to view the flight on SeeYou Cloud (planned).
+*   **SeeYou Cloud Integration**: Valid flights are automatically uploaded to a public folder and linked directly to SeeYou Cloud for 3D visualization.
 
 ## 6. �️ User Interface (UI)
 *Maps to `RQ-SYS-002`*
@@ -58,6 +59,7 @@ The visual layer where users interact with the data.
 *   **Column Grouping**: Columns are physically grouped and colored by function (e.g. *Flight Info* is Blue, *Scoring* is Orange). Groups can be collapsed to reduce clutter.
 *   **Menus**: A custom "Flight Log" menu provides one-click access to common actions (Add Flight, Upload, Update validation).
 *   **Dialogs**: Custom HTML interfaces for File Uploads and URL imports, capable of handling complex interactions.
+*   **Flight Inspector**: A dedicated sidebar to view, edit, and audit flight details without horizontal scrolling. Includes collapsible sections and direct SeeYou Cloud links.
 
 ## 7. 🛡️ Administration & Setup
 *Maps to `RQ-SYS-001`*

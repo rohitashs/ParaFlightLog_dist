@@ -1,8 +1,8 @@
 # Project Context & Ways of Working (Source of Truth)
 
 ## 🧠 Agent Memory & Context
-**Status**: Active Development (v0.7.12)
-**Last Session Focus**: Project Reorganization, Workflow Standardization, Backlog Grooming.
+**Status**: Active Development (v0.8.0)
+**Last Session Focus**: Flight Inspector, Refinements, Backlog Grooming.
 **Next Focus**: Master Log Folder (CR-ING-004), UI Enhancements.
 
 This file is the **long-term memory** for the project. Read this first to understand *how* we work and *where* we are.
@@ -88,6 +88,7 @@ The backlog has 5 strict sections:
 *   **Naming**: `Service.gs` for modules. `privateFunction_` (trailing underscore) for non-exported helpers.
 *   **Config**: Separation of Concerns. `Code.gs` = Logic, `Config.gs` = Constants, `Parameters Sheet` = Runtime Values.
 *   **Validation**: Validate early. Fail gracefully with logs.
+*   **Timestamps**: Always update file header timestamps before pushing. Use `.\update_headers.ps1` to automate this.
 
 ---
 
@@ -103,6 +104,7 @@ The backlog has 5 strict sections:
 1.  **Public Log**: Auto-copy valid IGCs to a public "Master Log" folder (`CR-ING-004`).
 2.  **SeeYou Integration**: Generate public links for flight visualization (`CR-UI-009`).
 3.  **Logging**: Enhance visibility of process execution (`CR-LOG-003`).
+4.  **Multiple Watch Folder**: Enhance `ENABLE_WATCH_FOLDER` (`CR-CFG-004`).
 
 ### Important Notes for Agent
 *   **Config**: The `Parameters` sheet is the runtime source of truth. `Config.gs` is just the schema/defaults.

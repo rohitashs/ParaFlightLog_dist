@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-02-12 01:21:00
+ * Updated: 2026-02-12 13:19:59
  * 
  * MODULE: Ingestion Service
  * Handles File inputs (Drive, URL), ZIP extraction, Deduplication, and calls Parser.
@@ -350,8 +350,12 @@ function processSingleIgcBlob_(blob, fileName, fileId, outerName, config) {
   }
 
   // F. Validation Check
-  var status = 'Needs Review';
+  var status = 'Review?';
   // notes handled by array
+  if (scoring.error) {
+     status = 'Invalid?';
+     noteLog.push('Scoring Error: ' + scoring.error);
+  }
   
   if (analysis.validation.status !== 'OK') {
      status = analysis.validation.status;
@@ -454,9 +458,7 @@ function uiAddManualFlight_() {
   SpreadsheetApp.flush();
 }
 
-/**
- * Inserts the Data Row into 'Flights' Sheet.
- */
+
 /**
  * Inserts the Data Row into 'Flights' Sheet.
  */

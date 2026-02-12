@@ -68,14 +68,15 @@ This file is the single source of truth for **ToDos**, **Requirements**, **Chang
     - [x] **RQ-SYS-002.2** | **Status**: Implemented | **Phase**: 1 | **Description**: Menu Actions & Dialogs.
 
 - [x] **RQ-SYS-003** | **Status**: Implemented | **Phase**: 1 | **Description**: **SeeYou Cloud Link**: Integration with SeeYou Cloud for visualization. Add "View Flight" column with generated link (`https://seeyou.cloud/api/open?igc=<drive_link>`).
+- [ ] **RQ-SYS-004** | **Status**: In Progress | **Phase**: 1 | **Description**: **Flight Inspector**: Sidebar to view and edit flight details. Sections color-coded to match current sheet. Replaces manual entry blank row macro.
 
 ---
 
 ## 4. Change Requests (`CR`)
 *Enhancements to Implemented Requirements.*
 
-- [ ] **CR-UI-010** | **Status**: Open | **Date**: 2026-02-10 | **Req**: RQ-SYS-002 | **Description**: **Manual Flight Form**: HTML Sidebar/Dialog for manual entry (Date, Duration, Notes, Glider) replacing current "Blank Row" macro.
-- [ ] **CR-UI-011** | **Status**: Open | **Date**: 2026-02-10 | **Req**: RQ-SYS-002 | **Description**: **Flight Detail View**: Sidebar to view full details of selected flight (Metadata, Stats, Map/Link) in a read-only format.
+- [ ] **CR-CFG-004** | **Status**: Open | **Date**: 2026-02-12 | **Req**: RQ-ING-001 | **Description**: **Multiple Watch Folders**: Enhance `ENABLE_WATCH_FOLDER` to support multiple comma-separated Folder IDs. Rename menu item "Add Watch Folder" to "Append to Watch Folder List".
+- [ ] **CR-UI-013** | **Status**: Open | **Date**: 2026-02-12 | **Req**: RQ-SYS-002 | **Description**: **Ingestion Progress Dialogs**: Update all ingestion dialogs (Scan, URL, Upload) to show real-time progress (Start, Processing X/Y, Summary) instead of just generic loading.
 - [ ] **CR-UI-012** | **Status**: Open | **Date**: 2026-02-10 | **Req**: RQ-SYS-002 | **Description**: **Quick Action Buttons**: Add buttons (Drawings/Images) to `Flights` sheet header for common tasks (Upload, Scan, Add Manual).
 - [ ] **CR-LOG-003** | **Status**: Open | **Date**: 2026-02-09 | **Req**: RQ-ING-002 | **Description**: **Enhance Logging**: General improvements to logging visibility (Files processed, specific errors, summary stats).
 - [ ] **CR-SCR-003** | **Status**: Open | **Date**: 2026-02-09 | **Req**: RQ-SCR-001 | **Description**: **XContest Verification**: Check if flight is already uploaded to XContest (via API or profile scan).
@@ -112,3 +113,4 @@ This file is the single source of truth for **ToDos**, **Requirements**, **Chang
 - [x] **Bug-UI-001** | **Status**: Fixed | **Date**: 2026-02-08 | **Req**: RQ-SYS-002 | **Description**: **Dropdown Misalignment**: Status/Gear dropdowns shifted.
 
 - [ ] **Bug-GEO-002** | **Status**: Open | **Date**: 2026-02-08 | **Req**: RQ-SCR-002 | **Description**: **Missing Location Data**: Launch/Land Site, Town, Region are empty (API Rejection?).
+- [ ] **Bug-UI-003** | **Status**: Open | **Date**: 2026-02-12 | **Req**: RQ-SYS-001 | **Description**: **Parameter Date/Time Formats**: Dropdowns for `DATE_FORMAT` and `TIME_FORMAT` in Parameters tab showing values incorrectly (e.g. number instead of string) or empty.

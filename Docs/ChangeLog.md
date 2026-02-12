@@ -1,5 +1,17 @@
 # Project Change Log
 
+## Session: Flight Inspector & Refinements
+**Date**: 2026-02-12
+**Versions**: v0.7.12 - v0.8.0
+**Focus**: Flight Inspector (Sidebar), Config Refinements, SeeYou Cloud.
+
+*   `[Imp]` **RQ-SYS-004**: Flight Inspector Sidebar (View/Edit flight details, Collapsible sections).
+*   `[Imp]` **RQ-SYS-003**: SeeYou Cloud Link Integration (Auto-generated links).
+*   `[Imp]` **RQ-ING-003**: Master Log Folder (Auto-copy valid IGCs).
+*   `[Imp]` **Config**: Config-driven Sidebar sections and editable fields.
+*   `[Imp]` **Docs**: Timestamp rule added to Context.md.
+*   `[Refactor]`: Removed duplicate headers/JSDoc in `Code.gs` and `Ingestion.gs`.
+
 ## Session: Structure & Planning
 **Date**: 2026-02-10
 **Versions**: v0.7.11 - v0.7.12

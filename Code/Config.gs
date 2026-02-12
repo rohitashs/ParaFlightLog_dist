@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-02-12 01:21:00
+ * Updated: 2026-02-12 13:19:59
  */
 /**
  * Paragliding Flight Log v2.0 - Configuration
@@ -106,20 +106,84 @@ var TABS = {
     name: CFG.sheets.flights,
     color: '#4CAF50', // Green
     index: 2,
-    headerRow: 5, // Data starts after this
+    headerRow: 4, // Headers are on Row 4
     dataStartRow: 5, 
     dataEndRow: 15, // Optimization: Only apply dropdowns to top 15 rows initially
     frozenRows: 4,
+    frozenRows: 4,
     groups: [
-      { name: 'Flight Info', visibleCols: 4, color: '#F5F5F5', cols: ['FlightID', 'Status', 'Flight No', 'Auto Summary', 'IGC File', 'Notes', 'Flight Type', 'Date', 'Time Zone', 'Launch Time', 'Landing Time', 'Flight Duration', 'Track Length (km)', 'Straight Dist (km)'] },
-      { name: 'Gear', visibleCols: 1, color: '#FFF9C4', cols: ['Wing', 'Harness', 'Reserve 1', 'Reserve 2', 'Other equipment', 'GlideRatio_LD (snap)', 'Trim_kmh (snap)', 'FullBar_kmh (snap)'] },
-      { name: 'XC Scoring', visibleCols: 1, color: '#FFCCBC', cols: ['XC Distance (km)', 'XC Score', 'XC Flight Class', 'FAI Triangle (km)', 'Points (World)', 'Points (National)', 'Closed?', 'Max Alt (m)', 'Min Alt (m)', 'Total Height Gain (m)', 'Max Ascent (m/s)', 'Max Descent (m/s)', 'Max Groundspeed (km/h)', 'Avg Groundspeed (km/h)'] },
-      { name: 'Launch', visibleCols: 1, color: '#C8E6C9', cols: ['Launch Alt (m)', 'Launch Lat', 'Launch Lon', 'Launch Site', 'Launch Town', 'Launch Country', 'Launch Region'] },
-      { name: 'Landing', visibleCols: 1, color: '#DCEDC8', cols: ['Landing Alt (m)', 'Landing Lat', 'Landing Lon', 'Landing Site', 'Landing Town', 'Landing Country', 'Landing Region', 'Launch-Landing Dist (km)'] },
-      { name: 'Weather', visibleCols: 1, color: '#E1F5FE', cols: ['Wind@Launch', 'Wind@Landing', 'Cloud %', 'Cloudbase', 'Temp (C)', 'Observations'] },
-      { name: 'Analytics', visibleCols: 1, color: '#E1BEE7', cols: ['Thermal %', 'Thermals Count', 'Thermal Avg (m/s)', 'Thermal Best (m/s)', 'Soar %', 'Efficiency', 'Glide %', 'Glide L/D', 'Sink %', 'Sink Time'] },
-      { name: 'Validation', visibleCols: 1, color: '#FFCDD2', cols: ['Validation Status', 'Val: Reason'] },
-      { name: 'Meta', visibleCols: 1, color: '#CFD8DC', cols: ['Import File', 'Import ID', 'Timestamp', 'Parser Ver'] }
+      { 
+        name: 'Flight Info', 
+        visibleCols: 4, 
+        collapsedRows: 2, // Show 2 rows (4 items) when collapsed
+        color: '#F5F5F5', 
+        cols: ['FlightID', 'Status', 'Flight No', 'Auto Summary', 'IGC File', 'Notes', 'Flight Type', 'Date', 'Time Zone', 'Launch Time', 'Landing Time', 'Flight Duration', 'Track Length (km)', 'Straight Dist (km)'],
+        editable: ['Status', 'Notes', 'Flight Type', 'Date', 'Time Zone', 'Launch Time', 'Landing Time']
+      },
+      { 
+        name: 'Gear', 
+        visibleCols: 1, 
+        collapsedRows: 1,
+        color: '#FFF9C4', 
+        cols: ['Wing', 'Harness', 'Reserve 1', 'Reserve 2', 'Other equipment', 'GlideRatio_LD (snap)', 'Trim_kmh (snap)', 'FullBar_kmh (snap)'],
+        editable: ['Wing', 'Harness', 'Reserve 1', 'Reserve 2', 'Other equipment']
+      },
+      { 
+        name: 'XC Scoring', 
+        visibleCols: 1, 
+        collapsedRows: 1,
+        color: '#FFCCBC', 
+        cols: ['XC Distance (km)', 'XC Score', 'XC Flight Class', 'FAI Triangle (km)', 'Points (World)', 'Points (National)', 'Closed?', 'Max Alt (m)', 'Min Alt (m)', 'Total Height Gain (m)', 'Max Ascent (m/s)', 'Max Descent (m/s)', 'Max Groundspeed (km/h)', 'Avg Groundspeed (km/h)'],
+        editable: ['XC Flight Class', 'Closed?']
+      },
+      { 
+        name: 'Launch', 
+        visibleCols: 1, 
+        collapsedRows: 1,
+        color: '#C8E6C9', 
+        cols: ['Launch Alt (m)', 'Launch Lat', 'Launch Lon', 'Launch Site', 'Launch Town', 'Launch Country', 'Launch Region'],
+        editable: ['Launch Site']
+      },
+      { 
+        name: 'Landing', 
+        visibleCols: 1, 
+        collapsedRows: 1,
+        color: '#DCEDC8', 
+        cols: ['Landing Alt (m)', 'Landing Lat', 'Landing Lon', 'Landing Site', 'Landing Town', 'Landing Country', 'Landing Region', 'Launch-Landing Dist (km)'],
+        editable: ['Landing Site']
+      },
+      { 
+        name: 'Weather', 
+        visibleCols: 1, 
+        collapsedRows: 1,
+        color: '#E1F5FE', 
+        cols: ['Wind@Launch', 'Wind@Landing', 'Cloud %', 'Cloudbase', 'Temp (C)', 'Observations'],
+        editable: ['Wind@Launch', 'Wind@Landing', 'Cloud %', 'Cloudbase', 'Temp (C)', 'Observations']
+      },
+      { 
+        name: 'Analytics', 
+        visibleCols: 1, 
+        collapsedRows: 1,
+        color: '#E1BEE7', 
+        cols: ['Thermal %', 'Thermals Count', 'Thermal Avg (m/s)', 'Thermal Best (m/s)', 'Soar %', 'Efficiency', 'Glide %', 'Glide L/D', 'Sink %', 'Sink Time'],
+        editable: []
+      },
+      { 
+        name: 'Validation', 
+        visibleCols: 1, 
+        collapsedRows: 1,
+        color: '#FFCDD2', 
+        cols: ['Validation Status', 'Val: Reason'],
+        editable: ['Validation Status', 'Val: Reason']
+      },
+      { 
+        name: 'Meta', 
+        visibleCols: 1, 
+        collapsedRows: 1,
+        color: '#CFD8DC', 
+        cols: ['Import File', 'Import ID', 'Timestamp', 'Parser Ver'],
+        editable: []
+      }
     ]
   },
   EQUIPMENT: {

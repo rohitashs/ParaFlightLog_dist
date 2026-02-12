@@ -1,9 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-02-12 00:30:00
- */
-/**
- * Paragliding Flight Log v2.0
+ * Updated: 2026-02-12 13:19:59
  * 
  * CORE MODULE: Orchestration Only.
  * Configuration -> Config.gs
@@ -24,6 +21,7 @@ function onOpen(e) {
     .addSeparator()
     .addItem('Scan Watch Folder now', 'scanWatchFolder')
     .addItem('Recompute selected flight(s)', 'uiRecomputeSelected_')
+    .addItem('Flight Inspector', 'showInspectorSidebar')
     .addSeparator()
     .addSubMenu(SpreadsheetApp.getUi().createMenu('Admin')
         .addItem('First Time Setup (Full Scaffold)', 'scaffoldAll_')
@@ -97,6 +95,189 @@ function showUrlDialog_() {
       .setWidth(400)
       .setHeight(250);
   SpreadsheetApp.getUi().showModalDialog(html, 'Enter IGC URL');
+}
+
+function showInspectorSidebar() {
+  var html = HtmlService.createHtmlOutputFromFile('Inspector')
+      .setTitle('Flight Inspector')
+      .setWidth(450);
+  SpreadsheetApp.getUi().showSidebar(html);
+}
+
+function getInspectorData() {
+  var log = [];
+  try {
+    var ss = SpreadsheetApp.getActive();
+    var sh = ss.getActiveSheet();
+    var actName = sh.getName();
+    log.push('Active Sheet: ' + actName);
+    
+    // Check Config
+    if (typeof TABS === 'undefined') {
+       return JSON.stringify({ error: 'Critical: TABS config object is undefined.', log: log });
+    }
+    log.push('Target Sheet: ' + TABS.FLIGHTS.name);
+    
+    // Validation: Must be Flights sheet
+    if (actName !== TABS.FLIGHTS.name) {
+      return JSON.stringify({ error: 'Incorrect Sheet. Please open "Flights". (Current: ' + actName + ')', log: log });
+    }
+    
+    var row = sh.getActiveRange().getRow();
+    log.push('Row: ' + row);
+    
+    // Validation: Header or above
+    if (row < TABS.FLIGHTS.dataStartRow) {
+      return JSON.stringify({ error: 'Please select a flight row (Row ' + TABS.FLIGHTS.dataStartRow + '+).', log: log });
+    }
+    
+    // Get Data
+    var lastCol = sh.getLastColumn();
+    if (lastCol < 1) {
+       return JSON.stringify({ error: 'Sheet is empty.', log: log });
+    }
+    
+    var values = sh.getRange(row, 1, 1, lastCol).getValues()[0];
+    
+    // Get Headers
+    var headers = sh.getRange(TABS.FLIGHTS.headerRow, 1, 1, lastCol).getValues()[0];
+    
+    // Get Validation Rules (for Dropdowns)
+    var validations = sh.getRange(row, 1, 1, lastCol).getDataValidations()[0];
+    
+    // Extract Flight URL (if any)
+    var flightUrl = null;
+    var flightIdIndex = headers.indexOf('FlightID');
+    if (flightIdIndex > -1) {
+       // Check for RichText link first
+       try {
+         var cell = sh.getRange(row, flightIdIndex + 1);
+         var rt = cell.getRichTextValue();
+         if (rt) flightUrl = rt.getLinkUrl();
+         
+         // Fallback to Formula parsing if no rich text link
+         if (!flightUrl && cell.getFormula()) {
+            var match = cell.getFormula().match(/HYPERLINK\("([^"]+)"/i);
+            if (match) flightUrl = match[1];
+         }
+       } catch(e) { log.push('Link extract fail: ' + e.message); }
+    }
+
+    // Build Response
+    var resp = { 
+      flightId: values[0], 
+      flightUrl: flightUrl,
+      groups: [],
+      debugHeaders: headers,
+      debugGroups: TABS.FLIGHTS.groups,
+      log: log
+    };
+    
+    // Get Date/Time Patterns
+    var dateFormat = 'yyyy-MM-dd'; 
+    var timeFormat = 'HH:mm';
+    try {
+      var paramSheet = ss.getSheetByName(TABS.PARAMETERS.name);
+      var params = paramSheet.getRange(3, 1, paramSheet.getLastRow()-2, 2).getValues();
+      params.forEach(function(r) {
+         if (r[0] === 'DATE_FORMAT') dateFormat = r[1];
+         if (r[0] === 'TIME_FORMAT') timeFormat = r[1];
+      });
+    } catch(e) {}
+
+    TABS.FLIGHTS.groups.forEach(function(g) {
+      var groupObj = { 
+        name: g.name, 
+        color: g.color, 
+        collapsedRows: g.collapsedRows || 1, // Pass config to UI
+        fields: [] 
+      };
+      
+      var editableCols = g.editable || [];
+      
+      g.cols.forEach(function(colName) {
+         var colIndex = headers.indexOf(colName);
+         if (colIndex > -1) {
+           var val = values[colIndex];
+           
+           // Format Dates/Times
+           // Heuristic: If column name contains 'Time' or 'Duration' -> Time Format?
+           // Actually, standard Date objects in Sheets are 'Date' type.
+           if (val instanceof Date) {
+              // Check if it's a "Date" column or "Time" column based on Header Name
+              if (colName.match(/Time|Duration/i)) {
+                 // Check if it's a Duration value (number) or Date object?
+                 // In Sheets, Time is Date object.
+                 val = Utilities.formatDate(val, Session.getScriptTimeZone(), timeFormat);
+              } else {
+                 // Assume Date
+                 val = Utilities.formatDate(val, Session.getScriptTimeZone(), dateFormat);
+              }
+           }
+           
+           var choices = null;
+           var rule = validations[colIndex];
+           if (rule) {
+              var criteria = rule.getCriteriaType();
+              if (criteria === SpreadsheetApp.DataValidationCriteria.VALUE_IN_LIST) {
+                 choices = rule.getCriteriaValues()[0]; 
+              } else if (criteria === SpreadsheetApp.DataValidationCriteria.VALUE_IN_RANGE) {
+                 try {
+                   var range = rule.getCriteriaValues()[0];
+                   var v = range.getValues();
+                   choices = v.map(function(r){ return r[0]; }).filter(function(x){ return x !== ''; });
+                 } catch(e) { log.push('Validation read error col ' + colIndex); }
+              } else if (criteria === SpreadsheetApp.DataValidationCriteria.CHECKBOX) {
+                 choices = ['TRUE','FALSE']; // Signal to UI it's a checkbox (or handle as select)
+              }
+           }
+           
+           // Determine Editing status from Config
+           var isEditable = (editableCols.indexOf(colName) > -1);
+           
+           groupObj.fields.push({
+              name: colName,
+              value: val,
+              colIndex: colIndex + 1,
+              choices: choices,
+              editable: isEditable
+           });
+         }
+      });
+
+      
+      if (groupObj.fields.length > 0) {
+        resp.groups.push(groupObj);
+      }
+    });
+    
+    return JSON.stringify(resp);
+    
+  } catch (e) {
+    return JSON.stringify({ error: 'Exception: ' + e.message + '\nStack: ' + e.stack, log: log });
+  }
+}
+
+function saveInspectorData(flightId, updates) {
+  var ss = SpreadsheetApp.getActive();
+  var sh = ss.getSheetByName(TABS.FLIGHTS.name);
+  
+  // 1. Find Row (Don't assume active row, search by ID for safety)
+  // Optimization: Use text finder
+  var finder = sh.createTextFinder(flightId).matchEntireCell(true);
+  var cell = finder.findNext();
+  
+  if (!cell) return { error: 'Flight ID not found: ' + flightId };
+  
+  var row = cell.getRow();
+  
+  // 2. Apply Updates
+  // updates = [ { colIndex: 5, value: 'New Note' }, ... ]
+  updates.forEach(function(u) {
+     sh.getRange(row, u.colIndex).setValue(u.value);
+  });
+  
+  return { success: true };
 }
 
 function showUploadDialog_() {
