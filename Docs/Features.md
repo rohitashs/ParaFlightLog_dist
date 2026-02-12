@@ -15,6 +15,7 @@ The system automates the import of flight logs (IGC) to reduce manual entry.
 *   **Smart Deduplication**: Uses MD5 hashing and time-overlap detection to prevent duplicate entries.
 *   **Multi-Source**: Supports Drag-and-Drop Uploads, Drive URL imports, and Bulk ZIP extraction.
 *   **Parsing**: Extracts pilot details, glider type, and high-fidelity G-Record data (GNSS/Pressure altitude).
+*   **Master Log Mirror**: Automatically copies and standardizes flight logs to a public folder (e.g. for SeeYou Cloud).
 
 ## 2. ✈️ Automated Flight Logging
 *Maps to `RQ-ING-002`*

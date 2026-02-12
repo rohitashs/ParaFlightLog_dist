@@ -85,6 +85,7 @@ Fixed Header Schema (Row 4=Category, Row 5=Name). Data starts Row 6.
 *   **`showUrlDialog_()`**: Shows the IGC URL import dialog.
 *   **`showUploadDialog_()`**: Shows the File Upload picker.
 *   **`uiUpdateWatchFolder_()`**: UI helper to update Watch Folder ID.
+*   **`uiUpdateMasterLogFolder_()`**: Updates Master Log Folder ID.
 *   **`uiEnableWatch_() / uiDisableWatch_()`**: Toggles the watch folder feature.
 *   **`setupWatcherTrigger_()`**: Installs the time-driven trigger for automation.
 
@@ -100,6 +101,7 @@ Fixed Header Schema (Row 4=Category, Row 5=Name). Data starts Row 6.
 *   **`handleFileUpload(form)`**: Handles file uploads from the HTML picker.
 *   **`processSingleIgcBlob_(blob, ...)`**: Core logic to Parse -> Analyze -> Score -> Insert.
 *   **`insertFlightRow_(data, ...)`**: Maps processed data to `Flights` sheet columns.
+*   **`copyToMasterLog_(blob, name, config)`**: Handles public mirroring and duplicate renaming.
 *   **`logImport_(...)`**: Appends specific errors or success messages to `App_Log`.
 
 ### `Parser.gs`
