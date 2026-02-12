@@ -34,6 +34,7 @@ Fixed Header Schema (Row 4=Category, Row 5=Name). Data starts Row 6.
 | Group | Key Fields | Mapping |
 | :--- | :--- | :--- |
 | **Identity** | `Status`, `Flight No`, `Date`, `Type` | `RQ-ING-002` |
+| **Link** | `FlightID` | `RQ-SYS-003` (SeeYou Link) |
 | **Gear** | `Wing`, `Harness`, `Reserve` | `RQ-SYS-001` |
 | **Scoring** | `XC Score`, `Triangle`, `Points` | `RQ-SCR-001` |
 | **Geo** | `Launch Site`, `Land Town` | `RQ-SCR-002` |
@@ -72,6 +73,7 @@ Fixed Header Schema (Row 4=Category, Row 5=Name). Data starts Row 6.
 ## 6. API Integrations (`RQ-SCR-002`)
 *   **Geocoding**: Chain of Responsibility (`BigDataCloud` -> `Nominatim` -> Fail).
 *   **Caching**: `CacheService` (6 hour TTL) for all external calls.
+*   **Visualization**: `SeeYou Cloud` via direct link generation using Master Log file ID.
 
 ---
 

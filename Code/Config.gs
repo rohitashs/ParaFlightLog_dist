@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-02-12 00:30:00
+ * Updated: 2026-02-12 01:21:00
  */
 /**
  * Paragliding Flight Log v2.0 - Configuration
@@ -32,6 +32,8 @@ var CFG = {
     { section: 'Ingestion', key: 'UPLOAD_FOLDER_ID', val: '', desc: 'Google Drive Folder ID for manual uploads', input: true },
     { section: 'Ingestion', key: 'ENABLE_WATCH_FOLDER', val: 'FALSE', desc: 'Enable automated scanning? (TRUE/FALSE)' },
     { section: 'Ingestion', key: 'WATCH_PERIOD_MIN', val: 15, desc: 'How often (mins) the trigger runs' },
+    { section: 'Ingestion', key: 'GDRIVE_DOWNLOAD_URL_PATTERN', val: 'https://drive.google.com/uc?export=download&id={ID}', desc: 'Pattern for direct file download' },
+    { section: 'Ingestion', key: 'SEEYOU_CLOUD_URL_PATTERN', val: 'https://seeyou.cloud/api/open?igc={URL}', desc: 'Pattern for SeeYou Cloud link' },
     
     // Geo & Time
     { section: 'Geo & Time', key: 'GEO_REV_PROVIDERS', val: 'big_data_cloud, nominatim_osm', desc: 'Reverse Geo Providers (comma-sep)' },

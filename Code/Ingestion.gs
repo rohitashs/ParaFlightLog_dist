@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-02-12 00:30:00
+ * Updated: 2026-02-12 01:21:00
  * 
  * MODULE: Ingestion Service
  * Handles File inputs (Drive, URL), ZIP extraction, Deduplication, and calls Parser.
@@ -367,7 +367,7 @@ function processSingleIgcBlob_(blob, fileName, fileId, outerName, config) {
   var finalNotes = noteLog.length > 0 ? noteLog.join(' | ') : '';
   
   // G. Insert Flight
-  insertFlightRow_(parsed, fileId, outerName, status, finalNotes, analysis, scoring, masterRes.finalName, {
+  insertFlightRow_(parsed, fileId, outerName, status, finalNotes, analysis, scoring, masterRes.finalName, masterRes.fileId, {
     l: geoLaunch, ls: siteLaunch,
     d: geoLand, ds: siteLand,
     tz: timeZone
@@ -457,7 +457,10 @@ function uiAddManualFlight_() {
 /**
  * Inserts the Data Row into 'Flights' Sheet.
  */
-function insertFlightRow_(data, fileId, outerName, status, notes, analysis, scoring, igcFileName, geo) {
+/**
+ * Inserts the Data Row into 'Flights' Sheet.
+ */
+function insertFlightRow_(data, fileId, outerName, status, notes, analysis, scoring, igcFileName, masterFileId, geo) {
   var ss = SpreadsheetApp.getActive();
   var sh = ss.getSheetByName(TABS.FLIGHTS.name);
   
@@ -524,9 +527,24 @@ function insertFlightRow_(data, fileId, outerName, status, notes, analysis, scor
   // 3. Map Data to Headers
   
   // -- Flight Info --
-  setVal('FlightID', flightId);
+  // 3. Map Data to Headers
+  
+  // -- Flight Info --
+  // Generate SeeYou Link if Master File ID exists
+  var flightIdVal = flightId;
+  if (masterFileId) {
+    var config = getParameters_();
+    var dlPattern = config.GDRIVE_DOWNLOAD_URL_PATTERN;
+    var syPattern = config.SEEYOU_CLOUD_URL_PATTERN;
+    if (dlPattern && syPattern) {
+       var directUrl = dlPattern.replace('{ID}', masterFileId);
+       var syUrl = syPattern.replace('{URL}', encodeURIComponent(directUrl));
+       flightIdVal = '=HYPERLINK("' + syUrl + '", "' + flightId + '")';
+    }
+  }
+
+  setVal('FlightID', flightIdVal);
   setVal('Status', status);
-  setVal('Flight No', flightNoFormula);
   setVal('Flight No', flightNoFormula);
   setVal('Auto Summary', autoSummary);
   setVal('IGC File', igcFileName);
@@ -805,6 +823,7 @@ function copyToMasterLog_(blob, fileName, config) {
     
     // Create File
     var newFile = folder.createFile(blob).setName(finalName);
+    result.fileId = newFile.getId();
     
     // Set Permission: Anyone with link can view
     newFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);

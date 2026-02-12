@@ -67,12 +67,13 @@ This file is the single source of truth for **ToDos**, **Requirements**, **Chang
     - [x] **RQ-SYS-002.1** | **Status**: Implemented | **Phase**: 1 | **Description**: 2-Row Headers & Grouping.
     - [x] **RQ-SYS-002.2** | **Status**: Implemented | **Phase**: 1 | **Description**: Menu Actions & Dialogs.
 
+- [x] **RQ-SYS-003** | **Status**: Implemented | **Phase**: 1 | **Description**: **SeeYou Cloud Link**: Integration with SeeYou Cloud for visualization. Add "View Flight" column with generated link (`https://seeyou.cloud/api/open?igc=<drive_link>`).
+
 ---
 
 ## 4. Change Requests (`CR`)
 *Enhancements to Implemented Requirements.*
 
-- [ ] **CR-UI-009** | **Status**: Open | **Date**: 2026-02-09 | **Req**: RQ-SYS-002 | **Description**: **SeeYou Cloud Link**: Integration with SeeYou Cloud for visualization. Add "View Flight" column with generated link (`https://seeyou.cloud/api/open?igc=<drive_link>`).
 - [ ] **CR-UI-010** | **Status**: Open | **Date**: 2026-02-10 | **Req**: RQ-SYS-002 | **Description**: **Manual Flight Form**: HTML Sidebar/Dialog for manual entry (Date, Duration, Notes, Glider) replacing current "Blank Row" macro.
 - [ ] **CR-UI-011** | **Status**: Open | **Date**: 2026-02-10 | **Req**: RQ-SYS-002 | **Description**: **Flight Detail View**: Sidebar to view full details of selected flight (Metadata, Stats, Map/Link) in a read-only format.
 - [ ] **CR-UI-012** | **Status**: Open | **Date**: 2026-02-10 | **Req**: RQ-SYS-002 | **Description**: **Quick Action Buttons**: Add buttons (Drawings/Images) to `Flights` sheet header for common tasks (Upload, Scan, Add Manual).
