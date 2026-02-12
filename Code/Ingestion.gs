@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-02-11 11:53:00
+ * Updated: 2026-02-12 00:30:00
  * 
  * MODULE: Ingestion Service
  * Handles File inputs (Drive, URL), ZIP extraction, Deduplication, and calls Parser.
@@ -343,19 +343,31 @@ function processSingleIgcBlob_(blob, fileName, fileId, outerName, config) {
   if (!timeZone) noteLog.push('Geo/Timezone: Lookup failed, using UTC');
   timeZone = timeZone || 'UTC';
   
-  // E. Validation Check
-  var status = 'Needs review';
+  // E. Master Log Copy
+  var masterRes = copyToMasterLog_(blob, fileName, config);
+  if (masterRes.error) {
+     noteLog.push('Master Log Error: ' + masterRes.error);
+  }
+
+  // F. Validation Check
+  var status = 'Needs Review';
   // notes handled by array
   
   if (analysis.validation.status !== 'OK') {
      status = analysis.validation.status;
      if (analysis.validation.reason) noteLog.push(analysis.validation.reason);
   }
+
+  // Override status if duplicate file name
+  if (masterRes.isDuplicate) {
+    status = 'Duplicate';
+    noteLog.push('Duplicate Filename');
+  }
   
   var finalNotes = noteLog.length > 0 ? noteLog.join(' | ') : '';
   
-  // F. Insert Flight
-  insertFlightRow_(parsed, fileId, outerName, status, finalNotes, analysis, scoring, {
+  // G. Insert Flight
+  insertFlightRow_(parsed, fileId, outerName, status, finalNotes, analysis, scoring, masterRes.finalName, {
     l: geoLaunch, ls: siteLaunch,
     d: geoLand, ds: siteLand,
     tz: timeZone
@@ -445,7 +457,7 @@ function uiAddManualFlight_() {
 /**
  * Inserts the Data Row into 'Flights' Sheet.
  */
-function insertFlightRow_(data, fileId, outerName, status, notes, analysis, scoring, geo) {
+function insertFlightRow_(data, fileId, outerName, status, notes, analysis, scoring, igcFileName, geo) {
   var ss = SpreadsheetApp.getActive();
   var sh = ss.getSheetByName(TABS.FLIGHTS.name);
   
@@ -515,7 +527,9 @@ function insertFlightRow_(data, fileId, outerName, status, notes, analysis, scor
   setVal('FlightID', flightId);
   setVal('Status', status);
   setVal('Flight No', flightNoFormula);
+  setVal('Flight No', flightNoFormula);
   setVal('Auto Summary', autoSummary);
+  setVal('IGC File', igcFileName);
   setVal('Notes', notes); // Write System Notes (Geo errors, Validation, etc)
   setVal('Flight Type', scoring.flightType || 'Free Fly');
   setVal('Date', data.meta.dateIso);
@@ -753,4 +767,52 @@ function isHashSeen_(hashStr) {
 function markHashSeen_(hashStr) {
   var p = PropertiesService.getDocumentProperties();
   p.setProperty('HASH_' + hashStr, '1');
+}
+
+/**
+ * Copies the IGC file to the Master Log Folder.
+ * Handles duplicates by renaming (append _copy) and flagging.
+ * Returns { finalName: string, isDuplicate: boolean, error: string }
+ */
+function copyToMasterLog_(blob, fileName, config) {
+  var result = { finalName: fileName, isDuplicate: false, error: null };
+  var folderId = config.MASTER_LOG_FOLDER_ID;
+  
+  if (!folderId) return result; // Feature disabled key missing
+  
+  try {
+    var folder = DriveApp.getFolderById(folderId);
+    var finalName = fileName;
+    
+    // Check for existing file with same name
+    var existing = folder.getFilesByName(fileName);
+    if (existing.hasNext()) {
+       result.isDuplicate = true;
+       // Append suffix
+       var parts = fileName.split('.');
+       var ext = parts.pop();
+       var base = parts.join('.');
+       finalName = base + '_copy.' + ext;
+       
+       // Ensure unique copy name (simple check, not recursive for performance)
+       if (folder.getFilesByName(finalName).hasNext()) {
+          // If even _copy exists, add timestamp
+          finalName = base + '_copy_' + Date.now() + '.' + ext;
+       }
+    }
+    
+    result.finalName = finalName;
+    
+    // Create File
+    var newFile = folder.createFile(blob).setName(finalName);
+    
+    // Set Permission: Anyone with link can view
+    newFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    
+  } catch (e) {
+    console.error('Master Log Copy Error', e);
+    result.error = e.message;
+  }
+  
+  return result;
 }

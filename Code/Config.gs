@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-02-11 11:53:00
+ * Updated: 2026-02-12 00:30:00
  */
 /**
  * Paragliding Flight Log v2.0 - Configuration
@@ -28,6 +28,7 @@ var CFG = {
   parameters: [
     // Ingestion
     { section: 'Ingestion', key: 'WATCH_FOLDER_ID', val: '', desc: 'Google Drive Folder ID to watch for .igc files', input: true },
+    { section: 'Ingestion', key: 'MASTER_LOG_FOLDER_ID', val: '', desc: 'Google Drive ID for Master Log (Public)', input: true },
     { section: 'Ingestion', key: 'UPLOAD_FOLDER_ID', val: '', desc: 'Google Drive Folder ID for manual uploads', input: true },
     { section: 'Ingestion', key: 'ENABLE_WATCH_FOLDER', val: 'FALSE', desc: 'Enable automated scanning? (TRUE/FALSE)' },
     { section: 'Ingestion', key: 'WATCH_PERIOD_MIN', val: 15, desc: 'How often (mins) the trigger runs' },
@@ -108,7 +109,7 @@ var TABS = {
     dataEndRow: 15, // Optimization: Only apply dropdowns to top 15 rows initially
     frozenRows: 4,
     groups: [
-      { name: 'Flight Info', visibleCols: 4, color: '#F5F5F5', cols: ['FlightID', 'Status', 'Flight No', 'Auto Summary', 'Notes', 'Flight Type', 'Date', 'Time Zone', 'Launch Time', 'Landing Time', 'Flight Duration', 'Track Length (km)', 'Straight Dist (km)'] },
+      { name: 'Flight Info', visibleCols: 4, color: '#F5F5F5', cols: ['FlightID', 'Status', 'Flight No', 'Auto Summary', 'IGC File', 'Notes', 'Flight Type', 'Date', 'Time Zone', 'Launch Time', 'Landing Time', 'Flight Duration', 'Track Length (km)', 'Straight Dist (km)'] },
       { name: 'Gear', visibleCols: 1, color: '#FFF9C4', cols: ['Wing', 'Harness', 'Reserve 1', 'Reserve 2', 'Other equipment', 'GlideRatio_LD (snap)', 'Trim_kmh (snap)', 'FullBar_kmh (snap)'] },
       { name: 'XC Scoring', visibleCols: 1, color: '#FFCCBC', cols: ['XC Distance (km)', 'XC Score', 'XC Flight Class', 'FAI Triangle (km)', 'Points (World)', 'Points (National)', 'Closed?', 'Max Alt (m)', 'Min Alt (m)', 'Total Height Gain (m)', 'Max Ascent (m/s)', 'Max Descent (m/s)', 'Max Groundspeed (km/h)', 'Avg Groundspeed (km/h)'] },
       { name: 'Launch', visibleCols: 1, color: '#C8E6C9', cols: ['Launch Alt (m)', 'Launch Lat', 'Launch Lon', 'Launch Site', 'Launch Town', 'Launch Country', 'Launch Region'] },

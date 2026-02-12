@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-02-11 11:53:00
+ * Updated: 2026-02-12 00:30:00
  */
 /**
  * Paragliding Flight Log v2.0
@@ -35,6 +35,7 @@ function onOpen(e) {
         .addSeparator()
         .addItem('Update Watch Folder...', 'uiUpdateWatchFolder_')
         .addItem('Update Upload Folder...', 'uiUpdateUploadFolder_')
+        .addItem('Update Master Log Folder...', 'uiUpdateMasterLogFolder_')
         .addItem('Enable Watch Folder', 'uiEnableWatch_')
         .addItem('Disable Watch Folder', 'uiDisableWatch_')
         .addSeparator()
@@ -137,6 +138,7 @@ function debugClearDedupe_() {
 
 function uiUpdateWatchFolder_() { uiUpdateFolder_('WATCH_FOLDER_ID', 'Watch Folder'); }
 function uiUpdateUploadFolder_() { uiUpdateFolder_('UPLOAD_FOLDER_ID', 'Upload Folder'); }
+function uiUpdateMasterLogFolder_() { uiUpdateFolder_('MASTER_LOG_FOLDER_ID', 'Master Log Folder'); }
 
 function uiEnableWatch_() {
   setParameter_('ENABLE_WATCH_FOLDER', 'TRUE');
