@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-02-12 13:19:59
+ * Updated: 2026-02-13 01:10:00
  */
 /**
  * Paragliding Flight Log v2.0 - Configuration
@@ -30,10 +30,19 @@ var CFG = {
     { section: 'Ingestion', key: 'WATCH_FOLDER_ID', val: '', desc: 'Google Drive Folder ID to watch for .igc files', input: true },
     { section: 'Ingestion', key: 'MASTER_LOG_FOLDER_ID', val: '', desc: 'Google Drive ID for Master Log (Public)', input: true },
     { section: 'Ingestion', key: 'UPLOAD_FOLDER_ID', val: '', desc: 'Google Drive Folder ID for manual uploads', input: true },
+    { section: 'Ingestion', key: 'ERROR_FOLDER_ID', val: '', desc: 'Google Drive Folder ID for failed imports', input: true },
     { section: 'Ingestion', key: 'ENABLE_WATCH_FOLDER', val: 'FALSE', desc: 'Enable automated scanning? (TRUE/FALSE)' },
+    { section: 'Ingestion', key: 'MOVE_FROM_WATCH_FOLDER', val: 'FALSE', desc: 'Move files from Watch Folder after success? (TRUE/FALSE)' },
     { section: 'Ingestion', key: 'WATCH_PERIOD_MIN', val: 15, desc: 'How often (mins) the trigger runs' },
-    { section: 'Ingestion', key: 'GDRIVE_DOWNLOAD_URL_PATTERN', val: 'https://drive.google.com/uc?export=download&id={ID}', desc: 'Pattern for direct file download' },
-    { section: 'Ingestion', key: 'SEEYOU_CLOUD_URL_PATTERN', val: 'https://seeyou.cloud/api/open?igc={URL}', desc: 'Pattern for SeeYou Cloud link' },
+    { section: 'Ingestion', key: 'WATCH_PERIOD_MIN', val: 15, desc: 'How often (mins) the trigger runs' },
+    
+    // Integrations
+    { section: 'Integrations', key: 'GDRIVE_DOWNLOAD_URL_PATTERN', val: 'https://drive.google.com/uc?export=download&id={ID}', desc: 'Pattern for direct file download' },
+    { section: 'Integrations', key: 'SEEYOU_CLOUD_URL_PATTERN', val: 'https://seeyou.cloud/api/open?igc={URL}', desc: 'Pattern for SeeYou Cloud link' },
+    { section: 'Integrations', key: 'XCONTEST_USERNAME', val: '', desc: 'XContest Username for Flight verification', input: true },
+    { section: 'Integrations', key: 'XCONTEST_PILOT_URL_PATTERN', val: 'https://www.xcontest.org/world/en/pilots/detail:{username}', desc: 'Pattern for Pilot Profile' },
+    { section: 'Integrations', key: 'XCONTEST_MATCH_DURATION_TOLERANCE_MIN', val: 2, desc: 'Tolerance (min) for Duration match', input: true },
+    { section: 'Integrations', key: 'XCONTEST_MATCH_START_TIME_TOLERANCE_MIN', val: 2, desc: 'Tolerance (min) for Start Time match (Fallback)', input: true },
     
     // Geo & Time
     { section: 'Geo & Time', key: 'GEO_REV_PROVIDERS', val: 'big_data_cloud, nominatim_osm', desc: 'Reverse Geo Providers (comma-sep)' },
@@ -74,7 +83,7 @@ var CFG = {
     // Lists
     { section: 'Lists', key: 'FLIGHT_TYPES', val: 'Free Fly, XC, Soaring, Comp, SIV / Maneuvers, Training, Other', desc: 'Flight Type Dropdown Options' },
     { section: 'Lists', key: 'DATE_FORMAT', val: 'yyyy-MM-dd', desc: 'Date Display Format' },
-    { section: 'Lists', key: 'TIME_FORMAT', val: 'HH:mm:ss', desc: 'Time Display Format' }
+    { section: 'Lists', key: 'TIME_FORMAT', val: 'h:mm a', desc: 'Time Display Format' }
   ],
   
   // Helper to get defaults map
@@ -133,7 +142,7 @@ var TABS = {
         visibleCols: 1, 
         collapsedRows: 1,
         color: '#FFCCBC', 
-        cols: ['XC Distance (km)', 'XC Score', 'XC Flight Class', 'FAI Triangle (km)', 'Points (World)', 'Points (National)', 'Closed?', 'Max Alt (m)', 'Min Alt (m)', 'Total Height Gain (m)', 'Max Ascent (m/s)', 'Max Descent (m/s)', 'Max Groundspeed (km/h)', 'Avg Groundspeed (km/h)'],
+        cols: ['XContest', 'XC Distance (km)', 'XC Score', 'XC Flight Class', 'FAI Triangle (km)', 'Points (World)', 'Points (National)', 'Closed?', 'Max Alt (m)', 'Min Alt (m)', 'Total Height Gain (m)', 'Max Ascent (m/s)', 'Max Descent (m/s)', 'Max Groundspeed (km/h)', 'Avg Groundspeed (km/h)'],
         editable: ['XC Flight Class', 'Closed?']
       },
       { 
@@ -218,6 +227,6 @@ var TABS = {
     index: 6,
     headerRow: 2,
     frozenRows: 2,
-    columns: ['Timestamp', 'FileID', 'FileName', 'InnerName', 'Status', 'Notes']
+    columns: ['Timestamp', 'FileID', 'FileName', 'InnerName', 'Status', 'Info']
   }
 };

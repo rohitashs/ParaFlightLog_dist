@@ -1,0 +1,233 @@
+<!--
+ * Paragliding Flight Log v2.0
+ * Updated: 2026-02-12 22:41:48
+ -->
+<!DOCTYPE html>
+<html>
+
+<head>
+    <base target="_top">
+    <?!= HtmlService.createTemplateFromFile('Style').evaluate().getContent(); ?>
+    <style>
+        /* CR Override: Wider Input */
+        #urlInput {
+            width: 100%;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Header: Text Color Only, No Background -->
+    <div class="header-large text-amber">Import from URL</div>
+
+    <div class="main-content">
+        <!-- Instructions: Consistent Div -->
+        <div class="instructions">
+            Enter a direct link to an IGC, ZIP, or GZ file.<br>
+            Google Drive URLs are also supported.
+        </div>
+
+        <!-- Inputs Group: Hidden when running -->
+        <div id="input-group" class="control-group">
+            <input type="text" id="urlInput" placeholder="https://example.com/flight.igc" autofocus>
+        </div>
+
+        <!-- Buttons: Left Aligned -->
+        <div class="control-group">
+            <!-- Action: Import (starts), Done (ends) -->
+            <button id="btn-start" onclick="submitUrl()" class="action">Import</button>
+            <button id="btn-done" onclick="google.script.host.close()" class="action"
+                style="display:none;">Done</button>
+
+            <!-- Close/Cancel -->
+            <button id="btn-close" onclick="google.script.host.close()" class="secondary">Close</button>
+        </div>
+
+        <div class="instructions" style="margin-top:15px; font-weight:bold;">Activity Log:</div>
+        <div id="log-console"></div>
+    </div>
+
+    <div class="footer">
+        <div class="status-line">
+            <span id="status-left">Ready</span>
+            <span id="status-right">0%</span>
+        </div>
+        <div class="progress-bar-bg">
+            <div id="progress-bar" class="progress-bar-fill"></div>
+        </div>
+    </div>
+
+    <script>
+        var input = document.getElementById('urlInput');
+
+        // Processing State
+        var processingQueue = [];
+        var totalFlightsToProcess = 0;
+        var processedFlights = 0;
+        var errorFlights = 0;
+        var skippedFlights = 0;
+        var currentUrl = '';
+
+        input.addEventListener('keyup', function (event) {
+            if (event.key === 'Enter') {
+                submitUrl();
+            }
+        });
+
+        function submitUrl() {
+            var url = input.value.trim();
+            if (!url) {
+                alert('Please enter a URL.');
+                return;
+            }
+            currentUrl = url;
+
+            // UI Setup: Hide Input & Start, Show Cancel
+            document.getElementById('input-group').style.display = 'none';
+            document.getElementById('btn-start').style.display = 'none';
+
+            var btnClose = document.getElementById('btn-close');
+            btnClose.innerHTML = 'Cancel';
+
+            // Phase 1: Stage (Download & Unzip)
+            var statusStr = '1/1 File | 0/0 Flights | 10% | Downloading...';
+            setStatus(statusStr, '10%');
+            setProgress('10%');
+            log('URL: ' + url);
+
+            google.script.run
+                .withSuccessHandler(function (res) {
+                    if (res && res.error) {
+                        handleError('Download Failed: ' + res.error);
+                    } else if (res && res.files) { // Check for 'files' array specifically
+                        // Success
+                        processingQueue = res.files; // {id, name}
+                        // Log filename(s) found
+                        processingQueue.forEach(function (f) {
+                            log(f.name + ' found', 'log-info');
+                        });
+
+                        startProcessing();
+                    } else if (res && res.success) {
+                        // Fallback if success=true but files missing (shouldn't happen with stageUrlImport)
+                        handleError('Server returned success but no file list.');
+                    } else {
+                        handleError('Unknown response from server.');
+                    }
+                })
+                .withFailureHandler(function (err) {
+                    handleError('Fatal Error: ' + err);
+                })
+                .stageUrlImport(url);
+        }
+
+        function startProcessing() {
+            totalFlightsToProcess = processingQueue.length;
+            processedFlights = 0;
+            errorFlights = 0;
+            skippedFlights = 0;
+
+            if (totalFlightsToProcess === 0) {
+                log('No valid flights found in URL.', 'log-info');
+                finish();
+                return;
+            }
+
+            log('Processing ' + totalFlightsToProcess + ' Flight(s)...');
+            processNext(0);
+        }
+
+        function processNext(index) {
+            if (index >= totalFlightsToProcess) {
+                finish();
+                return;
+            }
+
+            var item = processingQueue[index];
+            var basePct = 10; // Download took 10%
+            var remainingPct = 90;
+            var stepPct = Math.round((index / totalFlightsToProcess) * remainingPct);
+            var totalPct = (basePct + stepPct) + '%';
+
+            var statusStr = '1/1 File | ' + (index + 1) + '/' + totalFlightsToProcess + ' Flights | ' + totalPct + ' | ' + item.name;
+
+            setStatus(statusStr, totalPct);
+            setProgress(totalPct);
+
+            google.script.run
+                .withSuccessHandler(function (res) {
+                    if (res.success) {
+                        var msg = item.name + ': ' + res.msg;
+                        log(msg, res.processed ? 'log-success' : 'log-info');
+                        if (res.processed) {
+                            processedFlights++;
+                        } else {
+                            skippedFiles++;
+                        }
+                    } else {
+                        log(item.name + ': Error ' + res.error, 'log-error');
+                        errorFiles++;
+                    }
+                    processNext(index + 1);
+                })
+                .withFailureHandler(function (err) {
+                    log(item.name + ': Fatal Error ' + err, 'log-error');
+                    errorFiles++;
+                    processNext(index + 1);
+                })
+                .processFileById(item.id, 'URL');
+        }
+
+        function finish() {
+            setProgress('100%');
+
+            var statusStr = '1/1 URL | ' + processedFlights + '/' + totalFlightsToProcess + ' Flights | 100% | Completed';
+            setStatus(statusStr, '100%');
+
+            log('------------------------------------------------');
+            log('Import Complete.');
+            log('Flights Imported: ' + processedFlights);
+            log('Skipped: ' + skippedFlights);
+            log('Errors: ' + errorFlights);
+
+            // Button Swap: Hide Cancel, Show Done
+            document.getElementById('btn-close').style.display = 'none';
+            document.getElementById('btn-done').style.display = 'inline-block';
+        }
+
+        function handleError(msg) {
+            log(msg, 'log-error');
+            document.getElementById('progress-bar').classList.add('error-fill');
+            setStatus('Error', 'Failed');
+
+            // Allow close
+            document.getElementById('btn-close').innerHTML = 'Close';
+            document.getElementById('btn-close').style.display = 'inline-block';
+
+            // Show retry? Or just let them close.
+            // Showing retry requires showing inputs again.
+            // Simplified: Just allow Close.
+        }
+
+        function setStatus(left, right) {
+            document.getElementById('status-left').textContent = left;
+            document.getElementById('status-right').textContent = right;
+        }
+
+        function setProgress(pct) {
+            document.getElementById('progress-bar').style.width = pct;
+        }
+
+        function log(msg, cls) {
+            var div = document.getElementById('log-console');
+            var p = document.createElement('div');
+            p.textContent = msg;
+            if (cls) p.className = cls;
+            div.appendChild(p);
+            div.scrollTop = div.scrollHeight;
+        }
+    </script>
+</body>
+
+</html>

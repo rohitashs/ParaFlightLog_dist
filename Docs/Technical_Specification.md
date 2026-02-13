@@ -39,6 +39,7 @@ Fixed Header Schema (Row 4=Category, Row 5=Name). Data starts Row 6.
 | **Scoring** | `XC Score`, `Triangle`, `Points` | `RQ-SCR-001` |
 | **Geo** | `Launch Site`, `Land Town` | `RQ-SCR-002` |
 | **Metrics** | `Duration`, `Max Alt`, `Gain` | `RQ-ANA-002` |
+| **XContest** | `XC Status` | `RQ-SCR-003` |
 | **System** | `Import ID`, `Hash`, `Notes` | Validation/Audit |
 
 ---
@@ -63,6 +64,12 @@ Fixed Header Schema (Row 4=Category, Row 5=Name). Data starts Row 6.
     *   **Flat**: Gap < 20%.
     *   **FAI**: Shortest Leg >= 28%.
 
+### D. XContest Verification (`RQ-SCR-003`)
+*   **Method**: `UrlFetchApp` (GET).
+*   **Target**: `https://www.xcontest.org/world/en/flights/daily-score-pg/?filter[pilot]={USERNAME}&filter[date]={YYYY-MM-DD}` (or similar).
+*   **Caching**: `CacheService` (TTL irrelevant if just check-once on import).
+
+---
 ---
 
 ## 5. Configuration Strategy (`RQ-SYS-001`)

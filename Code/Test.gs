@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-02-12 13:19:59
+ * Updated: 2026-02-13 01:10:00
  */
 /**
  * Paragliding Flight Log v2.0
@@ -15,6 +15,7 @@ function runAllTests() {
   results.push(testAnalysis_());
   results.push(testScoring_());
   results.push(testGeo_()); // Might fail if quota reached or network down
+  results.push(testXContest_());
   
   var failures = results.filter(function(r) { return !r.idx || r.error; });
   if (failures.length > 0) {
@@ -85,4 +86,17 @@ function testGeo_() {
   // Or test caching logic if mocked? 
   // We'll skip real network call to avoid blocking tests on quota.
   return { module: 'Geo', idx: true }; 
+}
+
+function testXContest_() {
+  if (!XContest || !XContest.checkFlight) return { module: 'XContest', error: 'Module missing' };
+  
+  // Test 1: No Username
+  var res = XContest.checkFlight(new Date(), 60, 600, { XCONTEST_USERNAME: '' });
+  if (res.status !== 'No' || res.note !== 'No Username') return { module: 'XContest', error: 'Fail: No User handling' };
+
+  // Test 2: Season Logic (Conceptual check via manual calc if we extracted it, but here we just check safe execution)
+  // We can't easily mock UrlFetchApp here without refactoring.
+  
+  return { module: 'XContest', idx: true };
 }

@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-02-12 13:19:59
+ * Updated: 2026-02-13 01:10:00
  * 
  * CORE MODULE: Orchestration Only.
  * Configuration -> Config.gs
@@ -15,13 +15,15 @@
 function onOpen(e) {
   SpreadsheetApp.getUi()
     .createMenu('Flight Log')
-    .addItem('Add manual flight (blank row)', 'uiAddManualFlight_')
-    .addItem('Add flight from IGC (URL/Drive ID)...', 'showUrlDialog_')
-    .addItem('Add flight from Upload (Local File)...', 'showUploadDialog_')
-    .addSeparator()
-    .addItem('Scan Watch Folder now', 'scanWatchFolder')
-    .addItem('Recompute selected flight(s)', 'uiRecomputeSelected_')
     .addItem('Flight Inspector', 'showInspectorSidebar')
+    .addSeparator()
+    .addItem('Add manual flight (blank row)', 'uiAddManualFlight_')
+    .addItem('Add Flight from URL (IGC / Zip)...', 'showUrlDialog')
+    .addItem('Add flight from Upload (Local File)...', 'showUploadDialog')
+    .addItem('Scan Watch Folder now', 'showScanDialog')
+    .addSeparator()
+    .addItem('Recompute selected flight(s)', 'uiRecomputeSelected_')
+    .addItem('Sort all Flights by Date', 'sortFlightsByDate_')
     .addSeparator()
     .addSubMenu(SpreadsheetApp.getUi().createMenu('Admin')
         .addItem('First Time Setup (Full Scaffold)', 'scaffoldAll_')
@@ -34,8 +36,7 @@ function onOpen(e) {
         .addItem('Update Watch Folder...', 'uiUpdateWatchFolder_')
         .addItem('Update Upload Folder...', 'uiUpdateUploadFolder_')
         .addItem('Update Master Log Folder...', 'uiUpdateMasterLogFolder_')
-        .addItem('Enable Watch Folder', 'uiEnableWatch_')
-        .addItem('Disable Watch Folder', 'uiDisableWatch_')
+        .addItem('Update Error Folder...', 'uiUpdateErrorFolder_')
         .addSeparator()
         .addItem('Setup 5-min watcher trigger', 'setupWatcherTrigger_')
         .addItem('Debug: Clear dedupe cache', 'debugClearDedupe_'))
@@ -90,19 +91,34 @@ function getParameters_() {
    UI ACTIONS (Orchestration)
    ========================================================================================== */
 
-function showUrlDialog_() {
-  var html = HtmlService.createHtmlOutputFromFile('UrlEntry')
-      .setWidth(400)
-      .setHeight(250);
-  SpreadsheetApp.getUi().showModalDialog(html, 'Enter IGC URL');
+function showUrlDialog() {
+  var html = HtmlService.createTemplateFromFile('URLDialog')
+      .evaluate()
+      .setWidth(500)
+      .setHeight(450); // Increased height to prevent scrolling
+  SpreadsheetApp.getUi().showModalDialog(html, 'Flight Import');
 }
 
 function showInspectorSidebar() {
-  var html = HtmlService.createHtmlOutputFromFile('Inspector')
+  var html = HtmlService.createTemplateFromFile('Inspector')
+      .evaluate()
       .setTitle('Flight Inspector')
-      .setWidth(450);
+      .setWidth(500);
   SpreadsheetApp.getUi().showSidebar(html);
 }
+
+function sortFlightsByDate_() {
+  SpreadsheetApp.getActive().toast('Sort functionality coming soon!', 'Flight Log');
+}
+
+function showScanDialog() {
+  var html = HtmlService.createTemplateFromFile('ScanDialog')
+      .evaluate()
+      .setWidth(500)
+      .setHeight(450);
+  SpreadsheetApp.getUi().showModalDialog(html, 'Flight Import');
+}
+
 
 function getInspectorData() {
   var log = [];
@@ -280,11 +296,12 @@ function saveInspectorData(flightId, updates) {
   return { success: true };
 }
 
-function showUploadDialog_() {
-  var html = HtmlService.createHtmlOutputFromFile('Picker')
-      .setWidth(400)
-      .setHeight(350);
-  SpreadsheetApp.getUi().showModalDialog(html, 'Upload Flight Logs');
+function showUploadDialog() {
+  var html = HtmlService.createTemplateFromFile('UploadDialog')
+      .evaluate()
+      .setWidth(600)
+      .setHeight(550);
+  SpreadsheetApp.getUi().showModalDialog(html, 'Flight Import');
 }
 
 function uiRecomputeSelected_() {
@@ -317,9 +334,11 @@ function debugClearDedupe_() {
    PARAMETER UPDATES (UI Helpers)
    ========================================================================================== */
 
-function uiUpdateWatchFolder_() { uiUpdateFolder_('WATCH_FOLDER_ID', 'Watch Folder'); }
-function uiUpdateUploadFolder_() { uiUpdateFolder_('UPLOAD_FOLDER_ID', 'Upload Folder'); }
-function uiUpdateMasterLogFolder_() { uiUpdateFolder_('MASTER_LOG_FOLDER_ID', 'Master Log Folder'); }
+/* Folder Updaters */
+function uiUpdateWatchFolder_() { updateParamFolder_('WATCH_FOLDER_ID', 'Watch Folder'); }
+function uiUpdateUploadFolder_() { updateParamFolder_('UPLOAD_FOLDER_ID', 'Upload Folder'); }
+function uiUpdateMasterLogFolder_() { updateParamFolder_('MASTER_LOG_FOLDER_ID', 'Master Log Folder'); }
+function uiUpdateErrorFolder_() { updateParamFolder_('ERROR_FOLDER_ID', 'Error Folder'); }
 
 function uiEnableWatch_() {
   setParameter_('ENABLE_WATCH_FOLDER', 'TRUE');
@@ -334,41 +353,27 @@ function uiDisableWatch_() {
 /**
  * Manual trigger for Watch Folder Scan
  */
-function scanWatchFolder() {
-  var ui = SpreadsheetApp.getUi();
-  // removed toast as per request
-  
-  var stats = scanWatchFolderNow_();
-  
-  if (stats) {
-    var msg = 'Scan Complete.\n\n' +
-              'Processed: ' + stats.processed + ' files\n' +
-              'Flights Created: ' + (stats.flights || 0) + '\n' +
-              'Skipped: ' + stats.skipped + '\n' +
-              'Errors: ' + stats.errors + '\n\n' +
-              '--- Logs ---\n' +
-              stats.log.join('\n');
-              
-    ui.alert('Watch Folder Scan', msg, ui.ButtonSet.OK);
-  } else {
-    // Should not happen if Ingestion.gs is updated
-    ui.alert('Watch Folder Scan', 'Scan finished (No details returned). Check Logs.', ui.ButtonSet.OK);
-  }
-}
+// function scanWatchFolder() { ... } // Removed in favor of showScanDialog
 
-function uiUpdateFolder_(paramName, friendlyName) {
+function updateParamFolder_(key, name) {
   var ui = SpreadsheetApp.getUi();
-  var resp = ui.prompt('Update ' + friendlyName, 'Enter Google Drive Folder URL or ID:', ui.ButtonSet.OK_CANCEL);
+  var result = ui.prompt('Update ' + name, 'Enter new Folder ID (or URL):', ui.ButtonSet.OK_CANCEL);
   
-  if (resp.getSelectedButton() !== ui.Button.OK) return;
-  var input = resp.getResponseText().trim();
-  if (!input) return;
-  
-  var id = getDriveIdFromUrl_(input); 
-  if (!id) id = input; 
-  
-  setParameter_(paramName, id);
-  ui.alert('Updated ' + friendlyName + ' ID to: ' + id);
+  if (result.getSelectedButton() == ui.Button.OK) {
+    var input = result.getResponseText().trim();
+    // basic cleanup if they pasted a URL
+    var id = input;
+    if (input.match(/[-\w]{25,}/)) {
+      id = input.match(/[-\w]{25,}/)[0];
+    }
+    
+    if (id) {
+       setParameter_(key, id);
+       ui.alert('Updated ' + name + ' ID to: ' + id);
+    } else {
+       ui.alert('Invalid ID format.');
+    }
+  }
 }
 
 function setParameter_(key, value) {

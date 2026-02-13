@@ -1,0 +1,189 @@
+<!--
+ * Paragliding Flight Log v2.0
+ * Updated: 2026-02-12 22:41:48
+ -->
+<!DOCTYPE html>
+<html>
+
+<head>
+    <base target="_top">
+    <?!= HtmlService.createTemplateFromFile('Style').evaluate().getContent(); ?>
+</head>
+
+<body>
+    <!-- Header: Text Color Only, No Background -->
+    <div class="header-large text-blue">Scan Watch Folder</div>
+
+    <div class="main-content">
+        <!-- Instructions: Consistent Div -->
+        <div class="instructions">
+            Scanning Watch Folder for new files...<br>
+            Please wait while processing completes.
+        </div>
+
+        <!-- Buttons: Left Aligned -->
+        <div class="control-group">
+            <!-- Action Button (Hidden start, becomes Done) -->
+            <button id="btn-action" onclick="google.script.host.close()" class="action"
+                style="display:none;">Done</button>
+            <!-- Close Button (Acts as Cancel during process) -->
+            <button id="btn-close" onclick="google.script.host.close()" class="secondary">Cancel</button>
+        </div>
+
+        <div class="instructions" style="margin-top:15px; font-weight:bold;">Activity Log:</div>
+        <div id="log-console"></div>
+    </div>
+
+    <div class="footer">
+        <div class="status-line">
+            <span id="status-left">Initializing...</span>
+            <span id="status-right">0%</span>
+        </div>
+        <div class="progress-bar-bg">
+            <div id="progress-bar" class="progress-bar-fill"></div>
+        </div>
+    </div>
+
+    <script>
+        var fileList = [];
+        var processedFiles = 0;
+
+        var totalFlights = 0;
+        var processedFlights = 0;
+
+        var errorFiles = 0;
+        var skippedFiles = 0;
+        var totalFiles = 0;
+
+        // 0-Stage: Auto Start
+        window.onload = function () {
+            // "Cancel" is visible by default (btn-close)
+
+            setStatus('Scanning Watch Folder...', '0%');
+            log('Scanning Watch Folder...');
+
+            google.script.run
+                .withSuccessHandler(showScanResultsAndProcess)
+                .withFailureHandler(showError)
+                .getWatchFolderStatus();
+        };
+
+        function showScanResultsAndProcess(result) {
+            if (result.error) {
+                showError(result.error);
+                return;
+            }
+
+            if (result.files.length === 0) {
+                log('Scanning Watch Folder: ' + (result.folderName || 'Unknown'));
+                log('No new files found.');
+                finish(true);
+            } else {
+                fileList = result.files;
+                totalFiles = fileList.length;
+
+                // Calculate Total Flights (Denominator)
+                totalFlights = 0;
+                fileList.forEach(function (f) {
+                    totalFlights += (f.flightCount || 1);
+                });
+
+                log('Scanning Watch Folder: ' + (result.folderName || 'Unknown'));
+                log('Found ' + totalFiles + ' files (' + totalFlights + ' flights). Starting process...');
+                processNext(0);
+            }
+        }
+
+        function showError(msg) {
+            setStatus('Error', 'Failed');
+            log('Error: ' + msg, 'log-error');
+            document.getElementById('progress-bar').classList.add('error-fill');
+            // Ensure Cancel/Close is visible
+            document.getElementById('btn-close').innerHTML = 'Close';
+            document.getElementById('btn-close').style.display = 'inline-block';
+        }
+
+        function processNext(index) {
+            if (index >= fileList.length) {
+                finish();
+                return;
+            }
+
+            var file = fileList[index];
+            var pct = Math.round((index / fileList.length) * 100) + '%';
+
+            var statusStr = (index + 1) + '/' + totalFiles + ' Files | ' +
+                processedFlights + '/' + totalFlights + ' Flights | ' +
+                pct + ' | ' + file.name;
+
+            setStatus(statusStr, pct);
+            setProgress(pct);
+
+            google.script.run
+                .withSuccessHandler(function (res) {
+                    if (res.success) {
+                        var msg = file.name + ': ' + res.msg;
+                        log(msg, res.processed ? 'log-success' : 'log-info');
+                        if (res.processed) {
+                            processedFiles++;
+                            processedFlights += (res.flights || 1);
+                        } else {
+                            skippedFiles++;
+                        }
+                    } else {
+                        log(file.name + ': Error ' + res.error, 'log-error');
+                        errorFiles++;
+                    }
+                    processNext(index + 1);
+                })
+                .withFailureHandler(function (e) {
+                    log(file.name + ': Fatal Error ' + e.message, 'log-error');
+                    errorFiles++;
+                    processNext(index + 1);
+                })
+                .processFileById(file.id, 'WATCH');
+        }
+
+        function finish(isEmpty) {
+            setProgress('100%');
+
+            // Final Status
+            var statusStr = totalFiles + '/' + totalFiles + ' Files | ' + processedFlights + '/' + totalFlights + ' Flights | 100% | Completed';
+            setStatus(statusStr, '100%');
+
+            if (!isEmpty) {
+                log('------------------------------------------------');
+                log('Batch Complete.');
+                log('Files Processed: ' + processedFiles);
+                log('Flights Created: ' + processedFlights);
+                log('Skipped: ' + skippedFiles);
+                log('Errors: ' + errorFiles);
+            }
+
+            // Button Swap: Hide Cancel, Show Done
+            document.getElementById('btn-close').style.display = 'none';
+            var btn = document.getElementById('btn-action');
+            btn.style.display = 'inline-block';
+        }
+
+        function setStatus(left, right) {
+            document.getElementById('status-left').textContent = left;
+            document.getElementById('status-right').textContent = right;
+        }
+
+        function setProgress(pct) {
+            document.getElementById('progress-bar').style.width = pct;
+        }
+
+        function log(msg, cls) {
+            var div = document.getElementById('log-console');
+            var p = document.createElement('div');
+            p.textContent = msg;
+            if (cls) p.className = cls;
+            div.appendChild(p);
+            div.scrollTop = div.scrollHeight;
+        }
+    </script>
+</body>
+
+</html>

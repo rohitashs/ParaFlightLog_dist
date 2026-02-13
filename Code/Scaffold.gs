@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-02-12 13:19:59
+ * Updated: 2026-02-13 01:10:00
  */
 /**
  * Paragliding Flight Log v2.0 - Scaffolding & Setup
@@ -177,6 +177,12 @@ function scaffoldParameters_(ss) {
       for (var i=0; i<rows.length; i++) {
          if (rows[i][0] === 'DATE_FORMAT') sh.getRange(i+3, 2).setDataValidation(dateRule);
          if (rows[i][0] === 'TIME_FORMAT') sh.getRange(i+3, 2).setDataValidation(timeRule);
+         
+         // Boolean Dropdowns
+         if (['ENABLE_WATCH_FOLDER', 'MOVE_FROM_WATCH_FOLDER'].indexOf(rows[i][0]) > -1) {
+            var boolRule = SpreadsheetApp.newDataValidation().requireValueInList(['TRUE', 'FALSE'], true).build();
+            sh.getRange(i+3, 2).setDataValidation(boolRule);
+         }
       }
   }
 }
@@ -365,6 +371,7 @@ function applyFlightsValidation_(sh) {
     rules.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('Review?').setBackground('#FFF9C4').setRanges([range]).build());
     rules.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('Valid').setBackground('#C8E6C9').setRanges([range]).build());
     rules.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('Invalid?').setBackground('#FFCDD2').setRanges([range]).build());
+    rules.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('Duplicate').setBackground('#FFCC80').setRanges([range]).build()); // Orange 200
     sh.setConditionalFormatRules(rules);
   }
 

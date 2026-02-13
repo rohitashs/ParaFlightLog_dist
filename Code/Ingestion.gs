@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-02-12 13:19:59
+ * Updated: 2026-02-13 01:10:00
  * 
  * MODULE: Ingestion Service
  * Handles File inputs (Drive, URL), ZIP extraction, Deduplication, and calls Parser.
@@ -59,19 +59,30 @@ function scanWatchFolderNow_() {
            var result = processDriveFile_(file, config);
            if (result && result.processed) {
              console.log('Processed: ' + fName);
-             stats.processed++;
-             stats.flights += (result.count || 0);
+             stats.processed++; // Files
+             stats.flights += (result.count || 0); // Flights
              stats.log.push('Processed: ' + fName + ' (' + (result.count||1) + ' flights)');
+             
+             // Cleanup: Success
+             handleFileCleanup_(file, 'SUCCESS', config);
+             
            } else {
              console.log('Skipped (Duplicate/Error): ' + fName);
              stats.skipped++;
              stats.log.push('Skipped: ' + fName);
+             
+             // Cleanup: Error/Skipped (Treat as Error to move out of Watch?)
+             // User said: "Files with errors... moved or copied into ERROR_FOLDER_ID"
+             handleFileCleanup_(file, 'ERROR', config);
            }
          } catch (e) {
            logImport_(new Date(), fId, fName, fName, 'Scan Error', e.message);
            console.error('Error processing ' + fName, e);
            stats.errors++;
            stats.log.push('Error (' + fName + '): ' + e.message);
+           
+           // Cleanup: Fatal Error
+           handleFileCleanup_(file, 'ERROR', config);
          }
       } else {
          // console.log('Ignored file type: ' + fName);
@@ -91,6 +102,207 @@ function scanWatchFolderNow_() {
   }
   
   return stats;
+}
+
+/**
+ * Returns capabilities and status of Watch Folder for UI.
+ * Used by ScanDialog.
+ */
+function getWatchFolderStatus() {
+  var config = getParameters_();
+  var folderId = config.WATCH_FOLDER_ID;
+  
+  if (!folderId) return { error: 'No Watch Folder ID configured.' };
+  
+  try {
+    var folder = DriveApp.getFolderById(folderId);
+    var files = folder.getFiles();
+    var itemList = [];
+    
+    while (files.hasNext()) {
+      var f = files.next();
+      var fname = f.getName().toLowerCase();
+      // Simple filter for supported types
+      if (fname.endsWith('.igc') || fname.endsWith('.zip') || fname.endsWith('.igx') || fname.endsWith('.gz')) {
+        // Peek count?
+        var count = 1;
+        // Optimization: For ZIPs in Watch Folder, we *could* peek, but Utilities.unzip(blob) might be heavy if files are huge.
+        // Let's rely on filename hint or just basic count for now, unless requested to be 100% accurate.
+        // User requested: "scan Watch Folder Now... should say x no of new files / flights found"
+        // Let's try to peek if it's a ZIP.
+        if (fname.endsWith('.zip')) {
+           try {
+             // We can't peek without fetching blob, which might be slow. 
+             // But for Watch Folder usage it's likely acceptable.
+             var blob = f.getBlob();
+             var entries = Utilities.unzip(blob);
+             count = entries.filter(function(e){ return e.getName().match(/\.(igc|igx)$/i); }).length;
+           } catch(e) { count = 1; } // specific error or encrypted zip
+        }
+        
+        itemList.push({ id: f.getId(), name: f.getName(), flightCount: count });
+      }
+    }
+    return { folderName: folder.getName(), files: itemList };
+  } catch (e) {
+    return { error: 'Error accessing folder: ' + e.message };
+  }
+}
+
+/**
+ * Handle Client Stage Upload
+ * Unzips if needed, saves to Upload folder, returns list of individual IGC IDs to process.
+ */
+function stageUpload(fileObj) {
+  try {
+    var raw = Utilities.base64Decode(fileObj.data);
+    var blob = Utilities.newBlob(raw, fileObj.type, fileObj.name);
+    var config = getParameters_();
+    
+    var uploadFolderId = config.UPLOAD_FOLDER_ID;
+    var folder = uploadFolderId ? DriveApp.getFolderById(uploadFolderId) : DriveApp.getRootFolder();
+    
+    var createdFiles = [];
+    var lowerName = fileObj.name.toLowerCase();
+    
+    // Unzip Strategy
+    if (lowerName.endsWith('.zip')) {
+       try {
+         var blobs = Utilities.unzip(blob);
+         blobs.forEach(function(b) {
+            if (b.getName().match(/\.(igc|igx)$/i)) {
+               var f = folder.createFile(b);
+               createdFiles.push({ id: f.getId(), name: f.getName() });
+            }
+         });
+       } catch(e) {
+          // If unzip fails, maybe it's just a corrupt file, treat as single? 
+          // Or return error.
+          return { error: 'ZIP Extraction failed: ' + e.message };
+       }
+    } 
+    else if (lowerName.endsWith('.gz')) {
+       try {
+         var b = Utilities.gunzip(blob);
+         b.setName(fileObj.name.replace(/\.gz$/i, ''));
+         var f = folder.createFile(b);
+         createdFiles.push({ id: f.getId(), name: f.getName() });
+       } catch(e) {
+         return { error: 'GZ Extraction failed: ' + e.message };
+       }
+    }
+    else {
+       // Regular IGC
+       var f = folder.createFile(blob);
+       createdFiles.push({ id: f.getId(), name: f.getName() });
+    }
+    
+    return { success: true, files: createdFiles };
+    
+  } catch (e) {
+    return { error: e.message };
+  }
+}
+
+/**
+ * Process a single file by ID.
+ * Returns { success, msg } for UI.
+ */
+/**
+ * Process a single file by ID.
+ * Returns { success, msg } for UI.
+ * @param {string} fileId
+ * @param {string} source - 'WATCH', 'UPLOAD', 'URL'
+ */
+function processFileById(fileId, source) {
+  var file = null;
+  var config = getParameters_();
+
+  try {
+    file = DriveApp.getFileById(fileId);
+    var result = processDriveFile_(file, config);
+    
+    // Context-Aware Cleanup
+    if (source === 'UPLOAD' || source === 'URL') {
+       // ALWAYS delete temp files from Upload Folder
+       // The 'Master Log' copy is handled inside processDriveFile_ -> processBlob_ -> copyToMasterLog_
+       // So we can safely trash this staging file.
+       try { file.setTrashed(true); } catch(e) { console.warn('Failed to trash temp file', e); }
+    } 
+    else {
+       // WATCH FOLDER Context (Default)
+       if (result.processed) {
+          handleFileCleanup_(file, 'SUCCESS', config);
+       } else {
+          handleFileCleanup_(file, 'ERROR', config);
+       }
+    }
+
+    return { 
+      success: true, 
+      msg: result.processed ? 'Imported' : 'Skipped/Duplicate',
+      processed: result.processed,
+      flights: result.count || 0 
+    };
+  } catch (e) {
+    // On Fatal Error
+    if (source === 'UPLOAD' || source === 'URL') {
+       // If it failed hard, we generally want to clean it up so it doesn't clutter, 
+       // OR move to Error? User said: "Files with errors... moved or copied into ERROR_FOLDER_ID"
+       // But for Upload/URL, usually the user just wants to retry or ignore. 
+       // Let's Move to Error to be safe and delete from Upload.
+       if (file) handleFileCleanup_(file, 'ERROR', config); // This copies to Error, may delete source if configured
+       // Force delete source for Uploads if handleFileCleanup didn't (because MOVE_FROM_WATCH might be false)
+       try { if (file && !file.isTrashed()) file.setTrashed(true); } catch(ex) {}
+    } else {
+       if (file) handleFileCleanup_(file, 'ERROR', config);
+    }
+    return { success: false, error: e.message };
+  }
+}
+
+/**
+ * Upload and process a single file (Base64).
+ * Used by Picker.html for granular progress.
+ */
+function uploadAndProcessSingleFile(fileObj) {
+  try {
+    var raw = Utilities.base64Decode(fileObj.data);
+    var blob = Utilities.newBlob(raw, fileObj.type, fileObj.name);
+    var config = getParameters_();
+    
+    // 1. Save to Upload Folder (if configured, or Temp)
+    // Actually, processDriveFile_ expects a DriveFile. 
+    // We should create it in the Upload Folder first.
+    var uploadFolderId = config.UPLOAD_FOLDER_ID; // We need to ensure this is in Config
+    var folder;
+    if (uploadFolderId) {
+       folder = DriveApp.getFolderById(uploadFolderId);
+    } else {
+       folder = DriveApp.getRootFolder(); // Fallback
+    }
+    
+    var file = folder.createFile(blob);
+    var result = processDriveFile_(file, config);
+    
+    // Cleanup for Upload:
+    // User: "Successful files always get deleted from UPLOAD_FOLDER_ID... Failed files always get deleted..."
+    // Because processDriveFile_ -> processBlob_ now handles saving IGCs to Master/Error,
+    // we just need to delete the temp file here.
+    
+    file.setTrashed(true); // Always delete temp file from Upload Folder
+    
+    return {
+      success: true,
+      msg: result.processed ? 'Imported' : 'Skipped (Duplicate)',
+      processed: result.processed,
+      flights: result.count || 0,
+      fileId: file.getId()
+    };
+    
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
 }
 
 /**
@@ -129,33 +341,90 @@ function uiAddFlightFromIgc_() {
 }
 
 /**
- * Called from UrlEntry.html
- * Returns object { success: true } or { error: 'msg' }
+ * Called from URLDialog.html
+ * Phase 1: Download -> Unzip/Stage -> Return list of file IDs to process.
  */
-function handleUrlImportAction(url) {
+function stageUrlImport(url) {
   try {
     var config = getParameters_();
     if (!url) throw new Error('No URL provided');
     
-    // Check if it's a Drive ID or URL
+    var blob;
+    var name = 'download.igc'; // default fallback
+    
+    // Check if it's a Drive ID/URL
     var driveId = getDriveIdFromUrl_(url);
     if (driveId) {
-       // Drive File
-       var file = DriveApp.getFileById(driveId);
-       var res = processDriveFile_(file, config);
-       if (!res.processed) return { error: 'Skipped (Duplicate or Error)' };
-       return { success: true };
+      var file = DriveApp.getFileById(driveId);
+      blob = file.getBlob();
+      name = file.getName();
     } else {
-       // Direct Import
-       // Use a simple context
-       var res = handleUrlImport_(url, { source: 'Dialog' }, config);
-       if (!res.processed) return { error: 'Skipped (Duplicate or Error)' };
-       return { success: true };
+      // External URL
+      var res = UrlFetchApp.fetch(url);
+      blob = res.getBlob();
+      // Try to get filename from Content-Disposition
+      var headers = res.getHeaders();
+      if (headers['Content-Disposition']) {
+         var match = headers['Content-Disposition'].match(/filename="?([^"]+)"?/);
+         if (match) name = match[1];
+      }
+      // If still generic, try URL path
+      if (name === 'download.igc') {
+         var parts = url.split('/');
+         var last = parts[parts.length-1];
+         if (last && last.match(/\.(igc|zip|gz|igx)/i)) name = last;
+      }
     }
+    
+    // Reuse stageUpload logic by mocking the fileObj
+    // We need to encode to base64? No, stageUpload expects base64 string.
+    // Actually, we can just write a helper to stage a Blob directly to avoid base64 roundtrip overhead.
+    
+    return stageBlob_(blob, name, config);
+
   } catch (e) {
-    console.error('handleUrlImportAction Error', e);
+    console.error('stageUrlImport Error', e);
     return { error: e.message };
   }
+}
+
+/**
+ * Helper to stage a Blob (from URL or Upload) to Drive
+ */
+function stageBlob_(blob, fileName, config) {
+    var uploadFolderId = config.UPLOAD_FOLDER_ID;
+    var folder = uploadFolderId ? DriveApp.getFolderById(uploadFolderId) : DriveApp.getRootFolder();
+    var createdFiles = [];
+    var lowerName = fileName.toLowerCase();
+    
+    try {
+        if (lowerName.endsWith('.zip')) {
+           var blobs = Utilities.unzip(blob);
+           blobs.forEach(function(b) {
+              if (b.getName().match(/\.(igc|igx)$/i)) {
+                 var f = folder.createFile(b);
+                 createdFiles.push({ id: f.getId(), name: f.getName() });
+              }
+           });
+        } 
+        else if (lowerName.endsWith('.gz')) {
+           var b = Utilities.gunzip(blob);
+           b.setName(fileName.replace(/\.gz$/i, ''));
+           var f = folder.createFile(b);
+           createdFiles.push({ id: f.getId(), name: f.getName() });
+        }
+        else {
+           // Plain IGC
+           blob.setName(fileName); // Ensure name is set
+           var f = folder.createFile(blob);
+           createdFiles.push({ id: f.getId(), name: f.getName() });
+        }
+        
+        return { success: true, files: createdFiles };
+        
+    } catch(e) {
+        return { error: 'Staging Failed: ' + e.message };
+    }
 }
 
 
@@ -218,6 +487,44 @@ function handleClientSideUpload(files) {
   return results;
 }
 
+/**
+ * Cleanup Helper: Move/Copy/Delete based on status and config
+ */
+function handleFileCleanup_(file, status, config) {
+  try {
+    var rawMove = config.MOVE_FROM_WATCH_FOLDER;
+    var shouldMove = (rawMove === true || String(rawMove).toUpperCase() === 'TRUE');
+    
+    // 1. Success
+    if (status === 'SUCCESS') {
+      // NOTE: We do NOT copy to Master Log here anymore.
+      // processBlob_ handles saving extracted IGCs to Master Log individually.
+      // This prevents ZIP files or Archive containers from being copied to Master Log.
+      
+      // Delete from source if MOVE is true
+      if (shouldMove) {
+        file.setTrashed(true);
+      }
+    }
+    // 2. Error / Partial
+    else if (status === 'ERROR') {
+      // Copy/Move to Error Folder
+      if (config.ERROR_FOLDER_ID) {
+        var errorFolder = DriveApp.getFolderById(config.ERROR_FOLDER_ID);
+        var copy = file.makeCopy('ERROR_' + file.getName(), errorFolder);
+      }
+      
+      // If MOVE is true, we delete the original from Watch to prevent loops
+      // BUT only if we successfully backed it up to Error Folder
+      if (shouldMove && config.ERROR_FOLDER_ID) {
+        file.setTrashed(true);
+      }
+    }
+    
+  } catch (e) {
+    console.error('Cleanup Error for ' + file.getName(), e);
+  }
+}
 
 /* ==========================================================================================
    INTERNAL PROCESSING
@@ -228,7 +535,19 @@ function processDriveFile_(file, config) {
   var name = file.getName();
   var id = file.getId();
   
-  return processBlob_(blob, name, id, config);
+  var result = processBlob_(blob, name, id, config);
+  
+  // Clean up based on result
+  // Note: processBlob_ returns { processed: bool, count: int, errors: [] }
+  var status = result.processed ? 'SUCCESS' : 'ERROR';
+  
+  // Only cleanup if it's a Watch Folder file (checked via context usually, but here we can check parent?)
+  // Actually, handleFileCleanup_ logic relies on 'MOVE_FROM_WATCH_FOLDER' config.
+  // For Uploads/URLs, the calling function handles cleanup. 
+  // This function is shared. We need to be careful.
+  // Let's NOT call cleanup here. The CALLER (scanWatchFolder, uploadAndProcess) knows the context.
+  
+  return result;
 }
 
 function handleUrlImport_(url, ctx, config) {
@@ -310,6 +629,14 @@ function processSingleIgcBlob_(blob, fileName, fileId, outerName, config) {
   var parsed = parseIgc(text, fileName);
   if (!parsed) {
      logImport_(new Date(), fileId, outerName, fileName, 'Parse Fail', 'Invalid IGC structure');
+     // Copy to Error Folder logic for individual files
+     if (config.ERROR_FOLDER_ID) {
+        try {
+           var errFolder = DriveApp.getFolderById(config.ERROR_FOLDER_ID);
+           var errName = 'ERROR_PARSE_' + fileName;
+           errFolder.createFile(blob).setName(errName);
+        } catch(e) { console.error('Failed to save to Error Folder', e); }
+     }
      return false;
   }
   
@@ -343,13 +670,42 @@ function processSingleIgcBlob_(blob, fileName, fileId, outerName, config) {
   if (!timeZone) noteLog.push('Geo/Timezone: Lookup failed, using UTC');
   timeZone = timeZone || 'UTC';
   
-  // E. Master Log Copy
   var masterRes = copyToMasterLog_(blob, fileName, config);
   if (masterRes.error) {
      noteLog.push('Master Log Error: ' + masterRes.error);
   }
 
-  // F. Validation Check
+  // F. XContest Verification
+  var xcStatus = { status: '' };
+  if (config.XCONTEST_USERNAME) {
+     try {
+       var flightDate = new Date(parsed.meta.dateIso); // Parse ISO date
+       var durMin = Math.round(analysis.stats.durationSec / 60);
+       var startMin = Math.round(analysis.stats.startTime / 60);
+       xcStatus = XContest.checkFlight(flightDate, durMin, startMin, config);
+       
+       if (xcStatus.status === 'Error') {
+          noteLog.push('XC Check: ' + xcStatus.note);
+       } else if (xcStatus.status === 'No') {
+          // Log to Info column if not found (per User Request)
+          // We can't easily append to App_Log *row* here without knowing which row it is.
+          // The log is written at the END of this function via logImport_.
+          // So we just add it to 'noteLog' which gets joined into 'finalNotes' which gets passed to logImport_.
+          // Wait, logImport_ writes to App_Log.
+          // noteLog is used for the FLIGHT ENTRY notes? 
+          // insertFlightRow -> uses finalNotes in the 'Notes' column of FLIGHTS sheet.
+          // logImport_ -> uses finalNotes in the 'Info' column of APP_LOG sheet.
+          // So adding to noteLog will make it appear in BOTH.
+          // If user wants it ONLY in App_Log Info, we might need separate accumulator?
+          // "The Xcontest matching function should write to the Info column when no match is found."
+          // "all logging functions should append Info to this column... Nothing should get overwritten."
+          // I will assume simple append to noteLog covers it.
+          noteLog.push('XC: No Match'); 
+       }
+     } catch(e) { console.warn('XC Check Logic Fail', e); }
+  }
+
+  // G. Validation Check
   var status = 'Review?';
   // notes handled by array
   if (scoring.error) {
@@ -375,7 +731,7 @@ function processSingleIgcBlob_(blob, fileName, fileId, outerName, config) {
     l: geoLaunch, ls: siteLaunch,
     d: geoLand, ds: siteLand,
     tz: timeZone
-  });
+  }, xcStatus);
   
   // G. Mark Hard Hash as Seen
   markHashSeen_(hashStr);
@@ -402,7 +758,45 @@ function logImport_(date, fileId, outer, inner, status, notes) {
   var ss = SpreadsheetApp.getActive();
   var sh = ss.getSheetByName(TABS.APP_LOG.name);
   if (sh) {
-    sh.appendRow([date, fileId, outer, inner, status, notes]);
+    // Check if this fileId/inner combo already exists to append?
+    // User: "any function that writesto the log should always call one function to append to the Info column... Nothing should get overwritten."
+    // This implies if we log multiple times for same file, we append to THAT row?
+    // OR just append a NEW row?
+    // "append Info to this column for each respective flight" -> Sounds like 1 row per flight, append info.
+    // Finding the row is expensive. 
+    // Current usage: logImport_ is called ONCE per finish or error.
+    // Except scanWatchFolder calls it on error catch.
+    // Let's implement row finding for Append.
+    
+    var lastRow = sh.getLastRow();
+    var foundRow = -1;
+    
+    // Optimization: Only check last 50 rows?
+    var checkRows = Math.min(lastRow, 50); 
+    if (checkRows > 0) {
+       var start = Math.max(1, lastRow - checkRows + 1);
+       var data = sh.getRange(start, 2, checkRows, 3).getValues(); // FileID(B), FileName(C), InnerName(D)
+       
+       // Search backwards
+       for (var i = data.length - 1; i >= 0; i--) {
+          if (data[i][0] == fileId && data[i][2] == inner) { 
+             foundRow = start + i;
+             break;
+          }
+       }
+    }
+    
+    if (foundRow > 0) {
+       // Append to Info (Col 6)
+       var cell = sh.getRange(foundRow, 6);
+       var curr = cell.getValue();
+       var newInfo = curr ? (curr + ' | ' + notes) : notes;
+       cell.setValue(newInfo);
+       // Also update status if useful? "Success" might overwrite "Processing"? 
+       sh.getRange(foundRow, 5).setValue(status);
+    } else {
+       sh.appendRow([date, fileId, outer, inner, status, notes]);
+    }
   }
 }
 
@@ -462,7 +856,7 @@ function uiAddManualFlight_() {
 /**
  * Inserts the Data Row into 'Flights' Sheet.
  */
-function insertFlightRow_(data, fileId, outerName, status, notes, analysis, scoring, igcFileName, masterFileId, geo) {
+function insertFlightRow_(data, fileId, outerName, status, notes, analysis, scoring, igcFileName, masterFileId, geo, xcStatus) {
   var ss = SpreadsheetApp.getActive();
   var sh = ss.getSheetByName(TABS.FLIGHTS.name);
   
@@ -504,12 +898,16 @@ function insertFlightRow_(data, fileId, outerName, status, notes, analysis, scor
   var autoSummary = durFriendly + ' ' + (scoring.flightType || 'Free Fly') + (site ? ' at ' + site : '') + ' ' + maxAlt;
 
   // Times
-  var startTimeTz = GEO.formatInTimezone(new Date(data.stats.startTime * 1000), geo.tz, 'HH:mm');
+  // Use Config TIME_FORMAT if available
+  var config = getParameters_();
+  var timeFmt = config.TIME_FORMAT || 'HH:mm';
+  
+  var startTimeTz = GEO.formatInTimezone(new Date(data.stats.startTime * 1000), geo.tz, timeFmt);
   var endTimeTz = '';
   var tEnd = data.stats.endTime;
   if (!tEnd || isNaN(tEnd)) { tEnd = data.stats.startTime + data.stats.durationSec; }
   if (tEnd && !isNaN(tEnd)) {
-     endTimeTz = GEO.formatInTimezone(new Date(tEnd * 1000), geo.tz, 'HH:mm');
+     endTimeTz = GEO.formatInTimezone(new Date(tEnd * 1000), geo.tz, timeFmt);
   }
 
   // Duration
@@ -569,6 +967,15 @@ function insertFlightRow_(data, fileId, outerName, status, notes, analysis, scor
   setVal('GlideRatio_LD (snap)', wSpecs.glide);
   setVal('Trim_kmh (snap)', wSpecs.trim);
   setVal('FullBar_kmh (snap)', wSpecs.full);
+
+  // -- XContest --
+  if (xcStatus && xcStatus.status) {
+     var val = xcStatus.status;
+     if (val === 'Yes' && xcStatus.url) {
+        val = '=HYPERLINK("' + xcStatus.url + '", "Yes")';
+     }
+     setVal('XContest', val);
+  }
 
   // -- XC Scoring --
   // Use scoring object or default to empty

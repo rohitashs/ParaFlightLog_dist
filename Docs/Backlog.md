@@ -19,6 +19,8 @@ This file is the single source of truth for **ToDos**, **Requirements**, **Chang
 *Tasks for the future, mostly for the developer.*
 - [ ] **Status**: Open | **Date**: 2026-02-10 | **Imp**: Medium | **Description**: Review `Technical_Specifications.md` to ensure full alignment with v0.7.11 code.
 - [ ] **Status**: Open | **Date**: 2026-02-10 | **Imp**: Low | **Description**: Verify if `Reference` folder can be fully archived/deleted.
+- [ ] **Status**: Open | **Date**: 2026-02-13 | **Imp**: Medium | **Description**: Refactor code based on `Plans/CodeCheckReports/2026-02-13_CodeCheck.md` (Ingestion complexity, XContest regex, Utils extraction).
+- [ ] **Status**: Open | **Date**: 2026-02-13 | **Imp**: High | **Description**: **Ways of Working**: Discuss and refine artifact storage policy. Ensure all important files/artifacts are stored WITHIN the project directory for portability across multiple computers. Stop using local `brain` directory for permanent storage.
 
 ---
 
@@ -57,6 +59,13 @@ This file is the single source of truth for **ToDos**, **Requirements**, **Chang
 - [x] **RQ-SCR-002** | **Status**: Implemented | **Phase**: 1 | **Description**: Geo-Spatial Enrichment
     - [x] **RQ-SCR-002.1** | **Status**: Implemented | **Phase**: 1 | **Description**: Reverse Geocoding (Town/Region).
     - [x] **RQ-SCR-002.2** | **Status**: Implemented | **Phase**: 1 | **Description**: Site Detection (Overpass).
+    
+- [ ] **RQ-SCR-003** | **Status**: Open | **Phase**: 2 | **Description**: **XContest Verification**: Check if flight is already uploaded to XContest (via API or profile scan). Requires `XCONTEST_USERNAME` config. Refined: Match Date + Duration.
+    
+- [ ] **RQ-SCR-003** | **Status**: Open | **Phase**: 2 | **Description**: **XContest Verification**: Check if flight is already uploaded to XContest (via API or profile scan). Requires `XCONTEST_USERNAME` config. Refined: Match Date + Duration.
+    
+    
+    
 
 ### 🔧 Module: UI & System (SYS)
 - [x] **RQ-SYS-001** | **Status**: Implemented | **Phase**: 1 | **Description**: Configuration & Architecture
@@ -79,7 +88,6 @@ This file is the single source of truth for **ToDos**, **Requirements**, **Chang
 - [ ] **CR-UI-013** | **Status**: Open | **Date**: 2026-02-12 | **Req**: RQ-SYS-002 | **Description**: **Ingestion Progress Dialogs**: Update all ingestion dialogs (Scan, URL, Upload) to show real-time progress (Start, Processing X/Y, Summary) instead of just generic loading.
 - [ ] **CR-UI-012** | **Status**: Open | **Date**: 2026-02-10 | **Req**: RQ-SYS-002 | **Description**: **Quick Action Buttons**: Add buttons (Drawings/Images) to `Flights` sheet header for common tasks (Upload, Scan, Add Manual).
 - [ ] **CR-LOG-003** | **Status**: Open | **Date**: 2026-02-09 | **Req**: RQ-ING-002 | **Description**: **Enhance Logging**: General improvements to logging visibility (Files processed, specific errors, summary stats).
-- [ ] **CR-SCR-003** | **Status**: Open | **Date**: 2026-02-09 | **Req**: RQ-SCR-001 | **Description**: **XContest Verification**: Check if flight is already uploaded to XContest (via API or profile scan).
 
 - [ ] **CR-UI-004** | **Status**: Open | **Date**: 2026-02-08 | **Req**: RQ-SYS-002 | **Description**: **Menu Restructure**: Rename `Setup` to `Admin`, `Scaffold` to `First Time Setup`. Add Admin tools.
 - [ ] **CR-CFG-002** | **Status**: Open | **Date**: 2026-02-08 | **Req**: RQ-SCR-001 | **Description**: **Configurable RDP Tolerance**: Make Ramer-Douglas-Peucker tolerance configurable (Move from `Scoring.gs` and make it a parameter).
@@ -96,6 +104,7 @@ This file is the single source of truth for **ToDos**, **Requirements**, **Chang
 - [x] **CR-LOG-001** | **Status**: Implemented | **Date**: 2026-02-09 | **Req**: RQ-ING-002 | **Description**: **Enhanced Logging**: Append partial failures (e.g. Geo errors) to `Import_Log` Notes.
 
 - [ ] **CR-UI-001** | **Status**: Blocked | **Date**: 2026-02-08 | **Req**: RQ-SYS-002 | **Description**: **Smart Chip Dropdowns**: Use new Oval/Chip style. *Blocked by Apps Script API limitations*.
+- [ ] **CR-ADM-001** | **Status**: Open | **Date**: 2026-02-13 | **Req**: RQ-SYS-001 | **Description**: **Backup Parameters**: Include `Parameters` sheet in `Admin: Backup Data` menu routine.
 
 ---
 
@@ -114,3 +123,5 @@ This file is the single source of truth for **ToDos**, **Requirements**, **Chang
 
 - [ ] **Bug-GEO-002** | **Status**: Open | **Date**: 2026-02-08 | **Req**: RQ-SCR-002 | **Description**: **Missing Location Data**: Launch/Land Site, Town, Region are empty (API Rejection?).
 - [ ] **Bug-UI-003** | **Status**: Open | **Date**: 2026-02-12 | **Req**: RQ-SYS-001 | **Description**: **Parameter Date/Time Formats**: Dropdowns for `DATE_FORMAT` and `TIME_FORMAT` in Parameters tab showing values incorrectly (e.g. number instead of string) or empty.
+- [ ] **Bug-UI-004** | **Status**: Open | **Date**: 2026-02-13 | **Req**: RQ-SYS-004 | **Description**: **Sidebar Text Wrap**: Long values in Flight Inspector are not wrapping, making them unreadable.
+- [ ] **Bug-SCR-002** | **Status**: Open | **Date**: 2026-02-13 | **Req**: RQ-SCR-003 | **Description**: **XContest No Match**: Valid flights (3 known) are not matching. Troubleshooting required (Duration/Time tolerance or date parsing issue?).

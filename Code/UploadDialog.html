@@ -1,0 +1,223 @@
+<!--
+ * Paragliding Flight Log v2.0
+ * Updated: 2026-02-12 22:41:48
+ -->
+<!DOCTYPE html>
+<html>
+
+<head>
+  <base target="_top">
+  <?!= HtmlService.createTemplateFromFile('Style').evaluate().getContent(); ?>
+</head>
+
+<body>
+  <!-- Header: Text Color Only, No Background -->
+  <div class="header-large text-green">Upload Flight Logs</div>
+
+  <div class="main-content">
+    <!-- Instructions: Consistent Div -->
+    <div class="instructions">
+      Select IGC, ZIP, or GZ files to upload.<br>
+      Supported formats: .igc, .igx, .zip, .gz
+    </div>
+
+    <!-- Inputs Group: Hidden when running -->
+    <div id="input-group" class="control-group">
+      <input type="file" name="files" id="files" multiple accept=".igc,.igx,.zip,.gz">
+    </div>
+
+    <!-- Buttons: Left Aligned -->
+    <div class="control-group">
+      <!-- Action: Upload (starts), Done (ends) -->
+      <!-- We use two buttons to handle ID references easier or just toggle visibility -->
+      <button id="btn-start" onclick="startUpload()" class="action">Upload & Process</button>
+      <button id="btn-done" onclick="google.script.host.close()" class="action" style="display:none;">Done</button>
+
+      <!-- Close/Cancel -->
+      <button id="btn-close" onclick="google.script.host.close()" class="secondary">Close</button>
+    </div>
+
+    <div class="instructions" style="margin-top:15px; font-weight:bold;">Activity Log:</div>
+    <div id="log-console"></div>
+  </div>
+
+  <div class="footer">
+    <div class="status-line">
+      <span id="status-left">Ready</span>
+      <span id="status-right">0%</span>
+    </div>
+    <div class="progress-bar-bg">
+      <div id="progress-bar" class="progress-bar-fill"></div>
+    </div>
+  </div>
+
+  <script>
+    var uploadQueue = [];
+    var processingQueue = [];
+
+    var totalFlightsToProcess = 0;
+    var processedFlights = 0;
+    var errorFlights = 0;
+    var skippedFlights = 0;
+
+    function startUpload() {
+      var fileInput = document.getElementById('files');
+      if (fileInput.files.length === 0) {
+        alert('Please select at least one file.');
+        return;
+      }
+
+      // UI Setup: HIDE Inputs and Start Button
+      document.getElementById('input-group').style.display = 'none';
+      document.getElementById('btn-start').style.display = 'none';
+
+      // CHANGE Close to Cancel
+      var btnClose = document.getElementById('btn-close');
+      btnClose.innerHTML = 'Cancel';
+      // keep it visible
+
+      // Reset
+      uploadQueue = Array.from(fileInput.files);
+      processingQueue = [];
+      processedFlights = 0;
+      errorFlights = 0;
+      skippedFlights = 0;
+
+      log('Starting upload of ' + uploadQueue.length + ' files...');
+      setStatus('Initializing...', '0%');
+      uploadNext(0);
+    }
+
+    function uploadNext(index) {
+      if (index >= uploadQueue.length) {
+        startProcessing();
+        return;
+      }
+
+      var file = uploadQueue[index];
+      var pct = Math.round((index / uploadQueue.length) * 50) + '%';
+
+      var statusStr = (index + 1) + '/' + uploadQueue.length + ' Files | ' +
+        '0/0 Flights | ' + pct + ' | Uploading: ' + file.name;
+
+      setStatus(statusStr, pct);
+      setProgress(pct);
+
+      var reader = new FileReader();
+      reader.onload = function (e) {
+        var dataUrl = e.target.result;
+        var base64 = dataUrl.split(',')[1];
+        var payload = { name: file.name, type: file.type, data: base64 };
+
+        google.script.run
+          .withSuccessHandler(function (res) {
+            if (res.success) {
+              log(file.name + ': Staged (' + res.files.length + ' flights)', 'log-info');
+              res.files.forEach(function (f) { processingQueue.push(f); });
+            } else {
+              log(file.name + ': Error Staging (Server) - ' + res.error, 'log-error');
+            }
+            uploadNext(index + 1);
+          })
+          .withFailureHandler(function (err) {
+            log(file.name + ': Fatal Upload Error: ' + err, 'log-error');
+            uploadNext(index + 1);
+          })
+          .stageUpload(payload);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function startProcessing() {
+      totalFlightsToProcess = processingQueue.length;
+      if (totalFlightsToProcess === 0) {
+        log('No valid flights found to process.', 'log-info');
+        finish();
+        return;
+      }
+      log('------------------------------------------------');
+      log('Processing ' + totalFlightsToProcess + ' Flight(s)...');
+      processNext(0);
+    }
+
+    function processNext(index) {
+      if (index >= totalFlightsToProcess) {
+        finish();
+        return;
+      }
+
+      var item = processingQueue[index];
+      var basePct = 50;
+      var stepPct = Math.round((index / totalFlightsToProcess) * 50);
+      var totalPct = (basePct + stepPct) + '%';
+
+      var statusStr = uploadQueue.length + '/' + uploadQueue.length + ' Files | ' +
+        (index + 1) + '/' + totalFlightsToProcess + ' Flights | ' +
+        totalPct + ' | ' + item.name;
+
+      setStatus(statusStr, totalPct);
+      setProgress(totalPct);
+
+      google.script.run
+        .withSuccessHandler(function (res) {
+          if (res.success) {
+            var msg = item.name + ': ' + res.msg;
+            log(msg, res.processed ? 'log-success' : 'log-info');
+            if (res.processed) {
+              processedFlights++;
+            } else {
+              skippedFiles++;
+            }
+          } else {
+            log(item.name + ': Error ' + res.error, 'log-error');
+            errorFiles++;
+          }
+          processNext(index + 1);
+        })
+        .withFailureHandler(function (err) {
+          log(item.name + ': Fatal Error ' + err, 'log-error');
+          errorFiles++;
+          processNext(index + 1);
+        })
+        .processFileById(item.id, 'UPLOAD');
+    }
+
+    function finish() {
+      setProgress('100%');
+
+      var statusStr = uploadQueue.length + '/' + uploadQueue.length + ' Files | ' +
+        processedFlights + '/' + totalFlightsToProcess + ' Flights | 100% | Completed';
+      setStatus(statusStr, '100%');
+
+      log('------------------------------------------------');
+      log('Batch Complete.');
+      log('Flights Imported: ' + processedFlights);
+      log('Skipped: ' + skippedFlights);
+      log('Errors: ' + errorFlights);
+
+      // Button Swap: Hide Cancel, Show Done
+      document.getElementById('btn-close').style.display = 'none';
+      document.getElementById('btn-done').style.display = 'inline-block';
+    }
+
+    function setStatus(left, right) {
+      document.getElementById('status-left').textContent = left;
+      document.getElementById('status-right').textContent = right;
+    }
+
+    function setProgress(pct) {
+      document.getElementById('progress-bar').style.width = pct;
+    }
+
+    function log(msg, cls) {
+      var div = document.getElementById('log-console');
+      var p = document.createElement('div');
+      p.textContent = msg;
+      if (cls) p.className = cls;
+      div.appendChild(p);
+      div.scrollTop = div.scrollHeight;
+    }
+  </script>
+</body>
+
+</html>
