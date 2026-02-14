@@ -1,6 +1,6 @@
 <!--
  * Paragliding Flight Log v2.0
- * Updated: 2026-02-13 17:08:53
+ * Updated: 2026-02-13 17:13:58
  -->
 <!DOCTYPE html>
 <html>
@@ -41,8 +41,8 @@
       border-radius: 4px;
       margin-bottom: 5px;
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      /* Two Columns */
+      grid-template-columns: repeat(6, 1fr);
+      /* 6-Column Grid for flexibility */
       gap: 10px;
       transition: max-height 0.3s ease-out;
       overflow: hidden;
@@ -53,11 +53,20 @@
       margin-bottom: 2px;
       display: flex;
       flex-direction: column;
+      grid-column: span 3;
+      /* Default: Half width (3/6) */
     }
 
-    /* Full width for certain fields if needed */
+    /* Full width */
     .field-full {
+      grid-column: span 6;
+      /* Full width (6/6) */
+    }
+
+    /* Third width */
+    .field-third {
       grid-column: span 2;
+      /* Third width (2/6) */
     }
 
     .field-label {
@@ -283,6 +292,11 @@
           // Full width check
           if (['Notes', 'Observations', 'Val: Reason', 'Auto Summary'].indexOf(field.name) > -1) {
             div.classList.add('field-full');
+          }
+
+          // Third width check (Status, Flight No, FlightID)
+          if (['FlightID', 'Status', 'Flight No'].indexOf(field.name) > -1) {
+            div.classList.add('field-third');
           }
 
           var label = document.createElement('label');
