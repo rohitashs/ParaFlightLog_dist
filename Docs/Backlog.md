@@ -85,11 +85,11 @@ This file is the single source of truth for **ToDos**, **Requirements**, **Chang
 *Enhancements to Implemented Requirements.*
 
 - [ ] **CR-CFG-004** | **Status**: Open | **Date**: 2026-02-12 | **Req**: RQ-ING-001 | **Description**: **Multiple Watch Folders**: Enhance `ENABLE_WATCH_FOLDER` to support multiple comma-separated Folder IDs. Rename menu item "Add Watch Folder" to "Append to Watch Folder List".
-- [ ] **CR-UI-013** | **Status**: Open | **Date**: 2026-02-12 | **Req**: RQ-SYS-002 | **Description**: **Ingestion Progress Dialogs**: Update all ingestion dialogs (Scan, URL, Upload) to show real-time progress (Start, Processing X/Y, Summary) instead of just generic loading.
+- [x] **CR-UI-013** | **Status**: Implemented | **Date**: 2026-02-13 | **Req**: RQ-SYS-002 | **Description**: **Ingestion Progress Dialogs**: Update all ingestion dialogs (Scan, URL, Upload) to show real-time progress (Start, Processing X/Y, Summary) instead of just generic loading.
 - [ ] **CR-UI-012** | **Status**: Open | **Date**: 2026-02-10 | **Req**: RQ-SYS-002 | **Description**: **Quick Action Buttons**: Add buttons (Drawings/Images) to `Flights` sheet header for common tasks (Upload, Scan, Add Manual).
 - [ ] **CR-LOG-003** | **Status**: Open | **Date**: 2026-02-09 | **Req**: RQ-ING-002 | **Description**: **Enhance Logging**: General improvements to logging visibility (Files processed, specific errors, summary stats).
 
-- [ ] **CR-UI-004** | **Status**: Open | **Date**: 2026-02-08 | **Req**: RQ-SYS-002 | **Description**: **Menu Restructure**: Rename `Setup` to `Admin`, `Scaffold` to `First Time Setup`. Add Admin tools.
+- [x] **CR-UI-004** | **Status**: Implemented | **Date**: 2026-02-13 | **Req**: RQ-SYS-002 | **Description**: **Menu Restructure**: Rename `Setup` to `Admin`, `Scaffold` to `First Time Setup`. Add Admin tools.
 - [ ] **CR-CFG-002** | **Status**: Open | **Date**: 2026-02-08 | **Req**: RQ-SCR-001 | **Description**: **Configurable RDP Tolerance**: Make Ramer-Douglas-Peucker tolerance configurable (Move from `Scoring.gs` and make it a parameter).
 - [ ] **CR-GEO-001** | **Status**: Open | **Date**: 2026-02-08 | **Req**: RQ-SCR-002 | **Description**: **Multi-Provider Geo**: Support comma-separated providers for RevGeo, Sites, and Timezone.
 - [ ] **CR-CODE-001** | **Status**: Open | **Date**: 2026-02-08 | **Req**: RQ-SYS-001 | **Description**: **Centralize Common Utilities**: Create `Utils.gs` for shared Math/Haversine functions.
@@ -104,7 +104,7 @@ This file is the single source of truth for **ToDos**, **Requirements**, **Chang
 - [x] **CR-LOG-001** | **Status**: Implemented | **Date**: 2026-02-09 | **Req**: RQ-ING-002 | **Description**: **Enhanced Logging**: Append partial failures (e.g. Geo errors) to `Import_Log` Notes.
 
 - [ ] **CR-UI-001** | **Status**: Blocked | **Date**: 2026-02-08 | **Req**: RQ-SYS-002 | **Description**: **Smart Chip Dropdowns**: Use new Oval/Chip style. *Blocked by Apps Script API limitations*.
-- [ ] **CR-ADM-001** | **Status**: Open | **Date**: 2026-02-13 | **Req**: RQ-SYS-001 | **Description**: **Backup Parameters**: Include `Parameters` sheet in `Admin: Backup Data` menu routine.
+- [x] **CR-ADM-001** | **Status**: Implemented | **Date**: 2026-02-13 | **Req**: RQ-SYS-001 | **Description**: **Backup Parameters**: Include `Parameters` sheet in `Admin: Backup Data` menu routine.
 
 ---
 

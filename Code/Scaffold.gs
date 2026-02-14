@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-02-13 01:10:00
+ * Updated: 2026-02-13 16:59:04
  */
 /**
  * Paragliding Flight Log v2.0 - Scaffolding & Setup
@@ -510,8 +510,9 @@ function backupSystemSheets_() {
   
   backup(TABS.FLIGHTS.name, 'Backup ' + TABS.FLIGHTS.name);
   backup(TABS.EQUIPMENT.name, 'Backup ' + TABS.EQUIPMENT.name);
+  backup(TABS.PARAMETERS.name, 'Backup ' + TABS.PARAMETERS.name);
   
-  ss.toast('Backup created: Backup Flights & Backup Equipment');
+  ss.toast('Backup created: Flights, Equipment, & Parameters');
 }
 
 function deleteSystemSheets_() {
