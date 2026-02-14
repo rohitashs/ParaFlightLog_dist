@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-02-13 17:13:58
+ * Updated: 2026-02-13 17:30:56
  */
 /**
  * Paragliding Flight Log v2.0 - Configuration
@@ -22,7 +22,7 @@ var CFG = {
     lookups: 'Lookups',
     appLog: 'App_Log',
     sites: 'Sites',
-    overview: 'Overview'
+    dashboard: 'Dashboard'
   },
   // Centralized Parameter Definitions (Source of Truth for Parameters Sheet)
   parameters: [
@@ -104,9 +104,9 @@ CFG.defaults = CFG.getDefaults();
    ========================================================================================== */
 
 var TABS = {
-  OVERVIEW: {
-    name: CFG.sheets.overview,
-    color: '#9E9E9E', // Grey
+  DASHBOARD: {
+    name: CFG.sheets.dashboard,
+    color: '#607D8B', // Blue Grey
     index: 1,
     headerRow: 1,
     frozenRows: 0

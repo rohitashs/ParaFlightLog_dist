@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-02-13 17:13:58
+ * Updated: 2026-02-13 17:30:56
  */
 /**
  * Paragliding Flight Log v2.0 - Scaffolding & Setup
@@ -20,7 +20,7 @@ function scaffoldAll_() {
   var ss = SpreadsheetApp.getActive();
   
   // 1. Create/Ensure Sheets
-  ensureSheet_(ss, TABS.OVERVIEW.name);
+  ensureSheet_(ss, TABS.DASHBOARD.name);
   ensureSheet_(ss, TABS.FLIGHTS.name);
   ensureSheet_(ss, TABS.EQUIPMENT.name);
   ensureSheet_(ss, TABS.PARAMETERS.name);
@@ -28,7 +28,7 @@ function scaffoldAll_() {
   ensureSheet_(ss, TABS.APP_LOG.name);
   
   // 2. Scaffolding Content
-  scaffoldOverview_(ss);
+  scaffoldDashboard_(ss);
   scaffoldEquipment_(ss);
   scaffoldLookups_(ss); // Must run before Parameters to populate lists
   scaffoldParameters_(ss);
@@ -37,7 +37,7 @@ function scaffoldAll_() {
   
   // 3. Reorder Tabs
   var sheets = [
-    TABS.OVERVIEW.name, 
+    TABS.DASHBOARD.name, 
     TABS.FLIGHTS.name, 
     TABS.EQUIPMENT.name, 
     TABS.PARAMETERS.name, 
@@ -56,9 +56,9 @@ function scaffoldAll_() {
      }
   }
   
-  // Default to Overview
-  var shOverview = ss.getSheetByName(TABS.OVERVIEW.name);
-  if (shOverview) shOverview.activate();
+  // Default to Dashboard
+  var shDash = ss.getSheetByName(TABS.DASHBOARD.name);
+  if (shDash) shDash.activate();
 
   ss.toast('Scaffolding complete. Tabs reordered and colored.');
 }
@@ -82,11 +82,96 @@ function getTabColor_(name) {
    SHEET SPECIFIC SCAFFOLDING
    ========================================================================================== */
 
-function scaffoldOverview_(ss) {
-  var sh = ss.getSheetByName(TABS.OVERVIEW.name);
-  if (sh.getLastRow() === 0) {
-     sh.getRange('A1').setValue(TABS.OVERVIEW.name).setFontWeight('bold').setFontSize(12);
-     sh.getRange('A1:Z1').setBackground(TABS.OVERVIEW.color).setFontColor('white');
+function scaffoldDashboard_(ss) {
+  var sh = ss.getSheetByName(TABS.DASHBOARD.name);
+  // Clear if empty or just header to ensure fresh design
+  if (sh.getLastRow() <= 1) {
+     sh.clear();
+     
+     // 1. Page Title
+     sh.getRange('A1').setValue("Flight Dashboard").setFontWeight('bold').setFontSize(18);
+     sh.getRange('A1:Q1').setBackground(TABS.DASHBOARD.color).setFontColor('white').merge();
+     sh.getRange('A1').setHorizontalAlignment('center').setVerticalAlignment('middle');
+     sh.setRowHeight(1, 40);
+     
+     // 2. KPI Cards (Row 3-5)
+     // A-D: Total Flights, E-H: Total Hours, I-L: Total Dist, M-Q: This Year
+     var kpis = [
+       { r: 'A3:D5', title: 'Total Flights', val: '142' },
+       { r: 'E3:H5', title: 'Total Hours', val: '86h 30m' },
+       { r: 'I3:L5', title: 'Total Distance', val: '3,240 km' },
+       { r: 'M3:Q5', title: 'Flights (2026)', val: '12' }
+     ];
+     
+     kpis.forEach(function(k) {
+        var rng = sh.getRange(k.r);
+        rng.merge();
+        rng.setBackground('#ECEFF1').setBorder(true, true, true, true, true, true);
+        rng.setHorizontalAlignment('center').setVerticalAlignment('middle');
+        rng.setValue(k.val + '\n' + k.title);
+        rng.setFontSize(14).setWrap(true);
+     });
+     
+     // 3. Section Headers (Row 7)
+     sh.getRange('A7:E7').merge().setValue('Top 5 by Duration').setBackground('#CFD8DC').setFontWeight('bold').setHorizontalAlignment('center');
+     sh.getRange('G7:K7').merge().setValue('Recent Activity').setBackground('#CFD8DC').setFontWeight('bold').setHorizontalAlignment('center');
+     sh.getRange('M7:Q7').merge().setValue('Countries Flown').setBackground('#CFD8DC').setFontWeight('bold').setHorizontalAlignment('center');
+     
+     // 4. Dummy Lists (Row 8+)
+     // Top Duration
+     var topDur = [
+       ['Flight 102 - 4h 12m XC at Bir Billing'],
+       ['Flight 098 - 3h 45m XC at Bir Billing'],
+       ['Flight 115 - 3h 20m Triangle at Piedrahita'],
+       ['Flight 055 - 2h 55m Thermalling at Kamshet'],
+       ['Flight 140 - 2h 10m Soaring at Yelagiri']
+     ];
+     sh.getRange('A8:E12').mergeAcross().setValues(topDur).setBorder(false, false, true, false, false, false, '#E0E0E0', SpreadsheetApp.BorderStyle.SOLID);
+     
+     // Recent Activity
+     var recent = [
+       ['Flight 142 - 1h 20m at Kamshet (Today)'],
+       ['Flight 141 - 0h 45m at Kamshet (Yesterday)'],
+       ['Flight 140 - 2h 10m at Yelagiri (Last Week)'],
+       ['Flight 139 - 0h 15m Sledder at Nandi'],
+       ['Flight 138 - 1h 00m Soaring at Bali']
+     ];
+     sh.getRange('G8:K12').mergeAcross().setValues(recent).setBorder(false, false, true, false, false, false, '#E0E0E0', SpreadsheetApp.BorderStyle.SOLID);
+     
+     // Countries
+     var countries = [
+       ['India - 85 Flights'],
+       ['Spain - 20 Flights'],
+       ['France - 15 Flights'],
+       ['Colombia - 12 Flights'],
+       ['Nepal - 10 Flights']
+     ];
+     sh.getRange('M8:Q12').mergeAcross().setValues(countries).setBorder(false, false, true, false, false, false, '#E0E0E0', SpreadsheetApp.BorderStyle.SOLID);
+     
+     // Top Distance (Row 14 Header, 15+ Data)
+     sh.getRange('A14:E14').merge().setValue('Top 5 by Distance').setBackground('#CFD8DC').setFontWeight('bold').setHorizontalAlignment('center');
+     var topDist = [
+       ['Flight 102 - 85.4 km at Bir Billing'],
+       ['Flight 115 - 62.1 km at Piedrahita'],
+       ['Flight 098 - 55.0 km at Bir Billing'],
+       ['Flight 088 - 42.3 km at Roldanillo'],
+       ['Flight 120 - 35.6 km at Bir Billing']
+     ];
+     sh.getRange('A15:E19').mergeAcross().setValues(topDist).setBorder(false, false, true, false, false, false, '#E0E0E0', SpreadsheetApp.BorderStyle.SOLID);
+
+      // Top Sites (Row 14 Center)
+     sh.getRange('G14:K14').merge().setValue('Top Sites').setBackground('#CFD8DC').setFontWeight('bold').setHorizontalAlignment('center');
+     var topSites = [
+       ['Bir Billing - 45 Flights'],
+       ['Kamshet - 30 Flights'],
+       ['Piedrahita - 15 Flights'],
+       ['Roldanillo - 12 Flights'],
+       ['Yelagiri - 10 Flights']
+     ];
+     sh.getRange('G15:K19').mergeAcross().setValues(topSites).setBorder(false, false, true, false, false, false, '#E0E0E0', SpreadsheetApp.BorderStyle.SOLID);
+     
+     // Formatting
+     sh.setHiddenGridlines(true);
   }
 }
 

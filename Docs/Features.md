@@ -61,7 +61,16 @@ The visual layer where users interact with the data.
 *   **Dialogs**: Custom HTML interfaces for File Uploads and URL imports, capable of handling complex interactions.
 *   **Flight Inspector**: A dedicated sidebar to view, edit, and audit flight details without horizontal scrolling. Includes collapsible sections and direct SeeYou Cloud links.
 
-## 7. 🛡️ Administration & Setup
+## 7. 📊 Flight Dashboard
+*Maps to `RQ-SYS-005`*
+
+A high-level dashboard providing visual metrics and summaries.
+*   **Key Metrics**: Total Flights, Hours, Distance.
+*   **Top Lists**: Longest flights, furthest distance, and favorite sites.
+*   **Geography**: Breakdown of flights by country.
+*   **Recent Activity**: Quick view of flights in the last week/month/quarter.
+
+## 8. 🛡️ Administration & Setup
 *Maps to `RQ-SYS-001`*
 
 Tools for managing the system's lifecycle.
@@ -70,7 +79,7 @@ Tools for managing the system's lifecycle.
 *   **Maintenance**: Admin tools to "Reset System", "Reformat Sheets", and "Backup Data".
 *   **Equipment Manager**: dedicated tabs for `Wings`, `Harnesses`, and `Reserves`. Rows added here immediately appear in the Flights dropdowns.
 
-## 8. ⚙️ System Internals
+## 9. ⚙️ System Internals
 *Maps to `RQ-ING-001`, `RQ-ANA-001`*
 
 Under-the-hood capabilities that drive reliability.
