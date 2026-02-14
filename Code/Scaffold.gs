@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-02-13 17:30:56
+ * Updated: 2026-02-13 17:36:39
  */
 /**
  * Paragliding Flight Log v2.0 - Scaffolding & Setup
@@ -126,7 +126,8 @@ function scaffoldDashboard_(ss) {
        ['Flight 055 - 2h 55m Thermalling at Kamshet'],
        ['Flight 140 - 2h 10m Soaring at Yelagiri']
      ];
-     sh.getRange('A8:E12').mergeAcross().setValues(topDur).setBorder(false, false, true, false, false, false, '#E0E0E0', SpreadsheetApp.BorderStyle.SOLID);
+     sh.getRange('A8:A12').setValues(topDur);
+     sh.getRange('A8:E12').mergeAcross().setBorder(false, false, true, false, false, false, '#E0E0E0', SpreadsheetApp.BorderStyle.SOLID);
      
      // Recent Activity
      var recent = [
@@ -136,7 +137,8 @@ function scaffoldDashboard_(ss) {
        ['Flight 139 - 0h 15m Sledder at Nandi'],
        ['Flight 138 - 1h 00m Soaring at Bali']
      ];
-     sh.getRange('G8:K12').mergeAcross().setValues(recent).setBorder(false, false, true, false, false, false, '#E0E0E0', SpreadsheetApp.BorderStyle.SOLID);
+     sh.getRange('G8:G12').setValues(recent);
+     sh.getRange('G8:K12').mergeAcross().setBorder(false, false, true, false, false, false, '#E0E0E0', SpreadsheetApp.BorderStyle.SOLID);
      
      // Countries
      var countries = [
@@ -146,7 +148,8 @@ function scaffoldDashboard_(ss) {
        ['Colombia - 12 Flights'],
        ['Nepal - 10 Flights']
      ];
-     sh.getRange('M8:Q12').mergeAcross().setValues(countries).setBorder(false, false, true, false, false, false, '#E0E0E0', SpreadsheetApp.BorderStyle.SOLID);
+     sh.getRange('M8:M12').setValues(countries);
+     sh.getRange('M8:Q12').mergeAcross().setBorder(false, false, true, false, false, false, '#E0E0E0', SpreadsheetApp.BorderStyle.SOLID);
      
      // Top Distance (Row 14 Header, 15+ Data)
      sh.getRange('A14:E14').merge().setValue('Top 5 by Distance').setBackground('#CFD8DC').setFontWeight('bold').setHorizontalAlignment('center');
@@ -157,7 +160,8 @@ function scaffoldDashboard_(ss) {
        ['Flight 088 - 42.3 km at Roldanillo'],
        ['Flight 120 - 35.6 km at Bir Billing']
      ];
-     sh.getRange('A15:E19').mergeAcross().setValues(topDist).setBorder(false, false, true, false, false, false, '#E0E0E0', SpreadsheetApp.BorderStyle.SOLID);
+     sh.getRange('A15:A19').setValues(topDist);
+     sh.getRange('A15:E19').mergeAcross().setBorder(false, false, true, false, false, false, '#E0E0E0', SpreadsheetApp.BorderStyle.SOLID);
 
       // Top Sites (Row 14 Center)
      sh.getRange('G14:K14').merge().setValue('Top Sites').setBackground('#CFD8DC').setFontWeight('bold').setHorizontalAlignment('center');
@@ -168,7 +172,8 @@ function scaffoldDashboard_(ss) {
        ['Roldanillo - 12 Flights'],
        ['Yelagiri - 10 Flights']
      ];
-     sh.getRange('G15:K19').mergeAcross().setValues(topSites).setBorder(false, false, true, false, false, false, '#E0E0E0', SpreadsheetApp.BorderStyle.SOLID);
+     sh.getRange('G15:G19').setValues(topSites);
+     sh.getRange('G15:K19').mergeAcross().setBorder(false, false, true, false, false, false, '#E0E0E0', SpreadsheetApp.BorderStyle.SOLID);
      
      // Formatting
      sh.setHiddenGridlines(true);
@@ -606,7 +611,7 @@ function deleteSystemSheets_() {
   
   if (resp == ui.Button.YES) {
     var ss = SpreadsheetApp.getActive();
-    var targets = [TABS.FLIGHTS.name, TABS.EQUIPMENT.name, TABS.PARAMETERS.name, TABS.LOOKUPS.name, TABS.APP_LOG.name, TABS.OVERVIEW.name, TABS.APP_LOG.name, 'Sites']; // Sites is legacy but safe to nuke
+    var targets = [TABS.FLIGHTS.name, TABS.EQUIPMENT.name, TABS.PARAMETERS.name, TABS.LOOKUPS.name, TABS.APP_LOG.name, TABS.DASHBOARD.name, 'Overview', 'Sites']; // Overview/Sites legacy cleanup
     
     var count = 0;
     targets.forEach(function(name) {
