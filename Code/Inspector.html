@@ -1,6 +1,6 @@
 <!--
  * Paragliding Flight Log v2.0
- * Updated: 2026-02-13 17:02:55
+ * Updated: 2026-02-13 17:08:53
  -->
 <!DOCTYPE html>
 <html>
@@ -281,7 +281,7 @@
           div.setAttribute('data-index', idx);
 
           // Full width check
-          if (['Notes', 'Observations', 'Val: Reason'].indexOf(field.name) > -1) {
+          if (['Notes', 'Observations', 'Val: Reason', 'Auto Summary'].indexOf(field.name) > -1) {
             div.classList.add('field-full');
           }
 
@@ -355,7 +355,7 @@
           opt.selected = true;
           input.appendChild(opt);
         }
-      } else if (['Notes', 'Observations', 'Val: Reason'].indexOf(field.name) > -1) {
+      } else if (['Notes', 'Observations', 'Val: Reason', 'Auto Summary'].indexOf(field.name) > -1) {
         input = document.createElement('textarea');
         input.className = 'field-value';
         input.value = field.value || '';
