@@ -100,17 +100,29 @@ The backlog has 5 strict sections:
 ## 💻 Development Infrastructure Setup (`DevInfraSetup`)
 *Use this section whenever setting up the project on a new computer or verifying the dev environment.*
 
-### 1. Required Infrastructure & Prerequisites
+### 1. Required Infrastructure & Tooling
 *   **Git**: Git for Windows installed. Git Credential Manager configured for GitHub access (`https://github.com/rohitashs/RSParaFlightLogProject.git`).
-*   **Node.js & npm**: Node.js v20+ or v24+ LTS installed. (Provides runtime for clasp).
+*   **Node.js & npm**: Node.js v20+ or v24+ LTS installed. (Provides runtime for Clasp CLI).
 *   **Google Clasp CLI**: `@google/clasp` installed globally (`npm install -g @google/clasp`).
-*   **Google Apps Script Authorization**: One-time OAuth login per machine via `clasp login`. Tokens stored in `~/.clasprc.json`.
-*   **Script Configuration**: `.clasp.json` in the workspace root pointing to:
+*   **PowerShell**: Standard shell for running deployment scripts (e.g. `.\update_headers.ps1`).
+*   **Project Config**: `.clasp.json` in workspace root pointing to:
     *   `scriptId`: `10l-5rIDf0osLjy46qbLm2skoyXQRFGq5Dj7dl5hScjhGdy0IO_BiQqol`
     *   `rootDir`: `Code/`
-*   **PowerShell**: For running utility scripts (e.g. `.\update_headers.ps1`).
 
-### 2. New Machine Setup Checklist
+### 2. Required Logins, Authentications & Permissions
+To develop and deploy changes, three distinct permission layers must be authorized:
+
+1.  **Google Account & Apps Script API (Developer Access)**:
+    *   **Account Access**: Your Google account must have Editor permissions on the Google Sheet and its container-bound Apps Script project (`scriptId: 10l-5rIDf0osLjy46qbLm2skoyXQRFGq5Dj7dl5hScjhGdy0IO_BiQqol`).
+    *   **Enable Google Apps Script API**: Must be toggled **ON** in Google Account user settings at: [https://script.google.com/home/usersettings](https://script.google.com/home/usersettings). Without this, Clasp API requests are rejected.
+    *   **Clasp CLI Authorization**: Run `clasp login` once per machine in an interactive terminal. This opens the browser OAuth consent screen and saves credentials locally to `~/.clasprc.json`. (Required scopes include `script.deployments`, `script.projects`, `drive.file`, and `logging.read`).
+2.  **GitHub & Git Credential Manager**:
+    *   **Repository Access**: Write/Push access to `https://github.com/rohitashs/RSParaFlightLogProject.git`.
+    *   **Interactive Terminal Login**: On Windows, Git Credential Manager (`GCM`) caches OAuth tokens in Windows Credential Manager (`git:https://github.com`). The first `git push` must be run from an **interactive terminal** (not a headless background tool) so GCM can display the "Sign in with your browser" prompt.
+3.  **Google Sheets Runtime Authorization (User Scopes)**:
+    *   When functions are run from the spreadsheet UI (e.g. `Flight Log` menu -> `Scaffold` or `Scan Watch Folder`), Google prompts for one-time runtime permission approval (`Review Permissions` -> `Advanced` -> `Go to FlightLogScript (unsafe)` -> `Allow`) to access Sheets, Drive folders, and external APIs (`UrlFetchApp`).
+
+### 3. New Machine Setup Checklist
 When configuring a fresh IDE/machine:
 1.  **Install Node.js & Git**: Verify with `node -v` and `git --version`.
 2.  **Install Clasp**:
@@ -118,63 +130,75 @@ When configuring a fresh IDE/machine:
     npm install -g @google/clasp
     ```
     *Ensure `npm` global bin directory (e.g. `C:\Users\<user>\AppData\Roaming\npm`) is in system `PATH`.*
-3.  **Authorize Clasp (Google Account)**:
+3.  **Enable Apps Script API**:
+    Verify that the Apps Script API is enabled at [https://script.google.com/home/usersettings](https://script.google.com/home/usersettings).
+4.  **Authorize Clasp**:
     ```powershell
     clasp login
     ```
-    *Complete the browser authorization with the Google account that has edit access to the Google Sheet and Apps Script project.*
-4.  **Confirm `.clasp.json`**:
-    Verify that `.clasp.json` exists in project root with valid `scriptId` and `rootDir: "Code/"`.
-5.  **Configure Git**:
-    ```powershell
-    git remote -v
-    # Verify origin points to https://github.com/rohitashs/RSParaFlightLogProject.git
-    ```
+    *Log in with the Google account owning the spreadsheet script.*
+5.  **Verify Script Binding**:
+    Confirm `.clasp.json` exists in project root with valid `scriptId` and `rootDir: "Code/"`.
+6.  **Authenticate Git**:
+    Run `git remote -v` and perform an initial `git fetch` or `git push` in an interactive terminal to allow Git Credential Manager to sign in.
 
-### 3. How to Test & Verify Environment
-Run the following commands in PowerShell from the project root to verify all layers:
+### 4. End-to-End Verification Test (Actual Code Change)
+To verify the entire toolchain (local file edit -> Google Apps Script deployment -> GitHub sync), follow this standard smoke test:
 
-#### A. Tooling Availability & Versions
+#### Step 1: Tooling Availability
 ```powershell
 Get-Command git, node, npm, clasp -ErrorAction SilentlyContinue | Select-Object Name, Source
 node -v
 clasp -v
-```
-*Expected*: All commands resolve with full executable paths, Node >= v20, Clasp >= v3.x.
-
-#### B. Apps Script (GAS) Connectivity & Push Access
-```powershell
 clasp show-authorized-user
-clasp status
 ```
-*Expected*:
-*   `clasp show-authorized-user`: Displays your logged-in Google account email.
-*   `clasp status`: Shows 16 tracked files under `Code\`.
+*Expected*: All commands resolve, and `show-authorized-user` outputs your Google account email.
 
-To test **write/deploy access** to Google Apps Script:
+#### Step 2: Make a Test Code Change
+Edit the header of [`Code/Code.gs`](file:///g:/My%20Drive/~RS2ndBrain/~Projects/ParaFlightLogProject/Code/Code.gs) to update the timestamp and test note:
+```javascript
+/**
+ * Paragliding Flight Log v2.0
+ * Updated: YYYY-MM-DD HH:MM:SS
+ * Test access verification: Verified GAS write access on YYYY-MM-DD HH:MM:SS.
+ * 
+ * CORE MODULE: Orchestration Only.
+...
+```
+
+#### Step 3: Deploy to Google Apps Script
 ```powershell
+clasp status
 clasp push
 ```
-*Expected*: `Pushed 16 files.` without errors.
+*Expected*: `Pushed 16 files.` with zero errors.
 
-#### C. Git & GitHub Connectivity
+#### Step 4: Verify & Commit to Git
 ```powershell
 git status
-git remote -v
-git log -n 3 --oneline
+# Confirm Code/Code.gs is modified
+git add Code/Code.gs
+git commit -m "Test: Verify dev environment and GAS push on YYYY-MM-DD"
 ```
-*Expected*: Clean branch status (or expected unstaged changes), remote tracking `origin/master`.
+*Expected*: Commit created cleanly.
 
-#### D. Automation Scripts
+#### Step 5: Push to GitHub & Verify Clean State
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\update_headers.ps1
+git push origin master
+git status
 ```
-*Expected*: Updates file header timestamps across all `.gs` and `.html` files in `Code/`.
+*Expected*: `Your branch is up to date with 'origin/master'`, `working tree clean`.
 
-### 4. Common Issues & Troubleshooting
+### 5. Common Issues & Troubleshooting
 *   **`invalid_grant` on `clasp push`**:
     *   *Cause*: The cached OAuth refresh token in `~/.clasprc.json` expired or was revoked.
-    *   *Fix*: Run `clasp login` in the terminal to re-authenticate via browser.
+    *   *Fix*: Run `clasp login` in an interactive terminal to re-authenticate via browser.
+*   **`User has not enabled the Apps Script API`**:
+    *   *Cause*: Google Apps Script API toggle is OFF for your account.
+    *   *Fix*: Go to [https://script.google.com/home/usersettings](https://script.google.com/home/usersettings) and toggle it to **ON**.
+*   **Git Credential Manager popup not showing (hanging background push)**:
+    *   *Cause*: Background sub-shells on Windows run headless and cannot display the GCM interactive OAuth modal dialog.
+    *   *Fix*: Run `git push` once directly in an interactive PowerShell or VS Code terminal. Complete the one-time browser OAuth login to store the GitHub credential in Windows Credential Manager.
 *   **`clasp` command not found**:
     *   *Cause*: npm global directory not in environment `PATH`.
     *   *Fix*: Add `$env:APPDATA\npm` to User/System `PATH`.
