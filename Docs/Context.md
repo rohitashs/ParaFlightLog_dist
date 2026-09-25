@@ -90,6 +90,98 @@ The backlog has 5 strict sections:
 *   **Validation**: Validate early. Fail gracefully with logs.
 *   **Timestamps**: Always update file header timestamps before pushing. Use `.\update_headers.ps1` to automate this.
 
+### 7. Multi-Device Workflow (`Docs/Workflows/Multi_Device_Setup.md`)
+*   **Critical**: Never work on two computers at once.
+*   **Protocol**: Always wait for Google Drive sync **before** opening VS Code. Acknowledge the risk of Git inside Drive.
+*   **Hand-off**: Commit & Push on A -> Wait for Sync -> Pull on B.
+
+---
+
+## 💻 Development Infrastructure Setup (`DevInfraSetup`)
+*Use this section whenever setting up the project on a new computer or verifying the dev environment.*
+
+### 1. Required Infrastructure & Prerequisites
+*   **Git**: Git for Windows installed. Git Credential Manager configured for GitHub access (`https://github.com/rohitashs/RSParaFlightLogProject.git`).
+*   **Node.js & npm**: Node.js v20+ or v24+ LTS installed. (Provides runtime for clasp).
+*   **Google Clasp CLI**: `@google/clasp` installed globally (`npm install -g @google/clasp`).
+*   **Google Apps Script Authorization**: One-time OAuth login per machine via `clasp login`. Tokens stored in `~/.clasprc.json`.
+*   **Script Configuration**: `.clasp.json` in the workspace root pointing to:
+    *   `scriptId`: `10l-5rIDf0osLjy46qbLm2skoyXQRFGq5Dj7dl5hScjhGdy0IO_BiQqol`
+    *   `rootDir`: `Code/`
+*   **PowerShell**: For running utility scripts (e.g. `.\update_headers.ps1`).
+
+### 2. New Machine Setup Checklist
+When configuring a fresh IDE/machine:
+1.  **Install Node.js & Git**: Verify with `node -v` and `git --version`.
+2.  **Install Clasp**:
+    ```powershell
+    npm install -g @google/clasp
+    ```
+    *Ensure `npm` global bin directory (e.g. `C:\Users\<user>\AppData\Roaming\npm`) is in system `PATH`.*
+3.  **Authorize Clasp (Google Account)**:
+    ```powershell
+    clasp login
+    ```
+    *Complete the browser authorization with the Google account that has edit access to the Google Sheet and Apps Script project.*
+4.  **Confirm `.clasp.json`**:
+    Verify that `.clasp.json` exists in project root with valid `scriptId` and `rootDir: "Code/"`.
+5.  **Configure Git**:
+    ```powershell
+    git remote -v
+    # Verify origin points to https://github.com/rohitashs/RSParaFlightLogProject.git
+    ```
+
+### 3. How to Test & Verify Environment
+Run the following commands in PowerShell from the project root to verify all layers:
+
+#### A. Tooling Availability & Versions
+```powershell
+Get-Command git, node, npm, clasp -ErrorAction SilentlyContinue | Select-Object Name, Source
+node -v
+clasp -v
+```
+*Expected*: All commands resolve with full executable paths, Node >= v20, Clasp >= v3.x.
+
+#### B. Apps Script (GAS) Connectivity & Push Access
+```powershell
+clasp show-authorized-user
+clasp status
+```
+*Expected*:
+*   `clasp show-authorized-user`: Displays your logged-in Google account email.
+*   `clasp status`: Shows 16 tracked files under `Code\`.
+
+To test **write/deploy access** to Google Apps Script:
+```powershell
+clasp push
+```
+*Expected*: `Pushed 16 files.` without errors.
+
+#### C. Git & GitHub Connectivity
+```powershell
+git status
+git remote -v
+git log -n 3 --oneline
+```
+*Expected*: Clean branch status (or expected unstaged changes), remote tracking `origin/master`.
+
+#### D. Automation Scripts
+```powershell
+powershell -ExecutionPolicy Bypass -File .\update_headers.ps1
+```
+*Expected*: Updates file header timestamps across all `.gs` and `.html` files in `Code/`.
+
+### 4. Common Issues & Troubleshooting
+*   **`invalid_grant` on `clasp push`**:
+    *   *Cause*: The cached OAuth refresh token in `~/.clasprc.json` expired or was revoked.
+    *   *Fix*: Run `clasp login` in the terminal to re-authenticate via browser.
+*   **`clasp` command not found**:
+    *   *Cause*: npm global directory not in environment `PATH`.
+    *   *Fix*: Add `$env:APPDATA\npm` to User/System `PATH`.
+*   **Drive Sync Conflicts**:
+    *   *Cause*: Opening VS Code / editing on two synced machines simultaneously.
+    *   *Fix*: Always adhere to the Hot-Potato Rule in `Docs/Workflows/Multi_Device_Setup.md`. Only work on one machine at a time and close VS Code after sync completes.
+
 ---
 
 ## 🚀 Current Project State (v0.7.11)

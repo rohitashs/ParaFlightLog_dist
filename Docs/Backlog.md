@@ -106,6 +106,7 @@ This file is the single source of truth for **ToDos**, **Requirements**, **Chang
 
 - [ ] **CR-UI-001** | **Status**: Blocked | **Date**: 2026-02-08 | **Req**: RQ-SYS-002 | **Description**: **Smart Chip Dropdowns**: Use new Oval/Chip style. *Blocked by Apps Script API limitations*.
 - [x] **CR-ADM-001** | **Status**: Implemented | **Date**: 2026-02-13 | **Req**: RQ-SYS-001 | **Description**: **Backup Parameters**: Include `Parameters` sheet in `Admin: Backup Data` menu routine.
+- [ ] **CR-SYS-001** | **Status**: Open | **Date**: 2026-02-13 | **Req**: RQ-SYS-005 | **Description**: **Dashboard Finalization**: Review dashboard design and convert dummy data to real formulas or script logic. Implement "Top 5" and "Recent Activity" logic.
 
 ---
 
