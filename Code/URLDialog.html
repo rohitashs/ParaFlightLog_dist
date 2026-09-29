@@ -1,6 +1,6 @@
 <!--
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-29 11:36:46
+ * Updated: 2026-09-29 12:09:53
  -->
 <!DOCTYPE html>
 <html>
@@ -9,45 +9,204 @@
     <base target="_top">
     <?!= HtmlService.createTemplateFromFile('Style').evaluate().getContent(); ?>
     <style>
-        /* CR Override: Wider Input */
-        #urlInput {
-            width: 100%;
-            box-sizing: border-box;
+        .picker-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .input-row input {
+            flex-grow: 1;
+            padding: 7px 10px;
+            font-size: 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            outline: none;
+        }
+
+        .input-row input:focus {
+            border-color: #FFA000;
+        }
+
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 4px;
+            padding: 6px 10px;
+            background: #F8F9FA;
+            border: 1px solid #E0E0E0;
+            border-radius: 4px;
+            font-size: 11px;
+            color: #555;
+        }
+
+        .breadcrumb-item {
+            cursor: pointer;
+            color: #1A73E8;
+            font-weight: 500;
+        }
+
+        .breadcrumb-item:hover {
+            text-decoration: underline;
+        }
+
+        .breadcrumb-sep {
+            color: #999;
+        }
+
+        .folder-list-container {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            height: 140px;
+            overflow-y: auto;
+            background: #fff;
+        }
+
+        .folder-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 10px;
+            cursor: pointer;
+            font-size: 12px;
+            border-bottom: 1px solid #f1f1f1;
+            user-select: none;
+        }
+
+        .folder-item:hover {
+            background-color: #F1F3F4;
+        }
+
+        .folder-item.selected {
+            background-color: #E3F2FD !important;
+            border-left: 4px solid #1976D2 !important;
+            color: #0D47A1 !important;
+            font-weight: 600 !important;
+        }
+
+        .folder-icon {
+            font-size: 14px;
+        }
+
+        .empty-folders {
+            padding: 15px;
+            text-align: center;
+            color: #888;
+            font-size: 12px;
+        }
+
+        .selection-preview {
+            background: #FAFAFA;
+            border: 1px solid #EEEEEE;
+            border-radius: 4px;
+            padding: 7px 10px;
+            font-size: 11px;
+            color: #333;
+        }
+
+        .checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 10px;
+            background: #FFFDE7;
+            border: 1px solid #FFF59D;
+            border-radius: 4px;
+            font-size: 11px;
+            color: #5D4037;
+        }
+
+        .checkbox-row input {
+            cursor: pointer;
+        }
+
+        .checkbox-row label {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        #log-console {
+            height: 280px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: #FAFAFA;
+            padding: 8px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 11px;
         }
     </style>
 </head>
 
 <body>
-    <!-- Header: Text Color Only, No Background -->
-    <div class="header-large text-amber">Import from URL</div>
+    <!-- Header -->
+    <div class="header-large text-amber">Add Files from URL / Drive</div>
 
     <div class="main-content">
-        <!-- Instructions: Consistent Div -->
-        <div class="instructions">
-            Enter a direct link to an IGC, ZIP, or GZ file.<br>
-            Google Drive URLs are also supported.
+        <!-- Configuration Panel (Hidden while running) -->
+        <div id="config-panel" class="picker-container">
+            <div class="instructions" style="margin-bottom:2px;">
+                Import flight logs from an external URL, a Google Drive file, or a Google Drive folder.
+            </div>
+
+            <!-- Option A: Paste URL or ID -->
+            <div style="font-weight:600; font-size:12px; margin-top:2px;">Option A: Paste URL, Drive File ID, or Folder ID</div>
+            <div class="input-row">
+                <input type="text" id="urlInput" placeholder="https://... or Google Drive File / Folder ID" autofocus />
+                <button type="button" class="secondary" onclick="verifyInput()">Verify</button>
+            </div>
+
+            <!-- Option B: Browse Google Drive -->
+            <div style="font-weight:600; font-size:12px; margin-top:4px;">Option B: Browse Google Drive</div>
+            
+            <!-- Breadcrumbs -->
+            <div class="breadcrumb" id="breadcrumb-bar">
+                <span class="breadcrumb-item" onclick="navigateTo('root')">📁 My Drive</span>
+            </div>
+
+            <!-- Subfolders List -->
+            <div class="folder-list-container" id="folder-list">
+                <div class="empty-folders">Loading folders...</div>
+            </div>
+
+            <!-- Selected Target Display -->
+            <div class="selection-preview">
+                <strong>Selected Source:</strong>
+                <span id="target-name-disp" style="color:#E65100; font-weight:600;">(None chosen yet)</span><br>
+                <small id="target-path-disp" style="color:#666;">Choose a folder from Google Drive or paste a URL above.</small>
+            </div>
+
+            <!-- Optional Checkbox: Delete from Source -->
+            <div class="checkbox-row">
+                <input type="checkbox" id="chk-delete-source" />
+                <label for="chk-delete-source">
+                    <strong>Delete files from source</strong> after successful import (Default: unchecked)
+                </label>
+            </div>
         </div>
 
-        <!-- Inputs Group: Hidden when running -->
-        <div id="input-group" class="control-group">
-            <input type="text" id="urlInput" placeholder="https://example.com/flight.igc" autofocus>
+        <!-- Activity Log Panel (Shown when processing) -->
+        <div id="log-panel" style="display:none; margin-top:6px;">
+            <div style="font-weight:bold; font-size:12px; margin-bottom:4px;">Activity Log:</div>
+            <div id="log-console"></div>
         </div>
 
-        <!-- Buttons: Left Aligned -->
-        <div class="control-group">
-            <!-- Action: Import (starts), Done (ends) -->
-            <button id="btn-start" onclick="submitUrl()" class="action">Import</button>
-            <button id="btn-done" onclick="google.script.host.close()" class="action"
-                style="display:none;">Done</button>
-
-            <!-- Close/Cancel -->
-            <button id="btn-close" onclick="google.script.host.close()" class="secondary">Close</button>
+        <!-- Control Buttons -->
+        <div class="control-group" style="margin-top:10px; display:flex; gap:8px;">
+            <button id="btn-start" onclick="startImport()" class="action" disabled>Import Files</button>
+            <button id="btn-done" onclick="google.script.host.close()" class="action" style="display:none;">Done</button>
+            <button id="btn-close" onclick="google.script.host.close()" class="secondary">Cancel</button>
         </div>
-
-        <div class="instructions" style="margin-top:15px; font-weight:bold;">Activity Log:</div>
-        <div id="log-console"></div>
     </div>
 
+    <!-- Footer Progress -->
     <div class="footer">
         <div class="status-line">
             <span id="status-left">Ready</span>
@@ -59,67 +218,257 @@
     </div>
 
     <script>
-        var input = document.getElementById('urlInput');
+        var selectedTarget = "";
+        var selectedTargetName = "";
+        var selectedTargetPath = "";
+        var currentNavId = "root";
+        var navHistory = [{ id: "root", name: "My Drive" }];
 
-        // Processing State
         var processingQueue = [];
         var totalFlightsToProcess = 0;
         var processedFlights = 0;
         var errorFlights = 0;
         var skippedFlights = 0;
-        var currentUrl = '';
+        var shouldDeleteSource = false;
 
-        input.addEventListener('keyup', function (event) {
-            if (event.key === 'Enter') {
-                submitUrl();
+        window.onload = function() {
+            loadFolder("root");
+
+            var urlInp = document.getElementById("urlInput");
+            urlInp.addEventListener("input", function() {
+                var val = urlInp.value.trim();
+                if (val) {
+                    selectedTarget = val;
+                    selectedTargetName = val;
+                    selectedTargetPath = "Pasted URL / ID";
+                    document.getElementById("target-name-disp").innerText = val;
+                    document.getElementById("target-path-disp").innerText = "Custom Input";
+                    document.getElementById("btn-start").disabled = false;
+                }
+            });
+            urlInp.addEventListener("keyup", function(e) {
+                if (e.key === "Enter") {
+                    verifyInput();
+                }
+            });
+        };
+
+        function setStatus(left, right) {
+            document.getElementById("status-left").textContent = left;
+            if (right !== undefined) {
+                document.getElementById("status-right").textContent = right;
             }
-        });
+        }
 
-        function submitUrl() {
-            var url = input.value.trim();
-            if (!url) {
-                alert('Please enter a URL.');
-                return;
-            }
-            currentUrl = url;
+        function setProgress(pct) {
+            document.getElementById("progress-bar").style.width = pct;
+        }
 
-            // UI Setup: Hide Input & Start, Show Cancel
-            document.getElementById('input-group').style.display = 'none';
-            document.getElementById('btn-start').style.display = 'none';
-
-            var btnClose = document.getElementById('btn-close');
-            btnClose.innerHTML = 'Cancel';
-
-            // Phase 1: Stage (Download & Unzip)
-            var statusStr = '1/1 File | 0/0 Flights | 10% | Downloading...';
-            setStatus(statusStr, '10%');
-            setProgress('10%');
-            log('URL: ' + url);
+        function loadFolder(folderId) {
+            setStatus("Loading folders...");
+            var container = document.getElementById("folder-list");
+            container.innerHTML = '<div class="empty-folders">Loading folders...</div>';
 
             google.script.run
-                .withSuccessHandler(function (res) {
-                    if (res && res.error) {
-                        handleError('Download Failed: ' + res.error);
-                    } else if (res && res.files) { // Check for 'files' array specifically
-                        // Success
-                        processingQueue = res.files; // {id, name}
-                        // Log filename(s) found
-                        processingQueue.forEach(function (f) {
-                            log(f.name + ' found', 'log-info');
-                        });
+                .withSuccessHandler(function(res) {
+                    if (!res || !res.success) {
+                        container.innerHTML = '<div class="empty-folders" style="color:red;">Error: ' + (res ? res.error : 'Failed to load') + '</div>';
+                        setStatus("Error loading folders", "0%");
+                        return;
+                    }
 
-                        startProcessing();
-                    } else if (res && res.success) {
-                        // Fallback if success=true but files missing (shouldn't happen with stageUrlImport)
-                        handleError('Server returned success but no file list.');
+                    currentNavId = res.currentId;
+                    renderBreadcrumb(res.isRoot ? "root" : res.currentId, res.currentName);
+                    renderFolderList(res.subfolders, res.currentId, res.actualId, res.currentName, res.currentPath);
+                    setStatus("Ready", "0%");
+                })
+                .withFailureHandler(function(err) {
+                    var errMsg = err && err.message ? err.message : String(err);
+                    container.innerHTML = '<div class="empty-folders" style="color:red;">Error: ' + errMsg + '</div>';
+                    setStatus("Error: " + errMsg, "0%");
+                })
+                .getDriveFolderContents(folderId);
+        }
+
+        function renderBreadcrumb(currId, currName) {
+            var bar = document.getElementById("breadcrumb-bar");
+            if (currId === "root") {
+                navHistory = [{ id: "root", name: "My Drive" }];
+            } else {
+                var existsIdx = -1;
+                for (var i = 0; i < navHistory.length; i++) {
+                    if (navHistory[i].id === currId) { existsIdx = i; break; }
+                }
+                if (existsIdx >= 0) {
+                    navHistory = navHistory.slice(0, existsIdx + 1);
+                } else {
+                    navHistory.push({ id: currId, name: currName });
+                }
+            }
+
+            var html = "";
+            for (var j = 0; j < navHistory.length; j++) {
+                if (j > 0) html += ' <span class="breadcrumb-sep">&gt;</span> ';
+                html += '<span class="breadcrumb-item" onclick="navigateTo(\'' + navHistory[j].id + '\')">' + escapeHtml(navHistory[j].name) + '</span>';
+            }
+            bar.innerHTML = html;
+        }
+
+        function navigateTo(folderId) {
+            loadFolder(folderId);
+        }
+
+        function renderFolderList(subfolders, parentId, actualId, parentName, parentPath) {
+            var container = document.getElementById("folder-list");
+            container.innerHTML = "";
+
+            // Item for selecting the current directory itself
+            var selectTargetId = actualId || parentId;
+            var isCurrentSelected = (selectedTarget === selectTargetId);
+            var selfItem = document.createElement("div");
+            selfItem.className = "folder-item" + (isCurrentSelected ? " selected" : "");
+            selfItem.setAttribute("data-id", selectTargetId);
+            selfItem.setAttribute("data-is-self", "true");
+            selfItem.style.backgroundColor = isCurrentSelected ? "#E3F2FD" : "#F9FBE7";
+            selfItem.innerHTML = '<span class="folder-icon">📍</span> <strong style="flex-grow:1;">[Select Current] ' + escapeHtml(parentName) + '</strong><span class="sel-indicator" style="font-size:11px; font-weight:bold; color:#1976D2; margin-right:4px;' + (isCurrentSelected ? '' : 'display:none;') + '">✓ Selected</span>';
+            selfItem.onclick = function() {
+                chooseTarget(selectTargetId, parentName, parentPath);
+            };
+            container.appendChild(selfItem);
+
+            if (!subfolders || subfolders.length === 0) {
+                var emptyDiv = document.createElement("div");
+                emptyDiv.className = "empty-folders";
+                emptyDiv.innerText = "No subfolders found inside " + parentName;
+                container.appendChild(emptyDiv);
+                return;
+            }
+
+            subfolders.forEach(function(sub) {
+                var isSelected = (selectedTarget === sub.id);
+                var div = document.createElement("div");
+                div.className = "folder-item" + (isSelected ? " selected" : "");
+                div.setAttribute("data-id", sub.id);
+                div.innerHTML = '<span class="folder-icon">📁</span> <span style="flex-grow:1;">' + escapeHtml(sub.name) + '</span>' +
+                                '<span class="sel-indicator" style="font-size:11px; font-weight:bold; color:#1976D2; margin-right:6px;' + (isSelected ? '' : 'display:none;') + '">✓ Selected</span>' +
+                                '<button type="button" class="secondary" style="padding:2px 8px; font-size:11px;" onclick="event.stopPropagation(); navigateTo(\'' + sub.id + '\')">Open &gt;</button>';
+                div.onclick = function() {
+                    chooseTarget(sub.id, sub.name, (parentPath ? parentPath + " / " : "") + sub.name);
+                };
+                container.appendChild(div);
+            });
+        }
+
+        function chooseTarget(id, name, path) {
+            selectedTarget = id;
+            selectedTargetName = name;
+            selectedTargetPath = path || name;
+
+            // Clear text input to show folder was chosen from Drive
+            document.getElementById("urlInput").value = "";
+
+            // Highlight item in DOM
+            var items = document.querySelectorAll(".folder-item");
+            items.forEach(function(el) {
+                var elId = el.getAttribute("data-id");
+                var isSelf = el.getAttribute("data-is-self") === "true";
+                var ind = el.querySelector(".sel-indicator");
+                if (elId === id) {
+                    el.classList.add("selected");
+                    if (isSelf) el.style.backgroundColor = "#E3F2FD";
+                    if (ind) ind.style.display = "inline";
+                } else {
+                    el.classList.remove("selected");
+                    if (isSelf) el.style.backgroundColor = "#F9FBE7";
+                    if (ind) ind.style.display = "none";
+                }
+            });
+
+            document.getElementById("target-name-disp").innerText = name + " (" + id + ")";
+            document.getElementById("target-path-disp").innerText = "Path: " + selectedTargetPath;
+            document.getElementById("btn-start").disabled = false;
+            setStatus("Selected: " + name, "0%");
+        }
+
+        function verifyInput() {
+            var inputVal = document.getElementById("urlInput").value.trim();
+            if (!inputVal) {
+                setStatus("Please enter a URL or Drive ID", "0%");
+                return;
+            }
+
+            setStatus("Verifying URL / ID...", "0%");
+            google.script.run
+                .withSuccessHandler(function(res) {
+                    if (res && res.success) {
+                        chooseTarget(res.id, res.name, res.path);
+                        setStatus("Verified: " + res.name, "0%");
                     } else {
-                        handleError('Unknown response from server.');
+                        // Might be an external URL
+                        selectedTarget = inputVal;
+                        selectedTargetName = inputVal;
+                        selectedTargetPath = "External URL";
+                        document.getElementById("target-name-disp").innerText = inputVal;
+                        document.getElementById("target-path-disp").innerText = "External URL / Direct Link";
+                        document.getElementById("btn-start").disabled = false;
+                        setStatus("External URL ready to import", "0%");
                     }
                 })
-                .withFailureHandler(function (err) {
-                    handleError('Fatal Error: ' + err);
+                .withFailureHandler(function(err) {
+                    // Fallback to treat as URL
+                    selectedTarget = inputVal;
+                    selectedTargetName = inputVal;
+                    selectedTargetPath = "URL Input";
+                    document.getElementById("target-name-disp").innerText = inputVal;
+                    document.getElementById("target-path-disp").innerText = "Direct Link";
+                    document.getElementById("btn-start").disabled = false;
+                    setStatus("Input set", "0%");
                 })
-                .stageUrlImport(url);
+                .resolveFolderInput(inputVal);
+        }
+
+        function startImport() {
+            var inputVal = document.getElementById("urlInput").value.trim();
+            var target = selectedTarget || inputVal;
+            if (!target) {
+                alert("Please select a folder or enter a URL.");
+                return;
+            }
+
+            shouldDeleteSource = document.getElementById("chk-delete-source").checked;
+
+            // UI Transition: Hide config panel, show log panel
+            document.getElementById("config-panel").style.display = "none";
+            document.getElementById("log-panel").style.display = "block";
+            document.getElementById("btn-start").style.display = "none";
+
+            var btnClose = document.getElementById("btn-close");
+            btnClose.innerHTML = "Cancel";
+
+            log("Starting import for: " + (selectedTargetName || target));
+            if (shouldDeleteSource) {
+                log("Option: 'Delete from source' is ENABLED", "log-info");
+            }
+            setStatus("Discovering files...", "10%");
+            setProgress("10%");
+
+            google.script.run
+                .withSuccessHandler(function(res) {
+                    if (res && res.error) {
+                        handleError(res.error);
+                    } else if (res && res.files) {
+                        processingQueue = res.files;
+                        log("Found " + processingQueue.length + " file(s) to process", "log-info");
+                        startProcessing();
+                    } else {
+                        handleError("Unknown response from server.");
+                    }
+                })
+                .withFailureHandler(function(err) {
+                    var errMsg = err && err.message ? err.message : String(err);
+                    handleError("Fatal Error: " + errMsg);
+                })
+                .stageUrlOrDriveImport(target);
         }
 
         function startProcessing() {
@@ -129,12 +478,12 @@
             skippedFlights = 0;
 
             if (totalFlightsToProcess === 0) {
-                log('No valid flights found in URL.', 'log-info');
+                log("No valid flight files (.igc, .zip) found in source.", "log-info");
                 finish();
                 return;
             }
 
-            log('Processing ' + totalFlightsToProcess + ' Flight(s)...');
+            log("Processing " + totalFlightsToProcess + " flight file(s)...");
             processNext(0);
         }
 
@@ -145,87 +494,79 @@
             }
 
             var item = processingQueue[index];
-            var basePct = 10; // Download took 10%
+            var basePct = 10;
             var remainingPct = 90;
             var stepPct = Math.round((index / totalFlightsToProcess) * remainingPct);
-            var totalPct = (basePct + stepPct) + '%';
+            var totalPct = (basePct + stepPct) + "%";
 
-            var statusStr = '1/1 File | ' + (index + 1) + '/' + totalFlightsToProcess + ' Flights | ' + totalPct + ' | ' + item.name;
-
+            var statusStr = (index + 1) + "/" + totalFlightsToProcess + " Files | " + totalPct + " | " + item.name;
             setStatus(statusStr, totalPct);
             setProgress(totalPct);
 
             google.script.run
-                .withSuccessHandler(function (res) {
-                    if (res.success) {
-                        var msg = item.name + ': ' + res.msg;
-                        log(msg, res.processed ? 'log-success' : 'log-info');
+                .withSuccessHandler(function(res) {
+                    if (res && res.success) {
+                        var msg = item.name + ": " + res.msg;
+                        log(msg, res.processed ? "log-success" : "log-info");
                         if (res.processed) {
                             processedFlights++;
                         } else {
-                            skippedFiles++;
+                            skippedFlights++;
                         }
                     } else {
-                        log(item.name + ': Error ' + res.error, 'log-error');
-                        errorFiles++;
+                        var errMsg = res ? res.error : "Unknown error";
+                        log(item.name + ": Error (" + errMsg + ")", "log-error");
+                        errorFlights++;
                     }
                     processNext(index + 1);
                 })
-                .withFailureHandler(function (err) {
-                    log(item.name + ': Fatal Error ' + err, 'log-error');
-                    errorFiles++;
+                .withFailureHandler(function(err) {
+                    var errMsg = err && err.message ? err.message : String(err);
+                    log(item.name + ": Fatal Error (" + errMsg + ")", "log-error");
+                    errorFlights++;
                     processNext(index + 1);
                 })
-                .processFileById(item.id, 'URL');
+                .processFileById(item.id, "URL_CUSTOM", shouldDeleteSource);
         }
 
         function finish() {
-            setProgress('100%');
+            setProgress("100%");
 
-            var statusStr = '1/1 URL | ' + processedFlights + '/' + totalFlightsToProcess + ' Flights | 100% | Completed';
-            setStatus(statusStr, '100%');
+            var statusStr = "Completed | " + processedFlights + " Imported | " + skippedFlights + " Skipped | " + errorFlights + " Errors";
+            setStatus(statusStr, "100%");
 
-            log('------------------------------------------------');
-            log('Import Complete.');
-            log('Flights Imported: ' + processedFlights);
-            log('Skipped: ' + skippedFlights);
-            log('Errors: ' + errorFlights);
+            log("------------------------------------------------");
+            log("Import Complete.");
+            log("Files Imported: " + processedFlights, "log-success");
+            log("Skipped: " + skippedFlights);
+            log("Errors: " + errorFlights, errorFlights > 0 ? "log-error" : "");
 
-            // Button Swap: Hide Cancel, Show Done
-            document.getElementById('btn-close').style.display = 'none';
-            document.getElementById('btn-done').style.display = 'inline-block';
+            document.getElementById("btn-close").style.display = "none";
+            document.getElementById("btn-done").style.display = "inline-block";
         }
 
         function handleError(msg) {
-            log(msg, 'log-error');
-            document.getElementById('progress-bar').classList.add('error-fill');
-            setStatus('Error', 'Failed');
+            log(msg, "log-error");
+            document.getElementById("progress-bar").classList.add("error-fill");
+            setStatus("Error: " + msg, "Failed");
 
-            // Allow close
-            document.getElementById('btn-close').innerHTML = 'Close';
-            document.getElementById('btn-close').style.display = 'inline-block';
-
-            // Show retry? Or just let them close.
-            // Showing retry requires showing inputs again.
-            // Simplified: Just allow Close.
-        }
-
-        function setStatus(left, right) {
-            document.getElementById('status-left').textContent = left;
-            document.getElementById('status-right').textContent = right;
-        }
-
-        function setProgress(pct) {
-            document.getElementById('progress-bar').style.width = pct;
+            document.getElementById("btn-close").innerHTML = "Close";
+            document.getElementById("btn-close").style.display = "inline-block";
         }
 
         function log(msg, cls) {
-            var div = document.getElementById('log-console');
-            var p = document.createElement('div');
+            var div = document.getElementById("log-console");
+            var p = document.createElement("div");
             p.textContent = msg;
             if (cls) p.className = cls;
             div.appendChild(p);
             div.scrollTop = div.scrollHeight;
+        }
+
+        function escapeHtml(text) {
+            var div = document.createElement("div");
+            div.innerText = text || "";
+            return div.innerHTML;
         }
     </script>
 </body>

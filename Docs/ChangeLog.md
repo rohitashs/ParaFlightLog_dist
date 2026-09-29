@@ -12,6 +12,8 @@
     *   Placed dynamic `=HYPERLINK(...)` to Master Flight Log folder directly in **Cell A2** of the `Flights` tab, and Row 2 of the `Dashboard` tab.
     *   Wrapped `Flight No` numbering formula with direct download `=HYPERLINK(dlUrl, IFERROR(MAX(...), 0) + 1)` using `masterFileId`.
     *   Added column header tooltips/notes on Row 4 for `FlightID` and `Flight No` configured via `colNotes` in `Config.gs`.
+*   `[Imp]` **CR-UI-014 (Highlighting)**: Enhanced folder picker lists (`FolderPickerDialog.html` & `URLDialog.html`) with bold blue selection highlight styling and a `✓ Selected` badge indicator upon click or verification.
+*   `[Imp]` **CR-UI-016**: Enhanced "Add files from URL (folder, igc, zip)" dialog (`URLDialog.html`) to support Option A (paste URL, Drive File ID, or Drive Folder ID) and Option B (browse Google Drive subfolders), with optional "Delete from source" checkbox (default unchecked) and sequential progress logging.
 *   `[Fixed]` **Folder Picker RPC**: Removed trailing underscores from backend functions (`getDriveFolderContents`, `resolveFolderInput`, `saveFolderParam`) which caused Google Apps Script to block calls from `google.script.run`. Made URL regex extraction resilient to query params and improved parent path traversal.
 *   `[Docs]`: Aligned `Features.md`, `Technical_Specification.md`, and `Backlog.md`.
 

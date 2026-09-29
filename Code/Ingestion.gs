@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-29 11:36:46
+ * Updated: 2026-09-29 12:09:53
  * 
  * MODULE: Ingestion Service
  * Handles File inputs (Drive, URL), ZIP extraction, Deduplication, and calls Parser.
@@ -212,9 +212,10 @@ function stageUpload(fileObj) {
  * Process a single file by ID.
  * Returns { success, msg } for UI.
  * @param {string} fileId
- * @param {string} source - 'WATCH', 'UPLOAD', 'URL'
+ * @param {string} source - 'WATCH', 'UPLOAD', 'URL', 'URL_CUSTOM'
+ * @param {boolean} [deleteSource=false]
  */
-function processFileById(fileId, source) {
+function processFileById(fileId, source, deleteSource) {
   var file = null;
   var config = getParameters_();
 
@@ -228,7 +229,17 @@ function processFileById(fileId, source) {
        // The 'Master Log' copy is handled inside processDriveFile_ -> processBlob_ -> copyToMasterLog_
        // So we can safely trash this staging file.
        try { file.setTrashed(true); } catch(e) { console.warn('Failed to trash temp file', e); }
-    } 
+    }
+    else if (source === 'URL_CUSTOM') {
+       // URL or Google Drive source with optional delete from source
+       if (deleteSource === true || deleteSource === 'true') {
+          if (result.processed) {
+             try { file.setTrashed(true); } catch(e) { console.warn('Failed to trash source file', e); }
+          } else {
+             handleFileCleanup_(file, 'ERROR', config);
+          }
+       }
+    }
     else {
        // WATCH FOLDER Context (Default)
        if (result.processed) {
@@ -247,13 +258,12 @@ function processFileById(fileId, source) {
   } catch (e) {
     // On Fatal Error
     if (source === 'UPLOAD' || source === 'URL') {
-       // If it failed hard, we generally want to clean it up so it doesn't clutter, 
-       // OR move to Error? User said: "Files with errors... moved or copied into ERROR_FOLDER_ID"
-       // But for Upload/URL, usually the user just wants to retry or ignore. 
-       // Let's Move to Error to be safe and delete from Upload.
-       if (file) handleFileCleanup_(file, 'ERROR', config); // This copies to Error, may delete source if configured
-       // Force delete source for Uploads if handleFileCleanup didn't (because MOVE_FROM_WATCH might be false)
+       if (file) handleFileCleanup_(file, 'ERROR', config);
        try { if (file && !file.isTrashed()) file.setTrashed(true); } catch(ex) {}
+    } else if (source === 'URL_CUSTOM') {
+       if (deleteSource === true || deleteSource === 'true') {
+          if (file) handleFileCleanup_(file, 'ERROR', config);
+       }
     } else {
        if (file) handleFileCleanup_(file, 'ERROR', config);
     }
@@ -382,48 +392,105 @@ function uiAddFlightFromIgc_() {
 
 /**
  * Called from URLDialog.html
- * Phase 1: Download -> Unzip/Stage -> Return list of file IDs to process.
+ * Phase 1: Accepts an external URL, Drive File ID/URL, or Drive Folder ID/URL.
+ * Discovers and stages files (unzipping archives, recursively scanning folders).
+ * Returns { success: true, count: number, files: [ { id: string, name: string, isDriveSource: boolean } ] }
  */
-function stageUrlImport(url) {
+function stageUrlImport(input) {
+  return stageUrlOrDriveImport(input);
+}
+
+function stageUrlOrDriveImport(input) {
   try {
     var config = getParameters_();
-    if (!url) throw new Error('No URL provided');
+    if (!input) throw new Error('No URL or Folder ID provided');
+    var str = String(input).trim();
     
-    var blob;
-    var name = 'download.igc'; // default fallback
+    // Check for Google Drive folder or file ID
+    var driveId = getDriveIdFromUrl_(str) || str;
     
-    // Check if it's a Drive ID/URL
-    var driveId = getDriveIdFromUrl_(url);
-    if (driveId) {
-      var file = DriveApp.getFileById(driveId);
-      blob = file.getBlob();
-      name = file.getName();
-    } else {
-      // External URL
-      var res = UrlFetchApp.fetch(url);
-      blob = res.getBlob();
-      // Try to get filename from Content-Disposition
-      var headers = res.getHeaders();
-      if (headers['Content-Disposition']) {
-         var match = headers['Content-Disposition'].match(/filename="?([^"]+)"?/);
-         if (match) name = match[1];
+    // 1. Check if it's a Drive Folder
+    try {
+      var folder = DriveApp.getFolderById(driveId);
+      if (folder) {
+        var foundFiles = getFilesRecursive_(folder, 10, 0);
+        if (foundFiles.length === 0) {
+          return { error: 'No supported flight files (.igc, .zip, etc.) found in folder: ' + folder.getName() };
+        }
+        var filesList = [];
+        for (var i = 0; i < foundFiles.length; i++) {
+          var f = foundFiles[i];
+          var fName = f.getName().toLowerCase();
+          // If a file inside folder is a zip, unpack it
+          if (fName.endsWith('.zip') || fName.endsWith('.gz')) {
+            var stagedZip = stageBlob_(f.getBlob(), f.getName(), config);
+            if (stagedZip && stagedZip.files) {
+              filesList = filesList.concat(stagedZip.files);
+            }
+          } else {
+            filesList.push({
+              id: f.getId(),
+              name: f.getName(),
+              isDriveSource: true
+            });
+          }
+        }
+        return {
+          success: true,
+          type: 'FOLDER',
+          folderName: folder.getName(),
+          files: filesList
+        };
       }
-      // If still generic, try URL path
-      if (name === 'download.igc') {
-         var parts = url.split('/');
-         var last = parts[parts.length-1];
-         if (last && last.match(/\.(igc|zip|gz|igx)/i)) name = last;
-      }
+    } catch (eNotFolder) {
+      // Not a folder, proceed
     }
     
-    // Reuse stageUpload logic by mocking the fileObj
-    // We need to encode to base64? No, stageUpload expects base64 string.
-    // Actually, we can just write a helper to stage a Blob directly to avoid base64 roundtrip overhead.
+    // 2. Check if it's a Drive File
+    try {
+      if (driveId && !str.match(/^https?:\/\/(?!drive\.google\.com)/)) {
+        var file = DriveApp.getFileById(driveId);
+        if (file) {
+          var fName = file.getName().toLowerCase();
+          if (fName.endsWith('.zip') || fName.endsWith('.gz')) {
+            var staged = stageBlob_(file.getBlob(), file.getName(), config);
+            return staged;
+          } else {
+            return {
+              success: true,
+              type: 'FILE',
+              folderName: file.getName(),
+              files: [{ id: file.getId(), name: file.getName(), isDriveSource: true }]
+            };
+          }
+        }
+      }
+    } catch (eNotFile) {
+      // Not a file, proceed
+    }
     
-    return stageBlob_(blob, name, config);
-
+    // 3. External URL
+    if (str.match(/^https?:\/\//)) {
+      var res = UrlFetchApp.fetch(str);
+      var blob = res.getBlob();
+      var name = 'download.igc';
+      var headers = res.getHeaders();
+      if (headers['Content-Disposition']) {
+        var match = headers['Content-Disposition'].match(/filename="?([^"]+)"?/);
+        if (match) name = match[1];
+      }
+      if (name === 'download.igc') {
+        var parts = str.split('/');
+        var last = parts[parts.length - 1];
+        if (last && last.match(/\.(igc|zip|gz|igx)/i)) name = last;
+      }
+      return stageBlob_(blob, name, config);
+    }
+    
+    return { error: 'Invalid URL or Google Drive ID. Please verify the input.' };
+    
   } catch (e) {
-    console.error('stageUrlImport Error', e);
+    console.error('stageUrlOrDriveImport Error', e);
     return { error: e.message };
   }
 }

@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-29 11:36:46
+ * Updated: 2026-09-29 12:09:53
  * Test access verification: Verified GAS write access on 2026-09-25 08:26:00.
  * 
  * CORE MODULE: Orchestration Only.
@@ -19,7 +19,7 @@ function onOpen(e) {
     .addItem('Flight Inspector', 'showInspectorSidebar')
     .addSeparator()
     .addItem('Add manual flight (blank row)', 'uiAddManualFlight_')
-    .addItem('Add Flight from URL (IGC / Zip)...', 'showUrlDialog')
+    .addItem('Add files from URL (folder, igc, zip)...', 'showUrlDialog')
     .addItem('Add flight from Upload (Local File)...', 'showUploadDialog')
     .addItem('Scan Watch Folder now', 'showScanDialog')
     .addSeparator()
@@ -95,8 +95,8 @@ function getParameters_() {
 function showUrlDialog() {
   var html = HtmlService.createTemplateFromFile('URLDialog')
       .evaluate()
-      .setWidth(500)
-      .setHeight(450); // Increased height to prevent scrolling
+      .setWidth(580)
+      .setHeight(570);
   SpreadsheetApp.getUi().showModalDialog(html, 'Flight Import');
 }
 

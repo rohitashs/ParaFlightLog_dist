@@ -1,6 +1,6 @@
 <!--
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-29 11:36:46
+ * Updated: 2026-09-29 12:09:53
  -->
 <!DOCTYPE html>
 <html>
@@ -95,9 +95,10 @@
         }
 
         .folder-item.selected {
-            background-color: #E8F0FE;
-            color: #1A73E8;
-            font-weight: 600;
+            background-color: #E3F2FD !important;
+            border-left: 4px solid #1976D2 !important;
+            color: #0D47A1 !important;
+            font-weight: 600 !important;
         }
 
         .folder-icon {
@@ -261,10 +262,13 @@
 
             // Item for selecting the current directory itself
             var selectTargetId = actualId || parentId;
+            var isCurrentSelected = (selectedFolderId === selectTargetId);
             var selfItem = document.createElement("div");
-            selfItem.className = "folder-item" + (selectedFolderId === selectTargetId ? " selected" : "");
-            selfItem.style.backgroundColor = "#F9FBE7";
-            selfItem.innerHTML = '<span class="folder-icon">📍</span> <strong>[Select Current] ' + escapeHtml(parentName) + '</strong>';
+            selfItem.className = "folder-item" + (isCurrentSelected ? " selected" : "");
+            selfItem.setAttribute("data-id", selectTargetId);
+            selfItem.setAttribute("data-is-self", "true");
+            selfItem.style.backgroundColor = isCurrentSelected ? "#E3F2FD" : "#F9FBE7";
+            selfItem.innerHTML = '<span class="folder-icon">📍</span> <strong style="flex-grow:1;">[Select Current] ' + escapeHtml(parentName) + '</strong><span class="sel-indicator" style="font-size:11px; font-weight:bold; color:#1976D2; margin-right:4px;' + (isCurrentSelected ? '' : 'display:none;') + '">✓ Selected</span>';
             selfItem.onclick = function() {
                 chooseTarget(selectTargetId, parentName, parentPath);
             };
@@ -279,9 +283,12 @@
             }
 
             subfolders.forEach(function(sub) {
+                var isSelected = (selectedFolderId === sub.id);
                 var div = document.createElement("div");
-                div.className = "folder-item" + (selectedFolderId === sub.id ? " selected" : "");
+                div.className = "folder-item" + (isSelected ? " selected" : "");
+                div.setAttribute("data-id", sub.id);
                 div.innerHTML = '<span class="folder-icon">📁</span> <span style="flex-grow:1;">' + escapeHtml(sub.name) + '</span>' +
+                                '<span class="sel-indicator" style="font-size:11px; font-weight:bold; color:#1976D2; margin-right:6px;' + (isSelected ? '' : 'display:none;') + '">✓ Selected</span>' +
                                 '<button type="button" class="secondary" style="padding:2px 8px; font-size:11px;" onclick="event.stopPropagation(); navigateTo(\'' + sub.id + '\')">Open &gt;</button>';
                 div.onclick = function() {
                     chooseTarget(sub.id, sub.name, (parentPath ? parentPath + " / " : "") + sub.name);
@@ -294,6 +301,23 @@
             selectedFolderId = id;
             selectedFolderName = name;
             selectedFolderPath = path || name;
+
+            // Dynamically update highlight & checkmark on all items in the list
+            var items = document.querySelectorAll(".folder-item");
+            items.forEach(function(el) {
+                var elId = el.getAttribute("data-id");
+                var isSelf = el.getAttribute("data-is-self") === "true";
+                var ind = el.querySelector(".sel-indicator");
+                if (elId === id) {
+                    el.classList.add("selected");
+                    if (isSelf) el.style.backgroundColor = "#E3F2FD";
+                    if (ind) ind.style.display = "inline";
+                } else {
+                    el.classList.remove("selected");
+                    if (isSelf) el.style.backgroundColor = "#F9FBE7";
+                    if (ind) ind.style.display = "none";
+                }
+            });
 
             document.getElementById("target-name-disp").innerText = name + " (" + id + ")";
             document.getElementById("target-path-disp").innerText = "Path: " + selectedFolderPath;
