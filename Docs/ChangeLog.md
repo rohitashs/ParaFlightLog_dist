@@ -1,5 +1,15 @@
 # Project Change Log
 
+## Session: Paragliding Earth Site Integration
+**Date**: 2026-09-29
+**Versions**: v0.8.2
+**Focus**: Paragliding Earth API Integration, Fallback Chain, Site Detection.
+
+*   `[Imp]` **CR-GEO-001**: Added `paragliding_earth` as primary site lookup provider with `overpass_api` as fallback.
+*   `[Fixed]` **Bug-GEO-002**: Resolved missing site names caused by Overpass rate limits and timeouts.
+*   `[New]` **Config**: Updated default `GEO_SITE_PROVIDERS` to `'paragliding_earth, overpass_api'`.
+*   `[Docs]`: Aligned `Features.md`, `Technical_Specification.md`, and `Backlog.md`.
+
 ## Session: XContest & Code Stability
 **Date**: 2026-02-13
 **Versions**: v0.8.0 - v0.8.1

@@ -47,7 +47,7 @@ Applies standard XContest/FAI scoring rules to every flight.
 
 Adds location context to raw GPS coordinates.
 *   **Reverse Geocoding**: Converts Lat/Lon to "Nearest Town, Region, Country".
-*   **Site Detection**: Identifies known Paragliding Takeoffs/Landings within 3km using OpenStreetMap data.
+*   **Site Detection**: Identifies known Paragliding Takeoffs/Landings within search radius using Paragliding Earth (primary) with OpenStreetMap Overpass API fallback.
 *   **Interactive Links**: Generates links to view the flight on SeeYou Cloud (planned).
 *   **SeeYou Cloud Integration**: Valid flights are automatically uploaded to a public folder and linked directly to SeeYou Cloud for 3D visualization.
 

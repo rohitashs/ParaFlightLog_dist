@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-02-13 17:36:39
+ * Updated: 2026-09-29 09:38:05
  */
 /**
  * Paragliding Flight Log v2.0
@@ -82,9 +82,12 @@ function testScoring_() {
 }
 
 function testGeo_() {
-  // Only test config usage, don't spam API
-  // Or test caching logic if mocked? 
-  // We'll skip real network call to avoid blocking tests on quota.
+  if (!GEO || !GEO.getNearestSite) return { module: 'Geo', error: 'Module missing' };
+  
+  // Guard check: null coordinates return empty string
+  var emptyRes = GEO.getNearestSite(null, null, 3000, {});
+  if (emptyRes !== '') return { module: 'Geo', error: 'Null coordinate handling failed' };
+  
   return { module: 'Geo', idx: true }; 
 }
 

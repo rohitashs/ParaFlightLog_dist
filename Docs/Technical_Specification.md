@@ -79,6 +79,7 @@ Fixed Header Schema (Row 4=Category, Row 5=Name). Data starts Row 6.
 
 ## 6. API Integrations (`RQ-SCR-002`)
 *   **Geocoding**: Chain of Responsibility (`BigDataCloud` -> `Nominatim` -> Fail).
+*   **Site Detection**: Chain of Responsibility (`Paragliding Earth` -> `Overpass API` -> Fail).
 *   **Caching**: `CacheService` (6 hour TTL) for all external calls.
 *   **Visualization**: `SeeYou Cloud` via direct link generation using Master Log file ID.
 

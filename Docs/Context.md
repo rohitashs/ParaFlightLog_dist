@@ -1,9 +1,9 @@
 # Project Context & Ways of Working (Source of Truth)
 
 ## 🧠 Agent Memory & Context
-**Status**: Active Development (v0.8.1)
-**Last Session Focus**: XContest Verification, Bug Fixes (deployment, logging), Code Refactoring.
-**Next Focus**: Master Log Folder (CR-ING-004), UI Enhancements, Sidebar Bug (Bug-UI-004).
+**Status**: Active Development (v0.8.2)
+**Last Session Focus**: Paragliding Earth Site Integration (CR-GEO-001, Bug-GEO-002), Dev Infra Verification.
+**Next Focus**: Dashboard Logic (CR-SYS-001), XContest Matching (Bug-SCR-002), Master Log Folder (CR-ING-004).
 
 This file is the **long-term memory** for the project. Read this first to understand *how* we work and *where* we are.
 

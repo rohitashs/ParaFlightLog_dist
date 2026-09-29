@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-02-13 17:36:39
+ * Updated: 2026-09-29 09:38:05
  * 
  * MODULE: Geo Service
  * Handles Reverse Geocoding (Nominatim) and Site Detection (Overpass API).
@@ -99,23 +99,65 @@ function getReverseGeo(lat, lon, config) {
  * @return {string} Site Name or ''
  */
 function getNearestSite(lat, lon, radiusM, config) {
+  if (!lat || !lon) return '';
+  config = config || {};
+  
   var r = radiusM || 3000;
   var key = 'GEO_SITE_' + lat.toFixed(3) + '_' + lon.toFixed(3) + '_' + r;
   var cached = CacheService.getScriptCache().get(key);
   if (cached) return cached;
 
-  var providers = (config.GEO_SITE_PROVIDERS || 'overpass_api').split(',');
+  var email = (config.CONTACT_EMAIL && config.CONTACT_EMAIL.indexOf('@') > 0) ? config.CONTACT_EMAIL : 'appscript_user@example.com';
+  var userAgent = 'ParaFlightLog/2.0 (' + email + ')';
+  var providers = (config.GEO_SITE_PROVIDERS || 'paragliding_earth, overpass_api').split(',');
   
   for (var i = 0; i < providers.length; i++) {
     var provider = providers[i].trim().toLowerCase();
     
-    // 1. Overpass API
-    if (provider === 'overpass_api' || provider === 'overpass') {
+    // 1. Paragliding Earth (GeoJSON) - Primary
+    if (provider.indexOf('paragliding') === 0 || provider === 'pg_earth' || provider === 'pgearth') {
+      try {
+        var distKm = Math.max(1, (r / 1000).toFixed(1));
+        var url = 'https://www.paraglidingearth.com/api/geojson/getAroundLatLngSites.php' +
+                  '?lat=' + lat.toFixed(6) +
+                  '&lng=' + lon.toFixed(6) +
+                  '&distance=' + distKm +
+                  '&limit=1';
+        
+        var res = UrlFetchApp.fetch(url, {
+          headers: { 'User-Agent': userAgent },
+          muteHttpExceptions: true
+        });
+        
+        if (res.getResponseCode() === 200) {
+          var data = JSON.parse(res.getContentText());
+          if (data && data.features && data.features.length > 0) {
+            var feature = data.features[0];
+            var siteName = feature.properties && feature.properties.name;
+            if (siteName && siteName.trim()) {
+              var cleanName = siteName.trim();
+              CacheService.getScriptCache().put(key, cleanName, 21600);
+              return cleanName;
+            }
+          }
+        } else {
+          console.warn('ParaglidingEarth returned status: ' + res.getResponseCode());
+        }
+      } catch (e) {
+        console.warn('ParaglidingEarth Error:', e);
+      }
+    }
+    
+    // 2. Overpass API (OSM) - Fallback
+    if (provider.indexOf('overpass') === 0) {
       try {
         var q = '[out:json];(node["sport"="paragliding"](around:' + r + ',' + lat + ',' + lon + ');way["sport"="paragliding"](around:' + r + ',' + lat + ',' + lon + '););out center;';
         var url = 'https://overpass-api.de/api/interpreter?data=' + encodeURIComponent(q);
         Utilities.sleep(1000); 
-        var res = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+        var res = UrlFetchApp.fetch(url, {
+          headers: { 'User-Agent': userAgent },
+          muteHttpExceptions: true
+        });
         
         if (res.getResponseCode() === 200) {
           var body = JSON.parse(res.getContentText());
@@ -124,25 +166,29 @@ function getNearestSite(lat, lon, radiusM, config) {
           var bestDist = Infinity;
           var bestName = '';
           
-          elements.forEach(function(el) {
-             var elLat = el.lat || (el.center && el.center.lat);
-             var elLon = el.lon || (el.center && el.center.lon);
-             if (elLat) {
-               var dist = haversineGeo_(lat, lon, elLat, elLon);
-               if (dist < bestDist) {
-                 var name = (el.tags && (el.tags.name || el.tags.site_name)) || '';
-                 if (name) { bestDist = dist; bestName = name; }
+          if (elements && elements.length > 0) {
+            elements.forEach(function(el) {
+               var elLat = el.lat || (el.center && el.center.lat);
+               var elLon = el.lon || (el.center && el.center.lon);
+               if (elLat && elLon) {
+                 var dist = haversineGeo_(lat, lon, elLat, elLon);
+                 if (dist < bestDist) {
+                   var name = (el.tags && (el.tags.name || el.tags.site_name)) || '';
+                   if (name) { bestDist = dist; bestName = name; }
+                 }
                }
-             }
-          });
-          
-          if (bestName) {
-            CacheService.getScriptCache().put(key, bestName, 21600);
-            return bestName;
+            });
+            
+            if (bestName) {
+              CacheService.getScriptCache().put(key, bestName, 21600);
+              return bestName;
+            }
           }
+        } else {
+          console.warn('Overpass API returned status: ' + res.getResponseCode());
         }
-      } catch (e) {
-        console.warn('Overpass Error:', e);
+      } catch (e2) {
+        console.warn('Overpass Error:', e2);
       }
     }
   }

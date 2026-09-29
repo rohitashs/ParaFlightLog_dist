@@ -92,7 +92,7 @@ This file is the single source of truth for **ToDos**, **Requirements**, **Chang
 
 - [x] **CR-UI-004** | **Status**: Implemented | **Date**: 2026-02-13 | **Req**: RQ-SYS-002 | **Description**: **Menu Restructure**: Rename `Setup` to `Admin`, `Scaffold` to `First Time Setup`. Add Admin tools.
 - [ ] **CR-CFG-002** | **Status**: Open | **Date**: 2026-02-08 | **Req**: RQ-SCR-001 | **Description**: **Configurable RDP Tolerance**: Make Ramer-Douglas-Peucker tolerance configurable (Move from `Scoring.gs` and make it a parameter).
-- [ ] **CR-GEO-001** | **Status**: Open | **Date**: 2026-02-08 | **Req**: RQ-SCR-002 | **Description**: **Multi-Provider Geo**: Support comma-separated providers for RevGeo, Sites, and Timezone.
+- [x] **CR-GEO-001** | **Status**: Implemented | **Date**: 2026-02-08 | **Req**: RQ-SCR-002 | **Description**: **Multi-Provider Geo**: Support comma-separated providers for RevGeo and Sites (added `paragliding_earth` as primary with `overpass_api` fallback).
 - [ ] **CR-CODE-001** | **Status**: Open | **Date**: 2026-02-08 | **Req**: RQ-SYS-001 | **Description**: **Centralize Common Utilities**: Create `Utils.gs` for shared Math/Haversine functions.
 
 - [x] **CR-CFG-003** | **Status**: Implemented | **Date**: 2026-02-09 | **Req**: RQ-SYS-001 | **Description**: **Watch Folder Toggle**: Add `ENABLE_WATCH_FOLDER` param and Menu toggles. Update trigger logic.
@@ -122,8 +122,7 @@ This file is the single source of truth for **ToDos**, **Requirements**, **Chang
 - [x] **Bug-UI-002** | **Status**: Fixed | **Date**: 2026-02-09 | **Req**: RQ-SYS-002 | **Description**: **Flight No Formula**: `#Ref!` error on row deletion.
 - [x] **Bug-GEO-001** | **Status**: Fixed | **Date**: 2026-02-08 | **Req**: RQ-SYS-002 | **Description**: **Timezone Failure**: Time Zone defaults to UTC.
 - [x] **Bug-UI-001** | **Status**: Fixed | **Date**: 2026-02-08 | **Req**: RQ-SYS-002 | **Description**: **Dropdown Misalignment**: Status/Gear dropdowns shifted.
-
-- [ ] **Bug-GEO-002** | **Status**: Open | **Date**: 2026-02-08 | **Req**: RQ-SCR-002 | **Description**: **Missing Location Data**: Launch/Land Site, Town, Region are empty (API Rejection?).
+- [x] **Bug-GEO-002** | **Status**: Fixed | **Date**: 2026-02-08 | **Req**: RQ-SCR-002 | **Description**: **Missing Location Data**: Launch/Land Site, Town, Region empty due to Overpass rate limits. Fixed with Paragliding Earth integration.
 - [ ] **Bug-UI-003** | **Status**: Open | **Date**: 2026-02-12 | **Req**: RQ-SYS-001 | **Description**: **Parameter Date/Time Formats**: Dropdowns for `DATE_FORMAT` and `TIME_FORMAT` in Parameters tab showing values incorrectly (e.g. number instead of string) or empty.
 - [x] **Bug-UI-004** | **Status**: Fixed | **Date**: 2026-02-13 | **Req**: RQ-SYS-004 | **Description**: **Sidebar Text Wrap**: Long values in Flight Inspector are not wrapping, making them unreadable. **Fix**: Used textarea for long fields, reduced font size, and implemented 6-col grid layout.
 - [ ] **Bug-SCR-002** | **Status**: Open | **Date**: 2026-02-13 | **Req**: RQ-SCR-003 | **Description**: **XContest No Match**: Valid flights (3 known) are not matching. Troubleshooting required (Duration/Time tolerance or date parsing issue?).

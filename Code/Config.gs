@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-02-13 17:36:39
+ * Updated: 2026-09-29 09:38:05
  */
 /**
  * Paragliding Flight Log v2.0 - Configuration
@@ -46,7 +46,7 @@ var CFG = {
     
     // Geo & Time
     { section: 'Geo & Time', key: 'GEO_REV_PROVIDERS', val: 'big_data_cloud, nominatim_osm', desc: 'Reverse Geo Providers (comma-sep)' },
-    { section: 'Geo & Time', key: 'GEO_SITE_PROVIDERS', val: 'overpass_api', desc: 'Site Name Providers' },
+    { section: 'Geo & Time', key: 'GEO_SITE_PROVIDERS', val: 'paragliding_earth, overpass_api', desc: 'Site Name Providers (comma-sep: paragliding_earth, overpass_api)' },
     { section: 'Geo & Time', key: 'GEO_TZ_PROVIDERS', val: 'timeapi_io', desc: 'Time Zone Providers' },
     { section: 'Geo & Time', key: 'OSM_RADIUS_M', val: 3000, desc: 'Radius (m) to search for sites' },
     
