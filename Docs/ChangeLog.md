@@ -12,7 +12,7 @@
     *   Placed dynamic `=HYPERLINK(...)` to Master Flight Log folder directly in **Cell A2** of the `Flights` tab, and Row 2 of the `Dashboard` tab.
     *   Wrapped `Flight No` numbering formula with direct download `=HYPERLINK(dlUrl, IFERROR(MAX(...), 0) + 1)` using `masterFileId`.
     *   Added column header tooltips/notes on Row 4 for `FlightID` and `Flight No` configured via `colNotes` in `Config.gs`.
-*   `[Imp]` **Parameters Enrichment**: Automatically appends human-readable breadcrumb paths (`[Path: My Drive / ...]`) to Column C (`Description`) when folder parameters are set or updated.
+*   `[Fixed]` **Folder Picker RPC**: Removed trailing underscores from backend functions (`getDriveFolderContents`, `resolveFolderInput`, `saveFolderParam`) which caused Google Apps Script to block calls from `google.script.run`. Made URL regex extraction resilient to query params and improved parent path traversal.
 *   `[Docs]`: Aligned `Features.md`, `Technical_Specification.md`, and `Backlog.md`.
 
 ## Session: Paragliding Earth Site Integration

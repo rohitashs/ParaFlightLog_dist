@@ -1,6 +1,6 @@
 <!--
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-29 11:11:34
+ * Updated: 2026-09-29 11:36:46
  -->
 <!DOCTYPE html>
 <html>
@@ -210,20 +210,21 @@
                 .withSuccessHandler(function(res) {
                     if (!res || !res.success) {
                         container.innerHTML = '<div class="empty-folders" style="color:red;">Error: ' + (res ? res.error : 'Failed to load') + '</div>';
-                        setStatus("Error loading folder", true);
+                        setStatus("Error loading folder: " + (res ? res.error : 'Unknown'), true);
                         return;
                     }
 
                     currentNavId = res.currentId;
                     renderBreadcrumb(res.isRoot ? "root" : res.currentId, res.currentName);
-                    renderFolderList(res.subfolders, res.currentId, res.currentName, res.currentPath);
+                    renderFolderList(res.subfolders, res.currentId, res.actualId, res.currentName, res.currentPath);
                     setStatus("Loaded " + res.subfolders.length + " subfolder(s)");
                 })
                 .withFailureHandler(function(err) {
-                    container.innerHTML = '<div class="empty-folders" style="color:red;">Error: ' + err.message + '</div>';
-                    setStatus("Error loading folder: " + err.message, true);
+                    var errMsg = err && err.message ? err.message : String(err);
+                    container.innerHTML = '<div class="empty-folders" style="color:red;">Error: ' + errMsg + '</div>';
+                    setStatus("Error loading folder: " + errMsg, true);
                 })
-                .getDriveFolderContents_(folderId);
+                .getDriveFolderContents(folderId);
         }
 
         function renderBreadcrumb(currId, currName) {
@@ -254,17 +255,18 @@
             loadFolder(folderId);
         }
 
-        function renderFolderList(subfolders, parentId, parentName, parentPath) {
+        function renderFolderList(subfolders, parentId, actualId, parentName, parentPath) {
             var container = document.getElementById("folder-list");
             container.innerHTML = "";
 
             // Item for selecting the current directory itself
+            var selectTargetId = actualId || parentId;
             var selfItem = document.createElement("div");
-            selfItem.className = "folder-item" + (selectedFolderId === parentId ? " selected" : "");
+            selfItem.className = "folder-item" + (selectedFolderId === selectTargetId ? " selected" : "");
             selfItem.style.backgroundColor = "#F9FBE7";
             selfItem.innerHTML = '<span class="folder-icon">📍</span> <strong>[Select Current] ' + escapeHtml(parentName) + '</strong>';
             selfItem.onclick = function() {
-                chooseTarget(parentId, parentName, parentPath);
+                chooseTarget(selectTargetId, parentName, parentPath);
             };
             container.appendChild(selfItem);
 
@@ -322,13 +324,17 @@
                     }
                 })
                 .withFailureHandler(function(err) {
-                    setStatus("Error verifying: " + err.message, true);
+                    var errMsg = err && err.message ? err.message : String(err);
+                    setStatus("Error verifying: " + errMsg, true);
                 })
-                .resolveFolderInput_(input);
+                .resolveFolderInput(input);
         }
 
         function saveSelection(mode) {
-            if (!selectedFolderId) return;
+            if (!selectedFolderId) {
+                setStatus("Please select a folder first", true);
+                return;
+            }
 
             setStatus("Saving parameter...");
             var btnSave = document.getElementById("btn-save");
@@ -347,11 +353,12 @@
                     }
                 })
                 .withFailureHandler(function(err) {
-                    setStatus("Error saving: " + err.message, true);
+                    var errMsg = err && err.message ? err.message : String(err);
+                    setStatus("Error saving: " + errMsg, true);
                     if (btnSave) btnSave.disabled = false;
                     if (btnAppend) btnAppend.disabled = false;
                 })
-                .saveFolderParam_(paramKey, selectedFolderId, mode);
+                .saveFolderParam(paramKey, selectedFolderId, mode);
         }
 
         function escapeHtml(text) {

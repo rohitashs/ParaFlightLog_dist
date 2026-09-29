@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-29 11:11:34
+ * Updated: 2026-09-29 11:36:46
  * Test access verification: Verified GAS write access on 2026-09-25 08:26:00.
  * 
  * CORE MODULE: Orchestration Only.
@@ -362,7 +362,7 @@ function openFolderPicker_(key, name) {
  * Lists subfolders of a given folder ID (or My Drive root).
  * Called by FolderPickerDialog.html.
  */
-function getDriveFolderContents_(folderId) {
+function getDriveFolderContents(folderId) {
   try {
     var folder;
     var isRoot = (!folderId || folderId === 'root');
@@ -372,9 +372,10 @@ function getDriveFolderContents_(folderId) {
       folder = DriveApp.getFolderById(folderId);
     }
     
-    var currentId = folder.getId();
+    var currentId = isRoot ? 'root' : folder.getId();
+    var actualId = folder.getId();
     var currentName = isRoot ? 'My Drive' : folder.getName();
-    var currentPath = getFolderPath_(currentId);
+    var currentPath = isRoot ? 'My Drive' : getFolderPath_(actualId);
     
     var subfolders = [];
     var it = folder.getFolders();
@@ -387,12 +388,14 @@ function getDriveFolderContents_(folderId) {
     return {
       success: true,
       currentId: currentId,
+      actualId: actualId,
       currentName: currentName,
       currentPath: currentPath,
       isRoot: isRoot,
       subfolders: subfolders
     };
   } catch (e) {
+    console.error('getDriveFolderContents error:', e);
     return { success: false, error: e.message };
   }
 }
@@ -401,12 +404,24 @@ function getDriveFolderContents_(folderId) {
  * Validates a folder URL or raw ID, returns folder name and full path.
  * Called by FolderPickerDialog.html.
  */
-function resolveFolderInput_(input) {
+function resolveFolderInput(input) {
   if (!input) return { success: false, error: 'Empty input' };
-  var id = input.trim();
-  // Extract ID if a full Google Drive URL was pasted
-  if (id.match(/[-\w]{25,}/)) {
-    id = id.match(/[-\w]{25,}/)[0];
+  var str = String(input).trim();
+  
+  var id = str;
+  var folderMatch = str.match(/\/folders\/([-\w]+)/);
+  if (folderMatch) {
+    id = folderMatch[1];
+  } else {
+    var idParamMatch = str.match(/[?&]id=([-\w]+)/);
+    if (idParamMatch) {
+      id = idParamMatch[1];
+    } else {
+      var rawMatch = str.match(/[-\w]{15,}/);
+      if (rawMatch) {
+        id = rawMatch[0];
+      }
+    }
   }
   
   try {
@@ -418,7 +433,8 @@ function resolveFolderInput_(input) {
       path: getFolderPath_(id)
     };
   } catch (e) {
-    return { success: false, error: 'Folder not found or inaccessible: ' + e.message };
+    console.error('resolveFolderInput error for ' + id + ':', e);
+    return { success: false, error: 'Folder not found or inaccessible (' + id + '): ' + e.message };
   }
 }
 
@@ -430,13 +446,18 @@ function getFolderPath_(folderId) {
   try {
     var folder = DriveApp.getFolderById(folderId);
     var parts = [folder.getName()];
-    var parents = folder.getParents();
-    var depth = 0;
-    while (parents.hasNext() && depth < 15) {
-      var p = parents.next();
-      parts.unshift(p.getName());
-      parents = p.getParents();
-      depth++;
+    try {
+      var parents = folder.getParents();
+      var depth = 0;
+      while (parents.hasNext() && depth < 10) {
+        var p = parents.next();
+        var pName = p.getName();
+        if (pName) parts.unshift(pName);
+        parents = p.getParents();
+        depth++;
+      }
+    } catch (eParent) {
+      console.warn('Parent traversal note: ' + eParent.message);
     }
     return parts.join(' / ');
   } catch (e) {
@@ -462,7 +483,7 @@ function getMultiFolderPath_(folderIdsStr) {
  * Saves a folder parameter, updates the ID and Description in Parameters sheet.
  * Called by FolderPickerDialog.html.
  */
-function saveFolderParam_(key, folderId, mode) {
+function saveFolderParam(key, folderId, mode) {
   try {
     var finalValue = folderId;
     
@@ -484,6 +505,7 @@ function saveFolderParam_(key, folderId, mode) {
     
     return { success: true, value: finalValue, path: folderPath };
   } catch (e) {
+    console.error('saveFolderParam error:', e);
     return { success: false, error: e.message };
   }
 }
