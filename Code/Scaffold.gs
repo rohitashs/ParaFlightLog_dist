@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-29 09:38:05
+ * Updated: 2026-09-29 11:11:34
  */
 /**
  * Paragliding Flight Log v2.0 - Scaffolding & Setup
@@ -93,6 +93,11 @@ function scaffoldDashboard_(ss) {
      sh.getRange('A1:Q1').setBackground(TABS.DASHBOARD.color).setFontColor('white').merge();
      sh.getRange('A1').setHorizontalAlignment('center').setVerticalAlignment('middle');
      sh.setRowHeight(1, 40);
+     
+     // 1b. Master Folder Link (Row 2)
+     var masterLinkFormula = '=IF(ISBLANK(VLOOKUP("MASTER_LOG_FOLDER_ID", ' + TABS.PARAMETERS.name + '!A:B, 2, FALSE)), "Master Flight Logs folder (Not Configured)", HYPERLINK("https://drive.google.com/drive/folders/" & VLOOKUP("MASTER_LOG_FOLDER_ID", ' + TABS.PARAMETERS.name + '!A:B, 2, FALSE), "📁 Master Flight Logs folder"))';
+     sh.getRange('A2:Q2').merge().setFormula(masterLinkFormula).setFontSize(10).setFontStyle('italic').setHorizontalAlignment('center');
+     sh.setRowHeight(2, 22);
      
      // 2. KPI Cards (Row 3-5)
      // A-D: Total Flights, E-H: Total Hours, I-L: Total Dist, M-Q: This Year
@@ -233,7 +238,13 @@ function scaffoldParameters_(ss) {
       }
       // Use existing value if available, else default
       var val = (existingMap[p.key] !== undefined && existingMap[p.key] !== '') ? existingMap[p.key] : p.val;
-      rows.push([p.key, val, p.desc, p.input]); // p.input is meta, removed before write
+      var desc = p.desc;
+      var isFolder = (p.key === 'WATCH_FOLDER_ID' || p.key === 'UPLOAD_FOLDER_ID' || p.key === 'MASTER_LOG_FOLDER_ID' || p.key === 'ERROR_FOLDER_ID');
+      if (isFolder && val) {
+        var pStr = (p.key === 'WATCH_FOLDER_ID') ? getMultiFolderPath_(val) : getFolderPath_(val);
+        if (pStr) desc += '\n[Path: ' + pStr + ']';
+      }
+      rows.push([p.key, val, desc, p.input]); // p.input is meta, removed before write
   });
 
   // Write Data
@@ -361,6 +372,10 @@ function scaffoldFlights_(ss) {
   sh.getRange('A1').setValue(TABS.FLIGHTS.name).setFontWeight('bold').setFontSize(12);
   sh.getRange('A1:Z1').setBackground(TABS.FLIGHTS.color).setFontColor('white');
   
+  // Row 2: Link to Master Flight Log Folder (Cell A2)
+  var masterLinkFormula = '=IF(ISBLANK(VLOOKUP("MASTER_LOG_FOLDER_ID", ' + TABS.PARAMETERS.name + '!A:B, 2, FALSE)), "Master Flight Logs folder (Not Configured)", HYPERLINK("https://drive.google.com/drive/folders/" & VLOOKUP("MASTER_LOG_FOLDER_ID", ' + TABS.PARAMETERS.name + '!A:B, 2, FALSE), "📁 Master Flight Logs folder"))';
+  sh.getRange('A2').setFormula(masterLinkFormula).setFontSize(10).setFontStyle('italic');
+  
   // Flatten Headers
   var groups = TABS.FLIGHTS.groups;
   var flatHeaders = [];
@@ -369,6 +384,18 @@ function scaffoldFlights_(ss) {
   // Write Headers (Row 4)
   sh.getRange(4, 1, 1, flatHeaders.length).setValues([flatHeaders]);
   sh.getRange(4, 1, 1, flatHeaders.length).setFontWeight('bold').setBorder(true, true, true, true, true, true).setWrapStrategy(SpreadsheetApp.WrapStrategy.WRAP).setVerticalAlignment("top");
+  
+  // Apply Column Notes / Tooltips (Row 4)
+  var colNotes = TABS.FLIGHTS.colNotes || {};
+  for (var c = 0; c < flatHeaders.length; c++) {
+    var colName = flatHeaders[c];
+    var cell = sh.getRange(4, c + 1);
+    if (colNotes[colName]) {
+      cell.setNote(colNotes[colName]);
+    } else {
+      cell.clearNote();
+    }
+  }
   
   // Grouping & Formatting
   var colIndex = 1;

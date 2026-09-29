@@ -1,5 +1,20 @@
 # Project Change Log
 
+## Session: In-App Folder Picker, Recursive Scanning & Master Log Hyperlinks
+**Date**: 2026-09-29
+**Versions**: v0.8.3
+**Focus**: In-App Folder Picker, Multi-Folder Watch, Recursive Traversal, Master Log Link (Cell A2), Flight No Download Hyperlink.
+
+*   `[Imp]` **CR-UI-014**: Built native In-App Google Drive Folder Picker (`FolderPickerDialog.html` - Option B) supporting My Drive navigation, breadcrumb exploration, ID/URL verification, and Replace vs. Append ("Add to List") actions for watch folders.
+*   `[Imp]` **CR-CFG-004**: Multi-Folder Watch scanning supporting comma-separated `WATCH_FOLDER_ID`s in configuration and UI.
+*   `[Imp]` **CR-ING-004**: Recursive file scanning (`getFilesRecursive_` up to 10 levels deep) and automated cleanup across watch and manual import folders. Valid IGCs copied to Master Folder; errored files moved to `ERROR_FOLDER_ID`; source files trashed after successful mirror.
+*   `[Imp]` **CR-UI-015**: 
+    *   Placed dynamic `=HYPERLINK(...)` to Master Flight Log folder directly in **Cell A2** of the `Flights` tab, and Row 2 of the `Dashboard` tab.
+    *   Wrapped `Flight No` numbering formula with direct download `=HYPERLINK(dlUrl, IFERROR(MAX(...), 0) + 1)` using `masterFileId`.
+    *   Added column header tooltips/notes on Row 4 for `FlightID` and `Flight No` configured via `colNotes` in `Config.gs`.
+*   `[Imp]` **Parameters Enrichment**: Automatically appends human-readable breadcrumb paths (`[Path: My Drive / ...]`) to Column C (`Description`) when folder parameters are set or updated.
+*   `[Docs]`: Aligned `Features.md`, `Technical_Specification.md`, and `Backlog.md`.
+
 ## Session: Paragliding Earth Site Integration
 **Date**: 2026-09-29
 **Versions**: v0.8.2

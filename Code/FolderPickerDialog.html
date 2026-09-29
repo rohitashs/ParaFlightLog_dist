@@ -1,0 +1,365 @@
+<!--
+ * Paragliding Flight Log v2.0
+ * Updated: 2026-09-29 11:11:34
+ -->
+<!DOCTYPE html>
+<html>
+
+<head>
+    <base target="_top">
+    <?!= HtmlService.createTemplateFromFile('Style').evaluate().getContent(); ?>
+    <style>
+        .picker-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .current-badge {
+            background: #E8F0FE;
+            border: 1px solid #D2E3FC;
+            border-radius: 4px;
+            padding: 8px 12px;
+            font-size: 11px;
+            color: #1A73E8;
+            word-break: break-all;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .input-row input {
+            flex-grow: 1;
+            padding: 7px 10px;
+            font-size: 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            outline: none;
+        }
+
+        .input-row input:focus {
+            border-color: #2196F3;
+        }
+
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 4px;
+            padding: 6px 10px;
+            background: #F8F9FA;
+            border: 1px solid #E0E0E0;
+            border-radius: 4px;
+            font-size: 11px;
+            color: #555;
+        }
+
+        .breadcrumb-item {
+            cursor: pointer;
+            color: #1A73E8;
+            font-weight: 500;
+        }
+
+        .breadcrumb-item:hover {
+            text-decoration: underline;
+        }
+
+        .breadcrumb-sep {
+            color: #999;
+        }
+
+        .folder-list-container {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            height: 180px;
+            overflow-y: auto;
+            background: #fff;
+        }
+
+        .folder-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 12px;
+            cursor: pointer;
+            font-size: 12px;
+            border-bottom: 1px solid #f1f1f1;
+            user-select: none;
+        }
+
+        .folder-item:hover {
+            background-color: #F1F3F4;
+        }
+
+        .folder-item.selected {
+            background-color: #E8F0FE;
+            color: #1A73E8;
+            font-weight: 600;
+        }
+
+        .folder-icon {
+            font-size: 14px;
+        }
+
+        .empty-folders {
+            padding: 20px;
+            text-align: center;
+            color: #888;
+            font-size: 12px;
+        }
+
+        .selection-preview {
+            background: #FAFAFA;
+            border: 1px solid #EEEEEE;
+            border-radius: 4px;
+            padding: 8px 10px;
+            font-size: 11px;
+            color: #333;
+        }
+
+        .btn-append {
+            background-color: #00897B !important;
+            color: white !important;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header-large text-blue">Select <?= paramName ?></div>
+
+    <div class="main-content">
+        <div class="picker-container">
+            <!-- Current Config Summary -->
+            <div class="current-badge">
+                <strong>Current Configuration:</strong><br>
+                <span>ID: <?= currentId ? currentId : '(None)' ?></span><br>
+                <span>Path: <?= currentPath ? currentPath : '(Not configured)' ?></span>
+            </div>
+
+            <!-- Option 1: Quick Paste -->
+            <div style="font-weight:600; font-size:12px; margin-top:4px;">Option A: Paste Folder URL or ID</div>
+            <div class="input-row">
+                <input type="text" id="manual-input" placeholder="https://drive.google.com/drive/folders/... or Folder ID" />
+                <button type="button" class="secondary" onclick="verifyManualInput()">Verify</button>
+            </div>
+
+            <!-- Option 2: Browse Drive -->
+            <div style="font-weight:600; font-size:12px; margin-top:6px;">Option B: Browse Google Drive</div>
+            
+            <!-- Breadcrumbs -->
+            <div class="breadcrumb" id="breadcrumb-bar">
+                <span class="breadcrumb-item" onclick="navigateTo('root')">📁 My Drive</span>
+            </div>
+
+            <!-- Subfolders List -->
+            <div class="folder-list-container" id="folder-list">
+                <div class="empty-folders">Loading folders...</div>
+            </div>
+
+            <!-- Selected Target Display -->
+            <div class="selection-preview">
+                <strong>Target Selected:</strong>
+                <span id="target-name-disp" style="color:#1A73E8; font-weight:600;">(None chosen yet)</span><br>
+                <small id="target-path-disp" style="color:#666;">Browse and click a folder above or verify a pasted link.</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <div class="status-line">
+            <span id="status-msg">Ready</span>
+        </div>
+        <div class="control-group" style="display:flex; gap:8px;">
+            <? if (paramKey === 'WATCH_FOLDER_ID') { ?>
+                <button id="btn-save" class="action" onclick="saveSelection('replace')" disabled>Replace Watch Folder</button>
+                <button id="btn-append" class="btn-append" onclick="saveSelection('append')" disabled>Add to Watch List (+)</button>
+            <? } else { ?>
+                <button id="btn-save" class="action" onclick="saveSelection('set')" disabled>Set as <?= paramName ?></button>
+            <? } ?>
+            <button onclick="google.script.host.close()" class="secondary">Cancel</button>
+        </div>
+    </div>
+
+    <script>
+        var paramKey = "<?= paramKey ?>";
+        var selectedFolderId = "";
+        var selectedFolderName = "";
+        var selectedFolderPath = "";
+        var currentNavId = "root";
+        var navHistory = [{ id: "root", name: "My Drive" }];
+
+        window.onload = function() {
+            loadFolder("root");
+        };
+
+        function setStatus(msg, isError) {
+            var el = document.getElementById("status-msg");
+            el.innerText = msg;
+            el.style.color = isError ? "#D32F2F" : "#333";
+        }
+
+        function loadFolder(folderId) {
+            setStatus("Loading folders...");
+            var container = document.getElementById("folder-list");
+            container.innerHTML = '<div class="empty-folders">Loading folders...</div>';
+
+            google.script.run
+                .withSuccessHandler(function(res) {
+                    if (!res || !res.success) {
+                        container.innerHTML = '<div class="empty-folders" style="color:red;">Error: ' + (res ? res.error : 'Failed to load') + '</div>';
+                        setStatus("Error loading folder", true);
+                        return;
+                    }
+
+                    currentNavId = res.currentId;
+                    renderBreadcrumb(res.isRoot ? "root" : res.currentId, res.currentName);
+                    renderFolderList(res.subfolders, res.currentId, res.currentName, res.currentPath);
+                    setStatus("Loaded " + res.subfolders.length + " subfolder(s)");
+                })
+                .withFailureHandler(function(err) {
+                    container.innerHTML = '<div class="empty-folders" style="color:red;">Error: ' + err.message + '</div>';
+                    setStatus("Error loading folder: " + err.message, true);
+                })
+                .getDriveFolderContents_(folderId);
+        }
+
+        function renderBreadcrumb(currId, currName) {
+            var bar = document.getElementById("breadcrumb-bar");
+            if (currId === "root") {
+                navHistory = [{ id: "root", name: "My Drive" }];
+            } else {
+                var existsIdx = -1;
+                for (var i = 0; i < navHistory.length; i++) {
+                    if (navHistory[i].id === currId) { existsIdx = i; break; }
+                }
+                if (existsIdx >= 0) {
+                    navHistory = navHistory.slice(0, existsIdx + 1);
+                } else {
+                    navHistory.push({ id: currId, name: currName });
+                }
+            }
+
+            var html = "";
+            for (var j = 0; j < navHistory.length; j++) {
+                if (j > 0) html += ' <span class="breadcrumb-sep">&gt;</span> ';
+                html += '<span class="breadcrumb-item" onclick="navigateTo(\'' + navHistory[j].id + '\')">' + escapeHtml(navHistory[j].name) + '</span>';
+            }
+            bar.innerHTML = html;
+        }
+
+        function navigateTo(folderId) {
+            loadFolder(folderId);
+        }
+
+        function renderFolderList(subfolders, parentId, parentName, parentPath) {
+            var container = document.getElementById("folder-list");
+            container.innerHTML = "";
+
+            // Item for selecting the current directory itself
+            var selfItem = document.createElement("div");
+            selfItem.className = "folder-item" + (selectedFolderId === parentId ? " selected" : "");
+            selfItem.style.backgroundColor = "#F9FBE7";
+            selfItem.innerHTML = '<span class="folder-icon">📍</span> <strong>[Select Current] ' + escapeHtml(parentName) + '</strong>';
+            selfItem.onclick = function() {
+                chooseTarget(parentId, parentName, parentPath);
+            };
+            container.appendChild(selfItem);
+
+            if (!subfolders || subfolders.length === 0) {
+                var emptyDiv = document.createElement("div");
+                emptyDiv.className = "empty-folders";
+                emptyDiv.innerText = "No subfolders found inside " + parentName;
+                container.appendChild(emptyDiv);
+                return;
+            }
+
+            subfolders.forEach(function(sub) {
+                var div = document.createElement("div");
+                div.className = "folder-item" + (selectedFolderId === sub.id ? " selected" : "");
+                div.innerHTML = '<span class="folder-icon">📁</span> <span style="flex-grow:1;">' + escapeHtml(sub.name) + '</span>' +
+                                '<button type="button" class="secondary" style="padding:2px 8px; font-size:11px;" onclick="event.stopPropagation(); navigateTo(\'' + sub.id + '\')">Open &gt;</button>';
+                div.onclick = function() {
+                    chooseTarget(sub.id, sub.name, (parentPath ? parentPath + " / " : "") + sub.name);
+                };
+                container.appendChild(div);
+            });
+        }
+
+        function chooseTarget(id, name, path) {
+            selectedFolderId = id;
+            selectedFolderName = name;
+            selectedFolderPath = path || name;
+
+            document.getElementById("target-name-disp").innerText = name + " (" + id + ")";
+            document.getElementById("target-path-disp").innerText = "Path: " + selectedFolderPath;
+
+            var btnSave = document.getElementById("btn-save");
+            if (btnSave) btnSave.disabled = false;
+            var btnAppend = document.getElementById("btn-append");
+            if (btnAppend) btnAppend.disabled = false;
+
+            setStatus("Selected: " + name);
+        }
+
+        function verifyManualInput() {
+            var input = document.getElementById("manual-input").value.trim();
+            if (!input) {
+                setStatus("Please enter a Folder URL or ID", true);
+                return;
+            }
+
+            setStatus("Verifying folder ID/URL...");
+            google.script.run
+                .withSuccessHandler(function(res) {
+                    if (res && res.success) {
+                        chooseTarget(res.id, res.name, res.path);
+                        setStatus("Verified: " + res.name);
+                    } else {
+                        setStatus("Verification failed: " + (res ? res.error : "Folder not found"), true);
+                    }
+                })
+                .withFailureHandler(function(err) {
+                    setStatus("Error verifying: " + err.message, true);
+                })
+                .resolveFolderInput_(input);
+        }
+
+        function saveSelection(mode) {
+            if (!selectedFolderId) return;
+
+            setStatus("Saving parameter...");
+            var btnSave = document.getElementById("btn-save");
+            if (btnSave) btnSave.disabled = true;
+            var btnAppend = document.getElementById("btn-append");
+            if (btnAppend) btnAppend.disabled = true;
+
+            google.script.run
+                .withSuccessHandler(function(res) {
+                    if (res && res.success) {
+                        google.script.host.close();
+                    } else {
+                        setStatus("Save failed: " + (res ? res.error : "Unknown error"), true);
+                        if (btnSave) btnSave.disabled = false;
+                        if (btnAppend) btnAppend.disabled = false;
+                    }
+                })
+                .withFailureHandler(function(err) {
+                    setStatus("Error saving: " + err.message, true);
+                    if (btnSave) btnSave.disabled = false;
+                    if (btnAppend) btnAppend.disabled = false;
+                })
+                .saveFolderParam_(paramKey, selectedFolderId, mode);
+        }
+
+        function escapeHtml(text) {
+            var div = document.createElement("div");
+            div.innerText = text || "";
+            return div.innerHTML;
+        }
+    </script>
+</body>
+
+</html>

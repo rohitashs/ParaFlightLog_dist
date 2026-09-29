@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-29 09:38:05
+ * Updated: 2026-09-29 11:11:34
  */
 /**
  * Paragliding Flight Log v2.0 - Configuration
@@ -27,13 +27,12 @@ var CFG = {
   // Centralized Parameter Definitions (Source of Truth for Parameters Sheet)
   parameters: [
     // Ingestion
-    { section: 'Ingestion', key: 'WATCH_FOLDER_ID', val: '', desc: 'Google Drive Folder ID to watch for .igc files', input: true },
+    { section: 'Ingestion', key: 'WATCH_FOLDER_ID', val: '', desc: 'Google Drive Folder ID(s) to watch for .igc files (comma separated)', input: true },
     { section: 'Ingestion', key: 'MASTER_LOG_FOLDER_ID', val: '', desc: 'Google Drive ID for Master Log (Public)', input: true },
     { section: 'Ingestion', key: 'UPLOAD_FOLDER_ID', val: '', desc: 'Google Drive Folder ID for manual uploads', input: true },
     { section: 'Ingestion', key: 'ERROR_FOLDER_ID', val: '', desc: 'Google Drive Folder ID for failed imports', input: true },
     { section: 'Ingestion', key: 'ENABLE_WATCH_FOLDER', val: 'FALSE', desc: 'Enable automated scanning? (TRUE/FALSE)' },
-    { section: 'Ingestion', key: 'MOVE_FROM_WATCH_FOLDER', val: 'FALSE', desc: 'Move files from Watch Folder after success? (TRUE/FALSE)' },
-    { section: 'Ingestion', key: 'WATCH_PERIOD_MIN', val: 15, desc: 'How often (mins) the trigger runs' },
+    { section: 'Ingestion', key: 'MOVE_FROM_WATCH_FOLDER', val: 'TRUE', desc: 'Move files from Watch Folder after success? (TRUE/FALSE)' },
     { section: 'Ingestion', key: 'WATCH_PERIOD_MIN', val: 15, desc: 'How often (mins) the trigger runs' },
     
     // Integrations
@@ -119,7 +118,20 @@ var TABS = {
     dataStartRow: 5, 
     dataEndRow: 15, // Optimization: Only apply dropdowns to top 15 rows initially
     frozenRows: 4,
-    frozenRows: 4,
+    /**
+     * COLUMN HELPER NOTES (Header Tooltips on Row 4)
+     * --------------------------------------------------------------------------------------
+     * HOW TO EDIT MANUALLY:
+     * Add or edit entries below matching the exact Column Name: 'Note text'.
+     * When scaffolding runs (or reapplyFormatting_), each column with a note here will have
+     * a hover tooltip note added to its Row 4 header cell in Google Sheets.
+     * Any column not listed below will have its header note left blank.
+     * --------------------------------------------------------------------------------------
+     */
+    colNotes: {
+      'FlightID': 'Click to view flight',
+      'Flight No': 'Click to download igc'
+    },
     groups: [
       { 
         name: 'Flight Info', 

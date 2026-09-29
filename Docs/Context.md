@@ -1,9 +1,9 @@
 # Project Context & Ways of Working (Source of Truth)
 
 ## 🧠 Agent Memory & Context
-**Status**: Active Development (v0.8.2)
-**Last Session Focus**: Paragliding Earth Site Integration (CR-GEO-001, Bug-GEO-002), Dev Infra Verification.
-**Next Focus**: Dashboard Logic (CR-SYS-001), XContest Matching (Bug-SCR-002), Master Log Folder (CR-ING-004).
+**Status**: Active Development (v0.8.3)
+**Last Session Focus**: In-App Folder Picker (Option B), Multi-Watch Folder Support, Recursive Scanning & Cleanup, Master Log Link (Cell A2) & Flight No Download Links (CR-UI-014, CR-CFG-004, CR-ING-004, CR-UI-015).
+**Next Focus**: Dashboard Logic (CR-SYS-001), XContest Matching (Bug-SCR-002), Quick Action Buttons (CR-UI-012).
 
 This file is the **long-term memory** for the project. Read this first to understand *how* we work and *where* we are.
 

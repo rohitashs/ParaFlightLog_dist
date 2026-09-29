@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-29 09:38:05
+ * Updated: 2026-09-29 11:11:34
  * 
  * MODULE: Ingestion Service
  * Handles File inputs (Drive, URL), ZIP extraction, Deduplication, and calls Parser.
@@ -19,11 +19,11 @@ function scanWatchFolderNow_() {
   
   console.log('Starting Watch Folder Scan...');
   var config = getParameters_();
-  var folderId = config.WATCH_FOLDER_ID;
+  var rawFolderIds = config.WATCH_FOLDER_ID || '';
   
   // Check Enable Switch (Handle boolean or string)
   var enabled = String(config.ENABLE_WATCH_FOLDER).toUpperCase();
-  console.log('Watch Config: Enable=' + enabled + ', FolderID=' + folderId);
+  console.log('Watch Config: Enable=' + enabled + ', FolderIDs=' + rawFolderIds);
 
   if (enabled !== 'TRUE' && enabled !== 'YES') {
      var msg = 'Watch Folder is DISABLED in Config. Skipping.';
@@ -32,7 +32,8 @@ function scanWatchFolderNow_() {
      return stats;
   }
   
-  if (!folderId) {
+  var folderIds = rawFolderIds.split(',').map(function(id) { return id.trim(); }).filter(function(id) { return id.length > 0; });
+  if (folderIds.length === 0) {
     var msg = 'No Watch Folder ID configured.';
     console.error(msg);
     stats.log.push(msg);
@@ -40,65 +41,57 @@ function scanWatchFolderNow_() {
     return stats;
   }
   
-  try {
-    var folder = DriveApp.getFolderById(folderId);
-    var files = folder.getFiles();
-    var maxProcess = 5; // Cap to avoid timeouts per execution
-    var foundAny = false;
-    
-    while (files.hasNext() && stats.processed < maxProcess) {
-      foundAny = true;
-      var file = files.next();
-      var fId = file.getId();
-      var fName = file.getName();
+  var maxProcess = 25; // Cap to avoid execution timeouts per run
+  var foundAny = false;
+  
+  for (var i = 0; i < folderIds.length; i++) {
+    if (stats.processed >= maxProcess) break;
+    var folderId = folderIds[i];
+    try {
+      var folder = DriveApp.getFolderById(folderId);
+      var files = getFilesRecursive_(folder, 10, 0);
       
-      // We process .igc, .igx, .zip, .gz
-      if (fName.match(/\.(igc|igx|zip|gz)$/i)) {
-         console.log('Checking file: ' + fName);
-         try {
-           var result = processDriveFile_(file, config);
-           if (result && result.processed) {
-             console.log('Processed: ' + fName);
-             stats.processed++; // Files
-             stats.flights += (result.count || 0); // Flights
-             stats.log.push('Processed: ' + fName + ' (' + (result.count||1) + ' flights)');
-             
-             // Cleanup: Success
-             handleFileCleanup_(file, 'SUCCESS', config);
-             
-           } else {
-             console.log('Skipped (Duplicate/Error): ' + fName);
-             stats.skipped++;
-             stats.log.push('Skipped: ' + fName);
-             
-             // Cleanup: Error/Skipped (Treat as Error to move out of Watch?)
-             // User said: "Files with errors... moved or copied into ERROR_FOLDER_ID"
-             handleFileCleanup_(file, 'ERROR', config);
-           }
-         } catch (e) {
-           logImport_(new Date(), fId, fName, fName, 'Scan Error', e.message);
-           console.error('Error processing ' + fName, e);
-           stats.errors++;
-           stats.log.push('Error (' + fName + '): ' + e.message);
-           
-           // Cleanup: Fatal Error
-           handleFileCleanup_(file, 'ERROR', config);
-         }
-      } else {
-         // console.log('Ignored file type: ' + fName);
+      for (var j = 0; j < files.length; j++) {
+        if (stats.processed >= maxProcess) break;
+        foundAny = true;
+        var file = files[j];
+        var fId = file.getId();
+        var fName = file.getName();
+        
+        console.log('Checking file: ' + fName);
+        try {
+          var result = processDriveFile_(file, config);
+          if (result && result.processed) {
+            console.log('Processed: ' + fName);
+            stats.processed++;
+            stats.flights += (result.count || 0);
+            stats.log.push('Processed: ' + fName + ' (' + (result.count || 1) + ' flights)');
+            handleFileCleanup_(file, 'SUCCESS', config);
+          } else {
+            console.log('Skipped (Duplicate/Error): ' + fName);
+            stats.skipped++;
+            stats.log.push('Skipped: ' + fName);
+            handleFileCleanup_(file, 'ERROR', config);
+          }
+        } catch (e) {
+          logImport_(new Date(), fId, fName, fName, 'Scan Error', e.message);
+          console.error('Error processing ' + fName, e);
+          stats.errors++;
+          stats.log.push('Error (' + fName + '): ' + e.message);
+          handleFileCleanup_(file, 'ERROR', config);
+        }
       }
+    } catch (e) {
+      console.error('Watch Scan Error for folder ' + folderId + ':', e);
+      stats.errors++;
+      stats.log.push('Fatal Error accessing folder ' + folderId + ': ' + e.message);
     }
-    
-    if (!foundAny) {
-      stats.log.push('Watch Folder is empty.');
-    } else if (stats.processed === 0 && stats.skipped === 0 && stats.errors === 0) {
-      stats.log.push('No relevant files found (only ignored types).'); 
-    }
-    
-  } catch (e) {
-    console.error('Watch Scan Error:', e);
-    stats.errors++;
-    stats.log.push('Fatal Error: ' + e.message);
+  }
+  
+  if (!foundAny) {
+    stats.log.push('Watch Folders are empty.');
+  } else if (stats.processed === 0 && stats.skipped === 0 && stats.errors === 0) {
+    stats.log.push('No relevant files found (only ignored types).'); 
   }
   
   return stats;
@@ -106,46 +99,53 @@ function scanWatchFolderNow_() {
 
 /**
  * Returns capabilities and status of Watch Folder for UI.
- * Used by ScanDialog.
+ * Used by ScanDialog. Supports multiple comma-separated folders and recursive search.
  */
 function getWatchFolderStatus() {
   var config = getParameters_();
-  var folderId = config.WATCH_FOLDER_ID;
+  var rawFolderIds = config.WATCH_FOLDER_ID || '';
+  var folderIds = rawFolderIds.split(',').map(function(id) { return id.trim(); }).filter(function(id) { return id.length > 0; });
   
-  if (!folderId) return { error: 'No Watch Folder ID configured.' };
+  if (folderIds.length === 0) return { error: 'No Watch Folder ID configured.' };
   
   try {
-    var folder = DriveApp.getFolderById(folderId);
-    var files = folder.getFiles();
+    var folderNames = [];
     var itemList = [];
+    var seenIds = {};
     
-    while (files.hasNext()) {
-      var f = files.next();
-      var fname = f.getName().toLowerCase();
-      // Simple filter for supported types
-      if (fname.endsWith('.igc') || fname.endsWith('.zip') || fname.endsWith('.igx') || fname.endsWith('.gz')) {
-        // Peek count?
-        var count = 1;
-        // Optimization: For ZIPs in Watch Folder, we *could* peek, but Utilities.unzip(blob) might be heavy if files are huge.
-        // Let's rely on filename hint or just basic count for now, unless requested to be 100% accurate.
-        // User requested: "scan Watch Folder Now... should say x no of new files / flights found"
-        // Let's try to peek if it's a ZIP.
-        if (fname.endsWith('.zip')) {
-           try {
-             // We can't peek without fetching blob, which might be slow. 
-             // But for Watch Folder usage it's likely acceptable.
-             var blob = f.getBlob();
-             var entries = Utilities.unzip(blob);
-             count = entries.filter(function(e){ return e.getName().match(/\.(igc|igx)$/i); }).length;
-           } catch(e) { count = 1; } // specific error or encrypted zip
-        }
+    for (var i = 0; i < folderIds.length; i++) {
+      var fId = folderIds[i];
+      try {
+        var folder = DriveApp.getFolderById(fId);
+        folderNames.push(folder.getName());
+        var files = getFilesRecursive_(folder, 10, 0);
         
-        itemList.push({ id: f.getId(), name: f.getName(), flightCount: count });
+        for (var j = 0; j < files.length; j++) {
+          var f = files[j];
+          var fileId = f.getId();
+          if (seenIds[fileId]) continue;
+          seenIds[fileId] = true;
+          
+          var fname = f.getName().toLowerCase();
+          var count = 1;
+          if (fname.endsWith('.zip')) {
+            try {
+              var blob = f.getBlob();
+              var entries = Utilities.unzip(blob);
+              count = entries.filter(function(e) { return e.getName().match(/\.(igc|igx)$/i); }).length;
+            } catch(e) { count = 1; }
+          }
+          itemList.push({ id: fileId, name: f.getName(), flightCount: count });
+        }
+      } catch (err) {
+        console.warn('Error accessing watch folder ID ' + fId + ': ' + err.message);
+        folderNames.push('Invalid Folder (' + fId.slice(0, 8) + '...)');
       }
     }
-    return { folderName: folder.getName(), files: itemList };
+    
+    return { folderName: folderNames.join(', '), files: itemList };
   } catch (e) {
-    return { error: 'Error accessing folder: ' + e.message };
+    return { error: 'Error accessing watch folders: ' + e.message };
   }
 }
 
@@ -306,11 +306,11 @@ function uploadAndProcessSingleFile(fileObj) {
 }
 
 /**
- * Manual Import from UI
+ * Manual Import from UI (File, Folder, or Direct URL)
  */
 function uiAddFlightFromIgc_() {
   var ui = SpreadsheetApp.getUi();
-  var resp = ui.prompt('Import Flight', 'Enter Drive File ID or Direct URL:', ui.ButtonSet.OK_CANCEL);
+  var resp = ui.prompt('Import Flight', 'Enter Drive File/Folder ID or Direct URL:', ui.ButtonSet.OK_CANCEL);
   if (resp.getSelectedButton() !== ui.Button.OK) return;
   
   var input = resp.getResponseText().trim();
@@ -320,20 +320,60 @@ function uiAddFlightFromIgc_() {
   var ctx = { source: 'Manual' };
   
   try {
-    var driveId = getDriveIdFromUrl_(input);
-    if (driveId) {
-      // It's a Drive URL or ID
-      var file = DriveApp.getFileById(driveId);
-      processDriveFile_(file, config);
-    } else if (input.match(/^https?:\/\//)) {
-      // External URL (non-Drive)
-      handleUrlImport_(input, ctx, config);
-    } else {
-      // Raw ID fallback
-      var file = DriveApp.getFileById(input);
-      processDriveFile_(file, config);
+    var driveId = getDriveIdFromUrl_(input) || input;
+    
+    // Check if input is a Drive Folder
+    try {
+      var folder = DriveApp.getFolderById(driveId);
+      if (folder) {
+        var files = getFilesRecursive_(folder, 10, 0);
+        if (files.length === 0) {
+          ui.alert('No supported flight files (.igc, .zip, etc.) found in folder: ' + folder.getName());
+          return;
+        }
+        var count = 0;
+        files.forEach(function(f) {
+          try {
+            var res = processDriveFile_(f, config);
+            if (res && res.processed) {
+              count += (res.count || 1);
+              handleFileCleanup_(f, 'SUCCESS', config);
+            } else {
+              handleFileCleanup_(f, 'ERROR', config);
+            }
+          } catch(err) {
+            handleFileCleanup_(f, 'ERROR', config);
+          }
+        });
+        SpreadsheetApp.getActive().toast('Import finished: ' + count + ' flight(s) from ' + folder.getName());
+        return;
+      }
+    } catch(eNotFolder) {
+      // Not a folder, proceed to file or URL
     }
-    SpreadsheetApp.getActive().toast('Import finished.');
+
+    if (driveId && !input.match(/^https?:\/\/(?!drive\.google\.com)/)) {
+      var file = DriveApp.getFileById(driveId);
+      var res = processDriveFile_(file, config);
+      if (res && res.processed) {
+        handleFileCleanup_(file, 'SUCCESS', config);
+      } else {
+        handleFileCleanup_(file, 'ERROR', config);
+      }
+      SpreadsheetApp.getActive().toast('Import finished.');
+    } else if (input.match(/^https?:\/\//)) {
+      handleUrlImport_(input, ctx, config);
+      SpreadsheetApp.getActive().toast('Import finished.');
+    } else {
+      var file = DriveApp.getFileById(input);
+      var res = processDriveFile_(file, config);
+      if (res && res.processed) {
+        handleFileCleanup_(file, 'SUCCESS', config);
+      } else {
+        handleFileCleanup_(file, 'ERROR', config);
+      }
+      SpreadsheetApp.getActive().toast('Import finished.');
+    }
   } catch (e) {
     logImport_(new Date(), 'Manual URL/ID', 'UI Import', input, 'Error', e.message);
     ui.alert('Import Failed: ' + e.message);
@@ -493,7 +533,8 @@ function handleClientSideUpload(files) {
 function handleFileCleanup_(file, status, config) {
   try {
     var rawMove = config.MOVE_FROM_WATCH_FOLDER;
-    var shouldMove = (rawMove === true || String(rawMove).toUpperCase() === 'TRUE');
+    // Default shouldMove to true unless explicitly configured as FALSE
+    var shouldMove = (rawMove !== false && String(rawMove).toUpperCase() !== 'FALSE');
     
     // 1. Success
     if (status === 'SUCCESS') {
@@ -943,9 +984,18 @@ function insertFlightRow_(data, fileId, outerName, status, notes, analysis, scor
     }
   }
 
+  // Generate Flight No Direct Download Link if Master File ID exists
+  var flightNoVal = flightNoFormula;
+  if (masterFileId) {
+    var config = config || getParameters_();
+    var dlPattern = (config && config.GDRIVE_DOWNLOAD_URL_PATTERN) || 'https://drive.google.com/uc?export=download&id={ID}';
+    var directDlUrl = dlPattern.replace('{ID}', masterFileId);
+    flightNoVal = '=HYPERLINK("' + directDlUrl + '", ' + flightNoFormula.substring(1) + ')';
+  }
+
   setVal('FlightID', flightIdVal);
   setVal('Status', status);
-  setVal('Flight No', flightNoFormula);
+  setVal('Flight No', flightNoVal);
   setVal('Auto Summary', autoSummary);
   setVal('IGC File', igcFileName);
   setVal('Notes', notes); // Write System Notes (Geo errors, Validation, etc)
@@ -1242,5 +1292,41 @@ function copyToMasterLog_(blob, fileName, config) {
     result.error = e.message;
   }
   
+  return result;
+}
+
+/**
+ * Recursively collects files matching supported flight log extensions (.igc, .igx, .zip, .gz)
+ * up to maxDepth levels deep (default 10).
+ * @param {GoogleAppsScript.Drive.Folder} folder
+ * @param {number} [maxDepth=10]
+ * @param {number} [currentDepth=0]
+ * @return {Array<GoogleAppsScript.Drive.File>}
+ */
+function getFilesRecursive_(folder, maxDepth, currentDepth) {
+  if (currentDepth === undefined) currentDepth = 0;
+  if (maxDepth === undefined) maxDepth = 10;
+  if (currentDepth > maxDepth) return [];
+  
+  var result = [];
+  try {
+    var files = folder.getFiles();
+    while (files.hasNext()) {
+      var f = files.next();
+      var fName = f.getName();
+      if (fName.match(/\.(igc|igx|zip|gz)$/i)) {
+        result.push(f);
+      }
+    }
+    
+    var subfolders = folder.getFolders();
+    while (subfolders.hasNext()) {
+      var sub = subfolders.next();
+      var subFiles = getFilesRecursive_(sub, maxDepth, currentDepth + 1);
+      result = result.concat(subFiles);
+    }
+  } catch (e) {
+    console.warn('Error reading folder recursively: ' + e.message);
+  }
   return result;
 }

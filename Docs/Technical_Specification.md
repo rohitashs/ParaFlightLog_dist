@@ -94,23 +94,33 @@ Fixed Header Schema (Row 4=Category, Row 5=Name). Data starts Row 6.
 *   **`uiAddManualFlight_()`**: Helper to trigger manual flight entry.
 *   **`showUrlDialog_()`**: Shows the IGC URL import dialog.
 *   **`showUploadDialog_()`**: Shows the File Upload picker.
-*   **`uiUpdateWatchFolder_()`**: UI helper to update Watch Folder ID.
-*   **`uiUpdateMasterLogFolder_()`**: Updates Master Log Folder ID.
+*   **`openFolderPicker_(paramKey, title)`**: Opens the in-app Google Drive folder picker dialog.
+*   **`getDriveFolderContents_(folderId)`**: Returns child folders and breadcrumb path for Drive folder navigation.
+*   **`resolveFolderInput_(input)`**: Verifies and extracts folder metadata from an input URL or raw folder ID.
+*   **`getFolderPath_(folder)` / `getMultiFolderPath_(folderIds)`**: Computes human-readable breadcrumb paths (e.g. `My Drive / Paragliding / Logs`).
+*   **`saveFolderParam_(paramKey, folderId, mode)`**: Saves folder IDs to the `Parameters` sheet (supports 'replace' or 'append' for multi-folders) and writes breadcrumbs to `Description`.
+*   **`uiUpdateWatchFolder_() / uiUpdateUploadFolder_() / uiUpdateMasterLogFolder_() / uiUpdateErrorFolder_()`**: Menu actions triggering the in-app folder picker.
 *   **`uiEnableWatch_() / uiDisableWatch_()`**: Toggles the watch folder feature.
 *   **`setupWatcherTrigger_()`**: Installs the time-driven trigger for automation.
 
 ### `Scaffold.gs` (Setup & Validation)
-*   **`scaffoldAll_()`**: Master function to create/repair all sheets (`Overview`, `Flights`, etc).
+*   **`scaffoldAll_()`**: Master function to create/repair all sheets (`Dashboard`, `Flights`, etc).
+*   **`scaffoldDashboard_(ss)`**: Creates KPI cards and Master Flight Log folder hyperlink in Row 2 (`A2:Q2`).
+*   **`scaffoldFlights_(ss)`**: Builds 2-row category headers, sets Master Flight Log folder hyperlink in Cell `A2`, and applies column header notes/tooltips to Row 4 (`colNotes`).
+*   **`scaffoldParameters_(ss)`**: Populates parameters with human-readable path enrichment in Column C (`Description`).
 *   **`updateValidationOnly_()`**: Re-applies dropdowns and validation rules to `Flights` and `Equipment`.
 *   **`applyFlightsValidation_(sh)`**: Applies validation to the top N rows of the Flights sheet.
 *   **`ensureSheet_(ss, name)`**: Utility to create a sheet if missing.
 
 ### `Ingestion.gs` (Data Pipeline)
-*   **`scanWatchFolderNow_()`**: Main automation entry point. Scans Drive folder for new IGCs.
+*   **`scanWatchFolderNow_()`**: Automation entry point. Iterates over comma-separated `WATCH_FOLDER_ID`s, recursively scans subfolders (up to 10 levels), extracts ZIPs, parses IGCs, and executes automated file cleanup.
+*   **`getWatchFolderStatus()`**: Returns folder names and recursive flight counts across multiple watch folders for `ScanDialog.html`.
+*   **`getFilesRecursive_(folder, maxDepth, currentDepth)`**: Traverses a Drive folder tree and collects matching flight files (`.igc`, `.igx`, `.zip`, `.gz`).
 *   **`processDriveFile_(file, config)`**: Processes a single Drive file.
 *   **`handleFileUpload(form)`**: Handles file uploads from the HTML picker.
 *   **`processSingleIgcBlob_(blob, ...)`**: Core logic to Parse -> Analyze -> Score -> Insert.
-*   **`insertFlightRow_(data, ...)`**: Maps processed data to `Flights` sheet columns.
+*   **`insertFlightRow_(data, ...)`**: Maps processed data to `Flights` sheet columns. Wraps `Flight No` with direct download `=HYPERLINK(dlUrl, IFERROR(MAX(...), 0) + 1)` using `masterFileId`.
+*   **`handleFileCleanup_(file, status, config)`**: Moves successful files out of watch folder (trashed after master log copy) and moves errored files into `ERROR_FOLDER_ID`.
 *   **`copyToMasterLog_(blob, name, config)`**: Handles public mirroring and duplicate renaming.
 *   **`logImport_(...)`**: Appends specific errors or success messages to `App_Log`.
 

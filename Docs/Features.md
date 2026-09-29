@@ -11,11 +11,13 @@ This document describes the *intent* and *capabilities* of the Paragliding Fligh
 *Maps to `RQ-ING-001`*
 
 The system automates the import of flight logs (IGC) to reduce manual entry.
-*   **Watch Folder**: Automatically detects and processes new files dropped into a designated Google Drive folder.
+*   **Watch Folder**: Automatically detects and processes new files dropped into one or more designated Google Drive folders (comma-separated list supported).
+*   **Recursive Traversal**: Recursively scans all subfolders up to 10 levels deep for supported files (`.igc`, `.igx`, `.zip`, `.gz`).
 *   **Smart Deduplication**: Uses MD5 hashing and time-overlap detection to prevent duplicate entries.
-*   **Multi-Source**: Supports Drag-and-Drop Uploads, Drive URL imports, and Bulk ZIP extraction.
+*   **Multi-Source**: Supports Drag-and-Drop Uploads, Drive Folder/File URL imports, and Bulk ZIP extraction.
 *   **Parsing**: Extracts pilot details, glider type, and high-fidelity G-Record data (GNSS/Pressure altitude).
-*   **Master Log Mirror**: Automatically copies and standardizes flight logs to a public folder (e.g. for SeeYou Cloud).
+*   **Master Log Mirror**: Automatically copies and standardizes flight logs to a public folder (e.g. for SeeYou Cloud and direct download).
+*   **Automated Cleanup**: Moves successfully processed files out of source folders (trashed once preserved in Master Log) and moves corrupt/errored files into the designated Error Folder.
 
 ## 2. ✈️ Automated Flight Logging
 *Maps to `RQ-ING-002`*
@@ -55,8 +57,10 @@ Adds location context to raw GPS coordinates.
 *Maps to `RQ-SYS-002`*
 
 The visual layer where users interact with the data.
-*   **Flights Tab**: The main logbook view. Uses a **2-Row Header** design (Category + Field) for clarity.
+*   **Flights Tab**: The main logbook view. Uses a **2-Row Header** design (Category + Field) for clarity, with Cell A2 providing a direct hyperlink to the Master Flight Log Drive folder.
 *   **Column Grouping**: Columns are physically grouped and colored by function (e.g. *Flight Info* is Blue, *Scoring* is Orange). Groups can be collapsed to reduce clutter.
+*   **Download & Visualization Links**: `FlightID` links directly to SeeYou Cloud 3D visualization, while `Flight No` wraps sequential numbering with a direct download hyperlink to the master IGC file.
+*   **Header Tooltips**: Header cells on Row 4 contain cell notes (e.g. "Click to view flight" and "Click to download igc") for intuitive guidance.
 *   **Menus**: A custom "Flight Log" menu provides one-click access to common actions (Add Flight, Upload, Update validation).
 *   **Dialogs**: Custom HTML interfaces for File Uploads and URL imports, capable of handling complex interactions.
 *   **Flight Inspector**: A dedicated sidebar to view, edit, and audit flight details without horizontal scrolling. Includes collapsible sections and direct SeeYou Cloud links.
@@ -65,6 +69,7 @@ The visual layer where users interact with the data.
 *Maps to `RQ-SYS-005`*
 
 A high-level dashboard providing visual metrics and summaries.
+*   **Master Log Folder Link**: Row 2 features a prominent direct hyperlink to the Master Flight Log Google Drive folder.
 *   **Key Metrics**: Total Flights, Hours, Distance.
 *   **Top Lists**: Longest flights, furthest distance, and favorite sites.
 *   **Geography**: Breakdown of flights by country.
@@ -74,6 +79,8 @@ A high-level dashboard providing visual metrics and summaries.
 *Maps to `RQ-SYS-001`*
 
 Tools for managing the system's lifecycle.
+*   **In-App Folder Picker**: Built-in Drive folder browser dialog allowing users to navigate "My Drive", drill down into subfolders, verify URLs/IDs, and select folders with "Replace" or "Add to List" actions.
+*   **Human-Readable Path Enrichment**: Folder parameter updates automatically write human-readable folder breadcrumb paths (`[Path: My Drive / ...]`) to the `Description` column in the `Parameters` sheet.
 *   **First Time Setup**: A "Scaffold" feature automatically creates all necessary sheets, headers, and validation rules if they are missing or deleted.
 *   **Configuration**: A simpler `Parameters` sheet allows users to change system behavior (e.g. "Min Height Gain", "Watch Folder ID") without touching code.
 *   **Maintenance**: Admin tools to "Reset System", "Reformat Sheets", and "Backup Data".

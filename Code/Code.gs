@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-29 09:38:05
+ * Updated: 2026-09-29 11:11:34
  * Test access verification: Verified GAS write access on 2026-09-25 08:26:00.
  * 
  * CORE MODULE: Orchestration Only.
@@ -332,14 +332,161 @@ function debugClearDedupe_() {
 }
 
 /* ==========================================================================================
-   PARAMETER UPDATES (UI Helpers)
+   PARAMETER UPDATES & FOLDER PICKER (UI Helpers)
    ========================================================================================== */
 
-/* Folder Updaters */
-function uiUpdateWatchFolder_() { updateParamFolder_('WATCH_FOLDER_ID', 'Watch Folder'); }
-function uiUpdateUploadFolder_() { updateParamFolder_('UPLOAD_FOLDER_ID', 'Upload Folder'); }
-function uiUpdateMasterLogFolder_() { updateParamFolder_('MASTER_LOG_FOLDER_ID', 'Master Log Folder'); }
-function uiUpdateErrorFolder_() { updateParamFolder_('ERROR_FOLDER_ID', 'Error Folder'); }
+/* Folder Updaters (Open In-App Folder Picker Dialog) */
+function uiUpdateWatchFolder_() { openFolderPicker_('WATCH_FOLDER_ID', 'Watch Folder'); }
+function uiUpdateUploadFolder_() { openFolderPicker_('UPLOAD_FOLDER_ID', 'Upload Folder'); }
+function uiUpdateMasterLogFolder_() { openFolderPicker_('MASTER_LOG_FOLDER_ID', 'Master Log Folder'); }
+function uiUpdateErrorFolder_() { openFolderPicker_('ERROR_FOLDER_ID', 'Error Folder'); }
+
+function openFolderPicker_(key, name) {
+  var config = getParameters_();
+  var currentId = config[key] || '';
+  var currentPath = (key === 'WATCH_FOLDER_ID') ? getMultiFolderPath_(currentId) : getFolderPath_(currentId);
+  
+  var template = HtmlService.createTemplateFromFile('FolderPickerDialog');
+  template.paramKey = key;
+  template.paramName = name;
+  template.currentId = currentId;
+  template.currentPath = currentPath || '(Not configured)';
+  
+  var html = template.evaluate()
+      .setWidth(550)
+      .setHeight(520);
+  SpreadsheetApp.getUi().showModalDialog(html, 'Select ' + name);
+}
+
+/**
+ * Lists subfolders of a given folder ID (or My Drive root).
+ * Called by FolderPickerDialog.html.
+ */
+function getDriveFolderContents_(folderId) {
+  try {
+    var folder;
+    var isRoot = (!folderId || folderId === 'root');
+    if (isRoot) {
+      folder = DriveApp.getRootFolder();
+    } else {
+      folder = DriveApp.getFolderById(folderId);
+    }
+    
+    var currentId = folder.getId();
+    var currentName = isRoot ? 'My Drive' : folder.getName();
+    var currentPath = getFolderPath_(currentId);
+    
+    var subfolders = [];
+    var it = folder.getFolders();
+    while (it.hasNext() && subfolders.length < 100) {
+      var sub = it.next();
+      subfolders.push({ id: sub.getId(), name: sub.getName() });
+    }
+    subfolders.sort(function(a, b) { return a.name.localeCompare(b.name); });
+    
+    return {
+      success: true,
+      currentId: currentId,
+      currentName: currentName,
+      currentPath: currentPath,
+      isRoot: isRoot,
+      subfolders: subfolders
+    };
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+}
+
+/**
+ * Validates a folder URL or raw ID, returns folder name and full path.
+ * Called by FolderPickerDialog.html.
+ */
+function resolveFolderInput_(input) {
+  if (!input) return { success: false, error: 'Empty input' };
+  var id = input.trim();
+  // Extract ID if a full Google Drive URL was pasted
+  if (id.match(/[-\w]{25,}/)) {
+    id = id.match(/[-\w]{25,}/)[0];
+  }
+  
+  try {
+    var folder = DriveApp.getFolderById(id);
+    return {
+      success: true,
+      id: id,
+      name: folder.getName(),
+      path: getFolderPath_(id)
+    };
+  } catch (e) {
+    return { success: false, error: 'Folder not found or inaccessible: ' + e.message };
+  }
+}
+
+/**
+ * Resolves the full breadcrumb path of a single folder.
+ */
+function getFolderPath_(folderId) {
+  if (!folderId) return '';
+  try {
+    var folder = DriveApp.getFolderById(folderId);
+    var parts = [folder.getName()];
+    var parents = folder.getParents();
+    var depth = 0;
+    while (parents.hasNext() && depth < 15) {
+      var p = parents.next();
+      parts.unshift(p.getName());
+      parents = p.getParents();
+      depth++;
+    }
+    return parts.join(' / ');
+  } catch (e) {
+    return '(Invalid folder ID: ' + folderId + ')';
+  }
+}
+
+/**
+ * Resolves human-readable paths for comma-separated folder IDs.
+ */
+function getMultiFolderPath_(folderIdsStr) {
+  if (!folderIdsStr) return '';
+  var ids = String(folderIdsStr).split(',').map(function(s) { return s.trim(); }).filter(Boolean);
+  if (ids.length === 0) return '';
+  var paths = ids.map(function(id, idx) {
+    var path = getFolderPath_(id);
+    return (ids.length > 1 ? (idx + 1) + '. ' : '') + path;
+  });
+  return paths.join(' | ');
+}
+
+/**
+ * Saves a folder parameter, updates the ID and Description in Parameters sheet.
+ * Called by FolderPickerDialog.html.
+ */
+function saveFolderParam_(key, folderId, mode) {
+  try {
+    var finalValue = folderId;
+    
+    // Handle multi-folder append for WATCH_FOLDER_ID
+    if (key === 'WATCH_FOLDER_ID' && mode === 'append') {
+      var currentConfig = getParameters_();
+      var existingIds = String(currentConfig.WATCH_FOLDER_ID || '').split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+      if (existingIds.indexOf(folderId) === -1) {
+        existingIds.push(folderId);
+      }
+      finalValue = existingIds.join(', ');
+    }
+    
+    setParameter_(key, finalValue);
+    
+    var ss = SpreadsheetApp.getActive();
+    var folderPath = (key === 'WATCH_FOLDER_ID') ? getMultiFolderPath_(finalValue) : getFolderPath_(finalValue);
+    ss.toast('Updated ' + key + ':\n' + folderPath, 'Flight Log', 5);
+    
+    return { success: true, value: finalValue, path: folderPath };
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+}
 
 function uiEnableWatch_() {
   setParameter_('ENABLE_WATCH_FOLDER', 'TRUE');
@@ -351,33 +498,7 @@ function uiDisableWatch_() {
   SpreadsheetApp.getActive().toast('Watch Folder DISABLED.');
 }
 
-/**
- * Manual trigger for Watch Folder Scan
- */
-// function scanWatchFolder() { ... } // Removed in favor of showScanDialog
-
-function updateParamFolder_(key, name) {
-  var ui = SpreadsheetApp.getUi();
-  var result = ui.prompt('Update ' + name, 'Enter new Folder ID (or URL):', ui.ButtonSet.OK_CANCEL);
-  
-  if (result.getSelectedButton() == ui.Button.OK) {
-    var input = result.getResponseText().trim();
-    // basic cleanup if they pasted a URL
-    var id = input;
-    if (input.match(/[-\w]{25,}/)) {
-      id = input.match(/[-\w]{25,}/)[0];
-    }
-    
-    if (id) {
-       setParameter_(key, id);
-       ui.alert('Updated ' + name + ' ID to: ' + id);
-    } else {
-       ui.alert('Invalid ID format.');
-    }
-  }
-}
-
-function setParameter_(key, value) {
+function setParameter_(key, value, description) {
   var ss = SpreadsheetApp.getActive();
   var sh = ss.getSheetByName(TABS.PARAMETERS.name);
   if (!sh) return;
@@ -386,6 +507,20 @@ function setParameter_(key, value) {
   for (var i = 1; i < data.length; i++) { 
     if (String(data[i][0]).trim() === key) {
       sh.getRange(i + 1, 2).setValue(value);
+      
+      // Update Description with human-readable path if it's a folder parameter
+      var isFolderParam = (key === 'WATCH_FOLDER_ID' || key === 'UPLOAD_FOLDER_ID' || key === 'MASTER_LOG_FOLDER_ID' || key === 'ERROR_FOLDER_ID');
+      if (description) {
+        sh.getRange(i + 1, 3).setValue(description);
+      } else if (isFolderParam) {
+        // Base description from CFG
+        var baseDesc = '';
+        CFG.parameters.forEach(function(p) { if (p.key === key) baseDesc = p.desc; });
+        var pathStr = (key === 'WATCH_FOLDER_ID') ? getMultiFolderPath_(value) : getFolderPath_(value);
+        if (pathStr) {
+          sh.getRange(i + 1, 3).setValue(baseDesc + '\n[Path: ' + pathStr + ']');
+        }
+      }
       return;
     }
   }
