@@ -41,6 +41,7 @@ Fixed Header Schema (Row 4=Category, Row 5=Name). Data starts Row 6.
 | **Scoring** | `XC Score`, `Triangle`, `Points` | `RQ-SCR-001` |
 | **Geo** | `Launch Site`, `Land Town` | `RQ-SCR-002` |
 | **Metrics** | `Duration`, `Max Alt`, `Gain` | `RQ-ANA-002` |
+| **Weather** | `Wind@Launch`, `Wind@Landing`, `Cloud %`, `Cloudbase`, `Temp (C)`, `Observations` | `RQ-SCR-004` |
 | **XContest** | `XC Status` | `RQ-SCR-003` |
 | **System** | `Import ID`, `Hash`, `Notes` | Validation/Audit |
 
@@ -88,6 +89,7 @@ Fixed Header Schema (Row 4=Category, Row 5=Name). Data starts Row 6.
 *   **Site Detection**: Chain of Responsibility (`Paragliding Earth` -> `Overpass API` -> Fail).
 *   **Caching**: `CacheService` (6 hour TTL) for all external calls.
 *   **Visualization**: `SeeYou Cloud` via direct link generation using Master Log file ID.
+*   **Historical Weather (`RQ-SCR-004`)**: Open-Meteo Historical Weather API (`https://archive-api.open-meteo.com/v1/archive`) fetching hourly wind speed, wind direction, temperature, cloud cover, and precipitation at launch/landing timestamps.
 
 ---
 
@@ -111,11 +113,12 @@ Fixed Header Schema (Row 4=Category, Row 5=Name). Data starts Row 6.
 *   **`setupWatcherTrigger_()`**: Installs the time-driven trigger for automation.
 
 ### `Scaffold.gs` (Setup & Validation)
-*   **`scaffoldAll_()`**: Master function to create/repair all sheets (`Dashboard`, `Flights`, `Parameters`, `Equipment`, `Lookups`, `App_Log`, and planned `User Guide`).
+*   **`scaffoldAll_()`**: Master function to create/repair all sheets (`Dashboard`, `Flights`, `Parameters`, `Equipment`, `Lookups`, `App_Log`, `User Guide`, `Pilot_Profile`).
 *   **`scaffoldDashboard_(ss)`**: Creates KPI cards and Master Flight Log folder hyperlink in Row 2 (`A2:Q2`).
 *   **`scaffoldFlights_(ss)`**: Builds 2-row category headers, sets Master Flight Log folder hyperlink in Cell `A2`, and applies column header notes/tooltips to Row 4 (`colNotes`).
 *   **`scaffoldParameters_(ss)`**: Populates parameters with human-readable path enrichment in Column C (`Description`).
-*   **`scaffoldUserGuide_(ss)` (`RQ-SYS-006.1`)**: Builds the in-app `User Guide` sheet tab with structured sections: System Overview, Setup, Normal Logging Usage, and System Maintenance/Troubleshooting.
+*   **`scaffoldUserGuide_(ss)` (`RQ-SYS-006.1`)**: Builds the in-app `User Guide` sheet tab with structured sections: System Overview, Setup, Normal Logging Usage, System Maintenance, and Metric Dictionary.
+*   **`scaffoldPilotProfile_(ss)` (`RQ-SYS-009.1`)**: Builds the `Pilot_Profile` sheet tab with structured fields (Personal info, Certifications, Org/Club memberships, Emergency contacts, Garmin inReach links, Insurance) and free-form notes.
 *   **`updateValidationOnly_()`**: Re-applies dropdowns and validation rules to `Flights` and `Equipment`.
 *   **`applyFlightsValidation_(sh)`**: Applies validation to the top N rows of the Flights sheet.
 *   **`ensureSheet_(ss, name)`**: Utility to create a sheet if missing.

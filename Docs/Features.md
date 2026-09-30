@@ -52,6 +52,7 @@ Adds location context to raw GPS coordinates.
 *   **Site Detection**: Identifies known Paragliding Takeoffs/Landings within search radius using Paragliding Earth (primary) with OpenStreetMap Overpass API fallback.
 *   **Interactive Links**: Generates links to view the flight on SeeYou Cloud (planned).
 *   **SeeYou Cloud Integration**: Valid flights are automatically uploaded to a public folder and linked directly to SeeYou Cloud for 3D visualization.
+*   **Automated Historical Weather Enrichment (`RQ-SCR-004`)**: Automatically fetches historical weather conditions at launch and landing coordinates for the flight date and time from open weather archives (e.g. Open-Meteo). Prepopulates editable fields (`Wind@Launch`, `Wind@Landing`, `Cloud %`, `Cloudbase`, `Temp (C)`, `Observations`) providing an automated baseline weather picture.
 
 ## 6. �️ User Interface (UI)
 *Maps to `RQ-SYS-002`*
@@ -64,7 +65,7 @@ The visual layer where users interact with the data.
 *   **Menus**: A custom "Flight Log" menu provides one-click access to common actions (Add Flight, Upload, Update validation).
 *   **Dialogs**: Custom HTML interfaces for File Uploads and "Add files from URL (folder, igc, zip)" supporting both manual URL/ID entry and native Google Drive folder exploration with optional "Delete from source" cleanup.
 *   **Flight Inspector**: A dedicated sidebar to view, edit, and audit flight details without horizontal scrolling. Includes collapsible sections and direct SeeYou Cloud links.
-*   **Flight Maintenance & Bulk Operations (`RQ-SYS-007`)**: A planned unified modal dialog to execute bulk operations across all or selected flights (recomputing physics/modes, recalculating XC score, backfilling missing Town/Country/Site geo data, re-checking XContest status, and sorting flights by date).
+*   **Flight Maintenance & Bulk Operations (`RQ-SYS-007`)**: A planned unified modal dialog to execute bulk operations across all or selected flights (recomputing physics/modes, recalculating XC score, backfilling missing Town/Country/Site geo data, fetching historical weather data, re-checking XContest status, and sorting flights by date).
 
 ## 7. 📊 Flight Dashboard
 *Maps to `RQ-SYS-005`*
@@ -101,6 +102,18 @@ Under-the-hood capabilities that drive reliability.
 *Maps to `RQ-SYS-006`*
 
 Comprehensive documentation designed to guide pilots from initial setup to day-to-day operation.
-*   **In-App User Guide Tab (`RQ-SYS-006.1`)**: A dedicated sheet tab within the Google Sheet containing structured reference documentation: System Overview, Initial Setup, Normal Flight Logging Usage, and System Maintenance/Troubleshooting.
+*   **In-App User Guide Tab (`RQ-SYS-006.1`)**: A dedicated sheet tab within the Google Sheet containing structured reference documentation: System Overview, Initial Setup, Normal Flight Logging Usage, System Maintenance/Troubleshooting, and a **Comprehensive Metric Dictionary** defining all calculated fields grouped by Flight Info, XC Scoring, Analytics (Thermal %, Soar %, Efficiency, Glide %, Glide L/D, Sink %, etc.), Physics metrics, and Geo fields.
 *   **External Onboarding Guide (`RQ-SYS-006.2`)**: A standalone document (viewable in Markdown/web) containing the high-level system overview, prerequisites, and initial setup steps so new pilots can review and prepare before creating their Google Sheet.
+
+## 11. 👤 Pilot Profile & Credentials
+*Maps to `RQ-SYS-009`*
+
+A centralized profile tab (`Pilot_Profile`) to record pilot certifications, emergency information, and tracking gear:
+*   **Personal & Contact Details**: Pilot full name, email, phone, and home address.
+*   **Certifications & Memberships**: National org ratings (e.g. USHPA, BHPA, FAI license number) and local flying club affiliations.
+*   **Emergency & Medical Evacuation**: Emergency contacts, next of kin, emergency medical insurance policy numbers, and search-and-rescue coverage details.
+*   **Live Tracking & Satellites**: Garmin inReach IMEI, MapShare public tracking URL, and live flight tracking links.
+*   **Free-Form & Structured Notes**: Formatted prompt sections alongside free-form notes.
+*   **Dashboard & Inspector Integration**: Surfaces pilot name, rating, and quick-access emergency tracking links onto the `Dashboard` and `Flight Inspector` sidebar.
+
 

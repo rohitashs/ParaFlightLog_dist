@@ -3,7 +3,7 @@
 ## 🧠 Agent Memory & Context
 **Status**: Active Development (v0.8.4)
 **Last Session Focus**: In-App Folder Picker (Option B), Recursive Scanning & Cleanup, Master Log & Flight No Links (CR-UI-014, CR-CFG-004, CR-ING-004, CR-UI-015, CR-UI-016), Code Check Audit, FileHandling & Utils Modularization (CR-CODE-001).
-**Next Focus**: In-App User Guide & External Onboarding (`RQ-SYS-006`), Unified Flight Maintenance Dialog (`RQ-SYS-007`), Setup Wizard & Instance Templating (`RQ-SYS-008`), Dashboard Logic (`CR-SYS-001`), XContest Matching (`Bug-SCR-002`).
+**Next Focus**: In-App User Guide & Metric Dictionary (`RQ-SYS-006`), Unified Flight Maintenance Dialog (`RQ-SYS-007`), Setup Wizard & Instance Templating (`RQ-SYS-008`), Pilot Profile (`RQ-SYS-009`), Historical Weather Enrichment (`RQ-SCR-004`), Dashboard Logic (`CR-SYS-001`), XContest Matching (`Bug-SCR-002`).
 
 This file is the **long-term memory** for the project. Read this first to understand *how* we work and *where* we are.
 

@@ -61,11 +61,10 @@ This file is the single source of truth for **ToDos**, **Requirements**, **Chang
     - [x] **RQ-SCR-002.2** | **Status**: Implemented | **Phase**: 1 | **Description**: Site Detection (Overpass).
     
 - [ ] **RQ-SCR-003** | **Status**: Open | **Phase**: 2 | **Description**: **XContest Verification**: Check if flight is already uploaded to XContest (via API or profile scan). Requires `XCONTEST_USERNAME` config. Refined: Match Date + Duration.
-    
-- [ ] **RQ-SCR-003** | **Status**: Open | **Phase**: 2 | **Description**: **XContest Verification**: Check if flight is already uploaded to XContest (via API or profile scan). Requires `XCONTEST_USERNAME` config. Refined: Match Date + Duration.
-    
-    
-    
+
+- [ ] **RQ-SCR-004** | **Status**: Open | **Phase**: 2 | **Description**: **Historical Weather Enrichment**: Automatically prepopulate weather fields (`Wind@Launch`, `Wind@Landing`, `Cloud %`, `Cloudbase`, `Temp (C)`, `Observations`) based on flight date/time and coordinates from a historical weather API (e.g. Open-Meteo archive), editable by the pilot.
+    - [ ] **RQ-SCR-004.1** | **Status**: Open | **Phase**: 2 | **Description**: Historical Weather API Integration (Open-Meteo Historical Archive / ERA5 reanalysis).
+    - [ ] **RQ-SCR-004.2** | **Status**: Open | **Phase**: 2 | **Description**: Ingestion & Bulk Maintenance Integration (automatic population on import and manual backfill checkbox).
 
 ### 🔧 Module: UI & System (SYS)
 - [x] **RQ-SYS-001** | **Status**: Implemented | **Phase**: 1 | **Description**: Configuration & Architecture
@@ -79,15 +78,18 @@ This file is the single source of truth for **ToDos**, **Requirements**, **Chang
 - [x] **RQ-SYS-003** | **Status**: Implemented | **Phase**: 1 | **Description**: **SeeYou Cloud Link**: Integration with SeeYou Cloud for visualization. Add "View Flight" column with generated link (`https://seeyou.cloud/api/open?igc=<drive_link>`).
 - [ ] **RQ-SYS-004** | **Status**: In Progress | **Phase**: 1 | **Description**: **Flight Inspector**: Sidebar to view and edit flight details. Sections color-coded to match current sheet. Replaces manual entry blank row macro.
 - [ ] **RQ-SYS-005** | **Status**: Open | **Phase**: 1 | **Description**: **Flight Dashboard**: High-level visual metrics (Flights, Hours), Top 5 Lists (Duration/Distance/Site), and Recent Activity in the `Dashboard` (formerly Overview) tab.
-- [ ] **RQ-SYS-006** | **Status**: Open | **Phase**: 2 | **Description**: **User Guide & Onboarding**: Add an in-app `User Guide` tab in the Google Sheet (Overview, Setup, Maintenance, Usage) and an external standalone document for pre-creation reading.
-    - [ ] **RQ-SYS-006.1** | **Status**: Open | **Phase**: 2 | **Description**: In-App `User Guide` Sheet Tab (Overview, Setup, Maintenance, Normal Usage).
+- [ ] **RQ-SYS-006** | **Status**: Open | **Phase**: 2 | **Description**: **User Guide & Onboarding**: Add an in-app `User Guide` tab in the Google Sheet (Overview, Setup, Maintenance, Usage, Metric Explanations) and an external standalone document for pre-creation reading.
+    - [ ] **RQ-SYS-006.1** | **Status**: Open | **Phase**: 2 | **Description**: In-App `User Guide` Sheet Tab (Overview, Setup, Normal Usage, Maintenance, and Comprehensive Metric Dictionary grouped by Flight Info, XC Scoring, Analytics, Physics, and Geo).
     - [ ] **RQ-SYS-006.2** | **Status**: Open | **Phase**: 2 | **Description**: External User Guide document for pre-sheet setup onboarding.
-- [ ] **RQ-SYS-007** | **Status**: Open | **Phase**: 2 | **Description**: **Flight Maintenance & Bulk Operations**: Unified modal dialog to configure scope (All vs Selected) and multi-select batch operations (Recompute metrics/analysis, Re-score XC, Backfill missing Geo, Re-verify XContest, Sort by Date).
-    - [ ] **RQ-SYS-007.1** | **Status**: Open | **Phase**: 2 | **Description**: Unified `FlightMaintenanceDialog.html` (Scope selector, checkboxes for operations, progress bar).
+- [ ] **RQ-SYS-007** | **Status**: Open | **Phase**: 2 | **Description**: **Flight Maintenance & Bulk Operations**: Unified modal dialog to configure scope (All vs Selected) and multi-select batch operations (Recompute metrics/analysis, Re-score XC, Backfill missing Geo, Re-verify XContest, Backfill Historical Weather, Sort by Date).
+    - [ ] **RQ-SYS-007.1** | **Status**: Open | **Phase**: 2 | **Description**: Unified `FlightMaintenanceDialog.html` (Scope selector, checkboxes for operations including weather backfill, progress bar).
     - [ ] **RQ-SYS-007.2** | **Status**: Open | **Phase**: 2 | **Description**: Batch Recompute & Backfill engine with rate limiting and row update logic.
 - [ ] **RQ-SYS-008** | **Status**: Open | **Phase**: 2 | **Description**: **New Instance Setup Wizard & Sheet Templating**: Evaluate and implement simplified distribution/onboarding to replace the manual `Setup_Guide.md` process (e.g., Template copy + interactive setup wizard).
     - [ ] **RQ-SYS-008.1** | **Status**: Open | **Phase**: 2 | **Description**: Templating Architecture Evaluation (Template Copy with pre-bound script vs. Clasp deployment script vs. Workspace Add-on).
     - [ ] **RQ-SYS-008.2** | **Status**: Open | **Phase**: 2 | **Description**: Interactive First-Time Setup Wizard modal (step-by-step folder selection, pilot profile, equipment defaults, trigger install).
+- [ ] **RQ-SYS-009** | **Status**: Open | **Phase**: 2 | **Description**: **Pilot Profile Management**: Dedicated `Pilot_Profile` tab for personal/contact info, ratings, club/org memberships (USHPA, BHPA, FAI, clubs), emergency contacts, Garmin inReach & live tracking links, and medical evacuation insurance.
+    - [ ] **RQ-SYS-009.1** | **Status**: Open | **Phase**: 2 | **Description**: In-App `Pilot_Profile` Sheet Tab (Structured key-value fields and free-form notes).
+    - [ ] **RQ-SYS-009.2** | **Status**: Open | **Phase**: 2 | **Description**: Dashboard & Inspector Integration (surface pilot name, rating/club, and inReach emergency links).
 
 ---
 
