@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 11:20:40
+ * Updated: 2026-09-30 11:38:38
  */
 /**
  * Paragliding Flight Log v2.0
@@ -19,6 +19,7 @@ function runAllTests() {
   results.push(testWeather_());
   results.push(testCleanDriveId_());
   results.push(testValidateRequiredFolders_());
+  results.push(testDateTimeFormats_());
   
   var failures = results.filter(function(r) { return !r.idx || r.error; });
   if (failures.length > 0) {
@@ -175,4 +176,22 @@ function testValidateRequiredFolders_() {
   }
 
   return { module: 'FileHandling', idx: true };
+}
+
+function testDateTimeFormats_() {
+  var config = getParameters_();
+  if (typeof config.DATE_FORMAT !== 'string' || !config.DATE_FORMAT) {
+    return { module: 'Config', error: 'DATE_FORMAT must be a non-empty string' };
+  }
+  if (typeof config.TIME_FORMAT !== 'string' || !config.TIME_FORMAT) {
+    return { module: 'Config', error: 'TIME_FORMAT must be a non-empty string' };
+  }
+  // Verify format pattern validity
+  if (config.DATE_FORMAT.indexOf('yyyy') === -1 && config.DATE_FORMAT.indexOf('yy') === -1) {
+    return { module: 'Config', error: 'DATE_FORMAT does not appear to be a valid date pattern: ' + config.DATE_FORMAT };
+  }
+  if (config.TIME_FORMAT.indexOf('m') === -1) {
+    return { module: 'Config', error: 'TIME_FORMAT does not appear to be a valid time pattern: ' + config.TIME_FORMAT };
+  }
+  return { module: 'Config', idx: true };
 }

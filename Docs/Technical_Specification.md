@@ -122,7 +122,7 @@ Fixed Header Schema (Row 4=Category, Row 5=Name). Data starts Row 6.
 *   **`scaffoldAll_()`**: Master function to create/repair all sheets (`Dashboard`, `Flights`, `Parameters`, `Equipment`, `Lookups`, `App_Log`, `User Guide`, `Pilot_Profile`).
 *   **`scaffoldDashboard_(ss)`**: Creates KPI cards and Master Flight Log folder hyperlink in Row 2 (`A2:Q2`).
 *   **`scaffoldFlights_(ss)`**: Builds 2-row category headers, sets Master Flight Log folder hyperlink in Cell `A2`, and applies column header notes/tooltips to Row 4 (`colNotes`).
-*   **`scaffoldParameters_(ss)`**: Populates parameters with human-readable path enrichment in Column C (`Description`).
+*   **`scaffoldParameters_(ss)`**: Populates parameters with human-readable path enrichment in Column C (`Description`), strict Plain Text (`@`) formatting for format keys, and exact validation ranges (`I3:I7` for `DATE_FORMAT`, `J3:J4` for `TIME_FORMAT`) to eliminate trailing blank dropdown options.
 *   **`scaffoldUserGuide_(ss)` (`RQ-SYS-006.1`)**: Builds the in-app `User Guide` sheet tab with structured sections: System Overview, Setup, Normal Logging Usage, System Maintenance, and Metric Dictionary.
 *   **`scaffoldPilotProfile_(ss)` (`RQ-SYS-009.1`)**: Builds the `Pilot_Profile` sheet tab with structured fields (Personal info, Certifications, Org/Club memberships, Emergency contacts, Garmin inReach links, Insurance) and free-form notes.
 *   **`backupSystemSheets_()`**: Clones user data sheets (`Flights`, `Pilot_Profile`, `Equipment`, `Parameters`, `Lookups`) into dedicated backup tabs (`Backup Flights`, etc.), replacing any previous backup iterations.

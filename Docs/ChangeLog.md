@@ -1,5 +1,19 @@
 # Project Change Log
 
+## Session: Parameter Date/Time Format Dropdowns & Plain Text Preservation
+**Date**: 2026-09-30
+**Versions**: v0.8.9
+**Focus**: Parameter Date/Time Format Validation (`Bug-UI-003`).
+
+*   `[Fix]` **Bug-UI-003 (Parameter Date/Time Format Dropdowns)**:
+    *   Sized validation ranges dynamically to exact populated entries in `Lookups`: `I3:I7` for `DATE_FORMAT` and `J3:J4` for `TIME_FORMAT`, completely removing trailing empty dropdown options.
+    *   Set explicit Plain Text number format (`@`) on format cells in `Parameters` and `Lookups` (`scaffoldParameters_` and `scaffoldLookups_`).
+    *   Protected `getParameters_()` in `Code/Code.gs` from coercing `DATE_FORMAT` or `TIME_FORMAT` into `Date` objects or numbers.
+    *   Sanitized existing values during parameter re-scaffolding against corrupted date/number inputs.
+    *   Added automated test `testDateTimeFormats_` in `Code/Test.gs`.
+
+---
+
 ## Session: Pre-Flight Folder Validation, Parameter Authority & Ingestion Cleanup
 **Date**: 2026-09-30
 **Versions**: v0.8.8

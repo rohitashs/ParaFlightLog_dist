@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 11:20:40
+ * Updated: 2026-09-30 11:38:38
  * Test access verification: Verified GAS write access on 2026-09-25 08:26:00.
  * 
  * CORE MODULE: Orchestration Only.
@@ -66,7 +66,13 @@ function getParameters_() {
              // Fix: Don't convert Booleans to Numbers (Number(true) === 1)
              if (typeof val === 'boolean') {
                config[key] = val;
-             } else if (!isNaN(Number(val)) && val !== '') {
+             } else if (key === 'DATE_FORMAT' || key === 'TIME_FORMAT') {
+               if (val instanceof Date || typeof val === 'number') {
+                 config[key] = CFG.defaults[key] || (key === 'DATE_FORMAT' ? 'yyyy-MM-dd' : 'h:mm a');
+               } else {
+                 config[key] = String(val).trim();
+               }
+             } else if (!isNaN(Number(val)) && val !== '' && !(val instanceof Date)) {
                config[key] = Number(val);
              } else {
                config[key] = val;

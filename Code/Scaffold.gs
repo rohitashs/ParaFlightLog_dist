@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 11:20:40
+ * Updated: 2026-09-30 11:38:38
  */
 /**
  * Paragliding Flight Log v2.0 - Scaffolding & Setup
@@ -185,7 +185,12 @@ function scaffoldParameters_(ss) {
            if (key) {
              // Direct Match
              if (paramMap[key]) {
-               existingMap[key] = val; 
+               if (key === 'DATE_FORMAT' && (val instanceof Date || typeof val === 'number')) {
+                 val = CFG.defaults.DATE_FORMAT;
+               } else if (key === 'TIME_FORMAT' && (val instanceof Date || typeof val === 'number')) {
+                 val = CFG.defaults.TIME_FORMAT;
+               }
+               existingMap[key] = val;
              } else {
                // Migration / Friendly Name Mapping
                // Handle cases where user or old version used Friendly Names
@@ -247,6 +252,9 @@ function scaffoldParameters_(ss) {
         // Input Field
         sh.getRange(rowNum, 2).setBackground('#FFF9C4');
      }
+     if (rows[i][0] === 'DATE_FORMAT' || rows[i][0] === 'TIME_FORMAT') {
+        sh.getRange(rowNum, 2).setNumberFormat('@');
+     }
   }
   sh.autoResizeColumns(1, 3);
   
@@ -254,16 +262,16 @@ function scaffoldParameters_(ss) {
   var shLook = ss.getSheetByName(TABS.LOOKUPS.name);
   if (shLook) {
       // Use Range instead of List for dynamic updates
-      var dateRange = shLook.getRange('I3:I8');
-      var timeRange = shLook.getRange('J3:J5');
+      var dateRange = shLook.getRange('I3:I7');
+      var timeRange = shLook.getRange('J3:J4');
       
       var dateRule = SpreadsheetApp.newDataValidation().requireValueInRange(dateRange, true).build();
       var timeRule = SpreadsheetApp.newDataValidation().requireValueInRange(timeRange, true).build();
       
       // Find rows for DATE_FORMAT and TIME_FORMAT
       for (var i=0; i<rows.length; i++) {
-         if (rows[i][0] === 'DATE_FORMAT') sh.getRange(i+3, 2).setDataValidation(dateRule);
-         if (rows[i][0] === 'TIME_FORMAT') sh.getRange(i+3, 2).setDataValidation(timeRule);
+         if (rows[i][0] === 'DATE_FORMAT') sh.getRange(i+3, 2).setNumberFormat('@').setDataValidation(dateRule);
+         if (rows[i][0] === 'TIME_FORMAT') sh.getRange(i+3, 2).setNumberFormat('@').setDataValidation(timeRule);
          
          // Boolean Dropdowns
          if (['ENABLE_WATCH_FOLDER', 'MOVE_FROM_WATCH_FOLDER'].indexOf(rows[i][0]) > -1) {
@@ -333,8 +341,8 @@ function scaffoldLookups_(ss) {
   if (statuses.length > 0) sh.getRange(3, 6, statuses.length, 1).setValues(statuses.map(function(s) { return [s]; }));
   if (types.length > 0) sh.getRange(3, 7, types.length, 1).setValues(types.map(function(t) { return [t]; }));
   if (xcClasses.length > 0) sh.getRange(3, 8, xcClasses.length, 1).setValues(xcClasses.map(function(t) { return [t]; }));
-  if (dateFormats.length > 0) sh.getRange(3, 9, dateFormats.length, 1).setValues(dateFormats.map(function(t) { return [t]; }));
-  if (timeFormats.length > 0) sh.getRange(3, 10, timeFormats.length, 1).setValues(timeFormats.map(function(t) { return [t]; }));
+  if (dateFormats.length > 0) sh.getRange(3, 9, dateFormats.length, 1).setNumberFormat('@').setValues(dateFormats.map(function(t) { return [t]; }));
+  if (timeFormats.length > 0) sh.getRange(3, 10, timeFormats.length, 1).setNumberFormat('@').setValues(timeFormats.map(function(t) { return [t]; }));
   
   sh.autoResizeColumns(1, 10);
 }
