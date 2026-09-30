@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 17:35:51
+ * Updated: 2026-09-30 17:48:50
  */
 /**
  * Paragliding Flight Log v2.0 - Scaffolding & Setup
@@ -85,6 +85,22 @@ function getTabColor_(name) {
   return null;
 }
 
+/**
+ * Ensures a sheet has at least minRows and minCols before populating
+ * to prevent out-of-bounds range access exceptions.
+ */
+function ensureDimensions_(sh, minRows, minCols) {
+  if (!sh) return;
+  var curRows = sh.getMaxRows();
+  if (curRows < minRows) {
+    sh.insertRowsAfter(curRows, minRows - curRows);
+  }
+  var curCols = sh.getMaxColumns();
+  if (curCols < minCols) {
+    sh.insertColumnsAfter(curCols, minCols - curCols);
+  }
+}
+
 /* ==========================================================================================
    SHEET SPECIFIC SCAFFOLDING
    ========================================================================================== */
@@ -93,6 +109,9 @@ function scaffoldDashboard_(ss) {
   var sh = ss.getSheetByName(TABS.DASHBOARD.name);
   if (!sh) return;
   sh.clear();
+  
+  // Ensure sufficient dimensions before populating (70 rows, 6 columns)
+  ensureDimensions_(sh, 70, 6);
   
   var fStart = (TABS.FLIGHTS && TABS.FLIGHTS.dataStartRow) ? TABS.FLIGHTS.dataStartRow : 5;
   var fSheet = TABS.FLIGHTS.name;
@@ -358,12 +377,12 @@ function scaffoldDashboard_(ss) {
   // Set Word Wrap on ALL populated cells
   sh.getRange(1, 1, 67, 6).setWrapStrategy(SpreadsheetApp.WrapStrategy.WRAP);
 
-  // Clean bounds: remove excess columns and rows for a crisp, app-like finish
+  // Clean bounds: remove excess columns and rows for a crisp, app-like finish with a 3-row buffer
   if (sh.getMaxColumns() > 6) {
     try { sh.deleteColumns(7, sh.getMaxColumns() - 6); } catch(e) {}
   }
-  if (sh.getMaxRows() > 67) {
-    try { sh.deleteRows(68, sh.getMaxRows() - 67); } catch(e) {}
+  if (sh.getMaxRows() > 70) {
+    try { sh.deleteRows(71, sh.getMaxRows() - 70); } catch(e) {}
   }
 
   sh.setHiddenGridlines(true);
@@ -456,6 +475,7 @@ function scaffoldParameters_(ss) {
 
   // Write Data
   var writeRows = rows.map(function(r) { return [r[0], r[1], r[2]]; });
+  ensureDimensions_(sh, writeRows.length + 5, 3);
   sh.getRange(3, 1, writeRows.length, 3).setValues(writeRows);
   
   // Formatting
@@ -531,6 +551,7 @@ function scaffoldLookups_(ss) {
   var sh = ss.getSheetByName(TABS.LOOKUPS.name);
   sh.showSheet();
   sh.clear();
+  ensureDimensions_(sh, 50, 10);
   
   // Row 1
   sh.getRange('A1').setValue(TABS.LOOKUPS.name).setFontWeight('bold').setFontSize(12);
@@ -1015,6 +1036,7 @@ function scaffoldPilotProfile_(ss) {
   }
 
   sh.clear();
+  ensureDimensions_(sh, 50, 4);
 
   // Header Title
   sh.getRange('A1').setValue("Pilot Profile & Credentials").setFontWeight('bold').setFontSize(16);
@@ -1113,6 +1135,7 @@ function scaffoldUserGuide_(ss) {
     sh.setTabColor(TABS.USER_GUIDE.color);
   }
   sh.clear();
+  ensureDimensions_(sh, 120, 4);
 
   // Title
   sh.getRange('A1').setValue("Paragliding Flight Log - In-App User Guide & Metric Dictionary").setFontWeight('bold').setFontSize(16);

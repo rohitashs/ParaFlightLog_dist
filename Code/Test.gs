@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 17:35:51
+ * Updated: 2026-09-30 17:48:50
  */
 /**
  * Paragliding Flight Log v2.0
@@ -345,6 +345,11 @@ function testDashboardAndSchema_() {
   }
   if (!pMap['TIMELINE_HOURS_MED'] || Math.abs(pMap['TIMELINE_HOURS_MED'].val - 4/24) > 0.0001) {
     return { module: 'DashboardAndSchema', error: 'TIMELINE_HOURS_MED parameter missing or invalid' };
+  }
+
+  // 8. Verify ensureDimensions_ function exists
+  if (typeof ensureDimensions_ !== 'function') {
+    return { module: 'DashboardAndSchema', error: 'ensureDimensions_ function missing' };
   }
 
   return { module: 'DashboardAndSchema', idx: true };
