@@ -33,7 +33,7 @@ Converts raw data into a structured Pilot Logbook in Google Sheets.
 
 Analyzes the track log to understand *how* you flew.
 *   **Mode Detection**: Automatically classifies segments as **Thermal** (Circling), **Soaring** (Ridge), **Glide** (Transition), or **Sink**.
-*   **Performance Metrics**: accurate calculation of Max Climb rates, Height Gains, and Thermal efficiency.
+*   **Performance Metrics**: accurate calculation of Max Climb rates, Height Gains, Soar Efficiency (m/km), and in-flight Glide L/D.
 *   **Safety Checks**: Flags abnormally high sink rates or ground proximity events.
 
 ## 4. 🏆 XC Scoring (League Rules)
