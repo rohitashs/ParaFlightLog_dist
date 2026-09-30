@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-29 19:07:55
+ * Updated: 2026-09-29 19:13:05
  * 
  * MODULE: Ingestion Service
  * Handles File inputs (Drive, URL), ZIP extraction, Deduplication, and calls Parser.
@@ -1337,25 +1337,33 @@ function lookupWingSpecs_(wingID) {
 }
 
 function getNextDailyId_(sh, dateStr) {
-  // Heuristic: Check last few rows. If they match dateStr, increment suffix.
-  // Col 1 is FlightID.
-  var maxSuffix = 0;
-  // Limit check to last 20 rows for performance
   var lastRow = sh.getLastRow();
-  if (lastRow < 6) return '01';
-  var startRow = Math.max(6, lastRow - 19);
-  var vals = sh.getRange(startRow, 1, lastRow - startRow + 1, 1).getValues();
+  if (lastRow < 5) return '01';
   
+  var numRows = lastRow - 4; // Data starts at Row 5
+  if (numRows <= 0) return '01';
+  
+  var map = getColumnMap_(sh);
+  var col = map['FlightID'] || 1;
+  
+  // Read all rows in FlightID column (display values to handle HYPERLINK formulas cleanly)
+  var vals = sh.getRange(5, col, numRows, 1).getDisplayValues();
   var prefix = 'F' + dateStr + '_';
+  var maxSuffix = 0;
   
   for (var i = 0; i < vals.length; i++) {
-    var val = String(vals[i][0]);
+    var val = String(vals[i][0]).trim();
     if (val.indexOf(prefix) === 0) {
-      var suf = parseInt(val.replace(prefix, ''), 10);
-      if (!isNaN(suf) && suf > maxSuffix) maxSuffix = suf;
+      var sufStr = val.substring(prefix.length);
+      var suf = parseInt(sufStr, 10);
+      if (!isNaN(suf) && suf > maxSuffix) {
+        maxSuffix = suf;
+      }
     }
   }
-  return ('0' + (maxSuffix + 1)).slice(-2);
+  
+  var nextNum = maxSuffix + 1;
+  return (nextNum < 10) ? ('0' + nextNum) : String(nextNum);
 }
 
 function friendlyDuration_(sec) {
