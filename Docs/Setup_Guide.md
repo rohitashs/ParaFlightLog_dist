@@ -33,46 +33,55 @@ This guide walks you through setting up the Paragliding Flight Log System from s
 4.  Once execution finishes, switch back to your Spreadsheet tab.
 
 ## Step 4: Scaffolding (Automatic Setup)
-1.  You should now see a custom menu called **Flight Log** in the toolbar (refresh the page if you don't).
-2.  Click **Flight Log** > **Scaffold: Create tabs & headers**.
-3.  The script will automatically generate the following sheets:
-    *   `Flights`: The main log.
-    *   `Equipment_Wings`: Inventory for wings.
-    *   `Equipment_Harnesses`: Inventory for harnesses.
-    *   `Lookups`: Configuration settings.
-    *   `Import_Log`: System logs.
+1.  You should now see a custom menu called **Flight Log** in the toolbar (refresh the spreadsheet if you don't).
+2.  Click **Flight Log** > **Admin** > **First Time Setup (Full Scaffold)**.
+3.  The script will automatically generate the following core sheets:
+    *   `Dashboard`: High-level flight statistics, KPI cards, and Master Log link.
+    *   `Flights`: Main flight log table with category groups and column headers.
+    *   `Parameters`: Central configuration key/value pairs with human-readable descriptions.
+    *   `Equipment`: Unified inventory for wings, harnesses, reserves, and instruments.
+    *   `Lookups`: Dynamic dropdown lists and category references.
+    *   `App_Log`: Detailed ingestion and system execution logs.
 
 ## Step 5: Configuration
-1.  Go to the **Lookups** sheet.
-2.  Fill in the required values. The system uses these defaults if not specified, but you should verify them:
-    *   **WATCH_FOLDER_ID**: *[REQUIRED]* The ID of your Drive folder.
-    *   **CONTACT_EMAIL**: *[REQUIRED]* Your email address.
-    *   **WATCH_PERIOD_MIN**: `15`
-    *   **OSM_RADIUS_M**: `3000`
-    *   **REVGEO_PROVIDER**: `nominatim`
-    *   **FLIGHT_TYPES**: `Free Fly, XC, Soaring, Comp, SIV / Maneuvers, Training, Other`
-    *   **NATIONAL_BONUS_WITHIN_PCT**: `5`
-    *   **NATIONAL_BONUS_MULTIPLIER**: `1.2`
-    *   **THERMAL_MIN_CLIMB**: `0.3`
-    *   **THERMAL_MIN_TURN**: `8`
-    *   **VALIDATION_MIN_DURATION_SEC**: `120` (2 minutes)
-    *   *...and other thresholds as desired.*
+1.  Go to the **Parameters** sheet (or use the helper menu items under **Flight Log** > **Admin**).
+2.  Fill in or verify the configuration settings:
+    *   **WATCH_FOLDER_ID**: *[REQUIRED]* Google Drive folder ID(s) to scan for `.igc` files (comma-separated for multiple folders, or set via **Admin** > **Update Watch Folder...**).
+    *   **MASTER_LOG_FOLDER_ID**: *[REQUIRED]* Drive folder ID for permanent flight log file mirrors.
+    *   **UPLOAD_FOLDER_ID**: Drive folder ID for staging manual uploads.
+    *   **ERROR_FOLDER_ID**: Drive folder ID for files that fail parsing or validation.
+    *   **CONTACT_EMAIL**: *[REQUIRED]* Your contact email (required for User-Agent in OSM/Nominatim requests).
+    *   **ENABLE_WATCH_FOLDER**: `TRUE` / `FALSE` to control automated watcher scanning.
+    *   **MOVE_FROM_WATCH_FOLDER**: `TRUE` to move files from Watch Folder after successful ingestion.
+    *   **GEO_REV_PROVIDERS**: `bigdatacloud,nominatim` (fallback chain for reverse geocoding).
+    *   **GEO_SITE_PROVIDERS**: `paraglidingearth,overpass` (fallback chain for launch/landing site detection).
+    *   **OSM_RADIUS_M**: `3000` (search radius in meters for nearby sites).
+    *   **XCONTEST_USERNAME**: Pilot username on XContest for flight verification.
+    *   **FLIGHT_TYPES**: `Free Fly, XC, Soaring, Comp, SIV / Maneuvers, Training, Other`.
+    *   **THERMAL_MIN_CLIMB**: `0.3` (m/s climb rate threshold).
+    *   **THERMAL_MIN_TURN**: `8` (degrees/sec turning rate threshold).
+    *   **VALIDATION_MIN_DURATION_SEC**: `120` (minimum flight duration in seconds).
 
 ## Step 6: Define Your Gear
-1.  Go to **Equipment_Wings**.
-2.  Edit the sample row to match your current wing.
-    *   **WingID**: A short name (e.g., "Photon", "Zeno2"). This will appear in the dropdowns.
-    *   **GlideRatio_LD**: Used for calculations (e.g., `10.5`).
-3.  Repeat for Harnesses and Reserves if desired.
+1.  Go to the **Equipment** sheet.
+2.  Edit or add rows for your gear:
+    *   **Category**: `Wing`, `Harness`, `Reserve`, or `Other`.
+    *   **EquipmentID**: A unique, concise identifier (e.g. `Photon`, `Zeno2`, `Genie Race 4`). This appears in the `Flights` sheet dropdowns.
+    *   **Make**, **Model**, **Size**, **Type**: Descriptive gear details.
+    *   **Default?**: Mark `TRUE` for your primary gear to auto-populate new flights.
+    *   **Glide**, **Trim**, **Full**: Baseline glide ratio and speeds (km/h) for telemetry reference.
 
 ## Step 7: Automation Setup (Optional)
-To have the sheet automatically check for new files:
-1.  Click **Flight Log** > **Setup 5-min watcher trigger**.
-2.  This creates a background job that looks for new files every 5 minutes.
+To have the sheet automatically check for new flights dropped into your Watch Folder:
+1.  Click **Flight Log** > **Admin** > **Setup 5-min watcher trigger**.
+2.  This schedules an automatic background job that checks your Watch Folder every 5 minutes.
 
 ---
 
 ## Usage
-*   **Import**: Drop `.igc` or `.zip` files into your Watch Folder.
-*   **Manual**: Use **Flight Log** > **Add flight from IGC...** to paste a link directly.
-*   **Review**: New flights appear at the top of the `Flights` sheet. Check the status column.
+*   **Watch Folder**: Drop `.igc`, `.zip`, or `.gz` files into your Drive Watch Folder. Trigger an immediate scan via **Flight Log** > **Add Flight** > **Scan Watch Folder Now**, or let the 5-min trigger run automatically.
+*   **Web / Drive URL**: Click **Flight Log** > **Add Flight** > **Add files from URL (folder, igc, zip)...** to import from web links or Drive shared folders.
+*   **File Upload**: Click **Flight Log** > **Add Flight** > **Add flight from Upload (Local File)...** to upload directly from your computer.
+*   **Manual Entry**: Click **Flight Log** > **Add Flight** > **Add manual flight (blank row)** to log a non-tracked flight.
+*   **Inspect & Edit**: Highlight a flight and click **Flight Log** > **Flight Inspector** to view telemetry analysis, track log links, or edit notes.
+

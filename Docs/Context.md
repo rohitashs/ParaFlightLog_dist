@@ -27,12 +27,14 @@ The project follows a strict folder hierarchy. `Docs/Context.md` is the source o
 *   **Purpose**: Disposable planning documents and session artifacts.
 *   **Files**: `implementation_plan.md`, `task.md`, `walkthrough.md`.
 *   **Sub-folders**:
-    *   **`Acrchive/`**: Old plans/tasks.
+    *   **`Archive/`**: Old plans/tasks.
     *   **`SessionSummary/`**: Session Summary Reports (`YYYY-MM-DD_SessionSummary.md`).
+    *   **`CodeCheckReports/`**: Code Review Reports (`YYYY-MM-DD_CodeCheck.md`).
+    *   **`DocCheckReports/`**: Documentation Audit Reports (`YYYY-MM-DD_DocCheck.md`).
 
 ### 3. `Code/` (Implementation)
 *   **Status**: **Git Tracked**.
-*   **Files**: All `.gs` files and `appsscript.json`.
+*   **Files**: All `.gs` files, `.html` dialog templates, `appsscript.json`, and deployment scripts (`update_headers.ps1`).
 
 
 ---
@@ -76,7 +78,7 @@ The backlog has 5 strict sections:
 
 ### 5. Code Check Reports (`Plans/CodeCheckReports/`)
 *   **Naming**: `YYYY-MM-DD_CodeCheck.md`.
-*   **Purpose**: Result of automated or manual code reviews.
+*   **Purpose**: Result of automated or manual code reviews (`/code_check`).
 *   **Structure**:
     1.  **Metadata**: Date, Scope (All files or specific module).
     2.  **Summary**: Pass/Fail/Warn status.
@@ -84,13 +86,25 @@ The backlog has 5 strict sections:
     4.  **Warnings**: Style, Optimization, Readability (Should Fix).
     5.  **Suggestions**: Refactoring ideas (Nice to have).
 
-### 6. Code Standards
+### 6. Doc Check Reports (`Plans/DocCheckReports/`)
+*   **Naming**: `YYYY-MM-DD_DocCheck.md`.
+*   **Purpose**: Result of automated documentation synchronization audits (`/doc_check`).
+*   **Structure**:
+    1.  **Metadata & Scope**: Date, audit scope, reference commit.
+    2.  **Executive Summary**: Pass/Warn/Fail status and discrepancy counts.
+    3.  **Code-to-Doc Drift**: Modules, functions, and config parameters.
+    4.  **Cross-Doc Consistency & Duplication**: Stale versions and conflicting guidelines.
+    5.  **Backlog Traceability**: Status alignment with actual code features.
+    6.  **Stale References & Dead Links**: Obsolete names or broken links.
+    7.  **Proposed Remediation Plan**: File-by-file update plan.
+
+### 7. Code Standards
 *   **Naming**: `Service.gs` for modules. `privateFunction_` (trailing underscore) for non-exported helpers.
 *   **Config**: Separation of Concerns. `Code.gs` = Logic, `Config.gs` = Constants, `Parameters Sheet` = Runtime Values.
 *   **Validation**: Validate early. Fail gracefully with logs.
 *   **Timestamps**: Always update file header timestamps before pushing. Use `.\update_headers.ps1` to automate this.
 
-### 7. Multi-Device Workflow (`Docs/Workflows/Multi_Device_Setup.md`)
+### 8. Multi-Device Workflow (`Docs/Workflows/Multi_Device_Setup.md`)
 *   **Critical**: Never work on two computers at once.
 *   **Protocol**: Always wait for Google Drive sync **before** opening VS Code. Acknowledge the risk of Git inside Drive.
 *   **Hand-off**: Commit & Push on A -> Wait for Sync -> Pull on B.
@@ -208,20 +222,7 @@ git status
 
 ---
 
-## 🚀 Current Project State (v0.7.11)
-### Implemented Features
-*   **Ingestion**: Watch Folder (Drive), Manual Upload, URL Import, Deduplication (MD5 + Temporal).
-*   **Analysis**: Flight Mode Detection (Thermal/Soar/Glide), Basic Metrics.
-*   **Scoring**: XContest Rules (Free/Flat/FAI).
-*   **Geo**: Reverse Geocoding (BigDataCloud/Nominatim), Site Detection (Overpass).
-*   **UI**: 2-Row Headers, Column Grouping, Status/Gear Dropdowns.
-
-### Active Priorities (Next Session)
-1.  **Public Log**: Auto-copy valid IGCs to a public "Master Log" folder (`CR-ING-004`).
-2.  **SeeYou Integration**: Generate public links for flight visualization (`CR-UI-009`).
-3.  **Logging**: Enhance visibility of process execution (`CR-LOG-003`).
-4.  **Multiple Watch Folder**: Enhance `ENABLE_WATCH_FOLDER` (`CR-CFG-004`).
-
-### Important Notes for Agent
-*   **Config**: The `Parameters` sheet is the runtime source of truth. `Config.gs` is just the schema/defaults.
-*   **Validation**: Detailed errors should go to the `App_Log` tab or `Notes` column (pipes separated), not just fail silently.
+## 📌 Guiding Principles
+*   **Config Authority**: The `Parameters` sheet is the runtime source of truth. `Config.gs` defines the default schema and constants.
+*   **Graceful Validation**: Detailed errors and partial failures should be recorded in `App_Log` or `Notes` (pipe-separated) rather than failing silently.
+*   **Document-First Integrity**: Always sync `Docs/` whenever features, parameters, or architecture change.

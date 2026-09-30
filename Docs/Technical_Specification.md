@@ -150,6 +150,10 @@ Fixed Header Schema (Row 4=Category, Row 5=Name). Data starts Row 6.
 *   **`friendlyDuration_(sec)`**: Human-readable duration string (e.g. "45 min", "1.5 hrs").
 *   **`formatTime_(sec)`**: Seconds from midnight to `HH:mm:ss`.
 
+### `Config.gs` (Global Settings & Sheet Schemas)
+*   **`CFG`**: Master configuration dictionary defining sheet names, system limits, and centralized parameter definitions.
+*   **`TABS`**: Detailed column specifications, category grouping (Flight Info, Gear, XC Scoring, Launch, Landing, Weather, Analytics, Validation, Meta), editable field constraints, and styling definitions for all scaffolded tabs.
+
 ### `Parser.gs`
 *   **`parseIgc(text, fileName)`**: Extracts fixes (B-records) and headers from IGC content.
 *   **`PARSER.haversine_` / `PARSER.bearing_`**: Namespaced aliases delegating to `Utils.gs`.
@@ -166,5 +170,17 @@ Fixed Header Schema (Row 4=Category, Row 5=Name). Data starts Row 6.
 *   **`getNearestSite(lat, lon, ...)`**: Finds nearest Takeoff/Landing site (Overpass API).
 *   **`getTimezone(lat, lon, ...)`**: Returns TZ ID.
 
+### `XContest.gs` (XContest Verification)
+*   **`XContest.checkFlight(flightDateObj, flightDurationMin, flightStartTimeMin, config)`**: Scrapes pilot flight lists from XContest.org for the calculated season. Matches flights by Date + Duration (with configurable tolerance) or Start Time fallback, returning matched flight URL and verification status.
+
 ### `Test.gs`
-*   **`runAllTests()`**: execution harness for unit tests.
+*   **`runAllTests()`**: Execution harness for unit tests.
+
+### HTML Dialog Templates (User Interface)
+*   **`FolderPickerDialog.html`**: In-app Google Drive folder picker dialog featuring live search, folder tree navigation, breadcrumbs, and single/multi-folder assignment to `Parameters`.
+*   **`URLDialog.html`**: Modal dialog for importing flights from external URLs or Drive folder links, featuring live progress bar, file staging, processing logs, and archive cleanup.
+*   **`UploadDialog.html`**: Direct browser file upload modal supporting drag-and-drop of `.igc`, `.zip`, and `.gz` archives into Google Drive staging.
+*   **`ScanDialog.html`**: Watch folder scanning modal displaying real-time batch detection, extraction progress, and completion reporting.
+*   **`Inspector.html`**: Flight inspector sidebar/modal providing in-depth fix telemetry review, metric calculations, and manual metadata editing.
+*   **`Style.html`**: Shared CSS tokens, typography, button states, and modal layout styling loaded across all HTML dialogs.
+

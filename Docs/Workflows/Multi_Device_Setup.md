@@ -15,7 +15,7 @@ Never leave VS Code open on Computer A while working on Computer B.
 ## 🛑 End of Session Protocol (Computer A)
 1.  **Commit & Push Code**:
     *   Ensure all code changes are committed and pushed to GitHub.
-    *   `git push origin main`
+    *   `git push origin master`
 2.  **Update Plans**:
     *   Update `Plans/task.md` and `Docs/Backlog.md`.
     *   Create a **Session Summary** (`Plans/SessionSummary/YYYY-MM-DD_SessionSummary.md`).

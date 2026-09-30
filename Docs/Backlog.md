@@ -16,10 +16,9 @@ This file is the single source of truth for **ToDos**, **Requirements**, **Chang
 ---
 
 ## 2. ToDos
-*Tasks for the future, mostly for the developer.*
-- [ ] **Status**: Open | **Date**: 2026-02-10 | **Imp**: Medium | **Description**: Review `Technical_Specifications.md` to ensure full alignment with v0.7.11 code.
+- [x] **Status**: Completed | **Date**: 2026-09-29 | **Imp**: Medium | **Description**: Review and align `Technical_Specification.md` with active codebase per doc_check audit.
 - [ ] **Status**: Open | **Date**: 2026-02-10 | **Imp**: Low | **Description**: Verify if `Reference` folder can be fully archived/deleted.
-- [ ] **Status**: Open | **Date**: 2026-02-13 | **Imp**: Medium | **Description**: Refactor code based on `Plans/CodeCheckReports/2026-02-13_CodeCheck.md` (Ingestion complexity, XContest regex, Utils extraction).
+- [x] **Status**: Completed | **Date**: 2026-09-29 | **Imp**: Medium | **Description**: Refactor code based on `Plans/CodeCheckReports/2026-02-13_CodeCheck.md` & `2026-09-29_CodeCheck.md` (Ingestion modularized into `FileHandling.gs`, XContest rollover fixed, `Utils.gs` extraction).
 - [ ] **Status**: Open | **Date**: 2026-02-13 | **Imp**: High | **Description**: **Ways of Working**: Discuss and refine artifact storage policy. Ensure all important files/artifacts are stored WITHIN the project directory for portability across multiple computers. Stop using local `brain` directory for permanent storage.
 
 ---
@@ -60,7 +59,7 @@ This file is the single source of truth for **ToDos**, **Requirements**, **Chang
     - [x] **RQ-SCR-002.1** | **Status**: Implemented | **Phase**: 1 | **Description**: Reverse Geocoding (Town/Region).
     - [x] **RQ-SCR-002.2** | **Status**: Implemented | **Phase**: 1 | **Description**: Site Detection (Overpass).
     
-- [ ] **RQ-SCR-003** | **Status**: Open | **Phase**: 2 | **Description**: **XContest Verification**: Check if flight is already uploaded to XContest (via API or profile scan). Requires `XCONTEST_USERNAME` config. Refined: Match Date + Duration.
+- [x] **RQ-SCR-003** | **Status**: Implemented | **Phase**: 1 | **Description**: **XContest Verification**: Check if flight is already uploaded to XContest (via daily score scrape). Requires `XCONTEST_USERNAME` config. Refined: Match Date + Duration + Start Time rollover.
 
 - [ ] **RQ-SCR-004** | **Status**: Open | **Phase**: 2 | **Description**: **Historical Weather Enrichment**: Automatically prepopulate weather fields (`Wind@Launch`, `Wind@Landing`, `Cloud %`, `Cloudbase`, `Temp (C)`, `Observations`) based on flight date/time and coordinates from a historical weather API (e.g. Open-Meteo archive), editable by the pilot.
     - [ ] **RQ-SCR-004.1** | **Status**: Open | **Phase**: 2 | **Description**: Historical Weather API Integration (Open-Meteo Historical Archive / ERA5 reanalysis).
