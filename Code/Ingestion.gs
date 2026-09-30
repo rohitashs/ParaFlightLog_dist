@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-29 22:43:52
+ * Updated: 2026-09-29 23:04:10
  * 
  * MODULE: Ingestion Service
  * Handles File inputs (Drive, URL), ZIP extraction, Deduplication, and calls Parser.
@@ -279,134 +279,11 @@ function processFileById(fileId, source, deleteSource) {
 }
 
 /**
- * Upload and process a single file (Base64).
- * Used by Picker.html for granular progress.
- */
-function uploadAndProcessSingleFile(fileObj) {
-  try {
-    var raw = Utilities.base64Decode(fileObj.data);
-    var blob = Utilities.newBlob(raw, fileObj.type, fileObj.name);
-    var config = getParameters_();
-    
-    // 1. Save to Upload Folder (if configured, or Temp)
-    // Actually, processDriveFile_ expects a DriveFile. 
-    // We should create it in the Upload Folder first.
-    var uploadFolderId = config.UPLOAD_FOLDER_ID; // We need to ensure this is in Config
-    var folder;
-    if (uploadFolderId) {
-       folder = DriveApp.getFolderById(uploadFolderId);
-    } else {
-       folder = DriveApp.getRootFolder(); // Fallback
-    }
-    
-    var file = folder.createFile(blob);
-    var result = processDriveFile_(file, config);
-    
-    // Cleanup for Upload:
-    // User: "Successful files always get deleted from UPLOAD_FOLDER_ID... Failed files always get deleted..."
-    // Because processDriveFile_ -> processBlob_ now handles saving IGCs to Master/Error,
-    // we just need to delete the temp file here.
-    
-    file.setTrashed(true); // Always delete temp file from Upload Folder
-    
-    return {
-      success: true,
-      msg: result.processed ? 'Imported' : 'Skipped (Duplicate)',
-      processed: result.processed,
-      flights: result.count || 0,
-      fileId: file.getId()
-    };
-    
-  } catch (e) {
-    return { success: false, error: e.message };
-  }
-}
-
-/**
- * Manual Import from UI (File, Folder, or Direct URL)
- */
-function uiAddFlightFromIgc_() {
-  var ui = SpreadsheetApp.getUi();
-  var resp = ui.prompt('Import Flight', 'Enter Drive File/Folder ID or Direct URL:', ui.ButtonSet.OK_CANCEL);
-  if (resp.getSelectedButton() !== ui.Button.OK) return;
-  
-  var input = resp.getResponseText().trim();
-  if (!input) return;
-  
-  var config = getParameters_();
-  var ctx = { source: 'Manual' };
-  
-  try {
-    var driveId = getDriveIdFromUrl_(input) || input;
-    
-    // Check if input is a Drive Folder
-    try {
-      var folder = DriveApp.getFolderById(driveId);
-      if (folder) {
-        var files = getFilesRecursive_(folder, 10, 0);
-        if (files.length === 0) {
-          ui.alert('No supported flight files (.igc, .zip, etc.) found in folder: ' + folder.getName());
-          return;
-        }
-        var count = 0;
-        files.forEach(function(f) {
-          try {
-            var res = processDriveFile_(f, config);
-            if (res && res.processed) {
-              count += (res.count || 1);
-              handleFileCleanup_(f, 'SUCCESS', config);
-            } else {
-              handleFileCleanup_(f, 'ERROR', config);
-            }
-          } catch(err) {
-            handleFileCleanup_(f, 'ERROR', config);
-          }
-        });
-        SpreadsheetApp.getActive().toast('Import finished: ' + count + ' flight(s) from ' + folder.getName());
-        return;
-      }
-    } catch(eNotFolder) {
-      // Not a folder, proceed to file or URL
-    }
-
-    if (driveId && !input.match(/^https?:\/\/(?!drive\.google\.com)/)) {
-      var file = DriveApp.getFileById(driveId);
-      var res = processDriveFile_(file, config);
-      if (res && res.processed) {
-        handleFileCleanup_(file, 'SUCCESS', config);
-      } else {
-        handleFileCleanup_(file, 'ERROR', config);
-      }
-      SpreadsheetApp.getActive().toast('Import finished.');
-    } else if (input.match(/^https?:\/\//)) {
-      handleUrlImport_(input, ctx, config);
-      SpreadsheetApp.getActive().toast('Import finished.');
-    } else {
-      var file = DriveApp.getFileById(input);
-      var res = processDriveFile_(file, config);
-      if (res && res.processed) {
-        handleFileCleanup_(file, 'SUCCESS', config);
-      } else {
-        handleFileCleanup_(file, 'ERROR', config);
-      }
-      SpreadsheetApp.getActive().toast('Import finished.');
-    }
-  } catch (e) {
-    logImport_(new Date(), 'Manual URL/ID', 'UI Import', input, 'Error', e.message);
-    ui.alert('Import Failed: ' + e.message);
-  }
-}
-
-/**
  * Called from URLDialog.html
- * Phase 1: Accepts an external URL, Drive File ID/URL, or Drive Folder ID/URL.
+ * Accepts an external URL, Drive File ID/URL, or Drive Folder ID/URL.
  * Discovers and stages files (unzipping archives, recursively scanning folders).
  * Returns { success: true, count: number, files: [ { id: string, name: string, isDriveSource: boolean } ] }
  */
-function stageUrlImport(input) {
-  return stageUrlOrDriveImport(input);
-}
-
 function stageUrlOrDriveImport(input) {
   try {
     var config = getParameters_();
@@ -575,66 +452,6 @@ function stageBlob_(blob, fileName, config) {
     }
 }
 
-
-/**
- * Handle Client-Side Upload (Base64)
- * files = [ { name: 'foo.igc', data: 'base64...', type: 'application/...' }, ... ]
- */
-function handleClientSideUpload(files) {
-  var config = getParameters_();
-  var folderId = config.UPLOAD_FOLDER_ID;
-  var folder;
-  
-  try {
-    if (folderId) {
-      folder = DriveApp.getFolderById(folderId);
-    } else {
-      folder = DriveApp.getRootFolder();
-    }
-  } catch (e) {
-    return { error: 'Invalid Upload Folder ID: ' + e.message };
-  }
-  
-  var results = { uploaded: 0, processed: 0, flights: 0, errors: [], log: [] };
-  
-  if (!files || !Array.isArray(files)) {
-      return { error: 'Invalid data format (expected array)' };
-  }
-  
-  results.log.push('Received ' + files.length + ' files via Client-Side Upload');
-  
-  for (var i = 0; i < files.length; i++) {
-    var f = files[i];
-    if (!f.data || !f.name) continue;
-    
-    try {
-      // Decode Base64
-      var decoded = Utilities.base64Decode(f.data);
-      var blob = Utilities.newBlob(decoded, f.type || 'application/octet-stream', f.name);
-      
-      var file = folder.createFile(blob);
-      results.uploaded++;
-      
-      var res = processDriveFile_(file, config);
-      if (res && res.processed) {
-         results.processed++;
-         // Use accumulated count if available (for ZIPs), else 1
-         var count = res.count || 1; 
-         results.flights += count;
-         results.log.push('Success: ' + f.name + ' (' + count + ' flights)');
-      } else {
-         results.errors.push(f.name + ': Skipped');
-         results.log.push('Skipped: ' + f.name);
-      }
-    } catch (e) {
-      results.errors.push(f.name + ': ' + e.message);
-      results.log.push('Error: ' + f.name + ' ' + e.message);
-    }
-  }
-  
-  return results;
-}
-
 /**
  * Cleanup Helper: Move/Copy/Delete based on status and config
  */
@@ -697,16 +514,6 @@ function processDriveFile_(file, config) {
   // Let's NOT call cleanup here. The CALLER (scanWatchFolder, uploadAndProcess) knows the context.
   
   return result;
-}
-
-function handleUrlImport_(url, ctx, config) {
-  var res = UrlFetchApp.fetch(url);
-  var blob = res.getBlob();
-  // Try to guess filename from header or url
-  var name = 'download.igc'; // fallback
-  // ... (header parsing skipped for brevity, simplistic)
-  
-  return processBlob_(blob, name, 'URL', config);
 }
 
 function processBlob_(blob, fileName, fileId, config) {
@@ -828,7 +635,9 @@ function processSingleIgcBlob_(blob, fileName, fileId, outerName, config) {
   
   // Top landing check: if landing is within 100m of launch and landing site is blank
   if (launchFix && landFix && siteLaunch && !siteLand) {
-    var l2lDist = haversine_(launchFix.lat, launchFix.lon, landFix.lat, landFix.lon);
+    var l2lDist = (parsed.stats && typeof parsed.stats.straightDistKm === 'number')
+      ? (parsed.stats.straightDistKm * 1000)
+      : PARSER.haversine_(launchFix.lat, launchFix.lon, landFix.lat, landFix.lon);
     if (l2lDist <= 100) {
       siteLand = siteLaunch;
     }
@@ -850,7 +659,9 @@ function processSingleIgcBlob_(blob, fileName, fileId, outerName, config) {
      try {
        var flightDate = new Date(parsed.meta.dateIso); // Parse ISO date
        var durMin = Math.round(parsed.stats.durationSec / 60);
-       var startMin = Math.round(parsed.stats.startTime / 60);
+       var localTimeStr = GEO.formatInTimezone(new Date(parsed.stats.startTime * 1000), timeZone, 'HH:mm');
+       var localParts = localTimeStr ? localTimeStr.split(':') : null;
+       var startMin = localParts ? (parseInt(localParts[0], 10) * 60 + parseInt(localParts[1], 10)) : Math.round(parsed.stats.startTime / 60);
        xcStatus = XContest.checkFlight(flightDate, durMin, startMin, config);
        
        if (xcStatus.status === 'Error') {
@@ -1266,13 +1077,6 @@ function formatTime_(sec) {
   return ('0'+h).slice(-2) + ':' + ('0'+m).slice(-2) + ':' + ('0'+s).slice(-2);
 }
 
-function formatDuration_(sec) {
-  var h = Math.floor(sec / 3600);
-  var m = Math.floor((sec % 3600) / 60);
-  var s = Math.floor(sec % 60);
-  return h + ':' + ('0'+m).slice(-2) + ':' + ('0'+s).slice(-2);
-}
-
 function getDriveIdFromUrl_(url) {
   // Matches /file/d/ID/ or ?id=ID patterns
   var re = /[-\w]{25,}/;
@@ -1375,16 +1179,6 @@ function friendlyDuration_(sec) {
   var m = Math.round(sec / 60);
   if (m < 60) return m + ' min';
   return (m / 60).toFixed(1) + ' hrs';
-}
-
-function isHashSeen_(hashStr) {
-  var p = PropertiesService.getDocumentProperties();
-  return p.getProperty('HASH_' + hashStr) === '1';
-}
-
-function markHashSeen_(hashStr) {
-  var p = PropertiesService.getDocumentProperties();
-  p.setProperty('HASH_' + hashStr, '1');
 }
 
 /**

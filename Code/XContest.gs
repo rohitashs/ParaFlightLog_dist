@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-29 22:43:52
+ * Updated: 2026-09-29 23:04:10
  */
 /**
  * Paragliding Flight Log v2.0 - XContest Integration
@@ -99,7 +99,9 @@ XContest.checkFlight = function(flightDateObj, flightDurationMin, flightStartTim
            var startParts = timeMatches[0].split(':');
            var startMins = parseInt(startParts[0], 10) * 60 + parseInt(startParts[1], 10);
            
-           if (Math.abs(startMins - flightStartTimeMin) <= timeTol) {
+           var diffMins = Math.abs(startMins - flightStartTimeMin);
+           if (diffMins > 720) diffMins = 1440 - diffMins;
+           if (diffMins <= timeTol) {
                matched = true;
                matchType = "Start Time (Fallback)";
            }

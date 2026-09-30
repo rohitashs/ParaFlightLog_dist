@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-29 22:43:52
+ * Updated: 2026-09-29 23:04:10
  */
 /**
  * Paragliding Flight Log v2.0
@@ -227,3 +227,5 @@ function bearing_(lat1, lon1, lat2, lon2) {
 
 // Export to Namespace
 PARSER.parseIgc = parseIgc;
+PARSER.haversine_ = haversine_;
+PARSER.bearing_ = bearing_;

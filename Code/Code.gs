@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-29 22:43:52
+ * Updated: 2026-09-29 23:04:10
  * Test access verification: Verified GAS write access on 2026-09-25 08:26:00.
  * 
  * CORE MODULE: Orchestration Only.
@@ -320,14 +320,23 @@ function uiUpdateMissingDataAll_() {
   SpreadsheetApp.getActive().toast('Update missing data for all flights will be available soon.', 'Flight Log');
 }
 
+/**
+ * Public trigger entry point for automated Watch Folder background scans.
+ * Must not have a trailing underscore so GAS time-based triggers can dispatch it.
+ */
+function scanWatchFolderTrigger() {
+  scanWatchFolderNow_();
+}
+
 function setupWatcherTrigger_() {
   var triggers = ScriptApp.getProjectTriggers();
   for (var i = 0; i < triggers.length; i++) {
-    if (triggers[i].getHandlerFunction() === 'scanWatchFolderNow_') {
+    var handler = triggers[i].getHandlerFunction();
+    if (handler === 'scanWatchFolderNow_' || handler === 'scanWatchFolderTrigger') {
       ScriptApp.deleteTrigger(triggers[i]);
     }
   }
-  ScriptApp.newTrigger('scanWatchFolderNow_')
+  ScriptApp.newTrigger('scanWatchFolderTrigger')
     .timeBased()
     .everyMinutes(5)
     .create();
