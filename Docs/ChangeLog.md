@@ -11,8 +11,9 @@
     *   Corrected Total Hours calculation to parse `h:mm` flight durations into decimal hours using `SUMPRODUCT(IFERROR(TIMEVALUE(...) * 24, 0))`.
     *   Corrected column letter references for Launch Site (`AL`) and Launch Country (`AN`) that had shifted following Phase 2 weather integrations.
     *   Added `Admin: Refresh Dashboard` (`uiRefreshDashboard_`) menu action under `Flight Log > Admin` in `Code/Code.gs` and hooked it into `reapplyFormatting_()`.
-*   `[Imp]` **CR-UI-017 (Frozen Columns on Flights Sheet)**:
-    *   Configured `frozenCols: 4` in `Code/Config.gs` (`TABS.FLIGHTS.frozenCols`), `scaffoldFlights_`, and `reapplyFormatting_`, locking Columns A through D (`Flight No`, `FlightID`, `Date`, `Auto Summary`) during horizontal scrolling.
+*   `[Imp]` **CR-UI-017 (Frozen Columns on Flights Sheet & Category Unmerge)**:
+    *   Configured `frozenCols: 4` in `Code/Config.gs` (`TABS.FLIGHTS.frozenCols`), `scaffoldFlights_`, and `reapplyFormatting_`, locking Columns A through D (`FlightID`, `Status`, `Flight No`, `Auto Summary`) during horizontal scrolling.
+    *   Resolved Google Sheets freeze boundary conflict ("You can't freeze cells across a merged cell") by unmerging Row 3 for the first 4 columns (`A3:D3` unmerged individual cells inside the frozen pane) and re-merging Columns E to N (`E3:N3`, length 10) as the `'Flight Info'` category header. Executed `breakApart()` on Row 3 prior to re-scaffolding to cleanly disband legacy merges.
 *   `[Fix]` **Bug-UI-006 (Dynamic Dropdown Validation for Flight Type and XC Flight Class)**:
     *   Bound `Flight Type` data validation dynamically to `Lookups!G3:G` and `XC Flight Class` to `Lookups!H3:H` in `applyFlightsValidation_` (`Code/Scaffold.gs`).
     *   Reordered `scaffoldAll_` in `Code/Scaffold.gs` so `scaffoldLookups_` runs prior to `scaffoldFlights_`, ensuring lookup lists exist before validation rules are constructed.
