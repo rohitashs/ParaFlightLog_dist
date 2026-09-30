@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 16:06:26
+ * Updated: 2026-09-30 16:13:07
  */
 /**
  * Paragliding Flight Log v2.0 - Scaffolding & Setup
@@ -426,6 +426,7 @@ function scaffoldFlights_(ss) {
   }
   
   // Grouping & Formatting
+  sh.getRange(3, 1, 1, sh.getMaxColumns()).breakApart();
   var colIndex = 1;
   groups.forEach(function(g) {
     var groupLen = g.cols.length;
@@ -627,8 +628,57 @@ function reapplyFormatting_() {
      // Apply Header 1
      shF.getRange('A1:Z1').setBackground(TABS.FLIGHTS.color).setFontColor('white').setFontWeight('bold');
      
-     // Rescaffold groupings (this applies headers Row 3 & 4)
+     // Detect and safely remove deprecated columns (from right to left so data remains aligned)
+     var colsToDelete = [
+       'GlideRatio_LD (snap)',
+       'Trim_kmh (snap)',
+       'FullBar_kmh (snap)',
+       'Launch-Landing Dist (km)'
+     ];
+     var lastCol = shF.getLastColumn();
+     if (lastCol > 0) {
+       var currentHeaders = shF.getRange(4, 1, 1, lastCol).getValues()[0];
+       var toDelete = [];
+       for (var c = 0; c < currentHeaders.length; c++) {
+         if (colsToDelete.indexOf(currentHeaders[c]) !== -1) {
+           toDelete.push(c + 1);
+         }
+       }
+       toDelete.sort(function(a, b) { return b - a; });
+       toDelete.forEach(function(colIdx) {
+         shF.deleteColumn(colIdx);
+       });
+     }
+
+     // Unmerge Row 3 before applying new category merges
+     shF.getRange(3, 1, 1, shF.getMaxColumns()).breakApart();
+
+     // Flatten and rewrite Headers (Row 4)
      var groups = TABS.FLIGHTS.groups;
+     var flatHeaders = [];
+     groups.forEach(function(g) { flatHeaders = flatHeaders.concat(g.cols); });
+     shF.getRange(4, 1, 1, flatHeaders.length).setValues([flatHeaders]);
+     shF.getRange(4, 1, 1, flatHeaders.length).setFontWeight('bold').setBorder(true, true, true, true, true, true).setWrapStrategy(SpreadsheetApp.WrapStrategy.WRAP).setVerticalAlignment("top");
+
+     // Apply Column Notes / Tooltips (Row 4)
+     var colNotes = TABS.FLIGHTS.colNotes || {};
+     for (var c = 0; c < flatHeaders.length; c++) {
+       var colName = flatHeaders[c];
+       var cell = shF.getRange(4, c + 1);
+       if (colNotes[colName]) {
+         cell.setNote(colNotes[colName]);
+       } else {
+         cell.clearNote();
+       }
+     }
+
+     // Clear any leftover header cells beyond flatHeaders
+     var newLastCol = shF.getLastColumn();
+     if (newLastCol > flatHeaders.length) {
+       shF.getRange(3, flatHeaders.length + 1, 2, newLastCol - flatHeaders.length).clear();
+     }
+
+     // Rescaffold groupings (this applies headers Row 3 & 4)
      var colIndex = 1;
      groups.forEach(function(g) {
          var groupLen = g.cols.length;
@@ -666,7 +716,7 @@ function reapplyFormatting_() {
   // 4. Dashboard
   scaffoldDashboard_(ss);
 
-  ss.toast('Formatting Re-applied (Dashboard, Flights frozen columns, and Parameters).');
+  ss.toast('Formatting Re-applied: Obsolete columns eliminated, Parameters updated, Dashboard refreshed, Flights frozen.');
 }
 
 function backupSystemSheets_() {
