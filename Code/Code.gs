@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 11:38:38
+ * Updated: 2026-09-30 11:49:39
  * Test access verification: Verified GAS write access on 2026-09-25 08:26:00.
  * 
  * CORE MODULE: Orchestration Only.
@@ -334,6 +334,32 @@ function showUploadDialog() {
    FLIGHT MAINTENANCE & BULK OPERATIONS (RQ-SYS-007)
    ========================================================================================== */
 
+/**
+ * Scans the Flights sheet starting at Row 5 and returns only rows that contain a non-empty FlightID.
+ * Filters out empty rows that only contain validation rules/dropdowns.
+ * @param {GoogleAppsScript.Spreadsheet.Sheet} sh
+ * @return {Array<{row: number, id: string}>}
+ */
+function getActualFlightRows_(sh) {
+  if (!sh) return [];
+  var lastRow = sh.getLastRow();
+  if (lastRow < 5) return [];
+
+  var map = getColumnMap_(sh);
+  var idCol = map['FlightID'] || 1;
+  var numRows = lastRow - 4;
+  var displayVals = sh.getRange(5, idCol, numRows, 1).getDisplayValues();
+
+  var flightRows = [];
+  for (var i = 0; i < displayVals.length; i++) {
+    var rawId = String(displayVals[i][0]).trim();
+    if (rawId !== '') {
+      flightRows.push({ row: 5 + i, id: rawId });
+    }
+  }
+  return flightRows;
+}
+
 function getMaintenanceScopeInfo() {
   var ss = SpreadsheetApp.getActive();
   var sh = ss.getActiveSheet();
@@ -341,24 +367,24 @@ function getMaintenanceScopeInfo() {
   var isFlights = (actName === TABS.FLIGHTS.name);
   
   var shFlights = ss.getSheetByName(TABS.FLIGHTS.name);
-  var totalFlights = 0;
-  if (shFlights) {
-    var lastRow = shFlights.getLastRow();
-    if (lastRow >= 5) {
-      totalFlights = lastRow - 4;
-    }
-  }
+  var allFlights = getActualFlightRows_(shFlights);
+  var totalFlights = allFlights.length;
 
   var selectedCount = 0;
   var selectedRangeStr = '';
-  if (isFlights) {
+  if (isFlights && totalFlights > 0) {
     var activeRange = sh.getActiveRange();
     if (activeRange) {
-      var startRow = Math.max(5, activeRange.getRow());
-      var endRow = Math.min(sh.getLastRow(), activeRange.getLastRow());
-      if (endRow >= startRow && startRow <= sh.getLastRow()) {
-        selectedCount = (endRow - startRow) + 1;
-        selectedRangeStr = startRow + (selectedCount > 1 ? ('-' + endRow) : '');
+      var startRow = activeRange.getRow();
+      var endRow = activeRange.getLastRow();
+      var selectedFlights = allFlights.filter(function(item) {
+        return item.row >= startRow && item.row <= endRow;
+      });
+      selectedCount = selectedFlights.length;
+      if (selectedCount > 0) {
+        var minR = selectedFlights[0].row;
+        var maxR = selectedFlights[selectedFlights.length - 1].row;
+        selectedRangeStr = minR + (minR !== maxR ? ('-' + maxR) : '');
       }
     }
   }
@@ -374,39 +400,20 @@ function getMaintenanceScopeInfo() {
 function getMaintenanceTargetRows(scope) {
   var ss = SpreadsheetApp.getActive();
   var sh = ss.getSheetByName(TABS.FLIGHTS.name);
-  if (!sh) return [];
-  var lastRow = sh.getLastRow();
-  if (lastRow < 5) return [];
+  var allFlights = getActualFlightRows_(sh);
+  if (allFlights.length === 0) return [];
 
-  var map = getColumnMap_(sh);
-  var idCol = map['FlightID'] || 1;
-
-  var rows = [];
   if (scope === 'selected') {
     var activeRange = ss.getActiveSheet().getActiveRange();
-    if (activeRange) {
-      var startRow = Math.max(5, activeRange.getRow());
-      var endRow = Math.min(lastRow, activeRange.getLastRow());
-      for (var r = startRow; r <= endRow; r++) {
-        var idVal = sh.getRange(r, idCol).getValue();
-        if (typeof idVal === 'string' && idVal.indexOf('=HYPERLINK') === 0) {
-          var m = idVal.match(/,\s*"([^"]+)"\)/);
-          if (m) idVal = m[1];
-        }
-        rows.push({ row: r, id: String(idVal || ('Row ' + r)) });
-      }
-    }
+    if (!activeRange) return [];
+    var startRow = activeRange.getRow();
+    var endRow = activeRange.getLastRow();
+    return allFlights.filter(function(item) {
+      return item.row >= startRow && item.row <= endRow;
+    });
   } else {
-    for (var r = 5; r <= lastRow; r++) {
-      var idVal = sh.getRange(r, idCol).getValue();
-      if (typeof idVal === 'string' && idVal.indexOf('=HYPERLINK') === 0) {
-        var m = idVal.match(/,\s*"([^"]+)"\)/);
-        if (m) idVal = m[1];
-      }
-      rows.push({ row: r, id: String(idVal || ('Row ' + r)) });
-    }
+    return allFlights;
   }
-  return rows;
 }
 
 function executeFlightMaintenanceRow(rowNum, opConfig) {
@@ -654,26 +661,31 @@ function sortFlightsByDate_() {
   var ss = SpreadsheetApp.getActive();
   var sh = ss.getSheetByName(TABS.FLIGHTS.name);
   if (!sh) return;
-  var lastRow = sh.getLastRow();
-  if (lastRow < 6) {
-    ss.toast('Not enough flight rows to sort.', 'Flight Log');
+
+  var actualFlights = getActualFlightRows_(sh);
+  if (actualFlights.length < 2) {
+    ss.toast('Not enough flights to sort (' + actualFlights.length + ' found).', 'Flight Log');
     return;
   }
+
+  var minRow = actualFlights[0].row;
+  var maxRow = actualFlights[actualFlights.length - 1].row;
   var map = getColumnMap_(sh);
   var dateCol = map['Date'] || 8;
   var lastCol = sh.getLastColumn();
 
-  // Sort rows 5 to lastRow by Date descending
-  var dataRange = sh.getRange(5, 1, lastRow - 4, lastCol);
+  // Sort only actual flight rows (from minRow to maxRow) by Date descending
+  var numRows = maxRow - minRow + 1;
+  var dataRange = sh.getRange(minRow, 1, numRows, lastCol);
   dataRange.sort({ column: dateCol, ascending: false });
 
-  // Re-apply Flight No formula to preserve sequential numbering
+  // Re-apply Flight No formula only to actual flight rows
   var flightNoCol = map['Flight No'] || 3;
-  for (var r = 5; r <= lastRow; r++) {
+  for (var r = minRow; r <= maxRow; r++) {
     sh.getRange(r, flightNoCol).setFormula('=IFERROR(MAX(INDIRECT("C" & (ROW()+1) & ":C")), 0) + 1');
   }
 
-  ss.toast('Flights sorted chronologically by date.', 'Flight Log');
+  ss.toast('Flights (' + actualFlights.length + ') sorted chronologically by date.', 'Flight Log');
 }
 
 /**

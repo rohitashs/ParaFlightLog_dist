@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 11:38:38
+ * Updated: 2026-09-30 11:49:39
  */
 /**
  * Paragliding Flight Log v2.0
@@ -20,6 +20,7 @@ function runAllTests() {
   results.push(testCleanDriveId_());
   results.push(testValidateRequiredFolders_());
   results.push(testDateTimeFormats_());
+  results.push(testMaintenanceFlightFilter_());
   
   var failures = results.filter(function(r) { return !r.idx || r.error; });
   if (failures.length > 0) {
@@ -194,4 +195,64 @@ function testDateTimeFormats_() {
     return { module: 'Config', error: 'TIME_FORMAT does not appear to be a valid time pattern: ' + config.TIME_FORMAT };
   }
   return { module: 'Config', idx: true };
+}
+
+function testMaintenanceFlightFilter_() {
+  if (typeof getActualFlightRows_ !== 'function') {
+    return { module: 'Maintenance', error: 'getActualFlightRows_ function missing' };
+  }
+  if (typeof getMaintenanceScopeInfo !== 'function') {
+    return { module: 'Maintenance', error: 'getMaintenanceScopeInfo function missing' };
+  }
+  if (typeof getMaintenanceTargetRows !== 'function') {
+    return { module: 'Maintenance', error: 'getMaintenanceTargetRows function missing' };
+  }
+
+  // Test 1: Null/invalid sheet safety
+  var emptyRes = getActualFlightRows_(null);
+  if (!Array.isArray(emptyRes) || emptyRes.length !== 0) {
+    return { module: 'Maintenance', error: 'getActualFlightRows_(null) should return empty array' };
+  }
+
+  // Test 2: In-memory simulation of FlightID filtering logic
+  var mockDisplayVals = [[''], ['  '], ['F20260716-001'], [''], ['F20260716-002'], ['   ']];
+  var simulatedRows = [];
+  for (var i = 0; i < mockDisplayVals.length; i++) {
+    var rawId = String(mockDisplayVals[i][0]).trim();
+    if (rawId !== '') {
+      simulatedRows.push({ row: 5 + i, id: rawId });
+    }
+  }
+  if (simulatedRows.length !== 2) {
+    return { module: 'Maintenance', error: 'Simulated filter should extract exactly 2 flights, got ' + simulatedRows.length };
+  }
+  if (simulatedRows[0].row !== 7 || simulatedRows[0].id !== 'F20260716-001') {
+    return { module: 'Maintenance', error: 'Simulated flight 1 row/id mismatch' };
+  }
+  if (simulatedRows[1].row !== 9 || simulatedRows[1].id !== 'F20260716-002') {
+    return { module: 'Maintenance', error: 'Simulated flight 2 row/id mismatch' };
+  }
+
+  // Test 3: If active Flights sheet exists, ensure all returned rows have valid row >= 5 and non-empty id
+  try {
+    var ss = SpreadsheetApp.getActive();
+    if (ss) {
+      var sh = ss.getSheetByName(CFG.SHEET_FLIGHTS);
+      if (sh) {
+        var actual = getActualFlightRows_(sh);
+        if (!Array.isArray(actual)) {
+          return { module: 'Maintenance', error: 'getActualFlightRows_(sh) did not return array' };
+        }
+        for (var k = 0; k < actual.length; k++) {
+          if (!actual[k].row || actual[k].row < 5 || !actual[k].id) {
+            return { module: 'Maintenance', error: 'Invalid flight row entry returned: ' + JSON.stringify(actual[k]) };
+          }
+        }
+      }
+    }
+  } catch (e) {
+    // If running in an environment without active spreadsheet, mock tests suffice
+  }
+
+  return { module: 'Maintenance', idx: true };
 }

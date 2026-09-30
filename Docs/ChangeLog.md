@@ -1,5 +1,19 @@
 # Project Change Log
 
+## Session: Flight Maintenance Scope & Empty Row Detection
+**Date**: 2026-09-30
+**Versions**: v0.8.10
+**Focus**: Flight Maintenance Scope & Empty Row Detection (`Bug-SYS-005`).
+
+*   `[Fix]` **Bug-SYS-005 (Flight Maintenance Scope & Empty Row Detection)**:
+    *   Implemented `getActualFlightRows_(sh)` in `Code/Code.gs`: inspects `FlightID` column from row 5 down using `getDisplayValues()`, returning an array of `{ row, id }` strictly for populated flights.
+    *   Replaced `lastRow - 4` calculations in `getMaintenanceScopeInfo()` and `getMaintenanceTargetRows()` with `getActualFlightRows_()`, eliminating phantom flights caused by Google Sheets' `getLastRow()` returning row 24 due to scaffolded dropdown validations.
+    *   Bounded sorting in `sortFlightsByDate_()` to actual flight rows (`minRow` to `maxRow`), preventing blank formatted rows from being sorted or assigned sequential flight numbers.
+    *   Updated `FlightMaintenanceDialog.html`: displays `0 flights` with warning badge when the log is empty, dynamically disables the "Run Maintenance" button when no valid flights exist in the chosen scope, and updates status labels on selection change.
+    *   Added automated test `testMaintenanceFlightFilter_()` in `Code/Test.gs`.
+
+---
+
 ## Session: Parameter Date/Time Format Dropdowns & Plain Text Preservation
 **Date**: 2026-09-30
 **Versions**: v0.8.9

@@ -1,6 +1,6 @@
 <!--
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 11:38:38
+ * Updated: 2026-09-30 11:49:39
  * Unified Flight Maintenance Dialog (RQ-SYS-007)
  -->
 <!DOCTYPE html>
@@ -209,23 +209,47 @@
             var badgeAll = document.getElementById('badge-all');
             var rSel = document.getElementById('scope-selected');
             var rAll = document.getElementById('scope-all');
+            var btnRun = document.getElementById('btn-run');
 
             badgeAll.innerText = info.totalFlights + ' flights';
 
             if (info.isFlightsSheet && info.selectedRowCount > 0) {
                 badgeSel.innerText = info.selectedRowCount + ' selected (Rows ' + info.selectedRowRange + ')';
+                badgeSel.className = 'badge';
                 rSel.checked = true;
+                rSel.disabled = false;
             } else {
-                badgeSel.innerText = 'No selection on Flights sheet';
+                badgeSel.innerText = info.isFlightsSheet ? 'No flights in selection' : 'Not on Flights sheet';
                 badgeSel.className = 'badge badge-warn';
                 rAll.checked = true;
                 rSel.disabled = true;
+            }
+
+            if (info.totalFlights === 0) {
+                badgeAll.className = 'badge badge-warn';
+                if (!info.isFlightsSheet || info.selectedRowCount === 0) {
+                    btnRun.disabled = true;
+                    btnRun.title = 'No flights available in logbook';
+                }
+            } else {
+                badgeAll.className = 'badge';
             }
             log('Logbook contains ' + info.totalFlights + ' flights.');
         }
 
         function onScopeChange() {
-            // Scope change logic if needed
+            var selectedScope = document.querySelector('input[name="scope"]:checked').value;
+            var btnRun = document.getElementById('btn-run');
+            if (selectedScope === 'selected' && (!scopeInfo || scopeInfo.selectedRowCount === 0)) {
+                btnRun.disabled = true;
+                btnRun.title = 'No flights in current selection';
+            } else if (selectedScope === 'all' && (!scopeInfo || scopeInfo.totalFlights === 0)) {
+                btnRun.disabled = true;
+                btnRun.title = 'No flights in logbook';
+            } else {
+                btnRun.disabled = false;
+                btnRun.title = '';
+            }
         }
 
         function startMaintenance() {

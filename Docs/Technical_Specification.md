@@ -101,10 +101,11 @@ Fixed Header Schema (Row 4=Category, Row 5=Name). Data starts Row 6.
 ### `Code.gs` (Orchestration)
 *   **`onOpen(e)`**: Creates the "Flight Log" menu.
 *   **`showFlightMaintenanceDialog()` (`RQ-SYS-007`)**: Unified dialog launcher. Opens `FlightMaintenanceDialog.html` modal for batch maintenance operations.
-*   **`getMaintenanceScopeInfo()`**: Detects active row selection on `Flights` tab and counts total flights.
-*   **`getMaintenanceTargetRows(scope)`**: Returns array of target row indices and flight IDs for batch processing.
+*   **`getActualFlightRows_(sh)` (`Bug-SYS-005`)**: Inspects the `FlightID` column from row 5 down using `getDisplayValues()` to extract `{ row, id }` strictly for populated flights, safely ignoring trailing rows that only contain scaffolded validations.
+*   **`getMaintenanceScopeInfo()`**: Detects active row selection on `Flights` tab and counts actual flights populated with a `FlightID`.
+*   **`getMaintenanceTargetRows(scope)`**: Returns array of target row indices and flight IDs for batch processing filtered against actual flights.
 *   **`executeFlightMaintenanceRow(rowNum, opConfig)`**: Executes selected operations for a single row (weather backfill, geo resolution, XContest verification, physics recompute, XC rescore).
-*   **`sortFlightsByDate_()`**: Chronologically sorts data rows descending by `Date` and re-indexes sequential `Flight No` formulas.
+*   **`sortFlightsByDate_()`**: Chronologically sorts data rows descending by `Date` and re-indexes sequential `Flight No` formulas, bounded strictly to actual flight rows.
 *   **`getParameters_()`**: Reads configuration from the `Parameters` sheet.
 *   **`uiAddManualFlight_()`**: Helper to trigger manual flight entry.
 *   **`showUrlDialog_()`**: Shows the IGC URL import dialog.
