@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-29 19:01:56
+ * Updated: 2026-09-29 19:07:55
  */
 /**
  * Paragliding Flight Log v2.0 - Scaffolding & Setup
@@ -238,6 +238,10 @@ function scaffoldParameters_(ss) {
       }
       // Use existing value if available, else default
       var val = (existingMap[p.key] !== undefined && existingMap[p.key] !== '') ? existingMap[p.key] : p.val;
+      // Upgrade default if legacy config lacks google
+      if (p.key === 'GEO_REV_PROVIDERS' && val && String(val).indexOf('google') === -1) {
+        val = p.val;
+      }
       var desc = p.desc;
       var isFolder = (p.key === 'WATCH_FOLDER_ID' || p.key === 'UPLOAD_FOLDER_ID' || p.key === 'MASTER_LOG_FOLDER_ID' || p.key === 'ERROR_FOLDER_ID');
       if (isFolder && val) {
@@ -455,7 +459,24 @@ function scaffoldFlights_(ss) {
 function updateValidationOnly_() {
   var ss = SpreadsheetApp.getActive();
   var sh = ss.getSheetByName(TABS.FLIGHTS.name);
-  if (sh) applyFlightsValidation_(sh);
+  if (sh) {
+    applyFlightsValidation_(sh);
+    // Also re-apply column notes (row 4)
+    var colNotes = TABS.FLIGHTS.colNotes || {};
+    var lastCol = sh.getLastColumn();
+    if (lastCol > 0) {
+      var headers = sh.getRange(4, 1, 1, lastCol).getValues()[0];
+      for (var c = 0; c < headers.length; c++) {
+        var colName = headers[c];
+        var cell = sh.getRange(4, c + 1);
+        if (colNotes[colName]) {
+          cell.setNote(colNotes[colName]);
+        } else {
+          cell.clearNote();
+        }
+      }
+    }
+  }
   
   var shEq = ss.getSheetByName(TABS.EQUIPMENT.name);
   if (shEq) applyEquipmentValidation_(shEq);
@@ -463,7 +484,7 @@ function updateValidationOnly_() {
   // Also refresh parameters in case new ones added
   scaffoldParameters_(ss);
   
-  ss.toast('Validation rules and Parameters updated.');
+  ss.toast('Validation rules, Column Notes, and Parameters updated.');
 }
 
 function applyFlightsValidation_(sh) {
