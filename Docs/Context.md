@@ -1,7 +1,7 @@
 # Project Context & Ways of Working (Source of Truth)
 
 ## 🧠 Agent Memory & Context
-**Status**: Active Development (v0.8.6)
+**Status**: Active Development (v0.8.7)
 **Last Session Focus**: Automated Historical Weather Enrichment (`RQ-SCR-004`), Unified Flight Maintenance Dialog (`RQ-SYS-007`), In-App User Guide & Metric Dictionary (`RQ-SYS-006.1`), Pilot Profile Tab (`RQ-SYS-009.1`), Dynamic Dashboard Formulas (`CR-SYS-001`).
 **Next Focus**: Setup Wizard & Instance Templating (`RQ-SYS-008`), Dashboard & Inspector Pilot Profile Integration (`RQ-SYS-009.2`), Flight Inspector Enhancements (`RQ-SYS-004`), XContest Matching Investigation (`Bug-SCR-002`).
 

@@ -85,7 +85,7 @@ Tools for managing the system's lifecycle.
 *   **First Time Setup & Scaffold**: A "Scaffold" feature automatically creates all necessary sheets, headers, and validation rules if they are missing or deleted.
 *   **Interactive Setup Wizard & Templating (`RQ-SYS-008`)**: Streamlined onboarding workflow designed to replace manual script setup with a copyable sheet template and an interactive setup wizard guiding initial folder configuration, pilot credentials, equipment defaults, and trigger installation.
 *   **Configuration**: A simpler `Parameters` sheet allows users to change system behavior (e.g. "Min Height Gain", "Watch Folder ID") without touching code.
-*   **Maintenance**: Admin tools to "Reset System", "Reformat Sheets", and "Backup Data".
+*   **Maintenance**: Admin tools to "Reset System", "Reformat Sheets", and "Backup Data" (creates safety copies of `Flights`, `Pilot_Profile`, `Equipment`, `Parameters`, and `Lookups`).
 *   **Equipment Manager**: dedicated tabs for `Wings`, `Harnesses`, and `Reserves`. Rows added here immediately appear in the Flights dropdowns.
 
 ## 9. ⚙️ System Internals

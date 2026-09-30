@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 01:44:41
+ * Updated: 2026-09-30 10:17:38
  */
 /**
  * Paragliding Flight Log v2.0 - Scaffolding & Setup
@@ -625,15 +625,27 @@ function backupSystemSheets_() {
         var existing = ss.getSheetByName(destName);
         if (existing) ss.deleteSheet(existing);
         src.copyTo(ss).setName(destName);
+        return true;
      }
+     return false;
   };
   
-  backup(TABS.FLIGHTS.name, 'Backup ' + TABS.FLIGHTS.name);
-  backup(TABS.EQUIPMENT.name, 'Backup ' + TABS.EQUIPMENT.name);
-  backup(TABS.PARAMETERS.name, 'Backup ' + TABS.PARAMETERS.name);
-  if (TABS.PILOT_PROFILE) backup(TABS.PILOT_PROFILE.name, 'Backup ' + TABS.PILOT_PROFILE.name);
+  var tabsToBackup = [
+    TABS.FLIGHTS.name,
+    TABS.PILOT_PROFILE ? TABS.PILOT_PROFILE.name : 'Pilot_Profile',
+    TABS.EQUIPMENT.name,
+    TABS.PARAMETERS.name,
+    TABS.LOOKUPS.name
+  ];
   
-  ss.toast('Backup created: Flights, Equipment, Parameters & Pilot Profile');
+  var backedUp = [];
+  tabsToBackup.forEach(function(name) {
+    if (backup(name, 'Backup ' + name)) {
+      backedUp.push(name);
+    }
+  });
+  
+  ss.toast('Backup created: ' + backedUp.join(', '));
 }
 
 function deleteSystemSheets_() {

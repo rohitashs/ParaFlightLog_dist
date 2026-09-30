@@ -120,6 +120,7 @@ This file is the single source of truth for **ToDos**, **Requirements**, **Chang
 
 - [ ] **CR-UI-001** | **Status**: Blocked | **Date**: 2026-02-08 | **Req**: RQ-SYS-002 | **Description**: **Smart Chip Dropdowns**: Use new Oval/Chip style. *Blocked by Apps Script API limitations*.
 - [x] **CR-ADM-001** | **Status**: Implemented | **Date**: 2026-02-13 | **Req**: RQ-SYS-001 | **Description**: **Backup Parameters**: Include `Parameters` sheet in `Admin: Backup Data` menu routine.
+- [x] **CR-ADM-002** | **Status**: Implemented | **Date**: 2026-09-30 | **Req**: RQ-SYS-001 | **Description**: **Backup Data Enhancement**: Include `Lookups` tab in `Admin: Backup Data` so all 5 essential data tabs (`Flights`, `Pilot_Profile`, `Equipment`, `Parameters`, `Lookups`) are backed up.
 - [x] **CR-SYS-001** | **Status**: Implemented | **Date**: 2026-09-30 | **Req**: RQ-SYS-005 | **Description**: **Dashboard Finalization**: Replaced placeholder KPI values with live formulas (Total Flights, Total Hours, Total Distance, Flights this year) and dynamic QUERY formulas for Top 5 Duration, Top 5 Distance, Recent Flights, and Countries Flown.
 
 ---

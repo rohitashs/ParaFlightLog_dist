@@ -1,5 +1,16 @@
 # Project Change Log
 
+## Session: Admin Backup Data Enhancement
+**Date**: 2026-09-30
+**Versions**: v0.8.7
+**Focus**: Admin Backup Data tab coverage (`CR-ADM-002`).
+
+*   `[Imp]` **CR-ADM-002 (Admin Backup Data Coverage)**:
+    *   Enhanced `backupSystemSheets_` in `Code/Scaffold.gs` to back up all 5 core user data sheets: `Flights`, `Pilot_Profile`, `Equipment`, `Parameters`, and `Lookups` (previously omitted `Lookups`).
+    *   Updated backup routine to dynamically iterate over target sheets and report all backed-up sheets in the UI toast notification.
+
+---
+
 ## Session: Historical Weather, Unified Maintenance, In-App User Guide, Pilot Profile & Dynamic Dashboard
 **Date**: 2026-09-30
 **Versions**: v0.8.6
