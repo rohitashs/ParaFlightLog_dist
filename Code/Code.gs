@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-29 23:17:49
+ * Updated: 2026-09-30 01:44:41
  * Test access verification: Verified GAS write access on 2026-09-25 08:26:00.
  * 
  * CORE MODULE: Orchestration Only.
@@ -24,10 +24,8 @@ function onOpen(e) {
         .addItem('Add flight from Upload (Local File)...', 'showUploadDialog')
         .addItem('Scan Watch Folder Now', 'showScanDialog'))
     .addSubMenu(ui.createMenu('Flight maintenance')
-        .addItem('Recompute Selected Flights', 'uiRecomputeSelected_')
-        .addItem('Sort All Flights by Date', 'sortFlightsByDate_')
-        .addItem('Update missing data for selected Flights', 'uiUpdateMissingDataSelected_')
-        .addItem('Update missing data for all flights', 'uiUpdateMissingDataAll_'))
+        .addItem('Flight Maintenance...', 'showFlightMaintenanceDialog')
+        .addItem('Sort All Flights by Date', 'sortFlightsByDate_'))
     .addSeparator()
     .addSubMenu(ui.createMenu('Admin')
         .addItem('First Time Setup (Full Scaffold)', 'scaffoldAll_')
@@ -111,8 +109,12 @@ function showInspectorSidebar() {
   SpreadsheetApp.getUi().showSidebar(html);
 }
 
-function sortFlightsByDate_() {
-  SpreadsheetApp.getActive().toast('Sort functionality coming soon!', 'Flight Log');
+function showFlightMaintenanceDialog() {
+  var html = HtmlService.createTemplateFromFile('FlightMaintenanceDialog')
+      .evaluate()
+      .setWidth(560)
+      .setHeight(580);
+  SpreadsheetApp.getUi().showModalDialog(html, 'Flight Maintenance');
 }
 
 function showScanDialog() {
@@ -308,16 +310,332 @@ function showUploadDialog() {
   SpreadsheetApp.getUi().showModalDialog(html, 'Flight Import');
 }
 
-function uiRecomputeSelected_() {
-  SpreadsheetApp.getUi().alert('Recompute not yet implemented.');
+/* ==========================================================================================
+   FLIGHT MAINTENANCE & BULK OPERATIONS (RQ-SYS-007)
+   ========================================================================================== */
+
+function getMaintenanceScopeInfo() {
+  var ss = SpreadsheetApp.getActive();
+  var sh = ss.getActiveSheet();
+  var actName = sh.getName();
+  var isFlights = (actName === TABS.FLIGHTS.name);
+  
+  var shFlights = ss.getSheetByName(TABS.FLIGHTS.name);
+  var totalFlights = 0;
+  if (shFlights) {
+    var lastRow = shFlights.getLastRow();
+    if (lastRow >= 5) {
+      totalFlights = lastRow - 4;
+    }
+  }
+
+  var selectedCount = 0;
+  var selectedRangeStr = '';
+  if (isFlights) {
+    var activeRange = sh.getActiveRange();
+    if (activeRange) {
+      var startRow = Math.max(5, activeRange.getRow());
+      var endRow = Math.min(sh.getLastRow(), activeRange.getLastRow());
+      if (endRow >= startRow && startRow <= sh.getLastRow()) {
+        selectedCount = (endRow - startRow) + 1;
+        selectedRangeStr = startRow + (selectedCount > 1 ? ('-' + endRow) : '');
+      }
+    }
+  }
+
+  return {
+    isFlightsSheet: isFlights,
+    selectedRowCount: selectedCount,
+    selectedRowRange: selectedRangeStr,
+    totalFlights: totalFlights
+  };
 }
 
-function uiUpdateMissingDataSelected_() {
-  SpreadsheetApp.getActive().toast('Update missing data for selected flights will be available soon.', 'Flight Log');
+function getMaintenanceTargetRows(scope) {
+  var ss = SpreadsheetApp.getActive();
+  var sh = ss.getSheetByName(TABS.FLIGHTS.name);
+  if (!sh) return [];
+  var lastRow = sh.getLastRow();
+  if (lastRow < 5) return [];
+
+  var map = getColumnMap_(sh);
+  var idCol = map['FlightID'] || 1;
+
+  var rows = [];
+  if (scope === 'selected') {
+    var activeRange = ss.getActiveSheet().getActiveRange();
+    if (activeRange) {
+      var startRow = Math.max(5, activeRange.getRow());
+      var endRow = Math.min(lastRow, activeRange.getLastRow());
+      for (var r = startRow; r <= endRow; r++) {
+        var idVal = sh.getRange(r, idCol).getValue();
+        if (typeof idVal === 'string' && idVal.indexOf('=HYPERLINK') === 0) {
+          var m = idVal.match(/,\s*"([^"]+)"\)/);
+          if (m) idVal = m[1];
+        }
+        rows.push({ row: r, id: String(idVal || ('Row ' + r)) });
+      }
+    }
+  } else {
+    for (var r = 5; r <= lastRow; r++) {
+      var idVal = sh.getRange(r, idCol).getValue();
+      if (typeof idVal === 'string' && idVal.indexOf('=HYPERLINK') === 0) {
+        var m = idVal.match(/,\s*"([^"]+)"\)/);
+        if (m) idVal = m[1];
+      }
+      rows.push({ row: r, id: String(idVal || ('Row ' + r)) });
+    }
+  }
+  return rows;
 }
 
-function uiUpdateMissingDataAll_() {
-  SpreadsheetApp.getActive().toast('Update missing data for all flights will be available soon.', 'Flight Log');
+function executeFlightMaintenanceRow(rowNum, opConfig) {
+  var ss = SpreadsheetApp.getActive();
+  var sh = ss.getSheetByName(TABS.FLIGHTS.name);
+  if (!sh) return { success: false, error: 'Flights sheet missing' };
+
+  var map = getColumnMap_(sh);
+  var lastCol = sh.getLastColumn();
+  var rowValues = sh.getRange(rowNum, 1, 1, lastCol).getValues()[0];
+
+  var getV = function(colName) {
+    var idx = map[colName];
+    return idx ? rowValues[idx - 1] : '';
+  };
+
+  var setV = function(colName, val) {
+    var idx = map[colName];
+    if (idx) {
+      sh.getRange(rowNum, idx).setValue(val);
+      rowValues[idx - 1] = val;
+    }
+  };
+
+  var updated = [];
+  var config = getParameters_();
+
+  // 1. Weather Backfill (RQ-SCR-004)
+  if (opConfig.weather) {
+    try {
+      var launchLat = parseFloat(getV('Launch Lat'));
+      var launchLon = parseFloat(getV('Launch Lon'));
+      var launchAlt = parseFloat(getV('Launch Alt (m)'));
+      var landLat = parseFloat(getV('Landing Lat'));
+      var landLon = parseFloat(getV('Landing Lon'));
+      var landAlt = parseFloat(getV('Landing Alt (m)'));
+      var dateRaw = getV('Date');
+      var dateIso = '';
+      if (dateRaw instanceof Date) {
+        dateIso = Utilities.formatDate(dateRaw, 'UTC', 'yyyy-MM-dd');
+      } else if (dateRaw) {
+        dateIso = String(dateRaw).trim().slice(0, 10);
+      }
+
+      if (launchLat && launchLon && dateIso) {
+        var lFix = { lat: launchLat, lon: launchLon, alt: launchAlt };
+        var dFix = (landLat && landLon) ? { lat: landLat, lon: landLon, alt: landAlt } : null;
+        
+        var startTimeSec = 43200;
+        var lTime = getV('Launch Time');
+        if (lTime && typeof lTime === 'string') {
+          var parts = lTime.split(':');
+          if (parts.length >= 2) startTimeSec = parseInt(parts[0], 10) * 3600 + parseInt(parts[1], 10) * 60;
+        }
+
+        var endTimeSec = startTimeSec + 3600;
+        var landTime = getV('Landing Time');
+        if (landTime && typeof landTime === 'string') {
+          var lparts = landTime.split(':');
+          if (lparts.length >= 2) endTimeSec = parseInt(lparts[0], 10) * 3600 + parseInt(lparts[1], 10) * 60;
+        }
+
+        var wx = WEATHER.getEnrichment(lFix, dFix, dateIso, startTimeSec, endTimeSec, config);
+        if (wx && !wx.error) {
+          if (wx.windLaunch) setV('Wind@Launch', wx.windLaunch);
+          if (wx.windLanding) setV('Wind@Landing', wx.windLanding);
+          if (wx.cloudPct) setV('Cloud %', wx.cloudPct);
+          if (wx.cloudbase) setV('Cloudbase', wx.cloudbase);
+          if (wx.tempC) setV('Temp (C)', wx.tempC);
+          if (wx.observations) setV('Observations', wx.observations);
+          updated.push('Weather');
+        }
+      }
+    } catch (wErr) {
+      console.warn('Maintenance Weather error row ' + rowNum, wErr);
+    }
+  }
+
+  // 2. Geo Backfill
+  if (opConfig.geo) {
+    try {
+      var lLat = parseFloat(getV('Launch Lat'));
+      var lLon = parseFloat(getV('Launch Lon'));
+      var lAlt = parseFloat(getV('Launch Alt (m)'));
+      var dLat = parseFloat(getV('Landing Lat'));
+      var dLon = parseFloat(getV('Landing Lon'));
+      var dAlt = parseFloat(getV('Landing Alt (m)'));
+
+      if (lLat && lLon) {
+        if (!getV('Launch Town') || !getV('Launch Country')) {
+          var geoL = GEO.getReverseGeo(lLat, lLon, config);
+          if (geoL && !geoL.error) {
+            if (geoL.town) setV('Launch Town', geoL.town);
+            if (geoL.country) setV('Launch Country', geoL.country);
+            if (geoL.region) setV('Launch Region', geoL.region);
+            updated.push('Geo(Launch)');
+          }
+        }
+        if (!getV('Launch Site')) {
+          var siteL = GEO.getNearestSite(lLat, lLon, config.OSM_RADIUS_M || 3000, config, 'takeoff', lAlt);
+          if (siteL) {
+            setV('Launch Site', siteL);
+            updated.push('Launch Site');
+          }
+        }
+      }
+
+      if (dLat && dLon) {
+        if (!getV('Landing Town') || !getV('Landing Country')) {
+          var geoD = GEO.getReverseGeo(dLat, dLon, config);
+          if (geoD && !geoD.error) {
+            if (geoD.town) setV('Landing Town', geoD.town);
+            if (geoD.country) setV('Landing Country', geoD.country);
+            if (geoD.region) setV('Landing Region', geoD.region);
+            updated.push('Geo(Landing)');
+          }
+        }
+        if (!getV('Landing Site')) {
+          var siteD = GEO.getNearestSite(dLat, dLon, config.OSM_RADIUS_M || 3000, config, 'landing', dAlt);
+          if (siteD) {
+            setV('Landing Site', siteD);
+            updated.push('Landing Site');
+          }
+        }
+      }
+    } catch (gErr) {
+      console.warn('Maintenance Geo error row ' + rowNum, gErr);
+    }
+  }
+
+  // 3. XContest Re-verification
+  if (opConfig.xcontest && config.XCONTEST_USERNAME) {
+    try {
+      var dVal = getV('Date');
+      var fDate = dVal ? new Date(dVal) : null;
+      var durStr = String(getV('Flight Duration') || '');
+      var durParts = durStr.split(':');
+      var durMin = durParts.length >= 2 ? (parseInt(durParts[0], 10) * 60 + parseInt(durParts[1], 10)) : 0;
+      var lTimeStr = String(getV('Launch Time') || '');
+      var lParts = lTimeStr.split(':');
+      var startMin = lParts.length >= 2 ? (parseInt(lParts[0], 10) * 60 + parseInt(lParts[1], 10)) : 720;
+
+      if (fDate && durMin > 0) {
+        var xcStatus = XContest.checkFlight(fDate, durMin, startMin, config);
+        if (xcStatus && xcStatus.status) {
+          var cellVal = xcStatus.status;
+          if (cellVal === 'Yes' && xcStatus.url) {
+            cellVal = '=HYPERLINK("' + xcStatus.url + '", "Yes")';
+          }
+          setV('XContest', cellVal);
+          updated.push('XContest');
+        }
+      }
+    } catch (xErr) {
+      console.warn('Maintenance XContest error row ' + rowNum, xErr);
+    }
+  }
+
+  // 4. Physics & XC Scoring (Requires Master IGC)
+  if (opConfig.physics || opConfig.scoring) {
+    try {
+      var igcVal = String(getV('IGC File') || '');
+      var masterFolderId = config.MASTER_LOG_FOLDER_ID;
+      var masterFile = null;
+
+      var fileNameMatch = igcVal.match(/,\s*"([^"]+)"\)/);
+      var rawFileName = fileNameMatch ? fileNameMatch[1] : igcVal;
+      var idMatch = igcVal.match(/id=([a-zA-Z0-9_-]+)/);
+
+      if (idMatch && idMatch[1]) {
+        try { masterFile = DriveApp.getFileById(idMatch[1]); } catch(e) {}
+      }
+      if (!masterFile && masterFolderId && rawFileName) {
+        var mfFolder = DriveApp.getFolderById(masterFolderId);
+        var files = mfFolder.getFilesByName(rawFileName);
+        if (files.hasNext()) masterFile = files.next();
+      }
+
+      if (masterFile) {
+        var blob = masterFile.getBlob();
+        var parsed = PARSER.parseIgc(blob.getDataAsString(), masterFile.getName());
+        if (parsed && parsed.fixes && parsed.fixes.length > 5) {
+          if (opConfig.physics) {
+            var analysis = ANALYSIS.analyzeFlight(parsed.fixes, config);
+            if (analysis && analysis.modes) {
+              var pct = analysis.modes.pct;
+              var raw = analysis.modes.raw;
+              setV('Thermal %', (pct.thermal * 100).toFixed(2) + '%');
+              setV('Thermals Count', raw.thermal.count);
+              setV('Thermal Avg (m/s)', raw.thermal.avg.toFixed(1));
+              setV('Thermal Best (m/s)', raw.thermal.best.toFixed(1));
+              setV('Soar %', (pct.soar * 100).toFixed(2) + '%');
+              setV('Efficiency', raw.soar.efficiency || '');
+              setV('Glide %', (pct.glide * 100).toFixed(2) + '%');
+              setV('Glide L/D', raw.glide.ld || '');
+              setV('Sink %', (pct.sink * 100).toFixed(2) + '%');
+              setV('Sink Time', Math.round(raw.sink.time / 60) + ' min');
+              updated.push('Physics');
+            }
+          }
+          if (opConfig.scoring) {
+            var scoring = SCORING.calculateXcScore(parsed.fixes);
+            if (scoring && scoring.best) {
+              var best = scoring.best;
+              var tri = scoring.triangle || {};
+              setV('XC Distance (km)', best.dist ? best.dist.toFixed(1) : '');
+              setV('XC Score', best.score ? best.score.toFixed(1) : '');
+              setV('XC Flight Class', best.type || '');
+              setV('FAI Triangle (km)', (tri.valid && tri.dist) ? tri.dist.toFixed(1) : '');
+              setV('Points (World)', best.pointsWorld ? best.pointsWorld.toFixed(1) : '');
+              setV('Points (National)', best.score ? best.score.toFixed(1) : '');
+              setV('Closed?', tri.closed ? 'Yes' : 'No');
+              updated.push('Scoring');
+            }
+          }
+        }
+      }
+    } catch (pErr) {
+      console.warn('Maintenance Physics/Scoring error row ' + rowNum, pErr);
+    }
+  }
+
+  return { success: true, updated: updated };
+}
+
+function sortFlightsByDate_() {
+  var ss = SpreadsheetApp.getActive();
+  var sh = ss.getSheetByName(TABS.FLIGHTS.name);
+  if (!sh) return;
+  var lastRow = sh.getLastRow();
+  if (lastRow < 6) {
+    ss.toast('Not enough flight rows to sort.', 'Flight Log');
+    return;
+  }
+  var map = getColumnMap_(sh);
+  var dateCol = map['Date'] || 8;
+  var lastCol = sh.getLastColumn();
+
+  // Sort rows 5 to lastRow by Date descending
+  var dataRange = sh.getRange(5, 1, lastRow - 4, lastCol);
+  dataRange.sort({ column: dateCol, ascending: false });
+
+  // Re-apply Flight No formula to preserve sequential numbering
+  var flightNoCol = map['Flight No'] || 3;
+  for (var r = 5; r <= lastRow; r++) {
+    sh.getRange(r, flightNoCol).setFormula('=IFERROR(MAX(INDIRECT("C" & (ROW()+1) & ":C")), 0) + 1');
+  }
+
+  ss.toast('Flights sorted chronologically by date.', 'Flight Log');
 }
 
 /**

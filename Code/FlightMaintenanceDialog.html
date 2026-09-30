@@ -1,0 +1,345 @@
+<!--
+ * Paragliding Flight Log v2.0
+ * Updated: 2026-09-30 01:44:41
+ * Unified Flight Maintenance Dialog (RQ-SYS-007)
+ -->
+<!DOCTYPE html>
+<html>
+
+<head>
+    <base target="_top">
+    <?!= HtmlService.createTemplateFromFile('Style').evaluate().getContent(); ?>
+    <style>
+        .section-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #616161;
+            font-weight: 700;
+            margin-top: 10px;
+            margin-bottom: 6px;
+        }
+
+        .scope-card, .ops-card {
+            background-color: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 10px 12px;
+            margin-bottom: 12px;
+        }
+
+        .radio-item, .check-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            color: #333;
+        }
+
+        .radio-item:last-child, .check-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .radio-item input, .check-item input {
+            margin-right: 8px;
+            accent-color: #2196F3;
+        }
+
+        .scope-desc {
+            font-size: 11px;
+            color: #757575;
+            margin-left: 24px;
+            margin-top: -3px;
+            margin-bottom: 6px;
+        }
+
+        .badge {
+            background-color: #e3f2fd;
+            color: #1976d2;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-left: 6px;
+        }
+
+        .badge-warn {
+            background-color: #fff3e0;
+            color: #e65100;
+        }
+
+        .control-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+            margin-bottom: 8px;
+        }
+
+        button.action {
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        button.action:disabled {
+            background-color: #b0bec5;
+            cursor: not-allowed;
+        }
+
+        button.secondary {
+            background-color: #f1f3f4;
+            color: #333;
+            border: 1px solid #ccc;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header-large text-blue">Flight Maintenance</div>
+
+    <div class="main-content">
+        <div class="section-label">1. Target Scope</div>
+        <div class="scope-card">
+            <label class="radio-item">
+                <input type="radio" name="scope" id="scope-selected" value="selected" checked onchange="onScopeChange()">
+                <span>Selected Rows</span>
+                <span id="badge-selected" class="badge">Detecting...</span>
+            </label>
+            <div id="desc-selected" class="scope-desc">Current row selection on Flights tab.</div>
+
+            <label class="radio-item">
+                <input type="radio" name="scope" id="scope-all" value="all" onchange="onScopeChange()">
+                <span>All Flights</span>
+                <span id="badge-all" class="badge">Detecting...</span>
+            </label>
+            <div id="desc-all" class="scope-desc">All flights currently in the Flights logbook.</div>
+        </div>
+
+        <div class="section-label">2. Operations to Perform</div>
+        <div class="ops-card">
+            <label class="check-item">
+                <input type="checkbox" id="op-weather" checked>
+                <span><strong>Backfill Weather</strong> (Open-Meteo & Visual Crossing)</span>
+            </label>
+            <label class="check-item">
+                <input type="checkbox" id="op-geo" checked>
+                <span><strong>Backfill Geo & Sites</strong> (Reverse geo, Launch/Landing sites)</span>
+            </label>
+            <label class="check-item">
+                <input type="checkbox" id="op-xcontest" checked>
+                <span><strong>Re-verify XContest</strong> (Check flight upload status)</span>
+            </label>
+            <label class="check-item">
+                <input type="checkbox" id="op-physics">
+                <span><strong>Recompute Physics</strong> (Thermals, Soar, Glide from IGC)</span>
+            </label>
+            <label class="check-item">
+                <input type="checkbox" id="op-scoring">
+                <span><strong>Recalculate XC Scoring</strong> (FAI Triangles, Turnpoints from IGC)</span>
+            </label>
+            <label class="check-item">
+                <input type="checkbox" id="op-sort">
+                <span><strong>Sort All Flights by Date</strong> (Newest first, re-index Flight No)</span>
+            </label>
+        </div>
+
+        <div class="control-row">
+            <button id="btn-run" class="action" onclick="startMaintenance()">Run Maintenance</button>
+            <button id="btn-cancel" class="secondary" onclick="google.script.host.close()">Close</button>
+        </div>
+
+        <div class="section-label">Activity Log</div>
+        <div id="log-console">Ready to begin maintenance. Select scope and operations above.</div>
+    </div>
+
+    <div class="footer">
+        <div class="status-line">
+            <span id="status-left">Idle</span>
+            <span id="status-right">0%</span>
+        </div>
+        <div class="progress-bar-bg">
+            <div id="progress-bar" class="progress-bar-fill"></div>
+        </div>
+    </div>
+
+    <script>
+        var scopeInfo = null;
+        var targetRows = [];
+        var currentIndex = 0;
+        var isRunning = false;
+        var opConfig = {};
+
+        window.onload = function () {
+            log('Detecting flight selection and total flights...');
+            google.script.run
+                .withSuccessHandler(initScopeUI)
+                .withFailureHandler(function (err) {
+                    log('Error detecting scope: ' + err.message);
+                    setStatus('Error detecting scope', '0%');
+                })
+                .getMaintenanceScopeInfo();
+        };
+
+        function log(msg) {
+            var c = document.getElementById('log-console');
+            c.textContent += '\n' + msg;
+            c.scrollTop = c.scrollHeight;
+        }
+
+        function setStatus(text, pctStr) {
+            document.getElementById('status-left').innerText = text;
+            document.getElementById('status-right').innerText = pctStr;
+            var pct = parseInt(pctStr, 10) || 0;
+            document.getElementById('progress-bar').style.width = pct + '%';
+        }
+
+        function initScopeUI(info) {
+            scopeInfo = info;
+            var badgeSel = document.getElementById('badge-selected');
+            var badgeAll = document.getElementById('badge-all');
+            var rSel = document.getElementById('scope-selected');
+            var rAll = document.getElementById('scope-all');
+
+            badgeAll.innerText = info.totalFlights + ' flights';
+
+            if (info.isFlightsSheet && info.selectedRowCount > 0) {
+                badgeSel.innerText = info.selectedRowCount + ' selected (Rows ' + info.selectedRowRange + ')';
+                rSel.checked = true;
+            } else {
+                badgeSel.innerText = 'No selection on Flights sheet';
+                badgeSel.className = 'badge badge-warn';
+                rAll.checked = true;
+                rSel.disabled = true;
+            }
+            log('Logbook contains ' + info.totalFlights + ' flights.');
+        }
+
+        function onScopeChange() {
+            // Scope change logic if needed
+        }
+
+        function startMaintenance() {
+            var selectedScope = document.querySelector('input[name="scope"]:checked').value;
+            opConfig = {
+                weather: document.getElementById('op-weather').checked,
+                geo: document.getElementById('op-geo').checked,
+                xcontest: document.getElementById('op-xcontest').checked,
+                physics: document.getElementById('op-physics').checked,
+                scoring: document.getElementById('op-scoring').checked,
+                sort: document.getElementById('op-sort').checked
+            };
+
+            var hasAnyOp = opConfig.weather || opConfig.geo || opConfig.xcontest || opConfig.physics || opConfig.scoring || opConfig.sort;
+            if (!hasAnyOp) {
+                alert('Please select at least one operation to perform.');
+                return;
+            }
+
+            document.getElementById('btn-run').disabled = true;
+            document.getElementById('btn-cancel').innerText = 'Cancel';
+            isRunning = true;
+
+            setStatus('Fetching flight rows...', '0%');
+            log('Starting maintenance process. Target scope: ' + selectedScope);
+
+            google.script.run
+                .withSuccessHandler(onRowsReceived)
+                .withFailureHandler(function (err) {
+                    log('Failed to fetch flight rows: ' + err.message);
+                    finishProcess(false);
+                })
+                .getMaintenanceTargetRows(selectedScope);
+        }
+
+        function onRowsReceived(rows) {
+            targetRows = rows || [];
+            if (targetRows.length === 0) {
+                if (opConfig.sort) {
+                    // Only sorting requested
+                    runSortStep();
+                    return;
+                }
+                log('No flight rows to process.');
+                finishProcess(true);
+                return;
+            }
+
+            log('Found ' + targetRows.length + ' flights to process.');
+            currentIndex = 0;
+            processNextRow();
+        }
+
+        function processNextRow() {
+            if (!isRunning) return;
+
+            if (currentIndex >= targetRows.length) {
+                if (opConfig.sort) {
+                    runSortStep();
+                } else {
+                    finishProcess(true);
+                }
+                return;
+            }
+
+            var item = targetRows[currentIndex];
+            var pct = Math.round(((currentIndex) / targetRows.length) * 100);
+            setStatus('Flight ' + (currentIndex + 1) + ' of ' + targetRows.length + ' (' + item.id + ')', pct + '%');
+
+            google.script.run
+                .withSuccessHandler(function (res) {
+                    if (res && res.updated && res.updated.length > 0) {
+                        log('Row ' + item.row + ' (' + item.id + '): Updated ' + res.updated.join(', '));
+                    } else if (res && res.notes) {
+                        log('Row ' + item.row + ' (' + item.id + '): ' + res.notes);
+                    } else {
+                        log('Row ' + item.row + ' (' + item.id + '): Up to date');
+                    }
+                    currentIndex++;
+                    processNextRow();
+                })
+                .withFailureHandler(function (err) {
+                    log('Row ' + item.row + ' (' + item.id + ') ERROR: ' + err.message);
+                    currentIndex++;
+                    processNextRow();
+                })
+                .executeFlightMaintenanceRow(item.row, opConfig);
+        }
+
+        function runSortStep() {
+            setStatus('Sorting all flights by date...', '95%');
+            log('Sorting logbook chronologically by Date (descending)...');
+            google.script.run
+                .withSuccessHandler(function () {
+                    log('Logbook sorted successfully.');
+                    finishProcess(true);
+                })
+                .withFailureHandler(function (err) {
+                    log('Sort error: ' + err.message);
+                    finishProcess(false);
+                })
+                .sortFlightsByDate_();
+        }
+
+        function finishProcess(success) {
+            isRunning = false;
+            setStatus(success ? 'Completed' : 'Finished with warnings', '100%');
+            document.getElementById('btn-run').style.display = 'none';
+            var btnClose = document.getElementById('btn-cancel');
+            btnClose.innerText = 'Done';
+            btnClose.className = 'action';
+            log('=== Maintenance Run Complete ===');
+        }
+    </script>
+</body>
+
+</html>

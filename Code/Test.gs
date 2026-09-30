@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-29 23:17:49
+ * Updated: 2026-09-30 01:44:41
  */
 /**
  * Paragliding Flight Log v2.0
@@ -16,6 +16,7 @@ function runAllTests() {
   results.push(testScoring_());
   results.push(testGeo_()); // Might fail if quota reached or network down
   results.push(testXContest_());
+  results.push(testWeather_());
   
   var failures = results.filter(function(r) { return !r.idx || r.error; });
   if (failures.length > 0) {
@@ -98,8 +99,29 @@ function testXContest_() {
   var res = XContest.checkFlight(new Date(), 60, 600, { XCONTEST_USERNAME: '' });
   if (res.status !== 'No' || res.note !== 'No Username') return { module: 'XContest', error: 'Fail: No User handling' };
 
-  // Test 2: Season Logic (Conceptual check via manual calc if we extracted it, but here we just check safe execution)
-  // We can't easily mock UrlFetchApp here without refactoring.
-  
   return { module: 'XContest', idx: true };
+}
+
+function testWeather_() {
+  if (!WEATHER || !WEATHER.getEnrichment) return { module: 'Weather', error: 'Module missing' };
+
+  // Test 1: Wind formatting (Option A - cardinal direction with gusts)
+  var windStr = WEATHER.formatWind_(14.2, 292.5, 22.1);
+  if (windStr !== '14 km/h WNW (gust 22)') {
+    return { module: 'Weather', error: 'Wind format mismatch: ' + windStr };
+  }
+
+  // Test 2: Cloudbase estimation (Option A - MSL & AGL)
+  var cbStr = WEATHER.calculateCloudbase_(20, 10, 1000);
+  if (cbStr !== '2250m MSL (1250m AGL)') {
+    return { module: 'Weather', error: 'Cloudbase format mismatch: ' + cbStr };
+  }
+
+  // Test 3: WMO weather code translation
+  var cond = WEATHER.wmoWeatherCodeToText_(2);
+  if (cond !== 'Partly cloudy') {
+    return { module: 'Weather', error: 'WMO code translation failed: ' + cond };
+  }
+
+  return { module: 'Weather', idx: true };
 }

@@ -1,5 +1,38 @@
 # Project Change Log
 
+## Session: Historical Weather, Unified Maintenance, In-App User Guide, Pilot Profile & Dynamic Dashboard
+**Date**: 2026-09-30
+**Versions**: v0.8.6
+**Focus**: Automated Weather Enrichment (`RQ-SCR-004`), Unified Flight Maintenance Dialog (`RQ-SYS-007`), In-App User Guide & Metric Dictionary (`RQ-SYS-006.1`), Pilot Profile Tab (`RQ-SYS-009.1`), Dynamic Dashboard Formulas (`CR-SYS-001`).
+
+*   `[Imp]` **RQ-SCR-004 (Historical Weather Enrichment)**:
+    *   Created `Code/Weather.gs` implementing `WEATHER.getEnrichment(...)` with Open-Meteo as primary (using recent 7-day forecast API fallback for flights <= 5 days old, and archive API for older flights) and Visual Crossing Timeline API as backup.
+    *   Added parameters `WEATHER_PROVIDERS` (`'open_meteo, visual_crossing'`) and `VISUAL_CROSSING_API_KEY` (optional) to `Config.gs`.
+    *   Prepopulates editable weather columns: `Wind@Launch`, `Wind@Landing`, `Cloud %`, `Cloudbase`, `Temp (C)`, `Observations`.
+    *   Formatted wind with 16-point cardinal compass directions and significant gusts (Option A: e.g. `14 km/h WNW (gust 20)`).
+    *   Calculated convective cloudbase using the Lawrence spread formula $(T - T_d) \times 125\text{ m}$ formatted as MSL & AGL (Option A: e.g. `2400m MSL (1200m AGL)`).
+    *   Integrated into `Code/Ingestion.gs` for automatic population on import and unit tests in `Code/Test.gs`.
+*   `[Imp]` **RQ-SYS-007 (Unified Flight Maintenance Dialog)**:
+    *   Built `Code/FlightMaintenanceDialog.html` allowing pilots to select scope (Selected rows vs. All flights) and toggle batch operations: Weather Backfill, Geo/Site Backfill, XContest Re-verification, Physics & Flight Mode Recompute, XC Score Recalculation, and Date Sorting.
+    *   Implemented backend batch runner in `Code/Code.gs` (`getMaintenanceScopeInfo`, `getMaintenanceTargetRows`, `executeFlightMaintenanceRow`) with client-side stepping to prevent Apps Script timeouts and provide real-time progress.
+    *   Implemented full date sorting in `Code/Code.gs:sortFlightsByDate_` which sorts rows descending by Date and re-indexes sequential `Flight No` formulas.
+    *   Restructured `Flight maintenance` menu in `Code/Code.gs` with direct dialog launcher and quick sort shortcut.
+*   `[Imp]` **RQ-SYS-006.1 (In-App User Guide & Metric Dictionary)**:
+    *   Implemented `scaffoldUserGuide_` in `Code/Scaffold.gs` registering `TABS.USER_GUIDE` (Sheet: `User Guide`, color: `#455A64`).
+    *   Structured reference sections: System Architecture, Initial Configuration & Folders, Day-to-Day Flight Logging Workflows, Flight Maintenance & Troubleshooting.
+    *   Built Comprehensive Metric Dictionary detailing every column across Flight Info, Gear, XC Scoring, Analytics, Launch/Landing, Weather, and Validation.
+*   `[Imp]` **RQ-SYS-009.1 (Pilot Profile Tab)**:
+    *   Implemented `scaffoldPilotProfile_` in `Code/Scaffold.gs` registering `TABS.PILOT_PROFILE` (Sheet: `Pilot_Profile`, color: `#00695C`).
+    *   Structured sections for Personal Identity, Licensing & Certifications, Flying Clubs & Federations, Emergency Contacts & SAR Evacuation Insurance, Live Satellite Tracking (Garmin inReach IMEI, MapShare URL, Flymaster Live), and Season Progression Notes.
+*   `[Imp]` **CR-SYS-001 (Dynamic Dashboard Formulas)**:
+    *   Updated `scaffoldDashboard_` in `Code/Scaffold.gs` to replace static dummy values with live Google Sheets formulas.
+    *   KPI cards calculate Total Flights, Total Airtime Hours (`h:mm` sum), Total Distance (km), and Flights This Year.
+    *   Dynamic QUERY formulas generate Top 5 Flights by Duration, Top 5 Flights by Distance, Recent Activity, and Countries Flown.
+*   `[Imp]` **Sheet Ordering & Backup (`scaffoldAll_`)**:
+    *   Configured 8-tab clean ordering: `Dashboard`, `Flights`, `Pilot_Profile`, `Equipment`, `User Guide`, `Parameters`, `Lookups`, `App_Log`.
+    *   Updated `backupSystemSheets_` and `deleteSystemSheets_` to handle `Pilot_Profile` and `User Guide`.
+*   `[Docs]`: Aligned `Setup_Guide.md`, `Features.md`, `Technical_Specification.md`, and `Backlog.md`.
+
 ## Session: Documentation Check, Backlog Architecture & Doc Synchronization
 **Date**: 2026-09-29
 **Versions**: v0.8.5

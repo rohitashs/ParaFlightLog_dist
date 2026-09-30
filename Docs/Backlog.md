@@ -61,9 +61,9 @@ This file is the single source of truth for **ToDos**, **Requirements**, **Chang
     
 - [x] **RQ-SCR-003** | **Status**: Implemented | **Phase**: 1 | **Description**: **XContest Verification**: Check if flight is already uploaded to XContest (via daily score scrape). Requires `XCONTEST_USERNAME` config. Refined: Match Date + Duration + Start Time rollover.
 
-- [ ] **RQ-SCR-004** | **Status**: Open | **Phase**: 2 | **Description**: **Historical Weather Enrichment**: Automatically prepopulate weather fields (`Wind@Launch`, `Wind@Landing`, `Cloud %`, `Cloudbase`, `Temp (C)`, `Observations`) based on flight date/time and coordinates from a historical weather API (e.g. Open-Meteo archive), editable by the pilot.
-    - [ ] **RQ-SCR-004.1** | **Status**: Open | **Phase**: 2 | **Description**: Historical Weather API Integration (Open-Meteo Historical Archive / ERA5 reanalysis).
-    - [ ] **RQ-SCR-004.2** | **Status**: Open | **Phase**: 2 | **Description**: Ingestion & Bulk Maintenance Integration (automatic population on import and manual backfill checkbox).
+- [x] **RQ-SCR-004** | **Status**: Implemented | **Phase**: 2 | **Description**: **Historical Weather Enrichment**: Automatically prepopulate weather fields (`Wind@Launch`, `Wind@Landing`, `Cloud %`, `Cloudbase`, `Temp (C)`, `Observations`) based on flight date/time and coordinates from Open-Meteo (primary with 7-day forecast fallback) and Visual Crossing (backup), editable by the pilot.
+    - [x] **RQ-SCR-004.1** | **Status**: Implemented | **Phase**: 2 | **Description**: Historical Weather API Integration (Open-Meteo archive & forecast fallback, Visual Crossing Timeline backup, `WEATHER_PROVIDERS`, `VISUAL_CROSSING_API_KEY`).
+    - [x] **RQ-SCR-004.2** | **Status**: Implemented | **Phase**: 2 | **Description**: Ingestion & Bulk Maintenance Integration (automatic population on import and maintenance backfill).
 
 ### 🔧 Module: UI & System (SYS)
 - [x] **RQ-SYS-001** | **Status**: Implemented | **Phase**: 1 | **Description**: Configuration & Architecture
@@ -76,18 +76,18 @@ This file is the single source of truth for **ToDos**, **Requirements**, **Chang
 
 - [x] **RQ-SYS-003** | **Status**: Implemented | **Phase**: 1 | **Description**: **SeeYou Cloud Link**: Integration with SeeYou Cloud for visualization. Add "View Flight" column with generated link (`https://seeyou.cloud/api/open?igc=<drive_link>`).
 - [ ] **RQ-SYS-004** | **Status**: In Progress | **Phase**: 1 | **Description**: **Flight Inspector**: Sidebar to view and edit flight details. Sections color-coded to match current sheet. Replaces manual entry blank row macro.
-- [ ] **RQ-SYS-005** | **Status**: Open | **Phase**: 1 | **Description**: **Flight Dashboard**: High-level visual metrics (Flights, Hours), Top 5 Lists (Duration/Distance/Site), and Recent Activity in the `Dashboard` (formerly Overview) tab.
-- [ ] **RQ-SYS-006** | **Status**: Open | **Phase**: 2 | **Description**: **User Guide & Onboarding**: Add an in-app `User Guide` tab in the Google Sheet (Overview, Setup, Maintenance, Usage, Metric Explanations) and an external standalone document for pre-creation reading.
-    - [ ] **RQ-SYS-006.1** | **Status**: Open | **Phase**: 2 | **Description**: In-App `User Guide` Sheet Tab (Overview, Setup, Normal Usage, Maintenance, and Comprehensive Metric Dictionary grouped by Flight Info, XC Scoring, Analytics, Physics, and Geo).
+- [x] **RQ-SYS-005** | **Status**: Implemented | **Phase**: 1 | **Description**: **Flight Dashboard**: High-level visual metrics (Flights, Hours, Distance), Top 5 Lists (Duration/Distance/Site), and Recent Activity with live sheet formulas in the `Dashboard` tab.
+- [ ] **RQ-SYS-006** | **Status**: Partially Implemented | **Phase**: 2 | **Description**: **User Guide & Onboarding**: Add an in-app `User Guide` tab in the Google Sheet (Overview, Setup, Maintenance, Usage, Metric Explanations) and an external standalone document for pre-creation reading.
+    - [x] **RQ-SYS-006.1** | **Status**: Implemented | **Phase**: 2 | **Description**: In-App `User Guide` Sheet Tab (Overview, Setup, Normal Usage, Maintenance, and Comprehensive Metric Dictionary grouped by Flight Info, XC Scoring, Analytics, Physics, Geo, and Weather).
     - [ ] **RQ-SYS-006.2** | **Status**: Open | **Phase**: 2 | **Description**: External User Guide document for pre-sheet setup onboarding.
-- [ ] **RQ-SYS-007** | **Status**: Open | **Phase**: 2 | **Description**: **Flight Maintenance & Bulk Operations**: Unified modal dialog to configure scope (All vs Selected) and multi-select batch operations (Recompute metrics/analysis, Re-score XC, Backfill missing Geo, Re-verify XContest, Backfill Historical Weather, Sort by Date).
-    - [ ] **RQ-SYS-007.1** | **Status**: Open | **Phase**: 2 | **Description**: Unified `FlightMaintenanceDialog.html` (Scope selector, checkboxes for operations including weather backfill, progress bar).
-    - [ ] **RQ-SYS-007.2** | **Status**: Open | **Phase**: 2 | **Description**: Batch Recompute & Backfill engine with rate limiting and row update logic.
+- [x] **RQ-SYS-007** | **Status**: Implemented | **Phase**: 2 | **Description**: **Flight Maintenance & Bulk Operations**: Unified modal dialog to configure scope (All vs Selected) and multi-select batch operations (Recompute metrics/analysis, Re-score XC, Backfill missing Geo, Re-verify XContest, Backfill Historical Weather, Sort by Date).
+    - [x] **RQ-SYS-007.1** | **Status**: Implemented | **Phase**: 2 | **Description**: Unified `FlightMaintenanceDialog.html` (Scope selector, checkboxes for operations including weather backfill, progress bar).
+    - [x] **RQ-SYS-007.2** | **Status**: Implemented | **Phase**: 2 | **Description**: Batch Recompute & Backfill engine with client-side stepping, rate limiting, and row update logic.
 - [ ] **RQ-SYS-008** | **Status**: Open | **Phase**: 2 | **Description**: **New Instance Setup Wizard & Sheet Templating**: Evaluate and implement simplified distribution/onboarding to replace the manual `Setup_Guide.md` process (e.g., Template copy + interactive setup wizard).
     - [ ] **RQ-SYS-008.1** | **Status**: Open | **Phase**: 2 | **Description**: Templating Architecture Evaluation (Template Copy with pre-bound script vs. Clasp deployment script vs. Workspace Add-on).
     - [ ] **RQ-SYS-008.2** | **Status**: Open | **Phase**: 2 | **Description**: Interactive First-Time Setup Wizard modal (step-by-step folder selection, pilot profile, equipment defaults, trigger install).
-- [ ] **RQ-SYS-009** | **Status**: Open | **Phase**: 2 | **Description**: **Pilot Profile Management**: Dedicated `Pilot_Profile` tab for personal/contact info, ratings, club/org memberships (USHPA, BHPA, FAI, clubs), emergency contacts, Garmin inReach & live tracking links, and medical evacuation insurance.
-    - [ ] **RQ-SYS-009.1** | **Status**: Open | **Phase**: 2 | **Description**: In-App `Pilot_Profile` Sheet Tab (Structured key-value fields and free-form notes).
+- [ ] **RQ-SYS-009** | **Status**: Partially Implemented | **Phase**: 2 | **Description**: **Pilot Profile Management**: Dedicated `Pilot_Profile` tab for personal/contact info, ratings, club/org memberships (USHPA, BHPA, FAI, clubs), emergency contacts, Garmin inReach & live tracking links, and medical evacuation insurance.
+    - [x] **RQ-SYS-009.1** | **Status**: Implemented | **Phase**: 2 | **Description**: In-App `Pilot_Profile` Sheet Tab (Structured key-value fields and free-form notes).
     - [ ] **RQ-SYS-009.2** | **Status**: Open | **Phase**: 2 | **Description**: Dashboard & Inspector Integration (surface pilot name, rating/club, and inReach emergency links).
 
 ---
@@ -120,7 +120,7 @@ This file is the single source of truth for **ToDos**, **Requirements**, **Chang
 
 - [ ] **CR-UI-001** | **Status**: Blocked | **Date**: 2026-02-08 | **Req**: RQ-SYS-002 | **Description**: **Smart Chip Dropdowns**: Use new Oval/Chip style. *Blocked by Apps Script API limitations*.
 - [x] **CR-ADM-001** | **Status**: Implemented | **Date**: 2026-02-13 | **Req**: RQ-SYS-001 | **Description**: **Backup Parameters**: Include `Parameters` sheet in `Admin: Backup Data` menu routine.
-- [ ] **CR-SYS-001** | **Status**: Open | **Date**: 2026-02-13 | **Req**: RQ-SYS-005 | **Description**: **Dashboard Finalization**: Review dashboard design and convert dummy data to real formulas or script logic. Implement "Top 5" and "Recent Activity" logic.
+- [x] **CR-SYS-001** | **Status**: Implemented | **Date**: 2026-09-30 | **Req**: RQ-SYS-005 | **Description**: **Dashboard Finalization**: Replaced placeholder KPI values with live formulas (Total Flights, Total Hours, Total Distance, Flights this year) and dynamic QUERY formulas for Top 5 Duration, Top 5 Distance, Recent Flights, and Countries Flown.
 
 ---
 

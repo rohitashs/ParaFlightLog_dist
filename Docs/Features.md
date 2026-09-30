@@ -50,32 +50,31 @@ Applies standard XContest/FAI scoring rules to every flight.
 Adds location context to raw GPS coordinates.
 *   **Reverse Geocoding**: Converts Lat/Lon to "Nearest Town, Region, Country".
 *   **Site Detection**: Identifies known Paragliding Takeoffs/Landings within search radius using Paragliding Earth (primary) with OpenStreetMap Overpass API fallback.
-*   **Interactive Links**: Generates links to view the flight on SeeYou Cloud (planned).
-*   **SeeYou Cloud Integration**: Valid flights are automatically uploaded to a public folder and linked directly to SeeYou Cloud for 3D visualization.
-*   **Automated Historical Weather Enrichment (`RQ-SCR-004`)**: Automatically fetches historical weather conditions at launch and landing coordinates for the flight date and time from open weather archives (e.g. Open-Meteo). Prepopulates editable fields (`Wind@Launch`, `Wind@Landing`, `Cloud %`, `Cloudbase`, `Temp (C)`, `Observations`) providing an automated baseline weather picture.
+*   **Interactive Links**: Generates links to view the flight on SeeYou Cl*   **SeeYou Cloud Integration**: Valid flights are automatically uploaded to a public folder and linked directly to SeeYou Cloud for 3D visualization.
+*   **Automated Historical Weather Enrichment (`RQ-SCR-004`)**: Automatically fetches historical weather conditions at launch and landing coordinates for the flight date and time using Open-Meteo as primary (with 7-day forecast fallback for recent flights) and Visual Crossing Timeline API as backup (`WEATHER_PROVIDERS`, `VISUAL_CROSSING_API_KEY`). Prepopulates editable fields (`Wind@Launch`, `Wind@Landing`, `Cloud %`, `Cloudbase`, `Temp (C)`, `Observations`) featuring cardinal wind directions with gusts (e.g. `14 km/h WNW (gust 20)`) and convective cloudbase in MSL & AGL via the Lawrence spread formula (e.g. `2400m MSL (1200m AGL)`).
 
-## 6. �️ User Interface (UI)
+## 6. 🖥️ User Interface (UI)
 *Maps to `RQ-SYS-002`*
 
 The visual layer where users interact with the data.
 *   **Flights Tab**: The main logbook view. Uses a **2-Row Header** design (Category + Field) for clarity, with Cell A2 providing a direct hyperlink to the Master Flight Log Drive folder.
-*   **Column Grouping**: Columns are physically grouped and colored by function (e.g. *Flight Info* is Blue, *Scoring* is Orange). Groups can be collapsed to reduce clutter.
+*   **Column Grouping**: Columns are physically grouped and colored by function (e.g. *Flight Info* is Blue, *Scoring* is Orange, *Weather* is Light Blue). Groups can be collapsed to reduce clutter.
 *   **Download & Visualization Links**: `FlightID` links directly to SeeYou Cloud 3D visualization, while `Flight No` wraps sequential numbering with a direct download hyperlink to the master IGC file.
 *   **Header Tooltips**: Header cells on Row 4 contain cell notes (e.g. "Click to view flight" and "Click to download igc") for intuitive guidance.
-*   **Menus**: A custom "Flight Log" menu provides one-click access to common actions (Add Flight, Upload, Update validation).
+*   **Menus**: A custom "Flight Log" menu provides one-click access to common actions (Add Flight, Upload, Flight Maintenance, Admin).
 *   **Dialogs**: Custom HTML interfaces for File Uploads and "Add files from URL (folder, igc, zip)" supporting both manual URL/ID entry and native Google Drive folder exploration with optional "Delete from source" cleanup.
 *   **Flight Inspector**: A dedicated sidebar to view, edit, and audit flight details without horizontal scrolling. Includes collapsible sections and direct SeeYou Cloud links.
-*   **Flight Maintenance & Bulk Operations (`RQ-SYS-007`)**: A planned unified modal dialog to execute bulk operations across all or selected flights (recomputing physics/modes, recalculating XC score, backfilling missing Town/Country/Site geo data, fetching historical weather data, re-checking XContest status, and sorting flights by date).
+*   **Flight Maintenance & Bulk Operations (`RQ-SYS-007`)**: A unified modal dialog (`FlightMaintenanceDialog.html`) allowing pilots to select scope (Selected rows vs. All flights) and execute batch operations: backfill historical weather, backfill missing geo/site data, re-verify XContest flight claims, recompute physics and thermalling modes, recalculate XC score, and sort flights by date.
 
 ## 7. 📊 Flight Dashboard
-*Maps to `RQ-SYS-005`*
+*Maps to `RQ-SYS-005`, `CR-SYS-001`*
 
-A high-level dashboard providing visual metrics and summaries.
+A high-level dashboard providing visual metrics and summaries powered by real, dynamic Google Sheets formulas.
 *   **Master Log Folder Link**: Row 2 features a prominent direct hyperlink to the Master Flight Log Google Drive folder.
-*   **Key Metrics**: Total Flights, Hours, Distance.
-*   **Top Lists**: Longest flights, furthest distance, and favorite sites.
-*   **Geography**: Breakdown of flights by country.
-*   **Recent Activity**: Quick view of flights in the last week/month/quarter.
+*   **Live KPI Cards**: Dynamic formulas calculate Total Flights, Total Airtime Hours (`h:mm` sum), Total Distance (km), and Flights Flown in the Current Year.
+*   **Top Lists**: Dynamic QUERY formulas extract Top 5 Flights by Duration, Top 5 Flights by Distance, and Top Takeoff Sites.
+*   **Geography**: Live frequency breakdown of flights by country.
+*   **Recent Activity**: Real-time listing of the 5 most recent flights.ast week/month/quarter.
 
 ## 8. 🛡️ Administration & Setup
 *Maps to `RQ-SYS-001`, `RQ-SYS-008`*

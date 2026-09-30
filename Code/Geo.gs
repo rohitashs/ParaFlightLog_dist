@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-29 23:17:49
+ * Updated: 2026-09-30 01:44:41
  * 
  * MODULE: Geo Service
  * Handles Reverse Geocoding (Nominatim) and Site Detection (Overpass API).

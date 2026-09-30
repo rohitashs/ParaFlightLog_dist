@@ -21,11 +21,13 @@ This document defines the **Code Organization**, **Algorithms**, and **Data Sche
 5.  **Ingestion Service (`Ingestion.gs`)**: Pipeline Controller. Parse/Score orchestration, deduplication, and row mapping.
     *   *Map*: `RQ-ING-001`.
 6.  **Utilities (`Utils.gs`)**: Consolidated math (Haversine, Bearing, AngleDiff) and time formatting helpers.
-7.  **Domain Logic**:
+7.  **Weather Service (`Weather.gs`)**: Automated historical & forecast weather enrichment (`RQ-SCR-004`). Open-Meteo archive with 7-day forecast API fallback (primary) and Visual Crossing Timeline API (backup), Lawrence cloudbase spread estimation, and cardinal wind formatting.
+8.  **Domain Logic**:
     *   **`Parser.gs`**: IGC extraction (B-Records, H-Records).
     *   **`Analysis.gs`**: Physics engine (Thermals, Glide).
     *   **`Scoring.gs`**: Optimization engine (Graph theory/RDP).
     *   **`Geo.gs`**: External API Gateway (Nominatim, Overpass).
+    *   **`XContest.gs`**: Scrapes daily flight lists and matches claim URLs.
 
 ---
 
@@ -98,7 +100,11 @@ Fixed Header Schema (Row 4=Category, Row 5=Name). Data starts Row 6.
 
 ### `Code.gs` (Orchestration)
 *   **`onOpen(e)`**: Creates the "Flight Log" menu.
-*   **`uiShowFlightMaintenanceDialog_()` (`RQ-SYS-007`)**: Unified dialog launcher superseding separate maintenance stubs. Allows selecting flight scope (all vs. selected rows) and toggling specific batch operations (metrics, analysis, XC scoring, Geo backfill, XContest verification, date sorting).
+*   **`showFlightMaintenanceDialog()` (`RQ-SYS-007`)**: Unified dialog launcher. Opens `FlightMaintenanceDialog.html` modal for batch maintenance operations.
+*   **`getMaintenanceScopeInfo()`**: Detects active row selection on `Flights` tab and counts total flights.
+*   **`getMaintenanceTargetRows(scope)`**: Returns array of target row indices and flight IDs for batch processing.
+*   **`executeFlightMaintenanceRow(rowNum, opConfig)`**: Executes selected operations for a single row (weather backfill, geo resolution, XContest verification, physics recompute, XC rescore).
+*   **`sortFlightsByDate_()`**: Chronologically sorts data rows descending by `Date` and re-indexes sequential `Flight No` formulas.
 *   **`getParameters_()`**: Reads configuration from the `Parameters` sheet.
 *   **`uiAddManualFlight_()`**: Helper to trigger manual flight entry.
 *   **`showUrlDialog_()`**: Shows the IGC URL import dialog.
@@ -176,7 +182,15 @@ Fixed Header Schema (Row 4=Category, Row 5=Name). Data starts Row 6.
 ### `Test.gs`
 *   **`runAllTests()`**: Execution harness for unit tests.
 
+### `Weather.gs` (Historical & Forecast Weather Gateway)
+*   **`WEATHER.getEnrichment(launchFix, landFix, dateIso, startTimeSec, endTimeSec, config)`**: Main enrichment dispatcher using provider fallback chain (`WEATHER_PROVIDERS`).
+*   **`fetchOpenMeteo_(lat, lon, dateIso, hour, launchAlt, config)`**: Primary weather fetcher. Queries forecast API with `past_days=7` if flight is <= 5 days old; otherwise queries historical archive API.
+*   **`fetchVisualCrossing_(lat, lon, dateIso, hour, launchAlt, config)`**: Backup fetcher via Visual Crossing Timeline API using `VISUAL_CROSSING_API_KEY`.
+*   **`calculateCloudbase_(tempC, dewPointC, launchAltM)`**: Convective condensation level via Lawrence spread formula $(T - T_d) \times 125\text{ m}$, formatted as `MSL (AGL)` (e.g. `2400m MSL (1200m AGL)`).
+*   **`formatWind_(speedKmh, dirDeg, gustKmh)`**: Formats wind speed, 16-point cardinal direction, and significant gusts (e.g. `14 km/h WNW (gust 20)`).
+
 ### HTML Dialog Templates (User Interface)
+*   **`FlightMaintenanceDialog.html`**: Unified batch maintenance modal interface supporting scope selection (Selected rows vs All flights), operation checkboxes, real-time client-side stepping, and live progress bar.
 *   **`FolderPickerDialog.html`**: In-app Google Drive folder picker dialog featuring live search, folder tree navigation, breadcrumbs, and single/multi-folder assignment to `Parameters`.
 *   **`URLDialog.html`**: Modal dialog for importing flights from external URLs or Drive folder links, featuring live progress bar, file staging, processing logs, and archive cleanup.
 *   **`UploadDialog.html`**: Direct browser file upload modal supporting drag-and-drop of `.igc`, `.zip`, and `.gz` archives into Google Drive staging.

@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-29 23:17:49
+ * Updated: 2026-09-30 01:44:41
  * 
  * MODULE: Ingestion Service
  * Handles Flight Log Parsing, Analysis/Scoring Orchestration, Geo-enrichment,
@@ -215,14 +215,27 @@ function processSingleIgcBlob_(blob, fileName, fileId, outerName, config) {
     noteLog.push('Duplicate Filename');
   }
   
+  // H. Weather Enrichment (RQ-SCR-004)
+  var weatherData = null;
+  try {
+    var flightDateIso = parsed.meta.dateIso || '';
+    weatherData = WEATHER.getEnrichment(launchFix, landFix, flightDateIso, parsed.stats.startTime, parsed.stats.endTime, config);
+    if (weatherData && weatherData.error) {
+      noteLog.push('Weather: ' + weatherData.error);
+    }
+  } catch (wErr) {
+    console.warn('Weather enrichment error:', wErr);
+    noteLog.push('Weather: Fetch failed');
+  }
+
   var finalNotes = noteLog.length > 0 ? noteLog.join(' | ') : '';
   
-  // H. Insert Flight Row
+  // I. Insert Flight Row
   insertFlightRow_(parsed, fileId, outerName, status, finalNotes, analysis, scoring, masterRes.finalName, masterRes.fileId, {
     l: geoLaunch, ls: siteLaunch,
     d: geoLand, ds: siteLand,
     tz: timeZone
-  }, xcStatus);
+  }, xcStatus, weatherData);
   
   // I. Mark Hash as Seen & Log
   markHashSeen_(hashStr);
@@ -340,7 +353,7 @@ function uiAddManualFlight_() {
 /**
  * Inserts the parsed, enriched flight data row into 'Flights' Sheet.
  */
-function insertFlightRow_(data, fileId, outerName, status, notes, analysis, scoring, igcFileName, masterFileId, geo, xcStatus) {
+function insertFlightRow_(data, fileId, outerName, status, notes, analysis, scoring, igcFileName, masterFileId, geo, xcStatus, weather) {
   var ss = SpreadsheetApp.getActive();
   var sh = ss.getSheetByName(TABS.FLIGHTS.name);
   
@@ -504,6 +517,15 @@ function insertFlightRow_(data, fileId, outerName, status, notes, analysis, scor
     ? data.stats.straightDistKm.toFixed(1)
     : '';
   setVal('Launch-Landing Dist (km)', launchLandDist);
+
+  // -- Weather (RQ-SCR-004) --
+  var wx = weather || {};
+  setVal('Wind@Launch', wx.windLaunch || '');
+  setVal('Wind@Landing', wx.windLanding || '');
+  setVal('Cloud %', wx.cloudPct || '');
+  setVal('Cloudbase', wx.cloudbase || '');
+  setVal('Temp (C)', wx.tempC || '');
+  setVal('Observations', wx.observations || '');
 
   // -- Analytics --
   setVal('Thermal %', (pct.thermal * 100).toFixed(2) + '%');

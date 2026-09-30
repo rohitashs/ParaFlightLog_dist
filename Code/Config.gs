@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-29 23:17:49
+ * Updated: 2026-09-30 01:44:41
  */
 /**
  * Paragliding Flight Log v2.0 - Configuration
@@ -22,7 +22,9 @@ var CFG = {
     lookups: 'Lookups',
     appLog: 'App_Log',
     sites: 'Sites',
-    dashboard: 'Dashboard'
+    dashboard: 'Dashboard',
+    pilotProfile: 'Pilot_Profile',
+    userGuide: 'User Guide'
   },
   // Centralized Parameter Definitions (Source of Truth for Parameters Sheet)
   parameters: [
@@ -36,6 +38,8 @@ var CFG = {
     { section: 'Ingestion', key: 'WATCH_PERIOD_MIN', val: 15, desc: 'How often (mins) the trigger runs' },
     
     // Integrations
+    { section: 'Integrations', key: 'WEATHER_PROVIDERS', val: 'open_meteo, visual_crossing', desc: 'Weather Providers (comma-sep: open_meteo, visual_crossing)' },
+    { section: 'Integrations', key: 'VISUAL_CROSSING_API_KEY', val: '', desc: 'Optional API Key for Visual Crossing Weather backup', input: true },
     { section: 'Integrations', key: 'GDRIVE_DOWNLOAD_URL_PATTERN', val: 'https://drive.google.com/uc?export=download&id={ID}', desc: 'Pattern for direct file download' },
     { section: 'Integrations', key: 'SEEYOU_CLOUD_URL_PATTERN', val: 'https://seeyou.cloud/api/open?igc={URL}', desc: 'Pattern for SeeYou Cloud link' },
     { section: 'Integrations', key: 'XCONTEST_USERNAME', val: '', desc: 'XContest Username for Flight verification', input: true },
@@ -215,20 +219,35 @@ var TABS = {
       }
     ]
   },
+  PILOT_PROFILE: {
+    name: CFG.sheets.pilotProfile,
+    color: '#00695C', // Deep Teal
+    index: 3,
+    headerRow: 2,
+    frozenRows: 0,
+    columns: ['Category', 'Field', 'Value', 'Notes']
+  },
   EQUIPMENT: {
     name: CFG.sheets.equipment,
     color: '#2196F3', // Blue
-    index: 3,
+    index: 4,
     headerRow: 2,
     dataStartRow: 3,
     dataEndRow: 50, // Limit validation/formatting to 50 rows
     frozenRows: 2,
     columns: ['Category', 'EquipmentID', 'Make', 'Model', 'Size', 'Type', 'Default?', 'Retired?', 'Glide', 'Trim', 'Full', 'Link', 'Notes']
   },
+  USER_GUIDE: {
+    name: CFG.sheets.userGuide,
+    color: '#455A64', // Blue Grey Dark
+    index: 5,
+    headerRow: 1,
+    frozenRows: 0
+  },
   PARAMETERS: {
     name: CFG.sheets.parameters,
     color: '#FFEB3B', // Yellow
-    index: 4,
+    index: 6,
     headerRow: 2,
     frozenRows: 0,
     columns: ['Parameter', 'Value', 'Description']
@@ -236,7 +255,7 @@ var TABS = {
   LOOKUPS: {
     name: CFG.sheets.lookups,
     color: '#FF9800', // Orange
-    index: 5,
+    index: 7,
     headerRow: 2,
     frozenRows: 0,
     columns: ['Categories', 'Wings (Auto)', 'Harnesses (Auto)', 'Reserves (Auto)', 'Other (Auto)', 'Flight Status', 'Flight Type']
@@ -244,7 +263,7 @@ var TABS = {
   APP_LOG: {
     name: CFG.sheets.appLog,
     color: '#F44336', // Red
-    index: 6,
+    index: 8,
     headerRow: 2,
     frozenRows: 2,
     columns: ['Timestamp', 'FileID', 'FileName', 'InnerName', 'Status', 'Info']

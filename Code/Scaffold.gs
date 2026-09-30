@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-29 23:17:49
+ * Updated: 2026-09-30 01:44:41
  */
 /**
  * Paragliding Flight Log v2.0 - Scaffolding & Setup
@@ -22,24 +22,30 @@ function scaffoldAll_() {
   // 1. Create/Ensure Sheets
   ensureSheet_(ss, TABS.DASHBOARD.name);
   ensureSheet_(ss, TABS.FLIGHTS.name);
+  ensureSheet_(ss, TABS.PILOT_PROFILE.name);
   ensureSheet_(ss, TABS.EQUIPMENT.name);
+  ensureSheet_(ss, TABS.USER_GUIDE.name);
   ensureSheet_(ss, TABS.PARAMETERS.name);
   ensureSheet_(ss, TABS.LOOKUPS.name);
   ensureSheet_(ss, TABS.APP_LOG.name);
   
   // 2. Scaffolding Content
   scaffoldDashboard_(ss);
+  scaffoldFlights_(ss);
+  scaffoldPilotProfile_(ss);
   scaffoldEquipment_(ss);
+  scaffoldUserGuide_(ss);
   scaffoldLookups_(ss); // Must run before Parameters to populate lists
   scaffoldParameters_(ss);
-  scaffoldFlights_(ss);
   scaffoldAppLog_(ss);
   
   // 3. Reorder Tabs
   var sheets = [
     TABS.DASHBOARD.name, 
     TABS.FLIGHTS.name, 
+    TABS.PILOT_PROFILE.name,
     TABS.EQUIPMENT.name, 
+    TABS.USER_GUIDE.name,
     TABS.PARAMETERS.name, 
     TABS.LOOKUPS.name, 
     TABS.APP_LOG.name
@@ -84,105 +90,81 @@ function getTabColor_(name) {
 
 function scaffoldDashboard_(ss) {
   var sh = ss.getSheetByName(TABS.DASHBOARD.name);
-  // Clear if empty or just header to ensure fresh design
-  if (sh.getLastRow() <= 1) {
-     sh.clear();
-     
-     // 1. Page Title
-     sh.getRange('A1').setValue("Flight Dashboard").setFontWeight('bold').setFontSize(18);
-     sh.getRange('A1:Q1').setBackground(TABS.DASHBOARD.color).setFontColor('white').merge();
-     sh.getRange('A1').setHorizontalAlignment('center').setVerticalAlignment('middle');
-     sh.setRowHeight(1, 40);
-     
-     // 1b. Master Folder Link (Row 2)
-     var masterLinkFormula = '=IF(ISBLANK(VLOOKUP("MASTER_LOG_FOLDER_ID", ' + TABS.PARAMETERS.name + '!A:B, 2, FALSE)), "Master Flight Logs folder (Not Configured)", HYPERLINK("https://drive.google.com/drive/folders/" & VLOOKUP("MASTER_LOG_FOLDER_ID", ' + TABS.PARAMETERS.name + '!A:B, 2, FALSE), "📁 Master Flight Logs folder"))';
-     sh.getRange('A2:Q2').merge().setFormula(masterLinkFormula).setFontSize(10).setFontStyle('italic').setHorizontalAlignment('center');
-     sh.setRowHeight(2, 22);
-     
-     // 2. KPI Cards (Row 3-5)
-     // A-D: Total Flights, E-H: Total Hours, I-L: Total Dist, M-Q: This Year
-     var kpis = [
-       { r: 'A3:D5', title: 'Total Flights', val: '142' },
-       { r: 'E3:H5', title: 'Total Hours', val: '86h 30m' },
-       { r: 'I3:L5', title: 'Total Distance', val: '3,240 km' },
-       { r: 'M3:Q5', title: 'Flights (2026)', val: '12' }
-     ];
-     
-     kpis.forEach(function(k) {
-        var rng = sh.getRange(k.r);
-        rng.merge();
-        rng.setBackground('#ECEFF1').setBorder(true, true, true, true, true, true);
-        rng.setHorizontalAlignment('center').setVerticalAlignment('middle');
-        rng.setValue(k.val + '\n' + k.title);
-        rng.setFontSize(14).setWrap(true);
-     });
-     
-     // 3. Section Headers (Row 7)
-     sh.getRange('A7:E7').merge().setValue('Top 5 by Duration').setBackground('#CFD8DC').setFontWeight('bold').setHorizontalAlignment('center');
-     sh.getRange('G7:K7').merge().setValue('Recent Activity').setBackground('#CFD8DC').setFontWeight('bold').setHorizontalAlignment('center');
-     sh.getRange('M7:Q7').merge().setValue('Countries Flown').setBackground('#CFD8DC').setFontWeight('bold').setHorizontalAlignment('center');
-     
-     // 4. Dummy Lists (Row 8+)
-     // Top Duration
-     var topDur = [
-       ['Flight 102 - 4h 12m XC at Bir Billing'],
-       ['Flight 098 - 3h 45m XC at Bir Billing'],
-       ['Flight 115 - 3h 20m Triangle at Piedrahita'],
-       ['Flight 055 - 2h 55m Thermalling at Kamshet'],
-       ['Flight 140 - 2h 10m Soaring at Yelagiri']
-     ];
-     sh.getRange('A8:A12').setValues(topDur);
-     sh.getRange('A8:E12').mergeAcross().setBorder(false, false, true, false, false, false, '#E0E0E0', SpreadsheetApp.BorderStyle.SOLID);
-     
-     // Recent Activity
-     var recent = [
-       ['Flight 142 - 1h 20m at Kamshet (Today)'],
-       ['Flight 141 - 0h 45m at Kamshet (Yesterday)'],
-       ['Flight 140 - 2h 10m at Yelagiri (Last Week)'],
-       ['Flight 139 - 0h 15m Sledder at Nandi'],
-       ['Flight 138 - 1h 00m Soaring at Bali']
-     ];
-     sh.getRange('G8:G12').setValues(recent);
-     sh.getRange('G8:K12').mergeAcross().setBorder(false, false, true, false, false, false, '#E0E0E0', SpreadsheetApp.BorderStyle.SOLID);
-     
-     // Countries
-     var countries = [
-       ['India - 85 Flights'],
-       ['Spain - 20 Flights'],
-       ['France - 15 Flights'],
-       ['Colombia - 12 Flights'],
-       ['Nepal - 10 Flights']
-     ];
-     sh.getRange('M8:M12').setValues(countries);
-     sh.getRange('M8:Q12').mergeAcross().setBorder(false, false, true, false, false, false, '#E0E0E0', SpreadsheetApp.BorderStyle.SOLID);
-     
-     // Top Distance (Row 14 Header, 15+ Data)
-     sh.getRange('A14:E14').merge().setValue('Top 5 by Distance').setBackground('#CFD8DC').setFontWeight('bold').setHorizontalAlignment('center');
-     var topDist = [
-       ['Flight 102 - 85.4 km at Bir Billing'],
-       ['Flight 115 - 62.1 km at Piedrahita'],
-       ['Flight 098 - 55.0 km at Bir Billing'],
-       ['Flight 088 - 42.3 km at Roldanillo'],
-       ['Flight 120 - 35.6 km at Bir Billing']
-     ];
-     sh.getRange('A15:A19').setValues(topDist);
-     sh.getRange('A15:E19').mergeAcross().setBorder(false, false, true, false, false, false, '#E0E0E0', SpreadsheetApp.BorderStyle.SOLID);
+  if (!sh) return;
+  sh.clear();
+  
+  // 1. Page Title
+  sh.getRange('A1').setValue("Flight Dashboard").setFontWeight('bold').setFontSize(18);
+  sh.getRange('A1:Q1').setBackground(TABS.DASHBOARD.color).setFontColor('white').merge();
+  sh.getRange('A1').setHorizontalAlignment('center').setVerticalAlignment('middle');
+  sh.setRowHeight(1, 40);
+  
+  // 1b. Master Folder Link (Row 2)
+  var masterLinkFormula = '=IF(ISBLANK(VLOOKUP("MASTER_LOG_FOLDER_ID", ' + TABS.PARAMETERS.name + '!A:B, 2, FALSE)), "Master Flight Logs folder (Not Configured)", HYPERLINK("https://drive.google.com/drive/folders/" & VLOOKUP("MASTER_LOG_FOLDER_ID", ' + TABS.PARAMETERS.name + '!A:B, 2, FALSE), "📁 Master Flight Logs folder"))';
+  sh.getRange('A2:Q2').merge().setFormula(masterLinkFormula).setFontSize(10).setFontStyle('italic').setHorizontalAlignment('center');
+  sh.setRowHeight(2, 22);
+  
+  // 2. KPI Cards (Row 3-5) - Dynamic Formulas (CR-SYS-001)
+  var fTotalFlights = '=IFERROR(COUNTIF(Flights!A5:A, "<>") & CHAR(10) & "Total Flights", "0" & CHAR(10) & "Total Flights")';
+  var fTotalHours = '=IFERROR(TEXT(SUMPRODUCT(IFERROR(LEFT(Flights!L5:L, FIND(":", Flights!L5:L)-1) + MID(Flights!L5:L, FIND(":", Flights!L5:L)+1, 2)/60, 0)), "#,##0.0") & " hrs" & CHAR(10) & "Total Hours", "0.0 hrs" & CHAR(10) & "Total Hours")';
+  var fTotalDist = '=IFERROR(TEXT(SUM(Flights!M5:M), "#,##0") & " km" & CHAR(10) & "Total Distance", "0 km" & CHAR(10) & "Total Distance")';
+  var fThisYear = '=IFERROR(COUNTIFS(Flights!H5:H, ">=" & DATE(YEAR(TODAY()), 1, 1), Flights!H5:H, "<=" & DATE(YEAR(TODAY()), 12, 31)) & CHAR(10) & "Flights (" & YEAR(TODAY()) & ")", "0" & CHAR(10) & "Flights (" & YEAR(TODAY()) & ")")';
 
-      // Top Sites (Row 14 Center)
-     sh.getRange('G14:K14').merge().setValue('Top Sites').setBackground('#CFD8DC').setFontWeight('bold').setHorizontalAlignment('center');
-     var topSites = [
-       ['Bir Billing - 45 Flights'],
-       ['Kamshet - 30 Flights'],
-       ['Piedrahita - 15 Flights'],
-       ['Roldanillo - 12 Flights'],
-       ['Yelagiri - 10 Flights']
-     ];
-     sh.getRange('G15:G19').setValues(topSites);
-     sh.getRange('G15:K19').mergeAcross().setBorder(false, false, true, false, false, false, '#E0E0E0', SpreadsheetApp.BorderStyle.SOLID);
-     
-     // Formatting
-     sh.setHiddenGridlines(true);
+  var kpis = [
+    { r: 'A3:D5', f: fTotalFlights },
+    { r: 'E3:H5', f: fTotalHours },
+    { r: 'I3:L5', f: fTotalDist },
+    { r: 'M3:Q5', f: fThisYear }
+  ];
+
+  kpis.forEach(function(k) {
+    var rng = sh.getRange(k.r);
+    rng.merge();
+    rng.setBackground('#ECEFF1').setBorder(true, true, true, true, true, true);
+    rng.setHorizontalAlignment('center').setVerticalAlignment('middle');
+    rng.setFormula(k.f);
+    rng.setFontSize(14).setWrap(true);
+  });
+
+  // 3. Section Headers (Row 7)
+  sh.getRange('A7:E7').merge().setValue('Top 5 by Duration').setBackground('#CFD8DC').setFontWeight('bold').setHorizontalAlignment('center');
+  sh.getRange('G7:K7').merge().setValue('Recent Activity').setBackground('#CFD8DC').setFontWeight('bold').setHorizontalAlignment('center');
+  sh.getRange('M7:Q7').merge().setValue('Countries Flown').setBackground('#CFD8DC').setFontWeight('bold').setHorizontalAlignment('center');
+
+  // 4. Dynamic Lists (Row 8-12)
+  for (var k = 1; k <= 5; k++) {
+    var rNum = k + 7;
+    // Top Duration (A:E)
+    var fDur = '=IFERROR("Flight " & INDEX(SORT(FILTER({Flights!C5:C, Flights!L5:L, Flights!D5:D}, Flights!A5:A<>""), 2, FALSE), ' + k + ', 1) & " - " & INDEX(SORT(FILTER({Flights!C5:C, Flights!L5:L, Flights!D5:D}, Flights!A5:A<>""), 2, FALSE), ' + k + ', 2) & " (" & INDEX(SORT(FILTER({Flights!C5:C, Flights!L5:L, Flights!D5:D}, Flights!A5:A<>""), 2, FALSE), ' + k + ', 3) & ")", "-")';
+    sh.getRange(rNum, 1, 1, 5).merge().setFormula(fDur).setBorder(false, false, true, false, false, false, '#E0E0E0', SpreadsheetApp.BorderStyle.SOLID);
+
+    // Recent Activity (G:K)
+    var fRec = '=IFERROR("Flight " & INDEX(SORT(FILTER({Flights!C5:C, Flights!H5:H, Flights!L5:L, Flights!D5:D}, Flights!A5:A<>""), 2, FALSE), ' + k + ', 1) & " - " & TEXT(INDEX(SORT(FILTER({Flights!C5:C, Flights!H5:H, Flights!L5:L, Flights!D5:D}, Flights!A5:A<>""), 2, FALSE), ' + k + ', 2), "yyyy-MM-dd") & " - " & INDEX(SORT(FILTER({Flights!C5:C, Flights!H5:H, Flights!L5:L, Flights!D5:D}, Flights!A5:A<>""), 2, FALSE), ' + k + ', 3) & " (" & INDEX(SORT(FILTER({Flights!C5:C, Flights!H5:H, Flights!L5:L, Flights!D5:D}, Flights!A5:A<>""), 2, FALSE), ' + k + ', 4) & ")", "-")';
+    sh.getRange(rNum, 7, 1, 5).merge().setFormula(fRec).setBorder(false, false, true, false, false, false, '#E0E0E0', SpreadsheetApp.BorderStyle.SOLID);
+
+    // Countries Flown (M:Q)
+    var fCtry = '=IFERROR(INDEX(QUERY(Flights!U5:U, "SELECT U, COUNT(U) WHERE U IS NOT NULL AND U <> \'\' GROUP BY U ORDER BY COUNT(U) DESC LABEL COUNT(U) \'\'"), ' + k + ', 1) & " - " & INDEX(QUERY(Flights!U5:U, "SELECT U, COUNT(U) WHERE U IS NOT NULL AND U <> \'\' GROUP BY U ORDER BY COUNT(U) DESC LABEL COUNT(U) \'\'"), ' + k + ', 2) & " Flights", "-")';
+    sh.getRange(rNum, 13, 1, 5).merge().setFormula(fCtry).setBorder(false, false, true, false, false, false, '#E0E0E0', SpreadsheetApp.BorderStyle.SOLID);
   }
+
+  // 5. Section Headers (Row 14)
+  sh.getRange('A14:E14').merge().setValue('Top 5 by Distance').setBackground('#CFD8DC').setFontWeight('bold').setHorizontalAlignment('center');
+  sh.getRange('G14:K14').merge().setValue('Top Sites').setBackground('#CFD8DC').setFontWeight('bold').setHorizontalAlignment('center');
+
+  // 6. Dynamic Lists (Row 15-19)
+  for (var j = 1; j <= 5; j++) {
+    var rowIdx = j + 14;
+    // Top Distance (A:E)
+    var fDist = '=IFERROR("Flight " & INDEX(SORT(FILTER({Flights!C5:C, Flights!M5:M, Flights!D5:D}, Flights!A5:A<>""), 2, FALSE), ' + j + ', 1) & " - " & TEXT(INDEX(SORT(FILTER({Flights!C5:C, Flights!M5:M, Flights!D5:D}, Flights!A5:A<>""), 2, FALSE), ' + j + ', 2), "0.0") & " km (" & INDEX(SORT(FILTER({Flights!C5:C, Flights!M5:M, Flights!D5:D}, Flights!A5:A<>""), 2, FALSE), ' + j + ', 3) & ")", "-")';
+    sh.getRange(rowIdx, 1, 1, 5).merge().setFormula(fDist).setBorder(false, false, true, false, false, false, '#E0E0E0', SpreadsheetApp.BorderStyle.SOLID);
+
+    // Top Sites (G:K)
+    var fSite = '=IFERROR(INDEX(QUERY(Flights!S5:S, "SELECT S, COUNT(S) WHERE S IS NOT NULL AND S <> \'\' GROUP BY S ORDER BY COUNT(S) DESC LABEL COUNT(S) \'\'"), ' + j + ', 1) & " - " & INDEX(QUERY(Flights!S5:S, "SELECT S, COUNT(S) WHERE S IS NOT NULL AND S <> \'\' GROUP BY S ORDER BY COUNT(S) DESC LABEL COUNT(S) \'\'"), ' + j + ', 2) & " Flights", "-")';
+    sh.getRange(rowIdx, 7, 1, 5).merge().setFormula(fSite).setBorder(false, false, true, false, false, false, '#E0E0E0', SpreadsheetApp.BorderStyle.SOLID);
+  }
+
+  // Formatting
+  sh.setHiddenGridlines(true);
 }
 
 function scaffoldParameters_(ss) {
@@ -641,7 +623,7 @@ function backupSystemSheets_() {
      var src = ss.getSheetByName(srcName);
      if (src) {
         var existing = ss.getSheetByName(destName);
-        if (existing) ss.deleteSheet(existing); // Overwrite? Or version? User said "Backup Flights", implies singular.
+        if (existing) ss.deleteSheet(existing);
         src.copyTo(ss).setName(destName);
      }
   };
@@ -649,8 +631,9 @@ function backupSystemSheets_() {
   backup(TABS.FLIGHTS.name, 'Backup ' + TABS.FLIGHTS.name);
   backup(TABS.EQUIPMENT.name, 'Backup ' + TABS.EQUIPMENT.name);
   backup(TABS.PARAMETERS.name, 'Backup ' + TABS.PARAMETERS.name);
+  if (TABS.PILOT_PROFILE) backup(TABS.PILOT_PROFILE.name, 'Backup ' + TABS.PILOT_PROFILE.name);
   
-  ss.toast('Backup created: Flights, Equipment, & Parameters');
+  ss.toast('Backup created: Flights, Equipment, Parameters & Pilot Profile');
 }
 
 function deleteSystemSheets_() {
@@ -659,7 +642,17 @@ function deleteSystemSheets_() {
   
   if (resp == ui.Button.YES) {
     var ss = SpreadsheetApp.getActive();
-    var targets = [TABS.FLIGHTS.name, TABS.EQUIPMENT.name, TABS.PARAMETERS.name, TABS.LOOKUPS.name, TABS.APP_LOG.name, TABS.DASHBOARD.name, 'Overview', 'Sites']; // Overview/Sites legacy cleanup
+    var targets = [
+      TABS.FLIGHTS.name, 
+      TABS.EQUIPMENT.name, 
+      TABS.PARAMETERS.name, 
+      TABS.LOOKUPS.name, 
+      TABS.APP_LOG.name, 
+      TABS.DASHBOARD.name,
+      TABS.PILOT_PROFILE ? TABS.PILOT_PROFILE.name : 'Pilot_Profile',
+      TABS.USER_GUIDE ? TABS.USER_GUIDE.name : 'User Guide',
+      'Overview', 'Sites'
+    ];
     
     var count = 0;
     targets.forEach(function(name) {
@@ -670,4 +663,251 @@ function deleteSystemSheets_() {
     });
     ss.toast('Deleted ' + count + ' system sheets.');
   }
+}
+
+/* ==========================================================================================
+   PILOT PROFILE TAB (RQ-SYS-009)
+   ========================================================================================== */
+
+function scaffoldPilotProfile_(ss) {
+  var sh = ss.getSheetByName(TABS.PILOT_PROFILE.name);
+  if (!sh) return;
+  
+  // Preserve existing values if user already entered data
+  var existingVals = {};
+  if (sh.getLastRow() >= 4) {
+    try {
+      var raw = sh.getRange(4, 2, sh.getLastRow() - 3, 2).getValues();
+      raw.forEach(function(r) {
+        if (r[0]) existingVals[r[0]] = r[1];
+      });
+    } catch(e) { console.warn('Pilot Profile preservation error', e); }
+  }
+
+  sh.clear();
+
+  // Header Title
+  sh.getRange('A1').setValue("Pilot Profile & Credentials").setFontWeight('bold').setFontSize(16);
+  sh.getRange('A1:D1').setBackground(TABS.PILOT_PROFILE.color).setFontColor('white').merge();
+  sh.getRange('A1').setHorizontalAlignment('center').setVerticalAlignment('middle');
+  sh.setRowHeight(1, 38);
+
+  sh.getRange('A2').setValue("Personal credentials, licensing, emergency info, and live satellite tracking gear").setFontStyle('italic').setFontSize(10);
+  sh.getRange('A2:D2').merge().setHorizontalAlignment('center');
+  sh.setRowHeight(2, 22);
+
+  // Column Headers Row 3
+  sh.getRange(3, 1, 1, 4).setValues([['Category', 'Field', 'Value', 'Notes / Instructions']]);
+  sh.getRange(3, 1, 1, 4).setBackground('#37474F').setFontColor('white').setFontWeight('bold');
+
+  var profileFields = [
+    // Section 1: Pilot Identity
+    { cat: 'Identity', field: 'Full Name', val: '', note: 'Legal name as shown on official pilot license' },
+    { cat: 'Identity', field: 'Callsign / Nickname', val: '', note: 'Radio callsign or competition display name' },
+    { cat: 'Identity', field: 'Email', val: '', note: 'Primary contact email' },
+    { cat: 'Identity', field: 'Phone Number', val: '', note: 'Mobile phone with international dialing code' },
+    { cat: 'Identity', field: 'Home Country & Town', val: '', note: 'Home flying base location' },
+
+    // Section 2: Ratings & Certifications
+    { cat: 'Licensing', field: 'National Association', val: '', note: 'e.g. USHPA, BHPA, FFVL, DHV, HPAC, FAI' },
+    { cat: 'Licensing', field: 'Pilot Rating', val: '', note: 'e.g. P2 (Novice), P3, P4 (Advanced), APPI 4' },
+    { cat: 'Licensing', field: 'License Number', val: '', note: 'National association member / pilot license ID' },
+    { cat: 'Licensing', field: 'FAI Sporting License #', val: '', note: 'Required for FAI Category 1 & 2 competitions' },
+    { cat: 'Licensing', field: 'Tandem / Instructor', val: '', note: 'Tandem T1/T2, Instructor, or No' },
+    { cat: 'Licensing', field: 'License Expiration Date', val: '', note: 'YYYY-MM-DD' },
+
+    // Section 3: Clubs & Federations
+    { cat: 'Affiliations', field: 'Primary Flying Club', val: '', note: 'Home club name' },
+    { cat: 'Affiliations', field: 'Secondary Clubs', val: '', note: 'Regional or visiting club memberships' },
+    { cat: 'Affiliations', field: 'National Federation Member #', val: '', note: 'Aero club or federation identifier' },
+
+    // Section 4: Emergency, Medical & SAR
+    { cat: 'Emergency / SAR', field: 'Primary Emergency Contact', val: '', note: 'Full Name and Relationship (e.g. Spouse, Parent)' },
+    { cat: 'Emergency / SAR', field: 'Primary Contact Phone', val: '', note: 'Emergency mobile number with country code' },
+    { cat: 'Emergency / SAR', field: 'Secondary Contact & Phone', val: '', note: 'Alternate emergency contact details' },
+    { cat: 'Emergency / SAR', field: 'SAR / Evacuation Insurance', val: '', note: 'Provider (e.g. GEOS, Garmin SAR, Global Rescue, AAC)' },
+    { cat: 'Emergency / SAR', field: 'Insurance Policy Number', val: '', note: 'Medical evacuation policy number' },
+    { cat: 'Emergency / SAR', field: 'Blood Type', val: '', note: 'e.g. O+, A+, B+, etc.' },
+    { cat: 'Emergency / SAR', field: 'Medical Conditions / Allergies', val: '', note: 'Critical details for first responders' },
+
+    // Section 5: Live Tracking & Satellite Gear
+    { cat: 'Tracking / Gear', field: 'Garmin inReach IMEI', val: '', note: 'Satellite messenger IMEI number' },
+    { cat: 'Tracking / Gear', field: 'Garmin MapShare URL', val: '', note: 'https://share.garmin.com/username' },
+    { cat: 'Tracking / Gear', field: 'Flymaster Live URL', val: '', note: 'Flymaster / Livetrack24 public link' },
+    { cat: 'Tracking / Gear', field: 'XContest Live URL', val: '', note: 'XContest live tracking pilot link' },
+    { cat: 'Tracking / Gear', field: 'Emergency Beacon Hex ID', val: '', note: '406 MHz PLB / ELT 15-character hex ID' },
+
+    // Section 6: Notes & Progression
+    { cat: 'Progression', field: 'Current Season XC Goals', val: '', note: 'Targets for season (distance, triangles, hours)' },
+    { cat: 'Progression', field: 'SIV / Maneuver Notes', val: '', note: 'Stalls, spins, collapses, acro progression log' },
+    { cat: 'Progression', field: 'General Flying Notes', val: '', note: 'Free-form reflections, wing trim checks, line check dates' }
+  ];
+
+  var rows = [];
+  for (var i = 0; i < profileFields.length; i++) {
+    var f = profileFields[i];
+    var val = (existingVals[f.field] !== undefined && existingVals[f.field] !== '') ? existingVals[f.field] : f.val;
+    rows.push([f.cat, f.field, val, f.note]);
+  }
+
+  sh.getRange(4, 1, rows.length, 4).setValues(rows);
+
+  // Formatting rows
+  var curCat = '';
+  for (var r = 0; r < rows.length; r++) {
+    var rowIdx = r + 4;
+    var rowCat = rows[r][0];
+    if (rowCat !== curCat) {
+      sh.getRange(rowIdx, 1).setFontWeight('bold').setBackground('#ECEFF1');
+      curCat = rowCat;
+    }
+    // Highlight editable value column
+    sh.getRange(rowIdx, 3).setBackground('#FFFDE7').setBorder(true, true, true, true, true, true, '#BDBDBD', SpreadsheetApp.BorderStyle.SOLID);
+    sh.getRange(rowIdx, 4).setFontSize(9).setFontColor('#616161');
+  }
+
+  sh.autoResizeColumns(1, 4);
+  sh.setColumnWidth(2, 220);
+  sh.setColumnWidth(3, 280);
+  sh.setColumnWidth(4, 380);
+}
+
+/* ==========================================================================================
+   IN-APP USER GUIDE & METRIC DICTIONARY (RQ-SYS-006)
+   ========================================================================================== */
+
+function scaffoldUserGuide_(ss) {
+  var sh = ss.getSheetByName(TABS.USER_GUIDE.name);
+  if (!sh) return;
+  sh.clear();
+
+  // Title
+  sh.getRange('A1').setValue("Paragliding Flight Log - In-App User Guide & Metric Dictionary").setFontWeight('bold').setFontSize(16);
+  sh.getRange('A1:D1').setBackground(TABS.USER_GUIDE.color).setFontColor('white').merge();
+  sh.getRange('A1').setHorizontalAlignment('center').setVerticalAlignment('middle');
+  sh.setRowHeight(1, 38);
+
+  sh.getRange('A2').setValue("Interactive guide for setup, daily flight imports, system maintenance, and calculated flight metrics").setFontStyle('italic').setFontSize(10);
+  sh.getRange('A2:D2').merge().setHorizontalAlignment('center');
+  sh.setRowHeight(2, 22);
+
+  var rIdx = 4;
+
+  var addSection = function(title, color) {
+    sh.getRange(rIdx, 1, 1, 4).merge().setValue(title).setBackground(color || '#607D8B').setFontColor('white').setFontWeight('bold').setFontSize(12);
+    sh.setRowHeight(rIdx, 28);
+    rIdx++;
+  };
+
+  var addRow = function(col1, col2, col3, col4, isHeader) {
+    var rng = sh.getRange(rIdx, 1, 1, 4);
+    rng.setValues([[col1, col2, col3, col4]]);
+    if (isHeader) {
+      rng.setBackground('#37474F').setFontColor('white').setFontWeight('bold');
+    } else {
+      sh.getRange(rIdx, 1).setFontWeight('bold');
+      sh.getRange(rIdx, 1, 1, 4).setWrap(true);
+    }
+    rIdx++;
+  };
+
+  // Section 1: Overview
+  addSection('1. System Overview & Architecture', '#37474F');
+  addRow('Component', 'Function', 'Details', 'Pilot Benefit', true);
+  addRow('Google Sheets View', 'Primary User Interface', 'Organized logbook tabs: Dashboard, Flights, Pilot Profile, Equipment, User Guide, Parameters, Lookups, App_Log.', 'Familiar, accessible on desktop & mobile.');
+  addRow('Google Apps Script', 'Automated Processing Engine', 'Orchestrates file parsing, physics & thermal analysis, XC scoring, geo-enrichment, and weather queries.', 'Zero server hosting costs, runs completely inside Google Cloud.');
+  addRow('Master Flight Log', 'Permanent Cloud Archive', 'Automatically mirrors processed IGCs into MASTER_LOG_FOLDER_ID with standardized names and public links.', 'Direct 1-click downloads and 3D SeeYou Cloud visualization.');
+  addRow('Watcher Triggers', 'Background Automation', 'Runs automated scans of designated Google Drive folders every 5 to 15 minutes to ingest new flights automatically.', 'Drop files into Drive and your logbook updates hands-free.');
+
+  rIdx++;
+
+  // Section 2: Setup & Folders
+  addSection('2. Initial Configuration & Weather Setup', '#2E7D32');
+  addRow('Setting / Folder', 'Key Parameter', 'Configuration Instructions', 'Default / Recommendation', true);
+  addRow('Watch Folder', 'WATCH_FOLDER_ID', 'Google Drive folder where flight instruments or XC apps drop .igc / .zip files. Multiple folders supported via comma-separation.', 'Use Admin > Update Watch Folder... to select via in-app picker.');
+  addRow('Master Log Folder', 'MASTER_LOG_FOLDER_ID', 'Google Drive folder holding permanent, clean flight log copies for public sharing and 3D viewer links.', 'Set via Admin > Update Master Log Folder... Share folder as Anyone with link.');
+  addRow('Upload / Error Folders', 'UPLOAD_FOLDER_ID / ERROR_FOLDER_ID', 'Temporary staging folder for browser uploads, and quarantine folder for corrupt / unparseable files.', 'Set via Admin > Update Upload Folder... / Update Error Folder...');
+  addRow('Weather Providers', 'WEATHER_PROVIDERS', 'Comma-separated order of weather services: "open_meteo, visual_crossing". Open-Meteo runs with zero API keys required.', 'open_meteo, visual_crossing');
+  addRow('Visual Crossing Key', 'VISUAL_CROSSING_API_KEY', 'Optional API key for Visual Crossing backup (1,000 free calls/day). Sign up at visualcrossing.com.', 'Leave blank to use free Open-Meteo exclusively.');
+  addRow('Contact Email', 'CONTACT_EMAIL', 'Your email address used in User-Agent headers for open Nominatim / Open-Meteo / Overpass API requests.', 'Required to prevent HTTP 403 API blocking.');
+
+  rIdx++;
+
+  // Section 3: Daily Logging Workflows
+  addSection('3. Day-to-Day Flight Logging Workflows', '#1565C0');
+  addRow('Workflow Method', 'Menu / Action', 'Step-by-Step Instructions', 'Best For', true);
+  addRow('Automated Watcher', 'Flight Log > Add Flight > Scan Watch Folder Now', 'Drop files into your Drive folder. Trigger will process automatically every 5 mins, or click Scan Now for immediate import.', 'Day-to-day automated syncing from Syride, Oudie, Flymaster, or Google Drive mobile.');
+  addRow('Drive / URL Import', 'Flight Log > Add Flight > Add files from URL...', 'Option A: Paste any Google Drive folder/file URL or public IGC link. Option B: Browse Drive folders directly with optional source deletion.', 'Bulk importing historical logs or shared club folders.');
+  addRow('Browser Upload', 'Flight Log > Add Flight > Add flight from Upload...', 'Drag and drop single or multiple .igc, .zip, or .gz files directly from your computer into the modal window.', 'Quick manual imports from desktop downloads.');
+  addRow('Manual Blank Row', 'Flight Log > Add Flight > Add manual flight', 'Inserts a clean, pre-formatted flight row with sticky equipment defaults for flights without GPS track logs.', 'Tandem flights, dune soaring, or flights where instrument was off.');
+  addRow('Flight Inspector', 'Flight Log > Flight Inspector', 'Highlight any flight row and open the sidebar to review detailed thermal analysis, mode breakdowns, and edit notes.', 'In-depth post-flight analysis.');
+
+  rIdx++;
+
+  // Section 4: Flight Maintenance
+  addSection('4. Flight Maintenance & Bulk Operations', '#D84315');
+  addRow('Operation', 'Tool / Menu', 'Behavior & Execution Details', 'When to Use', true);
+  addRow('Unified Maintenance', 'Flight Log > Flight maintenance > Flight Maintenance...', 'Configurable modal dialog: choose between Selected Rows vs All Flights, and check operations to batch process.', 'Periodic log maintenance, bulk backfilling, or score recalculation.');
+  addRow('Weather Backfill', 'Maintenance Dialog Checkbox', 'Fetches historical launch/landing wind, cloudbase, cloud %, temperature, and conditions via Open-Meteo & Visual Crossing.', 'Enriching older flights or flights imported while offline.');
+  addRow('Geo & Site Backfill', 'Maintenance Dialog Checkbox', 'Reverse geocodes Lat/Lon coordinates into Town, Region, Country and matches nearest takeoff/landing site names.', 'Populating missing location names.');
+  addRow('XContest Verification', 'Maintenance Dialog Checkbox', 'Queries XContest.org to verify if the flight is published and links the public URL into the XContest column.', 'Updating XContest league claim status.');
+  addRow('Physics & XC Recompute', 'Maintenance Dialog Checkbox', 'Reads master IGC from Drive; re-runs thermal circling, soaring efficiency, glide L/D, and optimal FAI triangle scoring.', 'When scoring rules or thermal detection thresholds are updated.');
+  addRow('Date Sorting', 'Flight Log > Flight maintenance > Sort All Flights by Date', 'Chronologically sorts logbook descending (newest on top) and re-indexes sequential Flight Numbers.', 'After importing out-of-order historical flights.');
+
+  rIdx++;
+
+  // Section 5: Metric Dictionary
+  addSection('5. Comprehensive Metric Dictionary', '#455A64');
+  addRow('Category', 'Metric / Column', 'Calculation / Formula', 'Description & Interpretation', true);
+  
+  // Flight Info
+  addRow('Flight Info', 'FlightID', 'F{YYYYMMDD}_{DailySeq}', 'Unique flight identifier linking directly to 3D SeeYou Cloud track visualization.');
+  addRow('Flight Info', 'Flight No', '=IFERROR(MAX(INDIRECT("C" & (ROW()+1) & ":C")), 0) + 1', 'Sequential flight counter from first flight to present. Automatically adjusts on sort.');
+  addRow('Flight Info', 'Auto Summary', 'Duration + Flight Type + Site + Max Alt', 'Concise human-readable flight summary (e.g. "2h 15m XC at Bir Billing 3100m").');
+  addRow('Flight Info', 'Duration', 'Landing Time - Launch Time', 'Total flight duration in h:mm format.');
+  addRow('Flight Info', 'Track Length (km)', 'Sum of Haversine fix intervals', 'Cumulative distance flown through the air along the GPS track.');
+  addRow('Flight Info', 'Straight Dist (km)', 'Haversine(Launch, Landing)', 'Direct straight-line distance from launch to landing.');
+
+  // Gear
+  addRow('Gear Tracking', 'Wing / Harness / Reserves', 'Inherited from previous flight or Equipment defaults', 'Equipment logged for flight. Equipment tab manages fleet hours and specs.');
+  addRow('Gear Tracking', 'GlideRatio / Trim / FullBar (snap)', 'Snapshot from Equipment table at import time', 'Static record of glider performance baselines when the flight took place.');
+
+  // XC Scoring
+  addRow('XC Scoring', 'XC Distance (km)', 'Optimal 3 Turnpoints via Ramer-Douglas-Peucker', 'Optimized cross-country distance under league scoring rules.');
+  addRow('XC Scoring', 'XC Score', 'Distance * Multiplier (1.0x Free, 1.2x Flat, 1.4x FAI)', 'Official cross-country competition score points.');
+  addRow('XC Scoring', 'XC Flight Class', 'Free Flight, Flat Triangle, or FAI Triangle', 'Geometric classification of the track.');
+  addRow('XC Scoring', 'FAI Triangle (km)', 'Shortest leg >= 28% of total perimeter', 'Strict FAI triangle distance. Highest multiplier (1.4x) in XC leagues.');
+  addRow('XC Scoring', 'Closed?', 'Launch-Landing gap <= 20% (or national bonus)', 'Indicates whether triangle circuit was closed back to launch.');
+
+  // Physics & Analytics
+  addRow('Analytics', 'Thermal %', 'Circling time / Total flight time', 'Percentage of flight spent thermalling (turn rate > 8 deg/s and climb > 0.3 m/s).');
+  addRow('Analytics', 'Thermals Count', 'Count of distinct thermal cores entered', 'Total individual thermal climbs utilized during the flight.');
+  addRow('Analytics', 'Thermal Avg / Best (m/s)', 'Mean and maximum integrated climb rates', 'Vario climbing performance inside thermal cores.');
+  addRow('Analytics', 'Soar %', 'Ridge soaring time / Total flight time', 'Percentage of flight spent ridge soaring in figure-8 S-turns with climb.');
+  addRow('Analytics', 'Efficiency', 'Height gain (m) per km of soaring track', 'Energy efficiency metric for ridge soaring.');
+  addRow('Analytics', 'Glide % & Glide L/D', 'Transition time & in-flight lift/drag ratio', 'Percentage of flight spent gliding between lift sources and realized L/D.');
+  addRow('Analytics', 'Sink % & Sink Time', 'Time spent in heavy sink (< -2.5 m/s)', 'Safety metric monitoring encounter with sink zones or rotor.');
+
+  // Launch & Landing
+  addRow('Launch / Landing', 'Launch / Land Alt (m)', 'GNSS or barometric altitude at first/last fix', 'Elevation of takeoff and touchdown above mean sea level.');
+  addRow('Launch / Landing', 'Launch / Land Site', 'Paragliding Earth / OpenStreetMap match', 'Recognized paragliding takeoff or landing site within configured search radius.');
+  addRow('Launch / Landing', 'Town / Region / Country', 'Reverse geocode via BigDataCloud / Nominatim', 'Administrative geographic location of launch and landing.');
+
+  // Weather
+  addRow('Weather', 'Wind@Launch', 'Surface/10m wind speed + cardinal direction + gusts', 'Launch wind conditions (e.g. "12 km/h WNW (gust 18)").');
+  addRow('Weather', 'Wind@Landing', 'Landing 10m wind speed + cardinal direction + gusts', 'Touchdown wind conditions at landing coordinates and time.');
+  addRow('Weather', 'Cloud %', 'Total cloud cover fraction (0-100%)', 'Sky cloud cover percentage at flight time.');
+  addRow('Weather', 'Cloudbase', 'MSL & AGL: LaunchAlt + (Temp - DewPoint) * 125m', 'Convective condensation level (cloudbase) estimated via Lawrence spread formula.');
+  addRow('Weather', 'Temp (C)', 'Ambient 2m air temperature in Celsius', 'Surface temperature at takeoff.');
+  addRow('Weather', 'Observations', 'WMO weather code condition text', 'General atmospheric condition (e.g. "Partly cloudy", "Clear sky").');
+
+  // Validation
+  addRow('Validation', 'Validation Status', 'Valid, Needs Review, or Invalid', 'Automated heuristics check (e.g. driving, kiting, short flights).');
+  addRow('Validation', 'Val: Reason', 'Specific heuristic rule violation message', 'Details for flights flagged for review.');
+
+  sh.autoResizeColumns(1, 4);
+  sh.setColumnWidth(1, 160);
+  sh.setColumnWidth(2, 220);
+  sh.setColumnWidth(3, 300);
+  sh.setColumnWidth(4, 420);
 }
