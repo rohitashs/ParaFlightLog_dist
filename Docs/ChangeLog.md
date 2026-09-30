@@ -1,5 +1,24 @@
 # Project Change Log
 
+## Session: Documentation Check, Backlog Architecture & Doc Synchronization
+**Date**: 2026-09-29
+**Versions**: v0.8.5
+**Focus**: Doc Check Workflow Creation, Systematic Documentation Audit, Backlog Expansion (User Guide, Flight Maintenance, Setup Wizard, Pilot Profile, Historical Weather), Repository Alignment.
+
+*   `[Workflow]` **Doc Check Workflow**: Created `.agent/workflows/doc_check.md` defining a repeatable 4-dimensional audit protocol (Code-to-Doc Drift, Cross-Doc Consistency, Backlog Traceability, Stale References/Dead Links).
+*   `[Requirements]` **New Requirements Captured**:
+    *   `RQ-SYS-006`: In-App User Guide tab (`scaffoldUserGuide_`) and external distribution documentation covering Overview, Setup, Maintenance, Normal Usage, and Metric Dictionary.
+    *   `RQ-SYS-007`: Unified Flight Maintenance dialog supporting batch operations across user-selected flights (Recompute metrics, sort by date, backfill missing data, weather backfill, XContest verification, Geo backfill).
+    *   `RQ-SYS-008`: Pre-bound Google Sheet template copy model and interactive First-Time Setup Wizard.
+    *   `RQ-SYS-009`: Pilot Profile tab (`scaffoldPilotProfile_`) capturing credentials, club memberships, emergency info, Garmin inReach links, and insurance.
+    *   `RQ-SCR-004`: Historical weather backfill via Open-Meteo Archive API based on flight date, time, and coordinates.
+*   `[Docs]` **Repository-Wide Remediation & Alignment**:
+    *   `Docs/Backlog.md`: Marked `RQ-SCR-003` (XContest Verification) as `[x] Implemented | Phase: 1` and closed completed refactoring ToDos.
+    *   `Docs/Context.md`: Fixed directory typos, cataloged `DocCheckReports/` in structure and Ways of Working, broadened `Code/` file scope, and removed obsolete legacy `v0.7.11` footer.
+    *   `Docs/Technical_Specification.md`: Added function and schema reference for `Config.gs`, `XContest.gs`, and all 6 HTML dialog templates (`FolderPickerDialog.html`, `URLDialog.html`, `UploadDialog.html`, `ScanDialog.html`, `Inspector.html`, `Style.html`) to Section 7.
+    *   `Docs/Setup_Guide.md`: Replaced deprecated tab names (`Equipment_Wings`/`Lookups`) with active sheets (`Dashboard`, `Flights`, `Parameters`, `Equipment`, `Lookups`, `App_Log`), updated menu paths, and refreshed parameter settings.
+    *   `Docs/Workflows/Multi_Device_Setup.md`: Corrected Git push branch reference from `main` to `master`.
+
 ## Session: Code Check & Architectural Modularization
 **Date**: 2026-09-29
 **Versions**: v0.8.4
