@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 14:52:12
+ * Updated: 2026-09-30 16:06:26
  */
 /**
  * Paragliding Flight Log v2.0 - Configuration
@@ -45,8 +45,8 @@ var CFG = {
     { section: 'Integrations', key: 'XCONTEST_USERNAME', val: '', desc: 'XContest Username for Flight verification', input: true },
     { section: 'Integrations', key: 'XCONTEST_PILOT_URL_PATTERN', val: 'https://www.xcontest.org/world/en/pilots/detail:{username}', desc: 'Pattern for Pilot Profile' },
     { section: 'Integrations', key: 'XCONTEST_FLIGHT_URL_PATTERN', val: 'https://www.xcontest.org/world/en/flights/detail:{username}/{date}/{time}', desc: 'Pattern for Flight Detail' },
-    { section: 'Integrations', key: 'XCONTEST_MATCH_DURATION_TOLERANCE_MIN', val: 2, desc: 'Tolerance (min) for Duration match', input: true },
-    { section: 'Integrations', key: 'XCONTEST_MATCH_START_TIME_TOLERANCE_MIN', val: 2, desc: 'Tolerance (min) for Start Time match (Fallback)', input: true },
+    { section: 'Integrations', key: 'XCONTEST_MATCH_DURATION_TOLERANCE_MIN', val: 2, desc: 'Tolerance (min) for Duration match' },
+    { section: 'Integrations', key: 'XCONTEST_MATCH_START_TIME_TOLERANCE_MIN', val: 2, desc: 'Tolerance (min) for Start Time match (Fallback)' },
     
     // Geo & Time
     { section: 'Geo & Time', key: 'GEO_REV_PROVIDERS', val: 'google, big_data_cloud, nominatim_osm', desc: 'Reverse Geo Providers (comma-sep: google, big_data_cloud, nominatim_osm)' },
@@ -87,7 +87,6 @@ var CFG = {
     { section: 'Admin', key: 'CONTACT_EMAIL', val: '', desc: 'Required for APIs', input: true },
     
     // Lists
-    { section: 'Lists', key: 'FLIGHT_TYPES', val: 'Free Fly, XC, Soaring, Comp, SIV / Maneuvers, Training, Other', desc: 'Flight Type Dropdown Options' },
     { section: 'Lists', key: 'DATE_FORMAT', val: 'yyyy-MM-dd', desc: 'Date Display Format' },
     { section: 'Lists', key: 'TIME_FORMAT', val: 'h:mm a', desc: 'Time Display Format' }
   ],
@@ -131,6 +130,7 @@ var TABS = {
     dataStartRow: 5, 
     dataEndRow: 15, // Optimization: Only apply dropdowns to top 15 rows initially
     frozenRows: 4,
+    frozenCols: 4,
     /**
      * COLUMN HELPER NOTES (Header Tooltips on Row 4)
      * --------------------------------------------------------------------------------------
@@ -160,7 +160,7 @@ var TABS = {
         visibleCols: 1, 
         collapsedRows: 1,
         color: '#FFF9C4', 
-        cols: ['Wing', 'Harness', 'Reserve 1', 'Reserve 2', 'Other equipment', 'GlideRatio_LD (snap)', 'Trim_kmh (snap)', 'FullBar_kmh (snap)'],
+        cols: ['Wing', 'Harness', 'Reserve 1', 'Reserve 2', 'Other equipment'],
         editable: ['Wing', 'Harness', 'Reserve 1', 'Reserve 2', 'Other equipment']
       },
       { 
@@ -184,7 +184,7 @@ var TABS = {
         visibleCols: 1, 
         collapsedRows: 1,
         color: '#DCEDC8', 
-        cols: ['Landing Alt (m)', 'Landing Lat', 'Landing Lon', 'Landing Site', 'Landing Town', 'Landing Country', 'Landing Region', 'Launch-Landing Dist (km)'],
+        cols: ['Landing Alt (m)', 'Landing Lat', 'Landing Lon', 'Landing Site', 'Landing Town', 'Landing Country', 'Landing Region'],
         editable: ['Landing Site']
       },
       { 

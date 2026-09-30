@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 14:52:12
+ * Updated: 2026-09-30 16:06:26
  * 
  * MODULE: Ingestion Service
  * Handles Flight Log Parsing, Analysis/Scoring Orchestration, Geo-enrichment,
@@ -328,11 +328,12 @@ function uiAddManualFlight_() {
   };
   
   setVal('FlightID', flightId);
-  setVal('Status', 'Needs Review');
+  setVal('Status', 'Review?');
   setVal('Flight No', flightNoFormula);
   setVal('Auto Summary', 'Manual Entry');
   setVal('Notes', '');
   setVal('Flight Type', 'Free Fly');
+  setVal('Closed?', 'No');
   setVal('Date', dateObj);
   setVal('Time Zone', Session.getScriptTimeZone());
   setVal('Launch Time', formatTime_(dateObj.getTime()/1000));
@@ -457,9 +458,6 @@ function insertFlightRow_(data, fileId, outerName, status, notes, analysis, scor
   setVal('Reserve 1', prevGear.res1 || defGear.res1 || '');
   setVal('Reserve 2', prevGear.res2 || defGear.res2 || '');
   setVal('Other equipment', '');
-  setVal('GlideRatio_LD (snap)', wSpecs.glide);
-  setVal('Trim_kmh (snap)', wSpecs.trim);
-  setVal('FullBar_kmh (snap)', wSpecs.full);
 
   // -- XContest --
   if (xcStatus && xcStatus.status) {
@@ -513,10 +511,6 @@ function insertFlightRow_(data, fileId, outerName, status, notes, analysis, scor
   setVal('Landing Town', geo.d.town || '');
   setVal('Landing Country', geo.d.country || '');
   setVal('Landing Region', geo.d.region || '');
-  var launchLandDist = (data.stats && typeof data.stats.straightDistKm === 'number')
-    ? data.stats.straightDistKm.toFixed(1)
-    : '';
-  setVal('Launch-Landing Dist (km)', launchLandDist);
 
   // -- Weather (RQ-SCR-004) --
   var wx = weather || {};

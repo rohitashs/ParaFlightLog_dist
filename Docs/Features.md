@@ -61,11 +61,12 @@ Adds location context to raw GPS coordinates.
 *Maps to `RQ-SYS-002`*
 
 The visual layer where users interact with the data.
-*   **Flights Tab**: The main logbook view. Uses a **2-Row Header** design (Category + Field) for clarity, with Cell A2 providing a direct hyperlink to the Master Flight Log Drive folder.
-*   **Column Grouping**: Columns are physically grouped and colored by function (e.g. *Flight Info* is Blue, *Scoring* is Orange, *Weather* is Light Blue). Groups can be collapsed to reduce clutter.
+*   **Flights Tab**: The main logbook view. Uses a **2-Row Header** design (Category + Field) for clarity, with Cell A2 providing a direct hyperlink to the Master Flight Log Drive folder. Columns are frozen through Column D (`Auto Summary`) for seamless horizontal scrolling across wide data groups.
+*   **Column Grouping & Streamlined Schema**: Columns are physically grouped and colored by function (*Flight Info*, *Gear*, *XC Scoring*, *Launch*, *Landing*, *Weather*, *Analytics*, *Validation*, *Meta*). Redundant columns (`Launch-Landing Dist (km)` and gear snapshot baselines `GlideRatio_LD`, `Trim_kmh`, `FullBar_kmh`) have been eliminated to keep records lean.
+*   **Dynamic Dropdowns & Validation Rules**: `Flight Type` and `XC Flight Class` dynamically bind to populated ranges in the `Lookups` tab (`Lookups!G3:G` and `Lookups!H3:H`), `Closed?` provides a clean `Yes` / `No` dropdown, and `Add manual flight` sets the default status to `Review?`.
 *   **Download & Visualization Links**: `FlightID` links directly to SeeYou Cloud 3D visualization, while `Flight No` wraps sequential numbering with a direct download hyperlink to the master IGC file.
 *   **Header Tooltips**: Header cells on Row 4 contain cell notes (e.g. "Click to view flight" and "Click to download igc") for intuitive guidance.
-*   **Menus**: A custom "Flight Log" menu provides one-click access to common actions (Add Flight, Upload, Flight Maintenance, Admin).
+*   **Menus**: A custom "Flight Log" menu provides one-click access to common actions (Add Flight, Upload, Flight Maintenance, and Admin tools including dedicated Dashboard and User Guide tab refreshers).
 *   **Dialogs**: Custom HTML interfaces for File Uploads and "Add files from URL (folder, igc, zip)" supporting both manual URL/ID entry and native Google Drive folder exploration with optional "Delete from source" cleanup.
 *   **Flight Inspector**: A dedicated sidebar to view, edit, and audit flight details without horizontal scrolling. Includes collapsible sections and direct SeeYou Cloud links.
 *   **Flight Maintenance & Bulk Operations (`RQ-SYS-007`)**: A unified modal dialog (`FlightMaintenanceDialog.html`) allowing pilots to select scope (Selected rows vs. All flights) and execute batch operations: backfill historical weather, backfill missing geo/site data, re-verify XContest flight claims, recompute physics and thermalling modes, recalculate XC score, and sort flights by date.
@@ -73,12 +74,14 @@ The visual layer where users interact with the data.
 ## 7. 📊 Flight Dashboard
 *Maps to `RQ-SYS-005`, `CR-SYS-001`*
 
-A high-level dashboard providing visual metrics and summaries powered by real, dynamic Google Sheets formulas.
+A high-level visual dashboard structured into a compact 8-column layout (Columns A through H) powered by resilient, insertion-safe `INDIRECT` Google Sheets formulas.
 *   **Master Log Folder Link**: Row 2 features a prominent direct hyperlink to the Master Flight Log Google Drive folder.
-*   **Live KPI Cards**: Dynamic formulas calculate Total Flights, Total Airtime Hours (`h:mm` sum), Total Distance (km), and Flights Flown in the Current Year.
-*   **Top Lists**: Dynamic QUERY formulas extract Top 5 Flights by Duration, Top 5 Flights by Distance, and Top Takeoff Sites.
-*   **Geography**: Live frequency breakdown of flights by country.
-*   **Recent Activity**: Real-time listing of the 5 most recent flights.ast week/month/quarter.
+*   **Live KPI Cards**: 4 compact cards (2 cells wide each across A3:H5) calculating Total Flights, Total Airtime Hours (summed in decimal hours via `TIMEVALUE`), Total Distance (km), and Flights Flown in the Current Year.
+*   **2-Column Card Grid (2 + 2 + 1)**: Distinct cards (4 cells wide each across Major Columns A:D and E:H):
+    *   *Row 7–12*: **Top 5 by Duration** (numerically sorted via `TIMEVALUE`) & **Top 5 by Distance** (Track Length).
+    *   *Row 14–19*: **Recent Activity** (descending Date sort) & **Top Sites** (Launch Site frequency from Col AL).
+    *   *Row 21–26*: **Countries Flown** (Country frequency from Col AN).
+*   **Immune to Row Operations**: All formulas reference `INDIRECT("Flights!..." & dataStartRow & ":...")`, ensuring that row insertions before row 5, deletions, or sorts never shift or break formula ranges.
 
 ## 8. 🛡️ Administration & Setup
 *Maps to `RQ-SYS-001`, `RQ-SYS-008`*

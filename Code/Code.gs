@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 14:52:12
+ * Updated: 2026-09-30 16:06:26
  * Test access verification: Verified GAS write access on 2026-09-25 08:26:00.
  * 
  * CORE MODULE: Orchestration Only.
@@ -31,6 +31,7 @@ function onOpen(e) {
         .addItem('First Time Setup (Full Scaffold)', 'scaffoldAll_')
         .addItem('Admin: Update Validation & Params', 'updateValidationOnly_')
         .addItem('Admin: Refresh User Guide Tab', 'uiRefreshUserGuide_')
+        .addItem('Admin: Refresh Dashboard', 'uiRefreshDashboard_')
         .addItem('Admin: Reapply Formatting (Safe)', 'reapplyFormatting_')
         .addItem('Admin: Backup Data', 'backupSystemSheets_')
         .addSeparator()
@@ -98,13 +99,6 @@ function getParameters_() {
       return cleanDriveId_(s.trim());
     }).filter(Boolean);
     config.WATCH_FOLDER_ID = ids.join(', ');
-  }
-
-  // Parse list types
-  if (typeof config.FLIGHT_TYPES === 'string') {
-    config.FLIGHT_TYPES_LIST = config.FLIGHT_TYPES.split(',').map(function(s) { return s.trim(); });
-  } else {
-    config.FLIGHT_TYPES_LIST = CFG.defaults.FLIGHT_TYPES.split(',').map(function(s) { return s.trim(); });
   }
 
   return config;

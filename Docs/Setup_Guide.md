@@ -61,10 +61,10 @@ This guide walks you through setting up the Paragliding Flight Log System from s
     *   **GEO_SITE_PROVIDERS**: `paraglidingearth,overpass` (fallback chain for launch/landing site detection).
     *   **OSM_RADIUS_M**: `3000` (search radius in meters for nearby sites).
     *   **XCONTEST_USERNAME**: Pilot username on XContest for flight verification.
-    *   **FLIGHT_TYPES**: `Free Fly, XC, Soaring, Comp, SIV / Maneuvers, Training, Other`.
     *   **THERMAL_MIN_CLIMB**: `0.3` (m/s climb rate threshold).
     *   **THERMAL_MIN_TURN**: `8` (degrees/sec turning rate threshold).
     *   **VALIDATION_MIN_DURATION_SEC**: `120` (minimum flight duration in seconds).
+    *(Note: Flight Types and XC Classes are customizable directly under the **Lookups** sheet tab).*
 
 ## Step 6: Define Your Gear & Pilot Profile
 1.  Go to the **Pilot_Profile** sheet and fill in your ratings, emergency contacts, and live tracking links (e.g. Garmin inReach).

@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 14:52:12
+ * Updated: 2026-09-30 16:06:26
  */
 /**
  * Paragliding Flight Log v2.0
@@ -21,6 +21,7 @@ function runAllTests() {
   results.push(testValidateRequiredFolders_());
   results.push(testDateTimeFormats_());
   results.push(testMaintenanceFlightFilter_());
+  results.push(testDashboardAndSchema_());
   
   var failures = results.filter(function(r) { return !r.idx || r.error; });
   if (failures.length > 0) {
@@ -293,4 +294,42 @@ function testMaintenanceFlightFilter_() {
   }
 
   return { module: 'Maintenance', idx: true };
+}
+
+function testDashboardAndSchema_() {
+  // 1. Verify frozenCols configuration
+  if (!TABS.FLIGHTS || TABS.FLIGHTS.frozenCols !== 4) {
+    return { module: 'DashboardAndSchema', error: 'TABS.FLIGHTS.frozenCols should be 4' };
+  }
+
+  // 2. Verify Gear group columns eliminated snapshots
+  var gearGroup = (TABS.FLIGHTS.groups || []).filter(function(g) { return g.name === 'Gear'; })[0];
+  if (!gearGroup || gearGroup.cols.indexOf('GlideRatio_LD (snap)') !== -1) {
+    return { module: 'DashboardAndSchema', error: 'GlideRatio_LD (snap) should be removed from Gear group' };
+  }
+
+  // 3. Verify Landing group eliminated duplicate Launch-Landing Dist (km)
+  var landGroup = (TABS.FLIGHTS.groups || []).filter(function(g) { return g.name === 'Landing'; })[0];
+  if (!landGroup || landGroup.cols.indexOf('Launch-Landing Dist (km)') !== -1) {
+    return { module: 'DashboardAndSchema', error: 'Launch-Landing Dist (km) should be removed from Landing group' };
+  }
+
+  // 4. Verify FLIGHT_TYPES removed from CFG.parameters
+  var hasFlightTypesParam = (CFG.parameters || []).some(function(p) { return p.key === 'FLIGHT_TYPES'; });
+  if (hasFlightTypesParam) {
+    return { module: 'DashboardAndSchema', error: 'FLIGHT_TYPES parameter should be removed from CFG.parameters' };
+  }
+
+  // 5. Verify XContest tolerances do not have input: true
+  var durTolParam = (CFG.parameters || []).filter(function(p) { return p.key === 'XCONTEST_MATCH_DURATION_TOLERANCE_MIN'; })[0];
+  if (durTolParam && durTolParam.input === true) {
+    return { module: 'DashboardAndSchema', error: 'XCONTEST_MATCH_DURATION_TOLERANCE_MIN should not have input: true' };
+  }
+
+  // 6. Verify dashboard scaffolding function exists
+  if (typeof scaffoldDashboard_ !== 'function') {
+    return { module: 'DashboardAndSchema', error: 'scaffoldDashboard_ function missing' };
+  }
+
+  return { module: 'DashboardAndSchema', idx: true };
 }

@@ -32,7 +32,7 @@ This document defines the **Code Organization**, **Algorithms**, and **Data Sche
 ---
 
 ## 3. Data Schema (`Flights` Tab)
-Fixed Header Schema (Row 4=Category, Row 5=Name). Data starts Row 6.
+Fixed Header Schema (Row 3=Category, Row 4=Name). Data starts Row 5.
 
 ### Primary Column Groups
 | Group | Key Fields | Mapping |
@@ -131,15 +131,16 @@ Fixed Header Schema (Row 4=Category, Row 5=Name). Data starts Row 6.
 
 ### `Scaffold.gs` (Setup & Validation)
 *   **`scaffoldAll_()`**: Master function to create/repair all sheets (`Dashboard`, `Flights`, `Parameters`, `Equipment`, `Lookups`, `App_Log`, `User Guide`, `Pilot_Profile`).
-*   **`scaffoldDashboard_(ss)`**: Creates KPI cards and Master Flight Log folder hyperlink in Row 2 (`A2:Q2`).
-*   **`scaffoldFlights_(ss)`**: Builds 2-row category headers, sets Master Flight Log folder hyperlink in Cell `A2`, and applies column header notes/tooltips to Row 4 (`colNotes`).
+*   **`scaffoldDashboard_(ss)` (`RQ-SYS-005`, `CR-SYS-001`)**: Builds the compact 8-column Dashboard (`A` to `H`), featuring 4 live KPI cards (`A3:H5`), and a 2-column card grid (2 + 2 + 1: Top Duration, Top Distance, Recent Activity, Top Sites, Countries Flown). Uses resilient `INDIRECT("Flights!..." & startRow & ":...")` formulas immune to row insertions and deletions.
+*   **`scaffoldFlights_(ss)`**: Builds 2-row category headers, sets Master Flight Log folder hyperlink in Cell `A2`, freezes 4 columns (`A:D`), and applies column header notes/tooltips to Row 4 (`colNotes`).
 *   **`scaffoldParameters_(ss)`**: Populates parameters with human-readable path enrichment in Column C (`Description`), strict Plain Text (`@`) formatting for format keys, and exact validation ranges (`I3:I7` for `DATE_FORMAT`, `J3:J4` for `TIME_FORMAT`) to eliminate trailing blank dropdown options.
 *   **`scaffoldUserGuide_(ss)` (`RQ-SYS-006.1`)**: Builds or refreshes the in-app `User Guide` sheet tab with structured sections: System Overview, Setup & Configuration (including `XCONTEST_USERNAME`), Normal Logging Usage, System Maintenance (weather, geo, XContest verification, physics, sort), and Comprehensive Metric Dictionary (defining all calculated fields including XContest hyperlinking).
 *   **`uiRefreshUserGuide_()`**: Interactive menu action under `Flight Log > Admin > Admin: Refresh User Guide Tab` to safely re-scaffold the `User Guide` tab without touching flight data.
+*   **`uiRefreshDashboard_()`**: Interactive menu action under `Flight Log > Admin > Admin: Refresh Dashboard` to re-scaffold the 8-column resilient Dashboard without touching flight data.
 *   **`scaffoldPilotProfile_(ss)` (`RQ-SYS-009.1`)**: Builds the `Pilot_Profile` sheet tab with structured fields (Personal info, Certifications, Org/Club memberships, Emergency contacts, Garmin inReach links, Insurance) and free-form notes.
 *   **`backupSystemSheets_()`**: Clones user data sheets (`Flights`, `Pilot_Profile`, `Equipment`, `Parameters`, `Lookups`) into dedicated backup tabs (`Backup Flights`, etc.), replacing any previous backup iterations.
 *   **`updateValidationOnly_()`**: Re-applies dropdowns and validation rules to `Flights` and `Equipment`, refreshes `Parameters`, and updates `User Guide`.
-*   **`applyFlightsValidation_(sh)`**: Applies validation to the top N rows of the Flights sheet.
+*   **`applyFlightsValidation_(sh)`**: Applies dynamic validation from the `Lookups` tab (`Flight Type` from `Lookups!G3:G`, `XC Flight Class` from `Lookups!H3:H`), `Closed?` list validation (`['Yes', 'No']`), and dropdowns across the top N rows of the `Flights` sheet.
 *   **`ensureSheet_(ss, name)`**: Utility to create a sheet if missing.
 
 ### `FileHandling.gs` (Drive & File Pipeline)

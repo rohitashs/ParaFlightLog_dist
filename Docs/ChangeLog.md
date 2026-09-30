@@ -1,5 +1,39 @@
 # Project Change Log
 
+## Session: Dashboard Resiliency, Frozen Columns, Dynamic Lookups & Schema Streamlining
+**Date**: 2026-09-30
+**Versions**: v0.8.12
+**Focus**: Dashboard formula resiliency & 8-column layout (`CR-SYS-002`, `Bug-SYS-006`), frozen columns (`CR-UI-017`), dynamic Lookups validation (`Bug-UI-006`), Closed? validation (`Bug-UI-007`), manual flight status default (`Bug-UI-005`), and schema streamlining (`CR-SCH-001`).
+
+*   `[Fix]` **Bug-SYS-006 & CR-SYS-002 (Dashboard Resiliency & 8-Column Layout)**:
+    *   Rebuilt `scaffoldDashboard_` in `Code/Scaffold.gs` with a compact 8-column layout (`A` to `H`), featuring 4 two-cell wide KPI summary cards (`A3:B5`, `C3:D5`, `E3:F5`, `G3:H5`), and a 2-column card grid (2 + 2 + 1: Top Duration, Top Distance, Recent Activity, Top Sites, Countries Flown).
+    *   Replaced vulnerable direct range formula references (`Flights!A5:A`) with string-literal `INDIRECT("Flights!..." & startRow & ":...")` formulas. This permanently prevents Google Sheets from shifting formula ranges downward (e.g. to `Flights!A6:A` or `Flights!A15:A`) when new flight rows are inserted via `insertRowBefore(5)`.
+    *   Corrected Total Hours calculation to parse `h:mm` flight durations into decimal hours using `SUMPRODUCT(IFERROR(TIMEVALUE(...) * 24, 0))`.
+    *   Corrected column letter references for Launch Site (`AL`) and Launch Country (`AN`) that had shifted following Phase 2 weather integrations.
+    *   Added `Admin: Refresh Dashboard` (`uiRefreshDashboard_`) menu action under `Flight Log > Admin` in `Code/Code.gs` and hooked it into `reapplyFormatting_()`.
+*   `[Imp]` **CR-UI-017 (Frozen Columns on Flights Sheet)**:
+    *   Configured `frozenCols: 4` in `Code/Config.gs` (`TABS.FLIGHTS.frozenCols`), `scaffoldFlights_`, and `reapplyFormatting_`, locking Columns A through D (`Flight No`, `FlightID`, `Date`, `Auto Summary`) during horizontal scrolling.
+*   `[Fix]` **Bug-UI-006 (Dynamic Dropdown Validation for Flight Type and XC Flight Class)**:
+    *   Bound `Flight Type` data validation dynamically to `Lookups!G3:G` and `XC Flight Class` to `Lookups!H3:H` in `applyFlightsValidation_` (`Code/Scaffold.gs`).
+    *   Reordered `scaffoldAll_` in `Code/Scaffold.gs` so `scaffoldLookups_` runs prior to `scaffoldFlights_`, ensuring lookup lists exist before validation rules are constructed.
+    *   Directly seeded default flight types in `scaffoldLookups_`.
+*   `[Fix]` **Bug-UI-007 (Closed? Column Validation Mismatch)**:
+    *   Replaced checkbox data validation on the `Closed?` column with list validation `['Yes', 'No']` in `applyFlightsValidation_` (`Code/Scaffold.gs`).
+    *   Updated `uiAddManualFlight_()` in `Code/Ingestion.gs` to default `Closed?: 'No'` instead of inserting a checkbox.
+*   `[Fix]` **Bug-UI-005 (Manual Flight Status Validation Mismatch)**:
+    *   Fixed `uiAddManualFlight_()` in `Code/Ingestion.gs` to set initial Status to `'Review?'` instead of `"Needs Review"`, aligning with dropdown validation rules and ingestion defaults.
+*   `[Imp]` **CR-SCH-001 (Schema & Parameter Streamlining)**:
+    *   Eliminated redundant `Launch-Landing Dist (km)` from the Landing group in `Code/Config.gs` and `Code/Ingestion.gs` (duplicate of `Straight Dist (km)`).
+    *   Eliminated unused gear baseline snapshot columns `GlideRatio_LD (snap)`, `Trim_kmh (snap)`, and `FullBar_kmh (snap)` from the Gear group in `Code/Config.gs`, `Code/Ingestion.gs`, and `Code/Scaffold.gs`.
+    *   Eliminated redundant `FLIGHT_TYPES` from `CFG.parameters` in `Code/Config.gs` and `Code/Code.gs` (flight types are configured directly on the `Lookups` tab).
+    *   Removed yellow input shading from internal XContest match tolerances `XCONTEST_MATCH_DURATION_TOLERANCE_MIN` and `XCONTEST_MATCH_START_TIME_TOLERANCE_MIN` in `Code/Config.gs`.
+*   `[Imp]` **CR-UI-018 (Admin Refresh User Guide Menu Action)**:
+    *   Added `Admin: Refresh User Guide Tab` (`uiRefreshUserGuide_`) under `Flight Log > Admin` in `Code/Code.gs`.
+*   `[Test]` **Automated Testing**:
+    *   Added `testDashboardAndSchema_()` in `Code/Test.gs` verifying frozen column settings, eliminated column removals, Lookups range validations, and live Dashboard `INDIRECT` formula evaluation.
+
+---
+
 ## Session: XContest Verification, Identifier Linking & Claim Deadline
 **Date**: 2026-09-30
 **Versions**: v0.8.11
