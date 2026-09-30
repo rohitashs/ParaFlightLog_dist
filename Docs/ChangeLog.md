@@ -5,16 +5,21 @@
 **Versions**: v0.8.12
 **Focus**: Dashboard formula resiliency & 8-column layout (`CR-SYS-002`, `Bug-SYS-006`), frozen columns (`CR-UI-017`), dynamic Lookups validation (`Bug-UI-006`), Closed? validation (`Bug-UI-007`), manual flight status default (`Bug-UI-005`), and schema streamlining (`CR-SCH-001`).
 
-*   `[Fix]` **Bug-SYS-006 & CR-SYS-002 (Dashboard Restructuring, Number Formatting & 6-Month Timeline)**:
+*   `[Fix]` **Bug-SYS-006 & CR-SYS-002 (Dashboard Restructuring, Currency Shading, 8 Leaderboard Cards & Full Lists)**:
     *   Rebuilt `scaffoldDashboard_` in `Code/Scaffold.gs` into a 6-column layout (`A` to `F`, ~930px width) with word wrapping enabled across all cells.
-    *   Added **Banner 1: All-Time Summary**: 3 KPI cards across Columns `A:B` (Total Flights), `C:D` (Total Hours), and `E:F` (Total Distance).
-    *   Added **Banner 2: Year-to-Date Summary**: 3 KPI cards across Columns `A:B` (Flights this year), `C:D` (Hours this year), and `E:F` (Distance this year), dynamically adjusting as the calendar year changes via `YEAR(TODAY())`.
-    *   Added **Section 3: 6-Month Rolling Activity Timeline**: Horizontal timeline spanning Columns A through F displaying the last 6 months in ascending order (5 months ago to current month), displaying Month Name (`mmm-yyyy`), Total Flights, Total Airtime Hours, and Total Distance for each month.
-    *   Added **Section 4: 2 x 3 Leaderboard Grid (6 Cards)**: Symmetrical cards across Columns A:C and D:F:
-        *   Row 1: Top 5 by Duration & Top 5 by Distance
-        *   Row 2: Recent Activity & Top 5 Launch Sites
-        *   Row 3: Countries Flown & Top 5 Max Altitude (peak altitudes achieved in meters from Col AB).
-    *   Resolved raw decimal duration numbers by formatting durations cleanly as `H:MM hrs` (`TEXT(..., "h:mm") & " hrs"`).
+    *   Added **Banner 1: All-Time Summary**: 3 KPI cards across Columns `A:B` (Total Flights), `C:D` (Total Hours formatted cleanly as `[h]:mm "hrs"`), and `E:F` (Total Distance `#,##0 "km"`).
+    *   Added **Banner 2: Year-to-Date Summary**: 3 KPI cards across Columns `A:B` (Flights this year), `C:D` (Hours this year formatted cleanly as `[h]:mm "hrs"`), and `E:F` (Distance this year), dynamically adjusting as the calendar year changes via `YEAR(TODAY())`.
+    *   Added **Section 3: 6-Month Rolling Activity Timeline & Pilot Currency Shading**:
+        *   Horizontal timeline spanning Columns A through F displaying the last 6 months in ascending order (5 months ago to current month), displaying Month Name (`mmm-yyyy`), Total Flights, Total Airtime Hours, and Total Distance for each month.
+        *   Underlying values are pure numbers: Flights (`0 "flts"`), Duration day fractions (`[h]:mm "hrs"`), and Distance (`#,##0 "km"`).
+        *   Added dynamic pilot currency conditional formatting: Orange (low), Yellow (moderate), Green (active/current) driven by configurable thresholds in `Parameters` (`TIMELINE_FLIGHTS_LOW: 2 flts`, `TIMELINE_FLIGHTS_MED: 6 flts`, `TIMELINE_HOURS_LOW: 1:00 hrs`, `TIMELINE_HOURS_MED: 4:00 hrs`), where duration thresholds are also pure numeric day fractions formatted as `[h]:mm "hrs"`.
+    *   Added **Section 4: 4 x 2 Leaderboard Grid (8 Cards)**: Symmetrical cards across Columns A:C and D:F:
+        *   Row 1: Top 5 by Duration (`[h]:mm hrs`) & Top 5 by Distance (`0.0 km`)
+        *   Row 2: Top 5 by Max Altitude (`#,##0 m`) & Top 5 by Altitude Gain (`#,##0 m`)
+        *   Row 3: Top 5 Thermal Flights (`Thermal% * Duration`, formatted as `Flight X - [h]:mm hrs (Pct%, Summary)`) & Top 5 Soaring Flights (`Soar% * Duration`)
+        *   Row 4: Top 5 by XC Score (`0.0 pts`) & Top 5 by Max Groundspeed (`0.0 km/h`).
+    *   Added **Section 5: Complete Unique Lists**: Pre-scaffolded 20 rows each for Launch Sites (Cols `A:C`, Col AL) and Countries Flown (Cols `D:F`, Col AN) ordered by flight count descending, eliminating array expansion `#REF!` errors across merged cells.
+    *   Resolved raw decimal duration numbers by formatting durations cleanly as `[h]:mm hrs`.
     *   Replaced vulnerable direct range formula references with string-literal `INDIRECT("Flights!..." & startRow & ":...")` formulas.
 *   `[Imp]` **CR-UI-017 (Frozen Columns on Flights Sheet & Category Unmerge)**:
     *   Configured `frozenCols: 4` in `Code/Config.gs` (`TABS.FLIGHTS.frozenCols`), `scaffoldFlights_`, and `reapplyFormatting_`, locking Columns A through D (`FlightID`, `Status`, `Flight No`, `Auto Summary`) during horizontal scrolling.

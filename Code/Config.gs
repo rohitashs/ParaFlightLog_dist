@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 16:53:55
+ * Updated: 2026-09-30 17:35:51
  */
 /**
  * Paragliding Flight Log v2.0 - Configuration
@@ -88,7 +88,13 @@ var CFG = {
     
     // Lists
     { section: 'Lists', key: 'DATE_FORMAT', val: 'yyyy-MM-dd', desc: 'Date Display Format' },
-    { section: 'Lists', key: 'TIME_FORMAT', val: 'h:mm a', desc: 'Time Display Format' }
+    { section: 'Lists', key: 'TIME_FORMAT', val: 'h:mm a', desc: 'Time Display Format' },
+
+    // Dashboard & Currency
+    { section: 'Dashboard & Currency', key: 'TIMELINE_FLIGHTS_LOW', val: 2, desc: 'Monthly flights low threshold (Orange < X)' },
+    { section: 'Dashboard & Currency', key: 'TIMELINE_FLIGHTS_MED', val: 6, desc: 'Monthly flights med threshold (Yellow X..Y, Green >= Y)' },
+    { section: 'Dashboard & Currency', key: 'TIMELINE_HOURS_LOW', val: 1 / 24, desc: 'Monthly duration low threshold (Orange < X, [h]:mm "hrs")' },
+    { section: 'Dashboard & Currency', key: 'TIMELINE_HOURS_MED', val: 4 / 24, desc: 'Monthly duration med threshold (Yellow X..Y, Green >= Y, [h]:mm "hrs")' }
   ],
   
   // Helper to get defaults map

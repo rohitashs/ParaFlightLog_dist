@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 16:53:55
+ * Updated: 2026-09-30 17:35:51
  */
 /**
  * Paragliding Flight Log v2.0
@@ -329,6 +329,22 @@ function testDashboardAndSchema_() {
   // 6. Verify dashboard scaffolding function exists
   if (typeof scaffoldDashboard_ !== 'function') {
     return { module: 'DashboardAndSchema', error: 'scaffoldDashboard_ function missing' };
+  }
+
+  // 7. Verify Timeline Currency Parameters exist in CFG.parameters
+  var pMap = {};
+  (CFG.parameters || []).forEach(function(p) { pMap[p.key] = p; });
+  if (!pMap['TIMELINE_FLIGHTS_LOW'] || pMap['TIMELINE_FLIGHTS_LOW'].val !== 2) {
+    return { module: 'DashboardAndSchema', error: 'TIMELINE_FLIGHTS_LOW parameter missing or invalid' };
+  }
+  if (!pMap['TIMELINE_FLIGHTS_MED'] || pMap['TIMELINE_FLIGHTS_MED'].val !== 6) {
+    return { module: 'DashboardAndSchema', error: 'TIMELINE_FLIGHTS_MED parameter missing or invalid' };
+  }
+  if (!pMap['TIMELINE_HOURS_LOW'] || Math.abs(pMap['TIMELINE_HOURS_LOW'].val - 1/24) > 0.0001) {
+    return { module: 'DashboardAndSchema', error: 'TIMELINE_HOURS_LOW parameter missing or invalid' };
+  }
+  if (!pMap['TIMELINE_HOURS_MED'] || Math.abs(pMap['TIMELINE_HOURS_MED'].val - 4/24) > 0.0001) {
+    return { module: 'DashboardAndSchema', error: 'TIMELINE_HOURS_MED parameter missing or invalid' };
   }
 
   return { module: 'DashboardAndSchema', idx: true };

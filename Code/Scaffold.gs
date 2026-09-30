@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 16:53:55
+ * Updated: 2026-09-30 17:35:51
  */
 /**
  * Paragliding Flight Log v2.0 - Scaffolding & Setup
@@ -116,7 +116,7 @@ function scaffoldDashboard_(ss) {
   sh.setRowHeight(4, 18);
 
   var fTotalFlights = '=IFERROR(TEXT(COUNTIF(INDIRECT("' + fSheet + '!A' + fStart + ':A"), "<>"), "#,##0") & CHAR(10) & "Total Flights", "0" & CHAR(10) & "Total Flights")';
-  var fTotalHours = '=IFERROR(TEXT(SUMPRODUCT(IFERROR(TIMEVALUE(INDIRECT("' + fSheet + '!L' + fStart + ':L")) * 24, 0)), "#,##0.0") & " hrs" & CHAR(10) & "Total Hours", "0.0 hrs" & CHAR(10) & "Total Hours")';
+  var fTotalHours = '=IFERROR(TEXT(SUMPRODUCT(IFERROR(TIMEVALUE(INDIRECT("' + fSheet + '!L' + fStart + ':L")), 0)), "[h]:mm") & " hrs" & CHAR(10) & "Total Hours", "0:00 hrs" & CHAR(10) & "Total Hours")';
   var fTotalDist = '=IFERROR(TEXT(SUM(INDIRECT("' + fSheet + '!M' + fStart + ':M")), "#,##0") & " km" & CHAR(10) & "Total Distance", "0 km" & CHAR(10) & "Total Distance")';
 
   var kpisAllTime = [
@@ -144,7 +144,7 @@ function scaffoldDashboard_(ss) {
   sh.setRowHeight(8, 18);
 
   var fYearFlights = '=IFERROR(TEXT(COUNTIFS(INDIRECT("' + fSheet + '!H' + fStart + ':H"), ">=" & DATE(YEAR(TODAY()), 1, 1), INDIRECT("' + fSheet + '!H' + fStart + ':H"), "<=" & DATE(YEAR(TODAY()), 12, 31)), "#,##0") & CHAR(10) & "Flights (" & YEAR(TODAY()) & ")", "0" & CHAR(10) & "Flights (" & YEAR(TODAY()) & ")")';
-  var fYearHours = '=IFERROR(TEXT(SUMPRODUCT((IFERROR(YEAR(INDIRECT("' + fSheet + '!H' + fStart + ':H")), 0)=YEAR(TODAY())) * IFERROR(TIMEVALUE(INDIRECT("' + fSheet + '!L' + fStart + ':L")) * 24, 0)), "#,##0.0") & " hrs" & CHAR(10) & "Hours (" & YEAR(TODAY()) & ")", "0.0 hrs" & CHAR(10) & "Hours (" & YEAR(TODAY()) & ")")';
+  var fYearHours = '=IFERROR(TEXT(SUMPRODUCT((IFERROR(YEAR(INDIRECT("' + fSheet + '!H' + fStart + ':H")), 0)=YEAR(TODAY())) * IFERROR(TIMEVALUE(INDIRECT("' + fSheet + '!L' + fStart + ':L")), 0)), "[h]:mm") & " hrs" & CHAR(10) & "Hours (" & YEAR(TODAY()) & ")", "0:00 hrs" & CHAR(10) & "Hours (" & YEAR(TODAY()) & ")")';
   var fYearDist = '=IFERROR(TEXT(SUMIFS(INDIRECT("' + fSheet + '!M' + fStart + ':M"), INDIRECT("' + fSheet + '!H' + fStart + ':H"), ">=" & DATE(YEAR(TODAY()), 1, 1), INDIRECT("' + fSheet + '!H' + fStart + ':H"), "<=" & DATE(YEAR(TODAY()), 12, 31)), "#,##0") & " km" & CHAR(10) & "Distance (" & YEAR(TODAY()) & ")", "0 km" & CHAR(10) & "Distance (" & YEAR(TODAY()) & ")")';
 
   var kpisYear = [
@@ -182,30 +182,73 @@ function scaffoldDashboard_(ss) {
     var rMonth = sh.getRange(colLetter + '13');
     rMonth.setFormula(fMonthName).setBackground('#ECEFF1').setFontWeight('bold').setHorizontalAlignment('center').setVerticalAlignment('middle').setBorder(true, true, true, true, true, true, '#B0BEC5', SpreadsheetApp.BorderStyle.SOLID);
 
-    // Row 14: Total Flights
-    var fMonthFlights = '=IFERROR(COUNTIFS(INDIRECT("' + fSheet + '!H' + fStart + ':H"), ">=" & DATE(YEAR(EDATE(TODAY(), ' + offset + ')), MONTH(EDATE(TODAY(), ' + offset + ')), 1), INDIRECT("' + fSheet + '!H' + fStart + ':H"), "<=" & EOMONTH(EDATE(TODAY(), ' + offset + '), 0)) & " flts", "0 flts")';
+    // Row 14: Total Flights (pure numeric, format 0 "flts")
+    var fMonthFlights = '=IFERROR(COUNTIFS(INDIRECT("' + fSheet + '!H' + fStart + ':H"), ">=" & DATE(YEAR(EDATE(TODAY(), ' + offset + ')), MONTH(EDATE(TODAY(), ' + offset + ')), 1), INDIRECT("' + fSheet + '!H' + fStart + ':H"), "<=" & EOMONTH(EDATE(TODAY(), ' + offset + '), 0)), 0)';
     var rFlights = sh.getRange(colLetter + '14');
-    rFlights.setFormula(fMonthFlights).setHorizontalAlignment('center').setVerticalAlignment('middle').setBorder(true, true, true, true, true, true, '#E0E0E0', SpreadsheetApp.BorderStyle.SOLID);
+    rFlights.setFormula(fMonthFlights).setNumberFormat('0 "flts"').setHorizontalAlignment('center').setVerticalAlignment('middle').setBorder(true, true, true, true, true, true, '#E0E0E0', SpreadsheetApp.BorderStyle.SOLID);
 
-    // Row 15: Total Time
-    var fMonthHours = '=IFERROR(TEXT(SUMPRODUCT((INDIRECT("' + fSheet + '!H' + fStart + ':H") >= DATE(YEAR(EDATE(TODAY(), ' + offset + ')), MONTH(EDATE(TODAY(), ' + offset + ')), 1)) * (INDIRECT("' + fSheet + '!H' + fStart + ':H") <= EOMONTH(EDATE(TODAY(), ' + offset + '), 0)) * IFERROR(TIMEVALUE(INDIRECT("' + fSheet + '!L' + fStart + ':L")) * 24, 0)), "0.0") & " hrs", "0.0 hrs")';
+    // Row 15: Total Time (pure numeric day fraction, format [h]:mm "hrs")
+    var fMonthHours = '=IFERROR(SUMPRODUCT((INDIRECT("' + fSheet + '!H' + fStart + ':H") >= DATE(YEAR(EDATE(TODAY(), ' + offset + ')), MONTH(EDATE(TODAY(), ' + offset + ')), 1)) * (INDIRECT("' + fSheet + '!H' + fStart + ':H") <= EOMONTH(EDATE(TODAY(), ' + offset + '), 0)) * IFERROR(TIMEVALUE(INDIRECT("' + fSheet + '!L' + fStart + ':L")), 0)), 0)';
     var rHours = sh.getRange(colLetter + '15');
-    rHours.setFormula(fMonthHours).setHorizontalAlignment('center').setVerticalAlignment('middle').setBorder(true, true, true, true, true, true, '#E0E0E0', SpreadsheetApp.BorderStyle.SOLID);
+    rHours.setFormula(fMonthHours).setNumberFormat('[h]:mm "hrs"').setHorizontalAlignment('center').setVerticalAlignment('middle').setBorder(true, true, true, true, true, true, '#E0E0E0', SpreadsheetApp.BorderStyle.SOLID);
 
-    // Row 16: Total Distance
-    var fMonthDist = '=IFERROR(TEXT(SUMIFS(INDIRECT("' + fSheet + '!M' + fStart + ':M"), INDIRECT("' + fSheet + '!H' + fStart + ':H"), ">=" & DATE(YEAR(EDATE(TODAY(), ' + offset + ')), MONTH(EDATE(TODAY(), ' + offset + ')), 1), INDIRECT("' + fSheet + '!H' + fStart + ':H"), "<=" & EOMONTH(EDATE(TODAY(), ' + offset + '), 0)), "#,##0") & " km", "0 km")';
+    // Row 16: Total Distance (pure numeric, format #,##0 "km")
+    var fMonthDist = '=IFERROR(SUMIFS(INDIRECT("' + fSheet + '!M' + fStart + ':M"), INDIRECT("' + fSheet + '!H' + fStart + ':H"), ">=" & DATE(YEAR(EDATE(TODAY(), ' + offset + ')), MONTH(EDATE(TODAY(), ' + offset + ')), 1), INDIRECT("' + fSheet + '!H' + fStart + ':H"), "<=" & EOMONTH(EDATE(TODAY(), ' + offset + '), 0)), 0)';
     var rDist = sh.getRange(colLetter + '16');
-    rDist.setFormula(fMonthDist).setHorizontalAlignment('center').setVerticalAlignment('middle').setBorder(true, true, true, true, true, true, '#E0E0E0', SpreadsheetApp.BorderStyle.SOLID);
+    rDist.setFormula(fMonthDist).setNumberFormat('#,##0 "km"').setHorizontalAlignment('center').setVerticalAlignment('middle').setBorder(true, true, true, true, true, true, '#E0E0E0', SpreadsheetApp.BorderStyle.SOLID);
   }
   sh.setRowHeight(13, 22);
   sh.setRowHeight(14, 20);
   sh.setRowHeight(15, 20);
   sh.setRowHeight(16, 20);
 
+  // Timeline Pilot Currency Shading (Conditional Formatting)
+  var rangeFlights = sh.getRange('A14:F14');
+  var rangeHours = sh.getRange('A15:F15');
+  var pSheet = TABS.PARAMETERS.name;
+
+  var ruleFlightsGreen = SpreadsheetApp.newConditionalFormatRule()
+    .whenFormulaSatisfied('=A14 >= VLOOKUP("TIMELINE_FLIGHTS_MED", INDIRECT("' + pSheet + '!A:B"), 2, FALSE)')
+    .setBackground('#C8E6C9')
+    .setRanges([rangeFlights])
+    .build();
+
+  var ruleFlightsYellow = SpreadsheetApp.newConditionalFormatRule()
+    .whenFormulaSatisfied('=A14 >= VLOOKUP("TIMELINE_FLIGHTS_LOW", INDIRECT("' + pSheet + '!A:B"), 2, FALSE)')
+    .setBackground('#FFF9C4')
+    .setRanges([rangeFlights])
+    .build();
+
+  var ruleFlightsOrange = SpreadsheetApp.newConditionalFormatRule()
+    .whenFormulaSatisfied('=A14 < VLOOKUP("TIMELINE_FLIGHTS_LOW", INDIRECT("' + pSheet + '!A:B"), 2, FALSE)')
+    .setBackground('#FFE0B2')
+    .setRanges([rangeFlights])
+    .build();
+
+  var ruleHoursGreen = SpreadsheetApp.newConditionalFormatRule()
+    .whenFormulaSatisfied('=A15 >= VLOOKUP("TIMELINE_HOURS_MED", INDIRECT("' + pSheet + '!A:B"), 2, FALSE)')
+    .setBackground('#C8E6C9')
+    .setRanges([rangeHours])
+    .build();
+
+  var ruleHoursYellow = SpreadsheetApp.newConditionalFormatRule()
+    .whenFormulaSatisfied('=A15 >= VLOOKUP("TIMELINE_HOURS_LOW", INDIRECT("' + pSheet + '!A:B"), 2, FALSE)')
+    .setBackground('#FFF9C4')
+    .setRanges([rangeHours])
+    .build();
+
+  var ruleHoursOrange = SpreadsheetApp.newConditionalFormatRule()
+    .whenFormulaSatisfied('=A15 < VLOOKUP("TIMELINE_HOURS_LOW", INDIRECT("' + pSheet + '!A:B"), 2, FALSE)')
+    .setBackground('#FFE0B2')
+    .setRanges([rangeHours])
+    .build();
+
+  sh.setConditionalFormatRules([ruleFlightsGreen, ruleFlightsYellow, ruleFlightsOrange, ruleHoursGreen, ruleHoursYellow, ruleHoursOrange]);
+
   // Spacer Row 17
   sh.setRowHeight(17, 14);
 
-  // 5. Section 4: Leaderboards (2 x 3 Grid, 6 Cards)
+  // 5. Section 4: Leaderboards (4 Rows x 2 Cards = 8 Cards)
   // Grid Row 1 (Row 18 Header, Rows 19-23 Data): Top 5 by Duration (A:C) & Top 5 by Distance (D:F)
   sh.getRange('A18:C18').merge().setValue('Top 5 by Duration').setBackground('#CFD8DC').setFontWeight('bold').setHorizontalAlignment('center').setVerticalAlignment('middle');
   sh.getRange('D18:F18').merge().setValue('Top 5 by Distance').setBackground('#CFD8DC').setFontWeight('bold').setHorizontalAlignment('center').setVerticalAlignment('middle');
@@ -213,12 +256,12 @@ function scaffoldDashboard_(ss) {
 
   for (var k = 1; k <= 5; k++) {
     var rNum1 = k + 18;
-    // Top Duration (A:C): Col C (Flight No), Col L (Duration formatted as h:mm hrs), Col D (Auto Summary), sorted on TIMEVALUE
-    var fDur = '=IFERROR("Flight " & INDEX(SORT(FILTER({INDIRECT("' + fSheet + '!C' + fStart + ':C"), TEXT(IFERROR(TIMEVALUE(INDIRECT("' + fSheet + '!L' + fStart + ':L")), INDIRECT("' + fSheet + '!L' + fStart + ':L")), "h:mm") & " hrs", INDIRECT("' + fSheet + '!D' + fStart + ':D"), IFERROR(TIMEVALUE(INDIRECT("' + fSheet + '!L' + fStart + ':L")), 0)}, INDIRECT("' + fSheet + '!A' + fStart + ':A")<>""), 4, FALSE), ' + k + ', 1) & " - " & INDEX(SORT(FILTER({INDIRECT("' + fSheet + '!C' + fStart + ':C"), TEXT(IFERROR(TIMEVALUE(INDIRECT("' + fSheet + '!L' + fStart + ':L")), INDIRECT("' + fSheet + '!L' + fStart + ':L")), "h:mm") & " hrs", INDIRECT("' + fSheet + '!D' + fStart + ':D"), IFERROR(TIMEVALUE(INDIRECT("' + fSheet + '!L' + fStart + ':L")), 0)}, INDIRECT("' + fSheet + '!A' + fStart + ':A")<>""), 4, FALSE), ' + k + ', 2) & " (" & INDEX(SORT(FILTER({INDIRECT("' + fSheet + '!C' + fStart + ':C"), TEXT(IFERROR(TIMEVALUE(INDIRECT("' + fSheet + '!L' + fStart + ':L")), INDIRECT("' + fSheet + '!L' + fStart + ':L")), "h:mm") & " hrs", INDIRECT("' + fSheet + '!D' + fStart + ':D"), IFERROR(TIMEVALUE(INDIRECT("' + fSheet + '!L' + fStart + ':L")), 0)}, INDIRECT("' + fSheet + '!A' + fStart + ':A")<>""), 4, FALSE), ' + k + ', 3) & ")", "-")';
+    // Top Duration (A:C): Col C (Flight No), Col L (Duration formatted as [h]:mm hrs), Col D (Auto Summary), sorted on TIMEVALUE
+    var fDur = '=IFERROR("Flight " & INDEX(SORT(FILTER({INDIRECT("' + fSheet + '!C' + fStart + ':C"), TEXT(IFERROR(TIMEVALUE(INDIRECT("' + fSheet + '!L' + fStart + ':L")), INDIRECT("' + fSheet + '!L' + fStart + ':L")), "[h]:mm") & " hrs", INDIRECT("' + fSheet + '!D' + fStart + ':D"), IFERROR(TIMEVALUE(INDIRECT("' + fSheet + '!L' + fStart + ':L")), 0)}, (INDIRECT("' + fSheet + '!A' + fStart + ':A")<>"") * (IFERROR(TIMEVALUE(INDIRECT("' + fSheet + '!L' + fStart + ':L")), 0)>0)), 4, FALSE), ' + k + ', 1) & " - " & INDEX(SORT(FILTER({INDIRECT("' + fSheet + '!C' + fStart + ':C"), TEXT(IFERROR(TIMEVALUE(INDIRECT("' + fSheet + '!L' + fStart + ':L")), INDIRECT("' + fSheet + '!L' + fStart + ':L")), "[h]:mm") & " hrs", INDIRECT("' + fSheet + '!D' + fStart + ':D"), IFERROR(TIMEVALUE(INDIRECT("' + fSheet + '!L' + fStart + ':L")), 0)}, (INDIRECT("' + fSheet + '!A' + fStart + ':A")<>"") * (IFERROR(TIMEVALUE(INDIRECT("' + fSheet + '!L' + fStart + ':L")), 0)>0)), 4, FALSE), ' + k + ', 2) & " (" & INDEX(SORT(FILTER({INDIRECT("' + fSheet + '!C' + fStart + ':C"), TEXT(IFERROR(TIMEVALUE(INDIRECT("' + fSheet + '!L' + fStart + ':L")), INDIRECT("' + fSheet + '!L' + fStart + ':L")), "[h]:mm") & " hrs", INDIRECT("' + fSheet + '!D' + fStart + ':D"), IFERROR(TIMEVALUE(INDIRECT("' + fSheet + '!L' + fStart + ':L")), 0)}, (INDIRECT("' + fSheet + '!A' + fStart + ':A")<>"") * (IFERROR(TIMEVALUE(INDIRECT("' + fSheet + '!L' + fStart + ':L")), 0)>0)), 4, FALSE), ' + k + ', 3) & ")", "-")';
     sh.getRange(rNum1, 1, 1, 3).merge().setFormula(fDur).setBorder(false, false, true, false, false, false, '#E0E0E0', SpreadsheetApp.BorderStyle.SOLID).setVerticalAlignment('middle');
 
     // Top Distance (D:F): Col C (Flight No), Col M (Track Length), Col D (Auto Summary)
-    var fDist = '=IFERROR("Flight " & INDEX(SORT(FILTER({INDIRECT("' + fSheet + '!C' + fStart + ':C"), INDIRECT("' + fSheet + '!M' + fStart + ':M"), INDIRECT("' + fSheet + '!D' + fStart + ':D")}, INDIRECT("' + fSheet + '!A' + fStart + ':A")<>""), 2, FALSE), ' + k + ', 1) & " - " & TEXT(INDEX(SORT(FILTER({INDIRECT("' + fSheet + '!C' + fStart + ':C"), INDIRECT("' + fSheet + '!M' + fStart + ':M"), INDIRECT("' + fSheet + '!D' + fStart + ':D")}, INDIRECT("' + fSheet + '!A' + fStart + ':A")<>""), 2, FALSE), ' + k + ', 2), "0.0") & " km (" & INDEX(SORT(FILTER({INDIRECT("' + fSheet + '!C' + fStart + ':C"), INDIRECT("' + fSheet + '!M' + fStart + ':M"), INDIRECT("' + fSheet + '!D' + fStart + ':D")}, INDIRECT("' + fSheet + '!A' + fStart + ':A")<>""), 2, FALSE), ' + k + ', 3) & ")", "-")';
+    var fDist = '=IFERROR("Flight " & INDEX(SORT(FILTER({INDIRECT("' + fSheet + '!C' + fStart + ':C"), INDIRECT("' + fSheet + '!M' + fStart + ':M"), INDIRECT("' + fSheet + '!D' + fStart + ':D")}, (INDIRECT("' + fSheet + '!A' + fStart + ':A")<>"") * (IFERROR(VALUE(INDIRECT("' + fSheet + '!M' + fStart + ':M")), 0)>0)), 2, FALSE), ' + k + ', 1) & " - " & TEXT(INDEX(SORT(FILTER({INDIRECT("' + fSheet + '!C' + fStart + ':C"), INDIRECT("' + fSheet + '!M' + fStart + ':M"), INDIRECT("' + fSheet + '!D' + fStart + ':D")}, (INDIRECT("' + fSheet + '!A' + fStart + ':A")<>"") * (IFERROR(VALUE(INDIRECT("' + fSheet + '!M' + fStart + ':M")), 0)>0)), 2, FALSE), ' + k + ', 2), "0.0") & " km (" & INDEX(SORT(FILTER({INDIRECT("' + fSheet + '!C' + fStart + ':C"), INDIRECT("' + fSheet + '!M' + fStart + ':M"), INDIRECT("' + fSheet + '!D' + fStart + ':D")}, (INDIRECT("' + fSheet + '!A' + fStart + ':A")<>"") * (IFERROR(VALUE(INDIRECT("' + fSheet + '!M' + fStart + ':M")), 0)>0)), 2, FALSE), ' + k + ', 3) & ")", "-")';
     sh.getRange(rNum1, 4, 1, 3).merge().setFormula(fDist).setBorder(false, false, true, false, false, false, '#E0E0E0', SpreadsheetApp.BorderStyle.SOLID).setVerticalAlignment('middle');
     sh.setRowHeight(rNum1, 22);
   }
@@ -226,58 +269,101 @@ function scaffoldDashboard_(ss) {
   // Spacer Row 24
   sh.setRowHeight(24, 14);
 
-  // Grid Row 2 (Row 25 Header, Rows 26-30 Data): Recent Activity (A:C) & Top Sites (D:F)
-  sh.getRange('A25:C25').merge().setValue('Recent Activity').setBackground('#CFD8DC').setFontWeight('bold').setHorizontalAlignment('center').setVerticalAlignment('middle');
-  sh.getRange('D25:F25').merge().setValue('Top Sites').setBackground('#CFD8DC').setFontWeight('bold').setHorizontalAlignment('center').setVerticalAlignment('middle');
+  // Grid Row 2 (Row 25 Header, Rows 26-30 Data): Top 5 by Max Altitude (A:C) & Top 5 by Altitude Gain (D:F)
+  sh.getRange('A25:C25').merge().setValue('Top 5 by Max Altitude').setBackground('#CFD8DC').setFontWeight('bold').setHorizontalAlignment('center').setVerticalAlignment('middle');
+  sh.getRange('D25:F25').merge().setValue('Top 5 by Altitude Gain').setBackground('#CFD8DC').setFontWeight('bold').setHorizontalAlignment('center').setVerticalAlignment('middle');
   sh.setRowHeight(25, 26);
 
-  for (var j = 1; j <= 5; j++) {
-    var rNum2 = j + 25;
-    // Recent Activity (A:C): Col C (Flight No), Col H (Date), Col L (Duration formatted as h:mm hrs), Col D (Auto Summary)
-    var fRec = '=IFERROR("Flight " & INDEX(SORT(FILTER({INDIRECT("' + fSheet + '!C' + fStart + ':C"), TEXT(INDIRECT("' + fSheet + '!H' + fStart + ':H"), "yyyy-MM-dd"), TEXT(IFERROR(TIMEVALUE(INDIRECT("' + fSheet + '!L' + fStart + ':L")), INDIRECT("' + fSheet + '!L' + fStart + ':L")), "h:mm") & " hrs", INDIRECT("' + fSheet + '!D' + fStart + ':D")}, INDIRECT("' + fSheet + '!A' + fStart + ':A")<>""), 2, FALSE), ' + j + ', 1) & " - " & INDEX(SORT(FILTER({INDIRECT("' + fSheet + '!C' + fStart + ':C"), TEXT(INDIRECT("' + fSheet + '!H' + fStart + ':H"), "yyyy-MM-dd"), TEXT(IFERROR(TIMEVALUE(INDIRECT("' + fSheet + '!L' + fStart + ':L")), INDIRECT("' + fSheet + '!L' + fStart + ':L")), "h:mm") & " hrs", INDIRECT("' + fSheet + '!D' + fStart + ':D")}, INDIRECT("' + fSheet + '!A' + fStart + ':A")<>""), 2, FALSE), ' + j + ', 2) & " - " & INDEX(SORT(FILTER({INDIRECT("' + fSheet + '!C' + fStart + ':C"), TEXT(INDIRECT("' + fSheet + '!H' + fStart + ':H"), "yyyy-MM-dd"), TEXT(IFERROR(TIMEVALUE(INDIRECT("' + fSheet + '!L' + fStart + ':L")), INDIRECT("' + fSheet + '!L' + fStart + ':L")), "h:mm") & " hrs", INDIRECT("' + fSheet + '!D' + fStart + ':D")}, INDIRECT("' + fSheet + '!A' + fStart + ':A")<>""), 2, FALSE), ' + j + ', 3) & " (" & INDEX(SORT(FILTER({INDIRECT("' + fSheet + '!C' + fStart + ':C"), TEXT(INDIRECT("' + fSheet + '!H' + fStart + ':H"), "yyyy-MM-dd"), TEXT(IFERROR(TIMEVALUE(INDIRECT("' + fSheet + '!L' + fStart + ':L")), INDIRECT("' + fSheet + '!L' + fStart + ':L")), "h:mm") & " hrs", INDIRECT("' + fSheet + '!D' + fStart + ':D")}, INDIRECT("' + fSheet + '!A' + fStart + ':A")<>""), 2, FALSE), ' + j + ', 4) & ")", "-")';
-    sh.getRange(rNum2, 1, 1, 3).merge().setFormula(fRec).setBorder(false, false, true, false, false, false, '#E0E0E0', SpreadsheetApp.BorderStyle.SOLID).setVerticalAlignment('middle');
+  for (var m = 1; m <= 5; m++) {
+    var rNum2 = m + 25;
+    // Top Max Altitude (A:C): Col C (Flight No), Col AB (Max Alt in m), Col D (Auto Summary)
+    var fAlt = '=IFERROR("Flight " & INDEX(SORT(FILTER({INDIRECT("' + fSheet + '!C' + fStart + ':C"), INDIRECT("' + fSheet + '!AB' + fStart + ':AB"), INDIRECT("' + fSheet + '!D' + fStart + ':D")}, (INDIRECT("' + fSheet + '!A' + fStart + ':A")<>"") * (IFERROR(VALUE(INDIRECT("' + fSheet + '!AB' + fStart + ':AB")), 0)>0)), 2, FALSE), ' + m + ', 1) & " - " & TEXT(INDEX(SORT(FILTER({INDIRECT("' + fSheet + '!C' + fStart + ':C"), INDIRECT("' + fSheet + '!AB' + fStart + ':AB"), INDIRECT("' + fSheet + '!D' + fStart + ':D")}, (INDIRECT("' + fSheet + '!A' + fStart + ':A")<>"") * (IFERROR(VALUE(INDIRECT("' + fSheet + '!AB' + fStart + ':AB")), 0)>0)), 2, FALSE), ' + m + ', 2), "#,##0") & " m (" & INDEX(SORT(FILTER({INDIRECT("' + fSheet + '!C' + fStart + ':C"), INDIRECT("' + fSheet + '!AB' + fStart + ':AB"), INDIRECT("' + fSheet + '!D' + fStart + ':D")}, (INDIRECT("' + fSheet + '!A' + fStart + ':A")<>"") * (IFERROR(VALUE(INDIRECT("' + fSheet + '!AB' + fStart + ':AB")), 0)>0)), 2, FALSE), ' + m + ', 3) & ")", "-")';
+    sh.getRange(rNum2, 1, 1, 3).merge().setFormula(fAlt).setBorder(false, false, true, false, false, false, '#E0E0E0', SpreadsheetApp.BorderStyle.SOLID).setVerticalAlignment('middle');
 
-    // Top Sites (D:F): Col AL (Launch Site)
-    var fSite = '=IFERROR(INDEX(QUERY(INDIRECT("' + fSheet + '!AL' + fStart + ':AL"), "SELECT Col1, COUNT(Col1) WHERE Col1 IS NOT NULL AND Col1 <> \'\' GROUP BY Col1 ORDER BY COUNT(Col1) DESC LABEL COUNT(Col1) \'\'"), ' + j + ', 1) & " - " & INDEX(QUERY(INDIRECT("' + fSheet + '!AL' + fStart + ':AL"), "SELECT Col1, COUNT(Col1) WHERE Col1 IS NOT NULL AND Col1 <> \'\' GROUP BY Col1 ORDER BY COUNT(Col1) DESC LABEL COUNT(Col1) \'\'"), ' + j + ', 2) & " Flights", "-")';
-    sh.getRange(rNum2, 4, 1, 3).merge().setFormula(fSite).setBorder(false, false, true, false, false, false, '#E0E0E0', SpreadsheetApp.BorderStyle.SOLID).setVerticalAlignment('middle');
+    // Top Altitude Gain (D:F): Col C (Flight No), Col AD (Total Height Gain in m), Col D (Auto Summary)
+    var fGain = '=IFERROR("Flight " & INDEX(SORT(FILTER({INDIRECT("' + fSheet + '!C' + fStart + ':C"), INDIRECT("' + fSheet + '!AD' + fStart + ':AD"), INDIRECT("' + fSheet + '!D' + fStart + ':D")}, (INDIRECT("' + fSheet + '!A' + fStart + ':A")<>"") * (IFERROR(VALUE(INDIRECT("' + fSheet + '!AD' + fStart + ':AD")), 0)>0)), 2, FALSE), ' + m + ', 1) & " - " & TEXT(INDEX(SORT(FILTER({INDIRECT("' + fSheet + '!C' + fStart + ':C"), INDIRECT("' + fSheet + '!AD' + fStart + ':AD"), INDIRECT("' + fSheet + '!D' + fStart + ':D")}, (INDIRECT("' + fSheet + '!A' + fStart + ':A")<>"") * (IFERROR(VALUE(INDIRECT("' + fSheet + '!AD' + fStart + ':AD")), 0)>0)), 2, FALSE), ' + m + ', 2), "#,##0") & " m (" & INDEX(SORT(FILTER({INDIRECT("' + fSheet + '!C' + fStart + ':C"), INDIRECT("' + fSheet + '!AD' + fStart + ':AD"), INDIRECT("' + fSheet + '!D' + fStart + ':D")}, (INDIRECT("' + fSheet + '!A' + fStart + ':A")<>"") * (IFERROR(VALUE(INDIRECT("' + fSheet + '!AD' + fStart + ':AD")), 0)>0)), 2, FALSE), ' + m + ', 3) & ")", "-")';
+    sh.getRange(rNum2, 4, 1, 3).merge().setFormula(fGain).setBorder(false, false, true, false, false, false, '#E0E0E0', SpreadsheetApp.BorderStyle.SOLID).setVerticalAlignment('middle');
     sh.setRowHeight(rNum2, 22);
   }
 
   // Spacer Row 31
   sh.setRowHeight(31, 14);
 
-  // Grid Row 3 (Row 32 Header, Rows 33-37 Data): Countries Flown (A:C) & Top 5 Max Altitude (D:F)
-  sh.getRange('A32:C32').merge().setValue('Countries Flown').setBackground('#CFD8DC').setFontWeight('bold').setHorizontalAlignment('center').setVerticalAlignment('middle');
-  sh.getRange('D32:F32').merge().setValue('Top 5 Max Altitude').setBackground('#CFD8DC').setFontWeight('bold').setHorizontalAlignment('center').setVerticalAlignment('middle');
+  // Grid Row 3 (Row 32 Header, Rows 33-37 Data): Top 5 Thermal Flights (A:C) & Top 5 Soaring Flights (D:F)
+  sh.getRange('A32:C32').merge().setValue('Top 5 Thermal Flights').setBackground('#CFD8DC').setFontWeight('bold').setHorizontalAlignment('center').setVerticalAlignment('middle');
+  sh.getRange('D32:F32').merge().setValue('Top 5 Soaring Flights').setBackground('#CFD8DC').setFontWeight('bold').setHorizontalAlignment('center').setVerticalAlignment('middle');
   sh.setRowHeight(32, 26);
 
-  for (var m = 1; m <= 5; m++) {
-    var rNum3 = m + 32;
-    // Countries Flown (A:C): Col AN (Launch Country)
-    var fCtry = '=IFERROR(INDEX(QUERY(INDIRECT("' + fSheet + '!AN' + fStart + ':AN"), "SELECT Col1, COUNT(Col1) WHERE Col1 IS NOT NULL AND Col1 <> \'\' GROUP BY Col1 ORDER BY COUNT(Col1) DESC LABEL COUNT(Col1) \'\'"), ' + m + ', 1) & " - " & INDEX(QUERY(INDIRECT("' + fSheet + '!AN' + fStart + ':AN"), "SELECT Col1, COUNT(Col1) WHERE Col1 IS NOT NULL AND Col1 <> \'\' GROUP BY Col1 ORDER BY COUNT(Col1) DESC LABEL COUNT(Col1) \'\'"), ' + m + ', 2) & " Flights", "-")';
-    sh.getRange(rNum3, 1, 1, 3).merge().setFormula(fCtry).setBorder(false, false, true, false, false, false, '#E0E0E0', SpreadsheetApp.BorderStyle.SOLID).setVerticalAlignment('middle');
+  for (var t = 1; t <= 5; t++) {
+    var rNum3 = t + 32;
+    // Top Thermal Flights (A:C): Thermal% (Col BC) * Flight Duration (Col L)
+    var fTherm = '=IFERROR("Flight " & INDEX(SORT(FILTER({INDIRECT("' + fSheet + '!C' + fStart + ':C"), TEXT(IFERROR(VALUE(INDIRECT("' + fSheet + '!BC' + fStart + ':BC")) * TIMEVALUE(INDIRECT("' + fSheet + '!L' + fStart + ':L")), 0), "[h]:mm") & " hrs", INDIRECT("' + fSheet + '!BC' + fStart + ':BC"), INDIRECT("' + fSheet + '!D' + fStart + ':D"), IFERROR(VALUE(INDIRECT("' + fSheet + '!BC' + fStart + ':BC")) * TIMEVALUE(INDIRECT("' + fSheet + '!L' + fStart + ':L")), 0)}, (INDIRECT("' + fSheet + '!A' + fStart + ':A")<>"") * (IFERROR(VALUE(INDIRECT("' + fSheet + '!BC' + fStart + ':BC")) * TIMEVALUE(INDIRECT("' + fSheet + '!L' + fStart + ':L")), 0)>0)), 5, FALSE), ' + t + ', 1) & " - " & INDEX(SORT(FILTER({INDIRECT("' + fSheet + '!C' + fStart + ':C"), TEXT(IFERROR(VALUE(INDIRECT("' + fSheet + '!BC' + fStart + ':BC")) * TIMEVALUE(INDIRECT("' + fSheet + '!L' + fStart + ':L")), 0), "[h]:mm") & " hrs", INDIRECT("' + fSheet + '!BC' + fStart + ':BC"), INDIRECT("' + fSheet + '!D' + fStart + ':D"), IFERROR(VALUE(INDIRECT("' + fSheet + '!BC' + fStart + ':BC")) * TIMEVALUE(INDIRECT("' + fSheet + '!L' + fStart + ':L")), 0)}, (INDIRECT("' + fSheet + '!A' + fStart + ':A")<>"") * (IFERROR(VALUE(INDIRECT("' + fSheet + '!BC' + fStart + ':BC")) * TIMEVALUE(INDIRECT("' + fSheet + '!L' + fStart + ':L")), 0)>0)), 5, FALSE), ' + t + ', 2) & " (" & INDEX(SORT(FILTER({INDIRECT("' + fSheet + '!C' + fStart + ':C"), TEXT(IFERROR(VALUE(INDIRECT("' + fSheet + '!BC' + fStart + ':BC")) * TIMEVALUE(INDIRECT("' + fSheet + '!L' + fStart + ':L")), 0), "[h]:mm") & " hrs", INDIRECT("' + fSheet + '!BC' + fStart + ':BC"), INDIRECT("' + fSheet + '!D' + fStart + ':D"), IFERROR(VALUE(INDIRECT("' + fSheet + '!BC' + fStart + ':BC")) * TIMEVALUE(INDIRECT("' + fSheet + '!L' + fStart + ':L")), 0)}, (INDIRECT("' + fSheet + '!A' + fStart + ':A")<>"") * (IFERROR(VALUE(INDIRECT("' + fSheet + '!BC' + fStart + ':BC")) * TIMEVALUE(INDIRECT("' + fSheet + '!L' + fStart + ':L")), 0)>0)), 5, FALSE), ' + t + ', 3) & ", " & INDEX(SORT(FILTER({INDIRECT("' + fSheet + '!C' + fStart + ':C"), TEXT(IFERROR(VALUE(INDIRECT("' + fSheet + '!BC' + fStart + ':BC")) * TIMEVALUE(INDIRECT("' + fSheet + '!L' + fStart + ':L")), 0), "[h]:mm") & " hrs", INDIRECT("' + fSheet + '!BC' + fStart + ':BC"), INDIRECT("' + fSheet + '!D' + fStart + ':D"), IFERROR(VALUE(INDIRECT("' + fSheet + '!BC' + fStart + ':BC")) * TIMEVALUE(INDIRECT("' + fSheet + '!L' + fStart + ':L")), 0)}, (INDIRECT("' + fSheet + '!A' + fStart + ':A")<>"") * (IFERROR(VALUE(INDIRECT("' + fSheet + '!BC' + fStart + ':BC")) * TIMEVALUE(INDIRECT("' + fSheet + '!L' + fStart + ':L")), 0)>0)), 5, FALSE), ' + t + ', 4) & ")", "-")';
+    sh.getRange(rNum3, 1, 1, 3).merge().setFormula(fTherm).setBorder(false, false, true, false, false, false, '#E0E0E0', SpreadsheetApp.BorderStyle.SOLID).setVerticalAlignment('middle');
 
-    // Top Max Altitude (D:F): Col C (Flight No), Col AB (Max Alt in m), Col D (Auto Summary)
-    var fAlt = '=IFERROR("Flight " & INDEX(SORT(FILTER({INDIRECT("' + fSheet + '!C' + fStart + ':C"), INDIRECT("' + fSheet + '!AB' + fStart + ':AB"), INDIRECT("' + fSheet + '!D' + fStart + ':D")}, INDIRECT("' + fSheet + '!A' + fStart + ':A")<>""), 2, FALSE), ' + m + ', 1) & " - " & TEXT(INDEX(SORT(FILTER({INDIRECT("' + fSheet + '!C' + fStart + ':C"), INDIRECT("' + fSheet + '!AB' + fStart + ':AB"), INDIRECT("' + fSheet + '!D' + fStart + ':D")}, INDIRECT("' + fSheet + '!A' + fStart + ':A")<>""), 2, FALSE), ' + m + ', 2), "#,##0") & " m (" & INDEX(SORT(FILTER({INDIRECT("' + fSheet + '!C' + fStart + ':C"), INDIRECT("' + fSheet + '!AB' + fStart + ':AB"), INDIRECT("' + fSheet + '!D' + fStart + ':D")}, INDIRECT("' + fSheet + '!A' + fStart + ':A")<>""), 2, FALSE), ' + m + ', 3) & ")", "-")';
-    sh.getRange(rNum3, 4, 1, 3).merge().setFormula(fAlt).setBorder(false, false, true, false, false, false, '#E0E0E0', SpreadsheetApp.BorderStyle.SOLID).setVerticalAlignment('middle');
+    // Top Soaring Flights (D:F): Soar% (Col BG) * Flight Duration (Col L)
+    var fSoar = '=IFERROR("Flight " & INDEX(SORT(FILTER({INDIRECT("' + fSheet + '!C' + fStart + ':C"), TEXT(IFERROR(VALUE(INDIRECT("' + fSheet + '!BG' + fStart + ':BG")) * TIMEVALUE(INDIRECT("' + fSheet + '!L' + fStart + ':L")), 0), "[h]:mm") & " hrs", INDIRECT("' + fSheet + '!BG' + fStart + ':BG"), INDIRECT("' + fSheet + '!D' + fStart + ':D"), IFERROR(VALUE(INDIRECT("' + fSheet + '!BG' + fStart + ':BG")) * TIMEVALUE(INDIRECT("' + fSheet + '!L' + fStart + ':L")), 0)}, (INDIRECT("' + fSheet + '!A' + fStart + ':A")<>"") * (IFERROR(VALUE(INDIRECT("' + fSheet + '!BG' + fStart + ':BG")) * TIMEVALUE(INDIRECT("' + fSheet + '!L' + fStart + ':L")), 0)>0)), 5, FALSE), ' + t + ', 1) & " - " & INDEX(SORT(FILTER({INDIRECT("' + fSheet + '!C' + fStart + ':C"), TEXT(IFERROR(VALUE(INDIRECT("' + fSheet + '!BG' + fStart + ':BG")) * TIMEVALUE(INDIRECT("' + fSheet + '!L' + fStart + ':L")), 0), "[h]:mm") & " hrs", INDIRECT("' + fSheet + '!BG' + fStart + ':BG"), INDIRECT("' + fSheet + '!D' + fStart + ':D"), IFERROR(VALUE(INDIRECT("' + fSheet + '!BG' + fStart + ':BG")) * TIMEVALUE(INDIRECT("' + fSheet + '!L' + fStart + ':L")), 0)}, (INDIRECT("' + fSheet + '!A' + fStart + ':A")<>"") * (IFERROR(VALUE(INDIRECT("' + fSheet + '!BG' + fStart + ':BG")) * TIMEVALUE(INDIRECT("' + fSheet + '!L' + fStart + ':L")), 0)>0)), 5, FALSE), ' + t + ', 2) & " (" & INDEX(SORT(FILTER({INDIRECT("' + fSheet + '!C' + fStart + ':C"), TEXT(IFERROR(VALUE(INDIRECT("' + fSheet + '!BG' + fStart + ':BG")) * TIMEVALUE(INDIRECT("' + fSheet + '!L' + fStart + ':L")), 0), "[h]:mm") & " hrs", INDIRECT("' + fSheet + '!BG' + fStart + ':BG"), INDIRECT("' + fSheet + '!D' + fStart + ':D"), IFERROR(VALUE(INDIRECT("' + fSheet + '!BG' + fStart + ':BG")) * TIMEVALUE(INDIRECT("' + fSheet + '!L' + fStart + ':L")), 0)}, (INDIRECT("' + fSheet + '!A' + fStart + ':A")<>"") * (IFERROR(VALUE(INDIRECT("' + fSheet + '!BG' + fStart + ':BG")) * TIMEVALUE(INDIRECT("' + fSheet + '!L' + fStart + ':L")), 0)>0)), 5, FALSE), ' + t + ', 3) & ", " & INDEX(SORT(FILTER({INDIRECT("' + fSheet + '!C' + fStart + ':C"), TEXT(IFERROR(VALUE(INDIRECT("' + fSheet + '!BG' + fStart + ':BG")) * TIMEVALUE(INDIRECT("' + fSheet + '!L' + fStart + ':L")), 0), "[h]:mm") & " hrs", INDIRECT("' + fSheet + '!BG' + fStart + ':BG"), INDIRECT("' + fSheet + '!D' + fStart + ':D"), IFERROR(VALUE(INDIRECT("' + fSheet + '!BG' + fStart + ':BG")) * TIMEVALUE(INDIRECT("' + fSheet + '!L' + fStart + ':L")), 0)}, (INDIRECT("' + fSheet + '!A' + fStart + ':A")<>"") * (IFERROR(VALUE(INDIRECT("' + fSheet + '!BG' + fStart + ':BG")) * TIMEVALUE(INDIRECT("' + fSheet + '!L' + fStart + ':L")), 0)>0)), 5, FALSE), ' + t + ', 4) & ")", "-")';
+    sh.getRange(rNum3, 4, 1, 3).merge().setFormula(fSoar).setBorder(false, false, true, false, false, false, '#E0E0E0', SpreadsheetApp.BorderStyle.SOLID).setVerticalAlignment('middle');
     sh.setRowHeight(rNum3, 22);
   }
 
-  // 6. Formatting & Cleanup
+  // Spacer Row 38
+  sh.setRowHeight(38, 14);
+
+  // Grid Row 4 (Row 39 Header, Rows 40-44 Data): Top 5 by XC Score (A:C) & Top 5 by Max Groundspeed (D:F)
+  sh.getRange('A39:C39').merge().setValue('Top 5 by XC Score').setBackground('#CFD8DC').setFontWeight('bold').setHorizontalAlignment('center').setVerticalAlignment('middle');
+  sh.getRange('D39:F39').merge().setValue('Top 5 by Max Groundspeed').setBackground('#CFD8DC').setFontWeight('bold').setHorizontalAlignment('center').setVerticalAlignment('middle');
+  sh.setRowHeight(39, 26);
+
+  for (var p = 1; p <= 5; p++) {
+    var rNum4 = p + 39;
+    // Top XC Score (A:C): Col C (Flight No), Col V (XC Score), Col D (Auto Summary)
+    var fXC = '=IFERROR("Flight " & INDEX(SORT(FILTER({INDIRECT("' + fSheet + '!C' + fStart + ':C"), IFERROR(VALUE(INDIRECT("' + fSheet + '!V' + fStart + ':V")), 0), INDIRECT("' + fSheet + '!D' + fStart + ':D")}, (INDIRECT("' + fSheet + '!A' + fStart + ':A")<>"") * (IFERROR(VALUE(INDIRECT("' + fSheet + '!V' + fStart + ':V")), 0)>0)), 2, FALSE), ' + p + ', 1) & " - " & TEXT(INDEX(SORT(FILTER({INDIRECT("' + fSheet + '!C' + fStart + ':C"), IFERROR(VALUE(INDIRECT("' + fSheet + '!V' + fStart + ':V")), 0), INDIRECT("' + fSheet + '!D' + fStart + ':D")}, (INDIRECT("' + fSheet + '!A' + fStart + ':A")<>"") * (IFERROR(VALUE(INDIRECT("' + fSheet + '!V' + fStart + ':V")), 0)>0)), 2, FALSE), ' + p + ', 2), "0.0") & " pts (" & INDEX(SORT(FILTER({INDIRECT("' + fSheet + '!C' + fStart + ':C"), IFERROR(VALUE(INDIRECT("' + fSheet + '!V' + fStart + ':V")), 0), INDIRECT("' + fSheet + '!D' + fStart + ':D")}, (INDIRECT("' + fSheet + '!A' + fStart + ':A")<>"") * (IFERROR(VALUE(INDIRECT("' + fSheet + '!V' + fStart + ':V")), 0)>0)), 2, FALSE), ' + p + ', 3) & ")", "-")';
+    sh.getRange(rNum4, 1, 1, 3).merge().setFormula(fXC).setBorder(false, false, true, false, false, false, '#E0E0E0', SpreadsheetApp.BorderStyle.SOLID).setVerticalAlignment('middle');
+
+    // Top Max Groundspeed (D:F): Col C (Flight No), Col AG (Max Groundspeed in km/h), Col D (Auto Summary)
+    var fSpeed = '=IFERROR("Flight " & INDEX(SORT(FILTER({INDIRECT("' + fSheet + '!C' + fStart + ':C"), IFERROR(VALUE(INDIRECT("' + fSheet + '!AG' + fStart + ':AG")), 0), INDIRECT("' + fSheet + '!D' + fStart + ':D")}, (INDIRECT("' + fSheet + '!A' + fStart + ':A")<>"") * (IFERROR(VALUE(INDIRECT("' + fSheet + '!AG' + fStart + ':AG")), 0)>0)), 2, FALSE), ' + p + ', 1) & " - " & TEXT(INDEX(SORT(FILTER({INDIRECT("' + fSheet + '!C' + fStart + ':C"), IFERROR(VALUE(INDIRECT("' + fSheet + '!AG' + fStart + ':AG")), 0), INDIRECT("' + fSheet + '!D' + fStart + ':D")}, (INDIRECT("' + fSheet + '!A' + fStart + ':A")<>"") * (IFERROR(VALUE(INDIRECT("' + fSheet + '!AG' + fStart + ':AG")), 0)>0)), 2, FALSE), ' + p + ', 2), "0.0") & " km/h (" & INDEX(SORT(FILTER({INDIRECT("' + fSheet + '!C' + fStart + ':C"), IFERROR(VALUE(INDIRECT("' + fSheet + '!AG' + fStart + ':AG")), 0), INDIRECT("' + fSheet + '!D' + fStart + ':D")}, (INDIRECT("' + fSheet + '!A' + fStart + ':A")<>"") * (IFERROR(VALUE(INDIRECT("' + fSheet + '!AG' + fStart + ':AG")), 0)>0)), 2, FALSE), ' + p + ', 3) & ")", "-")';
+    sh.getRange(rNum4, 4, 1, 3).merge().setFormula(fSpeed).setBorder(false, false, true, false, false, false, '#E0E0E0', SpreadsheetApp.BorderStyle.SOLID).setVerticalAlignment('middle');
+    sh.setRowHeight(rNum4, 22);
+  }
+
+  // Spacer Row 45
+  sh.setRowHeight(45, 14);
+
+  // 6. Section 5: Lists (Launch Sites & Countries Flown - 20 Rows Pre-scaffolded)
+  sh.getRange('A46:C46').merge().setValue('List of Launch Sites').setBackground('#CFD8DC').setFontWeight('bold').setHorizontalAlignment('center').setVerticalAlignment('middle');
+  sh.getRange('D46:F46').merge().setValue('List of Countries').setBackground('#CFD8DC').setFontWeight('bold').setHorizontalAlignment('center').setVerticalAlignment('middle');
+  sh.setRowHeight(46, 26);
+
+  for (var n = 1; n <= 20; n++) {
+    var rNum5 = n + 46;
+    // Launch Sites (A:C): Col AL (Launch Site)
+    var fSite = '=IFERROR(INDEX(QUERY(INDIRECT("' + fSheet + '!AL' + fStart + ':AL"), "SELECT Col1, COUNT(Col1) WHERE Col1 IS NOT NULL AND Col1 <> \'\' GROUP BY Col1 ORDER BY COUNT(Col1) DESC LABEL COUNT(Col1) \'\'"), ' + n + ', 1) & " - " & INDEX(QUERY(INDIRECT("' + fSheet + '!AL' + fStart + ':AL"), "SELECT Col1, COUNT(Col1) WHERE Col1 IS NOT NULL AND Col1 <> \'\' GROUP BY Col1 ORDER BY COUNT(Col1) DESC LABEL COUNT(Col1) \'\'"), ' + n + ', 2) & " Flights", "")';
+    sh.getRange(rNum5, 1, 1, 3).merge().setFormula(fSite).setBorder(false, false, true, false, false, false, '#E0E0E0', SpreadsheetApp.BorderStyle.SOLID).setVerticalAlignment('middle');
+
+    // Countries Flown (D:F): Col AN (Launch Country)
+    var fCtry = '=IFERROR(INDEX(QUERY(INDIRECT("' + fSheet + '!AN' + fStart + ':AN"), "SELECT Col1, COUNT(Col1) WHERE Col1 IS NOT NULL AND Col1 <> \'\' GROUP BY Col1 ORDER BY COUNT(Col1) DESC LABEL COUNT(Col1) \'\'"), ' + n + ', 1) & " - " & INDEX(QUERY(INDIRECT("' + fSheet + '!AN' + fStart + ':AN"), "SELECT Col1, COUNT(Col1) WHERE Col1 IS NOT NULL AND Col1 <> \'\' GROUP BY Col1 ORDER BY COUNT(Col1) DESC LABEL COUNT(Col1) \'\'"), ' + n + ', 2) & " Flights", "")';
+    sh.getRange(rNum5, 4, 1, 3).merge().setFormula(fCtry).setBorder(false, false, true, false, false, false, '#E0E0E0', SpreadsheetApp.BorderStyle.SOLID).setVerticalAlignment('middle');
+    sh.setRowHeight(rNum5, 22);
+  }
+
+  // Spacer Row 67
+  sh.setRowHeight(67, 14);
+
+  // 7. Formatting & Cleanup
   // Column Widths for clean 6-column layout (155px per column = 930px total)
   for (var col = 1; col <= 6; col++) {
     sh.setColumnWidth(col, 155);
   }
 
   // Set Word Wrap on ALL populated cells
-  sh.getRange(1, 1, 38, 6).setWrapStrategy(SpreadsheetApp.WrapStrategy.WRAP);
+  sh.getRange(1, 1, 67, 6).setWrapStrategy(SpreadsheetApp.WrapStrategy.WRAP);
 
   // Clean bounds: remove excess columns and rows for a crisp, app-like finish
   if (sh.getMaxColumns() > 6) {
     try { sh.deleteColumns(7, sh.getMaxColumns() - 6); } catch(e) {}
   }
-  if (sh.getMaxRows() > 40) {
-    try { sh.deleteRows(41, sh.getMaxRows() - 40); } catch(e) {}
+  if (sh.getMaxRows() > 67) {
+    try { sh.deleteRows(68, sh.getMaxRows() - 67); } catch(e) {}
   }
 
   sh.setHiddenGridlines(true);
@@ -345,6 +431,20 @@ function scaffoldParameters_(ss) {
       if (p.key === 'GEO_REV_PROVIDERS' && val && String(val).indexOf('google') === -1) {
         val = p.val;
       }
+      if (p.key === 'TIMELINE_HOURS_LOW' || p.key === 'TIMELINE_HOURS_MED') {
+        if (typeof val === 'string' && val.indexOf(':') !== -1) {
+          var parts = val.replace(/[^0-9:]/g, '').split(':');
+          val = (Number(parts[0]) || 0) / 24 + (Number(parts[1]) || 0) / 1440;
+        } else if (val instanceof Date) {
+          val = (val.getHours() + val.getMinutes() / 60) / 24;
+        } else if (typeof val === 'string' && !isNaN(Number(val)) && val !== '') {
+          val = Number(val);
+        }
+      } else if (p.key === 'TIMELINE_FLIGHTS_LOW' || p.key === 'TIMELINE_FLIGHTS_MED') {
+        if (typeof val === 'string') {
+          val = Number(val.replace(/[^0-9.]/g, '')) || p.val;
+        }
+      }
       var desc = p.desc;
       var isFolder = (p.key === 'WATCH_FOLDER_ID' || p.key === 'UPLOAD_FOLDER_ID' || p.key === 'MASTER_LOG_FOLDER_ID' || p.key === 'ERROR_FOLDER_ID');
       if (isFolder && val) {
@@ -370,6 +470,10 @@ function scaffoldParameters_(ss) {
      }
      if (rows[i][0] === 'DATE_FORMAT' || rows[i][0] === 'TIME_FORMAT') {
         sh.getRange(rowNum, 2).setNumberFormat('@');
+     } else if (rows[i][0] === 'TIMELINE_HOURS_LOW' || rows[i][0] === 'TIMELINE_HOURS_MED') {
+        sh.getRange(rowNum, 2).setNumberFormat('[h]:mm "hrs"');
+     } else if (rows[i][0] === 'TIMELINE_FLIGHTS_LOW' || rows[i][0] === 'TIMELINE_FLIGHTS_MED') {
+        sh.getRange(rowNum, 2).setNumberFormat('0 "flts"');
      }
   }
   sh.autoResizeColumns(1, 3);

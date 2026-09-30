@@ -2,7 +2,7 @@
 
 ## 🧠 Agent Memory & Context
 **Status**: Active Development (v0.8.12)
-**Last Session Focus**: Dashboard formula resiliency & 8-column layout (`CR-SYS-002`, `Bug-SYS-006`), frozen columns (`CR-UI-017`), dynamic Lookups validation (`Bug-UI-006`), Closed? validation (`Bug-UI-007`), manual flight status default (`Bug-UI-005`), schema streamlining (`CR-SCH-001`), and User Guide / Dashboard admin refresh menu actions (`CR-UI-018`).
+**Last Session Focus**: Dashboard currency shading, [h]:mm duration formatting, 8 leaderboard cards, and full site/country lists (`CR-SYS-002`), frozen columns (`CR-UI-017`), dynamic Lookups validation (`Bug-UI-006`), Closed? validation (`Bug-UI-007`), manual flight status default (`Bug-UI-005`), schema streamlining (`CR-SCH-001`), and User Guide / Dashboard admin refresh menu actions (`CR-UI-018`).
 **Next Focus**: Setup Wizard & Instance Templating (`RQ-SYS-008`), Dashboard & Inspector Pilot Profile Integration (`RQ-SYS-009.2`), Flight Inspector Enhancements (`RQ-SYS-004`).
 
 This file is the **long-term memory** for the project. Read this first to understand *how* we work and *where* we are.
