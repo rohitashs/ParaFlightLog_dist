@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 16:13:07
+ * Updated: 2026-09-30 16:29:22
  */
 /**
  * Paragliding Flight Log v2.0 - Scaffolding & Setup
@@ -432,8 +432,23 @@ function scaffoldFlights_(ss) {
     var groupLen = g.cols.length;
     // Category Header (Row 3)
     try {
-      var rangeCat = sh.getRange(3, colIndex, 1, groupLen);
-      rangeCat.merge().setValue(g.name).setBackground(g.color).setHorizontalAlignment('center').setFontWeight('bold').setBorder(true, true, true, true, false, false, "medium", null);
+      if (colIndex === 1 && TABS.FLIGHTS.frozenCols && TABS.FLIGHTS.frozenCols < groupLen) {
+        var frozenCount = TABS.FLIGHTS.frozenCols;
+        // Columns 1 to frozenCount (A3:D3): unmerged cells inside frozen pane
+        sh.getRange(3, 1, 1, frozenCount).setValue('').setBackground(g.color).setBorder(true, true, true, true, false, false, "medium", null);
+        // Columns frozenCount + 1 to groupLen (E3:N3): merged Flight Info header
+        var unmergedCount = groupLen - frozenCount;
+        sh.getRange(3, frozenCount + 1, 1, unmergedCount)
+          .merge()
+          .setValue(g.name)
+          .setBackground(g.color)
+          .setHorizontalAlignment('center')
+          .setFontWeight('bold')
+          .setBorder(true, true, true, true, false, false, "medium", null);
+      } else {
+        var rangeCat = sh.getRange(3, colIndex, 1, groupLen);
+        rangeCat.merge().setValue(g.name).setBackground(g.color).setHorizontalAlignment('center').setFontWeight('bold').setBorder(true, true, true, true, false, false, "medium", null);
+      }
       
       // Col Header Color (Row 4)
       sh.getRange(4, colIndex, 1, groupLen).setBackground(g.color).setFontWeight('bold');
@@ -684,7 +699,22 @@ function reapplyFormatting_() {
          var groupLen = g.cols.length;
          try {
             // Row 3 (Category)
-            shF.getRange(3, colIndex, 1, groupLen).merge().setValue(g.name).setBackground(g.color).setHorizontalAlignment('center').setFontWeight('bold').setBorder(true, true, true, true, false, false, "medium", null);
+            if (colIndex === 1 && TABS.FLIGHTS.frozenCols && TABS.FLIGHTS.frozenCols < groupLen) {
+              var frozenCount = TABS.FLIGHTS.frozenCols;
+              // Columns 1 to frozenCount (A3:D3): unmerged cells inside frozen pane
+              shF.getRange(3, 1, 1, frozenCount).setValue('').setBackground(g.color).setBorder(true, true, true, true, false, false, "medium", null);
+              // Columns frozenCount + 1 to groupLen (E3:N3): merged Flight Info header
+              var unmergedCount = groupLen - frozenCount;
+              shF.getRange(3, frozenCount + 1, 1, unmergedCount)
+                 .merge()
+                 .setValue(g.name)
+                 .setBackground(g.color)
+                 .setHorizontalAlignment('center')
+                 .setFontWeight('bold')
+                 .setBorder(true, true, true, true, false, false, "medium", null);
+            } else {
+              shF.getRange(3, colIndex, 1, groupLen).merge().setValue(g.name).setBackground(g.color).setHorizontalAlignment('center').setFontWeight('bold').setBorder(true, true, true, true, false, false, "medium", null);
+            }
             // Row 4 (Columns)
             shF.getRange(4, colIndex, 1, groupLen).setBackground(g.color).setFontWeight('bold');
          } catch(e) {}
