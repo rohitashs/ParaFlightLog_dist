@@ -1,5 +1,21 @@
 # Project Change Log
 
+## Session: XContest Verification, Identifier Linking & Claim Deadline
+**Date**: 2026-09-30
+**Versions**: v0.8.11
+**Focus**: XContest Verification & Identifier Linking (`Bug-SCR-002`).
+
+*   `[Fix]` **Bug-SCR-002 (XContest Direct Flight Probing, ID Linking & Claim Status)**:
+    *   Replaced deprecated pilot profile table scraping with **Direct Flight Probing** in `Code/XContest.gs` (`XContest.checkFlight`), bypassing XContest's client-side JavaScript rendering and Cloudflare Turnstile token protection.
+    *   Accurately evaluates candidate launch times in UTC (+/- 2 minutes tolerance), fixing the 7-hour timezone offset previously passed from local launch time.
+    *   Extracts XContest's permanent internal database flight ID (`fl=...`) from `<meta property="og:image">` to create a visual and functional hyperlink in the `XContest` column (e.g. `=HYPERLINK(url, "XC#6952654")`), falling back to date/time `XC-YYYYMMDD-HHMM` if the internal ID is absent.
+    *   Evaluates unmatched flights against XContest Rule 3.1 (14-day competition claiming deadline), marking `'Claim soon!'` for flights within 14 days and `'Expired'` for flights older than 14 days.
+    *   Integrated into `Code/Ingestion.gs` and `Code/Code.gs` (`executeFlightMaintenanceRow`).
+    *   Added `XCONTEST_FLIGHT_URL_PATTERN` and `'XContest'` column tooltip to `Code/Config.gs`.
+    *   Updated unit tests in `Code/Test.gs` with live matching and 14-day status validation.
+
+---
+
 ## Session: Flight Maintenance Scope & Empty Row Detection
 **Date**: 2026-09-30
 **Versions**: v0.8.10

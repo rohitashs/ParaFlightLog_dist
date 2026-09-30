@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 11:49:39
+ * Updated: 2026-09-30 14:05:46
  * Test access verification: Verified GAS write access on 2026-09-25 08:26:00.
  * 
  * CORE MODULE: Orchestration Only.
@@ -556,12 +556,50 @@ function executeFlightMaintenanceRow(rowNum, opConfig) {
       var lParts = lTimeStr.split(':');
       var startMin = lParts.length >= 2 ? (parseInt(lParts[0], 10) * 60 + parseInt(lParts[1], 10)) : 720;
 
-      if (fDate && durMin > 0) {
-        var xcStatus = XContest.checkFlight(fDate, durMin, startMin, config);
+      // Extract UTC start time directly from master IGC if linked
+      var utcStartMin = null;
+      var igcVal = getV('IGC File');
+      var igcId = cleanDriveId_(igcVal);
+      if (igcId) {
+        try {
+          var igcChunk = DriveApp.getFileById(igcId).getBlob().getDataAsString();
+          var bMatch = igcChunk.match(/\nB(\d{2})(\d{2})(\d{2})/);
+          if (bMatch) {
+            utcStartMin = parseInt(bMatch[1], 10) * 60 + parseInt(bMatch[2], 10) + (parseInt(bMatch[3], 10) >= 30 ? 1 : 0);
+          }
+        } catch (igcErr) {
+          console.warn('IGC read for UTC start time skipped', igcErr);
+        }
+      }
+
+      // Fallback: convert Launch Time + Time Zone to UTC if IGC was not available
+      if (utcStartMin === null && fDate && lParts.length >= 2) {
+        var tz = String(getV('Time Zone') || 'UTC');
+        try {
+          var dateYMD = Utilities.formatDate(fDate, 'UTC', 'yyyy-MM-dd');
+          var refDate = new Date(dateYMD + 'T' + ("0" + lParts[0]).slice(-2) + ':' + ("0" + lParts[1]).slice(-2) + ':00Z');
+          var locStr = Utilities.formatDate(refDate, tz, 'HH:mm');
+          var locP = locStr.split(':');
+          var locMin = parseInt(locP[0], 10) * 60 + parseInt(locP[1], 10);
+          var refMin = refDate.getUTCHours() * 60 + refDate.getUTCMinutes();
+          var diff = locMin - refMin;
+          if (diff < -720) diff += 1440;
+          if (diff > 720) diff -= 1440;
+          utcStartMin = startMin - diff;
+        } catch (tzErr) {
+          utcStartMin = startMin;
+        }
+      }
+
+      if (fDate && (utcStartMin !== null || durMin > 0)) {
+        var xcStatus = XContest.checkFlight(fDate, durMin, (utcStartMin !== null ? utcStartMin : startMin), config);
         if (xcStatus && xcStatus.status) {
           var cellVal = xcStatus.status;
           if (cellVal === 'Yes' && xcStatus.url) {
-            cellVal = '=HYPERLINK("' + xcStatus.url + '", "Yes")';
+            var label = xcStatus.label || 'Yes';
+            cellVal = '=HYPERLINK("' + xcStatus.url + '", "' + label + '")';
+          } else if (cellVal === 'No Username') {
+            cellVal = '';
           }
           setV('XContest', cellVal);
           updated.push('XContest');

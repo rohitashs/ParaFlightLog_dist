@@ -27,7 +27,7 @@ This document defines the **Code Organization**, **Algorithms**, and **Data Sche
     *   **`Analysis.gs`**: Physics engine (Thermals, Glide).
     *   **`Scoring.gs`**: Optimization engine (Graph theory/RDP).
     *   **`Geo.gs`**: External API Gateway (Nominatim, Overpass).
-    *   **`XContest.gs`**: Scrapes daily flight lists and matches claim URLs.
+    *   **`XContest.gs`**: Verifies flights on XContest.org via Direct Flight Probing, extracts permanent flight IDs, and checks 14-day claim deadlines.
 
 ---
 
@@ -181,7 +181,7 @@ Fixed Header Schema (Row 4=Category, Row 5=Name). Data starts Row 6.
 *   **`getTimezone(lat, lon, ...)`**: Returns TZ ID.
 
 ### `XContest.gs` (XContest Verification)
-*   **`XContest.checkFlight(flightDateObj, flightDurationMin, flightStartTimeMin, config)`**: Scrapes pilot flight lists from XContest.org for the calculated season. Matches flights by Date + Duration (with configurable tolerance) or Start Time fallback, returning matched flight URL and verification status.
+*   **`XContest.checkFlight(flightDateObj, flightDurationMin, flightStartTimeMin, config)`**: Probes direct flight URLs on XContest.org using UTC launch date and candidate start times (+/- 2 min tolerance). Extracts permanent database flight IDs (`fl=...`) to construct hyperlinked labels (`XC#...` or `XC-YYYYMMDD-HHMM`). If unmatched, evaluates against the 14-day competition deadline, returning `'Claim soon!'` (<= 14 days) or `'Expired'` (> 14 days).
 
 ### `Test.gs`
 *   **`runAllTests()`**: Execution harness for unit tests.

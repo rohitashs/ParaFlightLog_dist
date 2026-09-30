@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 11:49:39
+ * Updated: 2026-09-30 14:05:46
  */
 /**
  * Paragliding Flight Log v2.0 - Configuration
@@ -44,6 +44,7 @@ var CFG = {
     { section: 'Integrations', key: 'SEEYOU_CLOUD_URL_PATTERN', val: 'https://seeyou.cloud/api/open?igc={URL}', desc: 'Pattern for SeeYou Cloud link' },
     { section: 'Integrations', key: 'XCONTEST_USERNAME', val: '', desc: 'XContest Username for Flight verification', input: true },
     { section: 'Integrations', key: 'XCONTEST_PILOT_URL_PATTERN', val: 'https://www.xcontest.org/world/en/pilots/detail:{username}', desc: 'Pattern for Pilot Profile' },
+    { section: 'Integrations', key: 'XCONTEST_FLIGHT_URL_PATTERN', val: 'https://www.xcontest.org/world/en/flights/detail:{username}/{date}/{time}', desc: 'Pattern for Flight Detail' },
     { section: 'Integrations', key: 'XCONTEST_MATCH_DURATION_TOLERANCE_MIN', val: 2, desc: 'Tolerance (min) for Duration match', input: true },
     { section: 'Integrations', key: 'XCONTEST_MATCH_START_TIME_TOLERANCE_MIN', val: 2, desc: 'Tolerance (min) for Start Time match (Fallback)', input: true },
     
@@ -142,7 +143,8 @@ var TABS = {
      */
     colNotes: {
       'FlightID': 'Click to view flight',
-      'IGC File': 'Click to download igc'
+      'IGC File': 'Click to download igc',
+      'XContest': 'Click to view on XContest'
     },
     groups: [
       { 

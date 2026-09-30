@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 11:49:39
+ * Updated: 2026-09-30 14:05:46
  * 
  * MODULE: Ingestion Service
  * Handles Flight Log Parsing, Analysis/Scoring Orchestration, Geo-enrichment,
@@ -178,15 +178,16 @@ function processSingleIgcBlob_(blob, fileName, fileId, outerName, config) {
      try {
        var flightDate = new Date(parsed.meta.dateIso);
        var durMin = Math.round(parsed.stats.durationSec / 60);
-       var localTimeStr = GEO.formatInTimezone(new Date(parsed.stats.startTime * 1000), timeZone, 'HH:mm');
-       var localParts = localTimeStr ? localTimeStr.split(':') : null;
-       var startMin = localParts ? (parseInt(localParts[0], 10) * 60 + parseInt(localParts[1], 10)) : Math.round(parsed.stats.startTime / 60);
-       xcStatus = XContest.checkFlight(flightDate, durMin, startMin, config);
+       // Pass UTC start time in minutes (not local time) for XContest matching
+       var utcStartMin = Math.round(parsed.stats.startTime / 60);
+       xcStatus = XContest.checkFlight(flightDate, durMin, utcStartMin, config);
        
        if (xcStatus.status === 'Error') {
           noteLog.push('XC Check: ' + xcStatus.note);
-       } else if (xcStatus.status === 'No') {
-          noteLog.push('XC: No Match'); 
+       } else if (xcStatus.status === 'Claim soon!') {
+          noteLog.push('XC: Claim soon! (within 14d deadline)');
+       } else if (xcStatus.status === 'Expired') {
+          noteLog.push('XC: Expired (>14d deadline)');
        }
      } catch(e) { console.warn('XC Check Logic Fail', e); }
   }
@@ -462,7 +463,10 @@ function insertFlightRow_(data, fileId, outerName, status, notes, analysis, scor
   if (xcStatus && xcStatus.status) {
      var val = xcStatus.status;
      if (val === 'Yes' && xcStatus.url) {
-        val = '=HYPERLINK("' + xcStatus.url + '", "Yes")';
+        var label = xcStatus.label || 'Yes';
+        val = '=HYPERLINK("' + xcStatus.url + '", "' + label + '")';
+     } else if (val === 'No Username') {
+        val = '';
      }
      setVal('XContest', val);
   }

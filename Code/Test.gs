@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 11:49:39
+ * Updated: 2026-09-30 14:05:46
  */
 /**
  * Paragliding Flight Log v2.0
@@ -101,7 +101,38 @@ function testXContest_() {
   
   // Test 1: No Username
   var res = XContest.checkFlight(new Date(), 60, 600, { XCONTEST_USERNAME: '' });
-  if (res.status !== 'No' || res.note !== 'No Username') return { module: 'XContest', error: 'Fail: No User handling' };
+  if (res.status !== 'No Username') return { module: 'XContest', error: 'Fail: No User handling, got ' + res.status };
+
+  // Test 2: Unmatched recent flight (<= 14 days) returns 'Claim soon!'
+  var recentDate = new Date(Date.now() - 2 * 86400000);
+  var resRecent = XContest.checkFlight(recentDate, 60, 600, { XCONTEST_USERNAME: 'non_existent_pilot_xyz_123' });
+  if (resRecent.status !== 'Claim soon!') {
+    return { module: 'XContest', error: 'Expected Claim soon! for recent flight, got: ' + resRecent.status };
+  }
+
+  // Test 3: Unmatched old flight (> 14 days) returns 'Expired'
+  var oldDate = new Date(Date.now() - 30 * 86400000);
+  var resOld = XContest.checkFlight(oldDate, 60, 600, { XCONTEST_USERNAME: 'non_existent_pilot_xyz_123' });
+  if (resOld.status !== 'Expired') {
+    return { module: 'XContest', error: 'Expected Expired for old flight, got: ' + resOld.status };
+  }
+
+  // Test 4: Live verified flight matching and permanent ID extraction (Rohitash flight on 2026-09-17 19:14 UTC)
+  try {
+    var resLive = XContest.checkFlight('2026-09-17', 35, 1154, { XCONTEST_USERNAME: 'rohitash' });
+    if (resLive.status !== 'Yes') {
+      return { module: 'XContest', error: 'Live flight match failed, status: ' + resLive.status };
+    }
+    if (resLive.label !== 'XC#6952654') {
+      return { module: 'XContest', error: 'Live flight ID label mismatch: ' + resLive.label };
+    }
+    if (!resLive.url || resLive.url.indexOf('17.09.2026/19:14') === -1) {
+      return { module: 'XContest', error: 'Live flight URL mismatch: ' + resLive.url };
+    }
+  } catch (liveErr) {
+    // If network down or sandbox restricted, allow graceful notice
+    console.warn('Live XContest test exception', liveErr);
+  }
 
   return { module: 'XContest', idx: true };
 }

@@ -1,9 +1,9 @@
 # Project Context & Ways of Working (Source of Truth)
 
 ## 🧠 Agent Memory & Context
-**Status**: Active Development (v0.8.10)
-**Last Session Focus**: Flight Maintenance Scope & Empty Row Detection (`Bug-SYS-005`), Parameter Date/Time Format Dropdowns (`Bug-UI-003`), Strict Pre-Flight Folder Validation & Source Deletion Behavior (`Bug-ING-004`).
-**Next Focus**: Setup Wizard & Instance Templating (`RQ-SYS-008`), Dashboard & Inspector Pilot Profile Integration (`RQ-SYS-009.2`), Flight Inspector Enhancements (`RQ-SYS-004`), XContest Matching Investigation (`Bug-SCR-002`).
+**Status**: Active Development (v0.8.11)
+**Last Session Focus**: XContest Verification, Identifier Linking & Claim Deadline (`Bug-SCR-002`), Flight Maintenance Scope & Empty Row Detection (`Bug-SYS-005`).
+**Next Focus**: Setup Wizard & Instance Templating (`RQ-SYS-008`), Dashboard & Inspector Pilot Profile Integration (`RQ-SYS-009.2`), Flight Inspector Enhancements (`RQ-SYS-004`).
 
 This file is the **long-term memory** for the project. Read this first to understand *how* we work and *where* we are.
 
