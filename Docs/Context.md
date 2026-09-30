@@ -1,9 +1,9 @@
 # Project Context & Ways of Working (Source of Truth)
 
 ## 🧠 Agent Memory & Context
-**Status**: Active Development (v0.8.3)
-**Last Session Focus**: In-App Folder Picker (Option B), Multi-Watch Folder Support, Recursive Scanning & Cleanup, Master Log Link (Cell A2) & Flight No Download Links (CR-UI-014, CR-CFG-004, CR-ING-004, CR-UI-015).
-**Next Focus**: Dashboard Logic (CR-SYS-001), XContest Matching (Bug-SCR-002), Quick Action Buttons (CR-UI-012).
+**Status**: Active Development (v0.8.4)
+**Last Session Focus**: In-App Folder Picker (Option B), Recursive Scanning & Cleanup, Master Log & Flight No Links (CR-UI-014, CR-CFG-004, CR-ING-004, CR-UI-015, CR-UI-016), Code Check Audit, FileHandling & Utils Modularization (CR-CODE-001).
+**Next Focus**: In-App User Guide & External Onboarding (`RQ-SYS-006`), Unified Flight Maintenance Dialog (`RQ-SYS-007`), Setup Wizard & Instance Templating (`RQ-SYS-008`), Dashboard Logic (`CR-SYS-001`), XContest Matching (`Bug-SCR-002`).
 
 This file is the **long-term memory** for the project. Read this first to understand *how* we work and *where* we are.
 

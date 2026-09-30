@@ -64,6 +64,7 @@ The visual layer where users interact with the data.
 *   **Menus**: A custom "Flight Log" menu provides one-click access to common actions (Add Flight, Upload, Update validation).
 *   **Dialogs**: Custom HTML interfaces for File Uploads and "Add files from URL (folder, igc, zip)" supporting both manual URL/ID entry and native Google Drive folder exploration with optional "Delete from source" cleanup.
 *   **Flight Inspector**: A dedicated sidebar to view, edit, and audit flight details without horizontal scrolling. Includes collapsible sections and direct SeeYou Cloud links.
+*   **Flight Maintenance & Bulk Operations (`RQ-SYS-007`)**: A planned unified modal dialog to execute bulk operations across all or selected flights (recomputing physics/modes, recalculating XC score, backfilling missing Town/Country/Site geo data, re-checking XContest status, and sorting flights by date).
 
 ## 7. 📊 Flight Dashboard
 *Maps to `RQ-SYS-005`*
@@ -76,12 +77,13 @@ A high-level dashboard providing visual metrics and summaries.
 *   **Recent Activity**: Quick view of flights in the last week/month/quarter.
 
 ## 8. 🛡️ Administration & Setup
-*Maps to `RQ-SYS-001`*
+*Maps to `RQ-SYS-001`, `RQ-SYS-008`*
 
 Tools for managing the system's lifecycle.
 *   **In-App Folder Picker**: Built-in Drive folder browser dialog allowing users to navigate "My Drive", drill down into subfolders, verify URLs/IDs, and select folders with "Replace" or "Add to List" actions.
 *   **Human-Readable Path Enrichment**: Folder parameter updates automatically write human-readable folder breadcrumb paths (`[Path: My Drive / ...]`) to the `Description` column in the `Parameters` sheet.
-*   **First Time Setup**: A "Scaffold" feature automatically creates all necessary sheets, headers, and validation rules if they are missing or deleted.
+*   **First Time Setup & Scaffold**: A "Scaffold" feature automatically creates all necessary sheets, headers, and validation rules if they are missing or deleted.
+*   **Interactive Setup Wizard & Templating (`RQ-SYS-008`)**: Streamlined onboarding workflow designed to replace manual script setup with a copyable sheet template and an interactive setup wizard guiding initial folder configuration, pilot credentials, equipment defaults, and trigger installation.
 *   **Configuration**: A simpler `Parameters` sheet allows users to change system behavior (e.g. "Min Height Gain", "Watch Folder ID") without touching code.
 *   **Maintenance**: Admin tools to "Reset System", "Reformat Sheets", and "Backup Data".
 *   **Equipment Manager**: dedicated tabs for `Wings`, `Harnesses`, and `Reserves`. Rows added here immediately appear in the Flights dropdowns.
@@ -94,3 +96,11 @@ Under-the-hood capabilities that drive reliability.
 *   **Robust Logging**: A dedicated `Import_Log` tab (or `App_Log`) captures detailed success/failure messages, including specific API errors or validation reasons.
 *   **Rate Limiting**: Intelligent caching and throttling to prevent hitting Google or OpenStreetMap API quotas.
 *   **Unit Tests**: A comprehensive suite of tests (`Test.gs`) ensures parsing and scoring logic remains accurate during updates.
+
+## 10. 📖 User Guide & Onboarding
+*Maps to `RQ-SYS-006`*
+
+Comprehensive documentation designed to guide pilots from initial setup to day-to-day operation.
+*   **In-App User Guide Tab (`RQ-SYS-006.1`)**: A dedicated sheet tab within the Google Sheet containing structured reference documentation: System Overview, Initial Setup, Normal Flight Logging Usage, and System Maintenance/Troubleshooting.
+*   **External Onboarding Guide (`RQ-SYS-006.2`)**: A standalone document (viewable in Markdown/web) containing the high-level system overview, prerequisites, and initial setup steps so new pilots can review and prepare before creating their Google Sheet.
+

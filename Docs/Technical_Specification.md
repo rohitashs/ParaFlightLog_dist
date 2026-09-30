@@ -74,10 +74,14 @@ Fixed Header Schema (Row 4=Category, Row 5=Name). Data starts Row 6.
 ---
 ---
 
-## 5. Configuration Strategy (`RQ-SYS-001`)
-1.  **`Config.gs`**: Defines structural constants (Sheet names, Colors).
-2.  **`Parameters` Sheet**: Defines User runtime values (Thresholds, API Keys).
+## 5. Configuration & Provisioning Strategy (`RQ-SYS-001`, `RQ-SYS-008`)
+1.  **`Config.gs`**: Defines structural constants (Sheet names, Colors, `colNotes`, `TABS`).
+2.  **`Parameters` Sheet**: Defines User runtime values (Thresholds, API Keys, Folder IDs).
     *   *Priority*: User Sheet Values > Default Config constants.
+3.  **Template-Based Provisioning (`RQ-SYS-008.1`)**: Evaluation of distribution models to replace manual script copying:
+    *   *Option A (Recommended)*: Copyable master template sheet with pre-bound Apps Script project attached, paired with an interactive First Time Setup Wizard.
+    *   *Option B*: Google Workspace Add-on or Clasp CLI provisioning script.
+4.  **Interactive Setup Wizard (`RQ-SYS-008.2`)**: Modal dialog triggered upon copying or via `Admin > First Time Setup Wizard` that steps users through folder selection (Watch, Upload, Master, Error), pilot credentials, default glider/harness selection, and time-driven watcher trigger initialization.
 
 ## 6. API Integrations (`RQ-SCR-002`)
 *   **Geocoding**: Chain of Responsibility (`BigDataCloud` -> `Nominatim` -> Fail).
@@ -92,6 +96,7 @@ Fixed Header Schema (Row 4=Category, Row 5=Name). Data starts Row 6.
 
 ### `Code.gs` (Orchestration)
 *   **`onOpen(e)`**: Creates the "Flight Log" menu.
+*   **`uiShowFlightMaintenanceDialog_()` (`RQ-SYS-007`)**: Unified dialog launcher superseding separate maintenance stubs. Allows selecting flight scope (all vs. selected rows) and toggling specific batch operations (metrics, analysis, XC scoring, Geo backfill, XContest verification, date sorting).
 *   **`getParameters_()`**: Reads configuration from the `Parameters` sheet.
 *   **`uiAddManualFlight_()`**: Helper to trigger manual flight entry.
 *   **`showUrlDialog_()`**: Shows the IGC URL import dialog.
@@ -106,10 +111,11 @@ Fixed Header Schema (Row 4=Category, Row 5=Name). Data starts Row 6.
 *   **`setupWatcherTrigger_()`**: Installs the time-driven trigger for automation.
 
 ### `Scaffold.gs` (Setup & Validation)
-*   **`scaffoldAll_()`**: Master function to create/repair all sheets (`Dashboard`, `Flights`, etc).
+*   **`scaffoldAll_()`**: Master function to create/repair all sheets (`Dashboard`, `Flights`, `Parameters`, `Equipment`, `Lookups`, `App_Log`, and planned `User Guide`).
 *   **`scaffoldDashboard_(ss)`**: Creates KPI cards and Master Flight Log folder hyperlink in Row 2 (`A2:Q2`).
 *   **`scaffoldFlights_(ss)`**: Builds 2-row category headers, sets Master Flight Log folder hyperlink in Cell `A2`, and applies column header notes/tooltips to Row 4 (`colNotes`).
 *   **`scaffoldParameters_(ss)`**: Populates parameters with human-readable path enrichment in Column C (`Description`).
+*   **`scaffoldUserGuide_(ss)` (`RQ-SYS-006.1`)**: Builds the in-app `User Guide` sheet tab with structured sections: System Overview, Setup, Normal Logging Usage, and System Maintenance/Troubleshooting.
 *   **`updateValidationOnly_()`**: Re-applies dropdowns and validation rules to `Flights` and `Equipment`.
 *   **`applyFlightsValidation_(sh)`**: Applies validation to the top N rows of the Flights sheet.
 *   **`ensureSheet_(ss, name)`**: Utility to create a sheet if missing.

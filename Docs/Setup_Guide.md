@@ -2,6 +2,9 @@
 
 This guide walks you through setting up the Paragliding Flight Log System from scratch in your own Google Drive.
 
+> [!NOTE]
+> **Planned Streamlining (`RQ-SYS-008`)**: We are evaluating a template-based distribution model (copying a pre-configured template sheet with pre-bound script attached) paired with an interactive First-Time Setup Wizard. This will replace the manual script pasting below with a 1-click template copy and guided setup wizard.
+
 ## Prerequisites
 *   A Google Account.
 *   A Google Spreadsheet (new or existing).

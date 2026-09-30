@@ -79,6 +79,15 @@ This file is the single source of truth for **ToDos**, **Requirements**, **Chang
 - [x] **RQ-SYS-003** | **Status**: Implemented | **Phase**: 1 | **Description**: **SeeYou Cloud Link**: Integration with SeeYou Cloud for visualization. Add "View Flight" column with generated link (`https://seeyou.cloud/api/open?igc=<drive_link>`).
 - [ ] **RQ-SYS-004** | **Status**: In Progress | **Phase**: 1 | **Description**: **Flight Inspector**: Sidebar to view and edit flight details. Sections color-coded to match current sheet. Replaces manual entry blank row macro.
 - [ ] **RQ-SYS-005** | **Status**: Open | **Phase**: 1 | **Description**: **Flight Dashboard**: High-level visual metrics (Flights, Hours), Top 5 Lists (Duration/Distance/Site), and Recent Activity in the `Dashboard` (formerly Overview) tab.
+- [ ] **RQ-SYS-006** | **Status**: Open | **Phase**: 2 | **Description**: **User Guide & Onboarding**: Add an in-app `User Guide` tab in the Google Sheet (Overview, Setup, Maintenance, Usage) and an external standalone document for pre-creation reading.
+    - [ ] **RQ-SYS-006.1** | **Status**: Open | **Phase**: 2 | **Description**: In-App `User Guide` Sheet Tab (Overview, Setup, Maintenance, Normal Usage).
+    - [ ] **RQ-SYS-006.2** | **Status**: Open | **Phase**: 2 | **Description**: External User Guide document for pre-sheet setup onboarding.
+- [ ] **RQ-SYS-007** | **Status**: Open | **Phase**: 2 | **Description**: **Flight Maintenance & Bulk Operations**: Unified modal dialog to configure scope (All vs Selected) and multi-select batch operations (Recompute metrics/analysis, Re-score XC, Backfill missing Geo, Re-verify XContest, Sort by Date).
+    - [ ] **RQ-SYS-007.1** | **Status**: Open | **Phase**: 2 | **Description**: Unified `FlightMaintenanceDialog.html` (Scope selector, checkboxes for operations, progress bar).
+    - [ ] **RQ-SYS-007.2** | **Status**: Open | **Phase**: 2 | **Description**: Batch Recompute & Backfill engine with rate limiting and row update logic.
+- [ ] **RQ-SYS-008** | **Status**: Open | **Phase**: 2 | **Description**: **New Instance Setup Wizard & Sheet Templating**: Evaluate and implement simplified distribution/onboarding to replace the manual `Setup_Guide.md` process (e.g., Template copy + interactive setup wizard).
+    - [ ] **RQ-SYS-008.1** | **Status**: Open | **Phase**: 2 | **Description**: Templating Architecture Evaluation (Template Copy with pre-bound script vs. Clasp deployment script vs. Workspace Add-on).
+    - [ ] **RQ-SYS-008.2** | **Status**: Open | **Phase**: 2 | **Description**: Interactive First-Time Setup Wizard modal (step-by-step folder selection, pilot profile, equipment defaults, trigger install).
 
 ---
 
@@ -97,7 +106,7 @@ This file is the single source of truth for **ToDos**, **Requirements**, **Chang
 - [x] **CR-UI-004** | **Status**: Implemented | **Date**: 2026-02-13 | **Req**: RQ-SYS-002 | **Description**: **Menu Restructure**: Rename `Setup` to `Admin`, `Scaffold` to `First Time Setup`. Add Admin tools.
 - [ ] **CR-CFG-002** | **Status**: Open | **Date**: 2026-02-08 | **Req**: RQ-SCR-001 | **Description**: **Configurable RDP Tolerance**: Make Ramer-Douglas-Peucker tolerance configurable (Move from `Scoring.gs` and make it a parameter).
 - [x] **CR-GEO-001** | **Status**: Implemented | **Date**: 2026-02-08 | **Req**: RQ-SCR-002 | **Description**: **Multi-Provider Geo**: Support comma-separated providers for RevGeo and Sites (added `paragliding_earth` as primary with `overpass_api` fallback).
-- [ ] **CR-CODE-001** | **Status**: Open | **Date**: 2026-02-08 | **Req**: RQ-SYS-001 | **Description**: **Centralize Common Utilities**: Create `Utils.gs` for shared Math/Haversine functions.
+- [x] **CR-CODE-001** | **Status**: Implemented | **Date**: 2026-09-29 | **Req**: RQ-SYS-001 | **Description**: **Centralize Common Utilities**: Create `Utils.gs` for shared Math/Haversine functions.
 
 - [x] **CR-CFG-003** | **Status**: Implemented | **Date**: 2026-02-09 | **Req**: RQ-SYS-001 | **Description**: **Watch Folder Toggle**: Add `ENABLE_WATCH_FOLDER` param and Menu toggles. Update trigger logic.
 - [x] **CR-ING-002** | **Status**: Implemented | **Date**: 2026-02-09 | **Req**: RQ-ING-001 | **Description**: **File Upload UI**: New "Add Flight from Upload" menu with multi-file picker. Uploads to `UPLOAD_FOLDER_ID`.
