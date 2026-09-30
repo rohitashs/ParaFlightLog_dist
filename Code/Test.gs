@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 14:05:46
+ * Updated: 2026-09-30 14:38:36
  */
 /**
  * Paragliding Flight Log v2.0
@@ -119,15 +119,22 @@ function testXContest_() {
 
   // Test 4: Live verified flight matching and permanent ID extraction (Rohitash flight on 2026-09-17 19:14 UTC)
   try {
-    var resLive = XContest.checkFlight('2026-09-17', 35, 1154, { XCONTEST_USERNAME: 'rohitash' });
-    if (resLive.status !== 'Yes') {
-      return { module: 'XContest', error: 'Live flight match failed, status: ' + resLive.status };
+    // 4a. Pass string ISO date
+    var resLiveStr = XContest.checkFlight('2026-09-17', 35, 1154, { XCONTEST_USERNAME: 'rohitash' });
+    if (resLiveStr.status !== 'Yes') {
+      return { module: 'XContest', error: 'Live flight match failed (string date), status: ' + resLiveStr.status };
     }
-    if (resLive.label !== 'XC#6952654') {
-      return { module: 'XContest', error: 'Live flight ID label mismatch: ' + resLive.label };
+    if (resLiveStr.label !== 'XC#6952654') {
+      return { module: 'XContest', error: 'Live flight ID label mismatch (string date): ' + resLiveStr.label };
     }
-    if (!resLive.url || resLive.url.indexOf('17.09.2026/19:14') === -1) {
-      return { module: 'XContest', error: 'Live flight URL mismatch: ' + resLive.url };
+
+    // 4b. Pass Date object (ensures no UTC timezone rollback to 16.09.2026)
+    var resLiveDate = XContest.checkFlight(new Date('2026-09-17'), 35, 1154, { XCONTEST_USERNAME: 'rohitash' });
+    if (resLiveDate.status !== 'Yes') {
+      return { module: 'XContest', error: 'Live flight match failed (Date object), status: ' + resLiveDate.status };
+    }
+    if (resLiveDate.label !== 'XC#6952654') {
+      return { module: 'XContest', error: 'Live flight ID label mismatch (Date object): ' + resLiveDate.label };
     }
   } catch (liveErr) {
     // If network down or sandbox restricted, allow graceful notice

@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 14:05:46
+ * Updated: 2026-09-30 14:38:36
  * 
  * MODULE: Ingestion Service
  * Handles Flight Log Parsing, Analysis/Scoring Orchestration, Geo-enrichment,
@@ -176,11 +176,11 @@ function processSingleIgcBlob_(blob, fileName, fileId, outerName, config) {
   var xcStatus = { status: '' };
   if (config.XCONTEST_USERNAME) {
      try {
-       var flightDate = new Date(parsed.meta.dateIso);
+       var flightDateStr = parsed.meta.dateIso || '';
        var durMin = Math.round(parsed.stats.durationSec / 60);
        // Pass UTC start time in minutes (not local time) for XContest matching
        var utcStartMin = Math.round(parsed.stats.startTime / 60);
-       xcStatus = XContest.checkFlight(flightDate, durMin, utcStartMin, config);
+       xcStatus = XContest.checkFlight(flightDateStr, durMin, utcStartMin, config);
        
        if (xcStatus.status === 'Error') {
           noteLog.push('XC Check: ' + xcStatus.note);
@@ -190,6 +190,8 @@ function processSingleIgcBlob_(blob, fileName, fileId, outerName, config) {
           noteLog.push('XC: Expired (>14d deadline)');
        }
      } catch(e) { console.warn('XC Check Logic Fail', e); }
+  } else {
+     noteLog.push('XC: Skipped (No XCONTEST_USERNAME in Parameters)');
   }
 
   // G. Validation Check

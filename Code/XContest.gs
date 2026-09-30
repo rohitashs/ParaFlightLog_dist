@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 14:05:46
+ * Updated: 2026-09-30 14:38:36
  */
 /**
  * Paragliding Flight Log v2.0 - XContest Integration
@@ -30,15 +30,22 @@ XContest.checkFlight = function(flightDateObj, flightDurationMin, flightStartTim
 
   // 1. Parse Year, Month, Day safely
   var y, m, d;
-  if (flightDateObj instanceof Date && !isNaN(flightDateObj.getTime())) {
-    y = flightDateObj.getFullYear();
-    m = flightDateObj.getMonth() + 1;
-    d = flightDateObj.getDate();
-  } else if (typeof flightDateObj === 'string' && flightDateObj.match(/^\d{4}-\d{2}-\d{2}/)) {
+  if (typeof flightDateObj === 'string' && flightDateObj.match(/^\d{4}-\d{2}-\d{2}/)) {
     var dParts = flightDateObj.split('-');
     y = parseInt(dParts[0], 10);
     m = parseInt(dParts[1], 10);
     d = parseInt(dParts[2], 10);
+  } else if (flightDateObj instanceof Date && !isNaN(flightDateObj.getTime())) {
+    // If UTC midnight (e.g. new Date('YYYY-MM-DD')), use UTC to prevent Western TZ rollback
+    if (flightDateObj.getUTCHours() === 0 && flightDateObj.getUTCMinutes() === 0 && flightDateObj.getUTCSeconds() === 0) {
+      y = flightDateObj.getUTCFullYear();
+      m = flightDateObj.getUTCMonth() + 1;
+      d = flightDateObj.getUTCDate();
+    } else {
+      y = flightDateObj.getFullYear();
+      m = flightDateObj.getMonth() + 1;
+      d = flightDateObj.getDate();
+    }
   } else {
     return { status: "Error", label: "Error", url: null, flightId: null, note: "Invalid flight date" };
   }

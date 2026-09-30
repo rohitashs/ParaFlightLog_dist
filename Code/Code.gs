@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 14:05:46
+ * Updated: 2026-09-30 14:38:36
  * Test access verification: Verified GAS write access on 2026-09-25 08:26:00.
  * 
  * CORE MODULE: Orchestration Only.
@@ -548,7 +548,13 @@ function executeFlightMaintenanceRow(rowNum, opConfig) {
   if (opConfig.xcontest && config.XCONTEST_USERNAME) {
     try {
       var dVal = getV('Date');
-      var fDate = dVal ? new Date(dVal) : null;
+      var fDateStr = '';
+      if (dVal instanceof Date) {
+        fDateStr = Utilities.formatDate(dVal, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+      } else if (dVal) {
+        fDateStr = String(dVal).trim();
+      }
+      var fDate = fDateStr ? new Date(fDateStr + 'T12:00:00Z') : null;
       var durStr = String(getV('Flight Duration') || '');
       var durParts = durStr.split(':');
       var durMin = durParts.length >= 2 ? (parseInt(durParts[0], 10) * 60 + parseInt(durParts[1], 10)) : 0;
@@ -591,8 +597,8 @@ function executeFlightMaintenanceRow(rowNum, opConfig) {
         }
       }
 
-      if (fDate && (utcStartMin !== null || durMin > 0)) {
-        var xcStatus = XContest.checkFlight(fDate, durMin, (utcStartMin !== null ? utcStartMin : startMin), config);
+      if (fDateStr && (utcStartMin !== null || durMin > 0)) {
+        var xcStatus = XContest.checkFlight(fDateStr, durMin, (utcStartMin !== null ? utcStartMin : startMin), config);
         if (xcStatus && xcStatus.status) {
           var cellVal = xcStatus.status;
           if (cellVal === 'Yes' && xcStatus.url) {

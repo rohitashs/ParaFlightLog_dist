@@ -12,7 +12,9 @@
     *   Evaluates unmatched flights against XContest Rule 3.1 (14-day competition claiming deadline), marking `'Claim soon!'` for flights within 14 days and `'Expired'` for flights older than 14 days.
     *   Integrated into `Code/Ingestion.gs` and `Code/Code.gs` (`executeFlightMaintenanceRow`).
     *   Added `XCONTEST_FLIGHT_URL_PATTERN` and `'XContest'` column tooltip to `Code/Config.gs`.
-    *   Updated unit tests in `Code/Test.gs` with live matching and 14-day status validation.
+    *   Added UTC midnight protection in `Code/XContest.gs` and `Code/Code.gs` to prevent Western hemisphere timezones (UTC-6/7) from rolling back `YYYY-MM-DD` dates to the previous day when converting from `Date` objects.
+    *   Added explicit audit logging in `Code/Ingestion.gs` (`XC: Skipped (No XCONTEST_USERNAME in Parameters)`) to notify pilots when XContest verification is skipped due to a blank username in `Parameters`.
+    *   Updated unit tests in `Code/Test.gs` with live matching (both string and Date inputs) and 14-day status validation.
 
 ---
 

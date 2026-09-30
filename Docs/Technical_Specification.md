@@ -69,10 +69,20 @@ Fixed Header Schema (Row 4=Category, Row 5=Name). Data starts Row 6.
     *   **Flat**: Gap < 20%.
     *   **FAI**: Shortest Leg >= 28%.
 
-### D. XContest Verification (`RQ-SCR-003`)
+### D. XContest Verification (`RQ-SCR-003`, `Bug-SCR-002`)
 *   **Method**: `UrlFetchApp` (GET).
-*   **Target**: `https://www.xcontest.org/world/en/flights/daily-score-pg/?filter[pilot]={USERNAME}&filter[date]={YYYY-MM-DD}` (or similar).
-*   **Caching**: `CacheService` (TTL irrelevant if just check-once on import).
+*   **Target**: `https://www.xcontest.org/world/en/flights/detail:{USERNAME}/{DD.MM.YYYY}/{HH:MM}`.
+*   **Timezone & Probing Strategy**:
+    *   Evaluates candidate launch times in UTC (+/- 2 minutes tolerance).
+    *   Date safety: Safely parses `YYYY-MM-DD` strings or uses UTC Date getters (`getUTCFullYear`, `getUTCMonth`, `getUTCDate`) when UTC time is midnight, eliminating Western hemisphere timezone date rollbacks (e.g. UTC-6/7).
+    *   Bypasses client-side JS rendering and Cloudflare Turnstile token verification protecting pilot profile tables.
+*   **Permanent ID & Link Extraction**:
+    *   Extracts XContest's permanent internal flight ID (`fl=...`) from `<meta property="og:image">` in the flight detail response.
+    *   Populates cell as a hyperlink with label (e.g. `=HYPERLINK(url, "XC#6952654")`), falling back to `XC-YYYYMMDD-HHMM` if the internal ID is absent.
+*   **Claim Deadline (Rule 3.1)**:
+    *   Unmatched flights are compared to the 14-day competition claiming deadline: populates `'Claim soon!'` if within 14 days, and `'Expired'` if older than 14 days.
+*   **Audit Logging**:
+    *   If `XCONTEST_USERNAME` is blank in `Parameters`, logs `XC: Skipped (No XCONTEST_USERNAME in Parameters)` in import notes.
 
 ---
 ---
