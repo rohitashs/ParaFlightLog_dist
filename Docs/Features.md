@@ -46,6 +46,7 @@ Applies standard XContest/FAI scoring rules to every flight.
 *   **Optimization**: Finds the optimal 3 Turnpoints to maximize distance.
 *   **Triangle Detection**: Identifies **Flat Triangles** (<20% gap) and **FAI Triangles** (strict leg geometry).
 *   **Scoring**: Calculates points with appropriate multipliers (e.g. 1.4x for FAI Triangle).
+*   **XContest Flight Verification & Link Integration (`RQ-SCR-003`, `Bug-SCR-002`)**: Directly probes XContest.org via UTC flight date and candidate launch times (+/- 2 minutes) to verify if the flight is claimed. If matched, extracts the permanent internal XContest flight ID (`fl=...`) from OpenGraph metadata and formats a clickable hyperlink (e.g. `=HYPERLINK(url, "XC#6952654")`). If unmatched, automatically evaluates against XContest Rule 3.1 (14-day competition claiming deadline), marking `'Claim soon!'` for flights within 14 days and `'Expired'` for flights older than 14 days.
 
 ## 5. 📍 Geo-Spatial Enrichment
 *Maps to `RQ-SCR-002`*
@@ -53,7 +54,7 @@ Applies standard XContest/FAI scoring rules to every flight.
 Adds location context to raw GPS coordinates.
 *   **Reverse Geocoding**: Converts Lat/Lon to "Nearest Town, Region, Country".
 *   **Site Detection**: Identifies known Paragliding Takeoffs/Landings within search radius using Paragliding Earth (primary) with OpenStreetMap Overpass API fallback.
-*   **Interactive Links**: Generates links to view the flight on SeeYou Cl*   **SeeYou Cloud Integration**: Valid flights are automatically uploaded to a public folder and linked directly to SeeYou Cloud for 3D visualization.
+*   **SeeYou Cloud Integration**: Valid flights are automatically uploaded to a public folder and linked directly to SeeYou Cloud for 3D visualization.
 *   **Automated Historical Weather Enrichment (`RQ-SCR-004`)**: Automatically fetches historical weather conditions at launch and landing coordinates for the flight date and time using Open-Meteo as primary (with 7-day forecast fallback for recent flights) and Visual Crossing Timeline API as backup (`WEATHER_PROVIDERS`, `VISUAL_CROSSING_API_KEY`). Prepopulates editable fields (`Wind@Launch`, `Wind@Landing`, `Cloud %`, `Cloudbase`, `Temp (C)`, `Observations`) featuring cardinal wind directions with gusts (e.g. `14 km/h WNW (gust 20)`) and convective cloudbase in MSL & AGL via the Lawrence spread formula (e.g. `2400m MSL (1200m AGL)`).
 
 ## 6. 🖥️ User Interface (UI)
@@ -104,7 +105,7 @@ Under-the-hood capabilities that drive reliability.
 *Maps to `RQ-SYS-006`*
 
 Comprehensive documentation designed to guide pilots from initial setup to day-to-day operation.
-*   **In-App User Guide Tab (`RQ-SYS-006.1`)**: A dedicated sheet tab within the Google Sheet containing structured reference documentation: System Overview, Initial Setup, Normal Flight Logging Usage, System Maintenance/Troubleshooting, and a **Comprehensive Metric Dictionary** defining all calculated fields grouped by Flight Info, XC Scoring, Analytics (Thermal %, Soar %, Efficiency, Glide %, Glide L/D, Sink %, etc.), Physics metrics, and Geo fields.
+*   **In-App User Guide Tab (`RQ-SYS-006.1`)**: A dedicated sheet tab (`User Guide`) containing structured reference documentation: System Overview & Architecture, Initial Configuration & Folders (including `XCONTEST_USERNAME`, `WEATHER_PROVIDERS`, and folder paths), Daily Flight Logging Workflows, System Maintenance & Bulk Operations (weather backfill, geo resolution, XContest verification, physics recompute, date sorting), and a **Comprehensive Metric Dictionary** defining all calculated fields (Flight Info, Gear Tracking, XC Scoring & XContest hyperlinking, Analytics & Thermal %, Launch/Landing Geo, Weather, and Validation). Includes a dedicated `Flight Log > Admin > Admin: Refresh User Guide Tab` menu command to re-sync the guide at any time without disturbing flight records.
 *   **External Onboarding Guide (`RQ-SYS-006.2`)**: A standalone document (viewable in Markdown/web) containing the high-level system overview, prerequisites, and initial setup steps so new pilots can review and prepare before creating their Google Sheet.
 
 ## 11. 👤 Pilot Profile & Credentials

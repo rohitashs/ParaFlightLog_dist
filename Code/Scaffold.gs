@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 14:38:36
+ * Updated: 2026-09-30 14:52:12
  */
 /**
  * Paragliding Flight Log v2.0 - Scaffolding & Setup
@@ -474,7 +474,9 @@ function updateValidationOnly_() {
   // Also refresh parameters in case new ones added
   scaffoldParameters_(ss);
   
-  ss.toast('Validation rules, Column Notes, and Parameters updated.');
+  scaffoldUserGuide_(ss);
+  
+  ss.toast('Validation rules, Column Notes, Parameters, and User Guide updated.');
 }
 
 function applyFlightsValidation_(sh) {
@@ -798,7 +800,10 @@ function scaffoldPilotProfile_(ss) {
 
 function scaffoldUserGuide_(ss) {
   var sh = ss.getSheetByName(TABS.USER_GUIDE.name);
-  if (!sh) return;
+  if (!sh) {
+    sh = ss.insertSheet(TABS.USER_GUIDE.name);
+    sh.setTabColor(TABS.USER_GUIDE.color);
+  }
   sh.clear();
 
   // Title
@@ -850,6 +855,7 @@ function scaffoldUserGuide_(ss) {
   addRow('Weather Providers', 'WEATHER_PROVIDERS', 'Comma-separated order of weather services: "open_meteo, visual_crossing". Open-Meteo runs with zero API keys required.', 'open_meteo, visual_crossing');
   addRow('Visual Crossing Key', 'VISUAL_CROSSING_API_KEY', 'Optional API key for Visual Crossing backup (1,000 free calls/day). Sign up at visualcrossing.com.', 'Leave blank to use free Open-Meteo exclusively.');
   addRow('Contact Email', 'CONTACT_EMAIL', 'Your email address used in User-Agent headers for open Nominatim / Open-Meteo / Overpass API requests.', 'Required to prevent HTTP 403 API blocking.');
+  addRow('XContest Username', 'XCONTEST_USERNAME', 'Your public XContest pilot username (e.g. "rohitash"). Required for automated XContest flight verification, permanent ID linking, and claim window alerts.', 'Set your username in Parameters');
 
   rIdx++;
 
@@ -870,7 +876,7 @@ function scaffoldUserGuide_(ss) {
   addRow('Unified Maintenance', 'Flight Log > Flight maintenance > Flight Maintenance...', 'Configurable modal dialog: choose between Selected Rows vs All Flights, and check operations to batch process.', 'Periodic log maintenance, bulk backfilling, or score recalculation.');
   addRow('Weather Backfill', 'Maintenance Dialog Checkbox', 'Fetches historical launch/landing wind, cloudbase, cloud %, temperature, and conditions via Open-Meteo & Visual Crossing.', 'Enriching older flights or flights imported while offline.');
   addRow('Geo & Site Backfill', 'Maintenance Dialog Checkbox', 'Reverse geocodes Lat/Lon coordinates into Town, Region, Country and matches nearest takeoff/landing site names.', 'Populating missing location names.');
-  addRow('XContest Verification', 'Maintenance Dialog Checkbox', 'Queries XContest.org to verify if the flight is published and links the public URL into the XContest column.', 'Updating XContest league claim status.');
+  addRow('XContest Verification', 'Maintenance Dialog Checkbox', 'Directly probes XContest.org via UTC date/time (+/- 2 min) to verify if flight is published, links flight with permanent ID (e.g. XC#6952654), or flags claim deadline (Claim soon! if <= 14 days, Expired if > 14 days).', 'Updating XContest league claim status.');
   addRow('Physics & XC Recompute', 'Maintenance Dialog Checkbox', 'Reads master IGC from Drive; re-runs thermal circling, soaring efficiency, glide L/D, and optimal FAI triangle scoring.', 'When scoring rules or thermal detection thresholds are updated.');
   addRow('Date Sorting', 'Flight Log > Flight maintenance > Sort All Flights by Date', 'Chronologically sorts logbook descending (newest on top) and re-indexes sequential Flight Numbers.', 'After importing out-of-order historical flights.');
 
@@ -898,6 +904,7 @@ function scaffoldUserGuide_(ss) {
   addRow('XC Scoring', 'XC Flight Class', 'Free Flight, Flat Triangle, or FAI Triangle', 'Geometric classification of the track.');
   addRow('XC Scoring', 'FAI Triangle (km)', 'Shortest leg >= 28% of total perimeter', 'Strict FAI triangle distance. Highest multiplier (1.4x) in XC leagues.');
   addRow('XC Scoring', 'Closed?', 'Launch-Landing gap <= 20% (or national bonus)', 'Indicates whether triangle circuit was closed back to launch.');
+  addRow('XC Scoring', 'XContest', 'Direct Flight Probing / Rule 3.1 14-day claim window', 'Hyperlink to public XContest flight (e.g. XC#6952654) if verified. Displays "Claim soon!" if within 14-day competition deadline, or "Expired" if older than 14 days.');
 
   // Physics & Analytics
   addRow('Analytics', 'Thermal %', 'Circling time / Total flight time', 'Percentage of flight spent thermalling (turn rate > 8 deg/s and climb > 0.3 m/s).');
@@ -930,4 +937,10 @@ function scaffoldUserGuide_(ss) {
   sh.setColumnWidth(2, 220);
   sh.setColumnWidth(3, 300);
   sh.setColumnWidth(4, 420);
+}
+
+function uiRefreshUserGuide_() {
+  var ss = SpreadsheetApp.getActive();
+  scaffoldUserGuide_(ss);
+  ss.toast('User Guide tab refreshed successfully.', 'Flight Log');
 }

@@ -59,7 +59,7 @@ This file is the single source of truth for **ToDos**, **Requirements**, **Chang
     - [x] **RQ-SCR-002.1** | **Status**: Implemented | **Phase**: 1 | **Description**: Reverse Geocoding (Town/Region).
     - [x] **RQ-SCR-002.2** | **Status**: Implemented | **Phase**: 1 | **Description**: Site Detection (Overpass).
     
-- [x] **RQ-SCR-003** | **Status**: Implemented | **Phase**: 1 | **Description**: **XContest Verification**: Check if flight is already uploaded to XContest (via daily score scrape). Requires `XCONTEST_USERNAME` config. Refined: Match Date + Duration + Start Time rollover.
+- [x] **RQ-SCR-003** | **Status**: Implemented | **Phase**: 1 | **Description**: **XContest Verification & Identifier Linking**: Check if flight is uploaded to XContest via Direct Flight Probing (UTC flight date + launch time candidates). Requires `XCONTEST_USERNAME`. If verified, links permanent flight ID (`XC#6952654`). If unverified, evaluates against Rule 3.1 14-day competition claiming deadline (`Claim soon!` vs `Expired`).
 
 - [x] **RQ-SCR-004** | **Status**: Implemented | **Phase**: 2 | **Description**: **Historical Weather Enrichment**: Automatically prepopulate weather fields (`Wind@Launch`, `Wind@Landing`, `Cloud %`, `Cloudbase`, `Temp (C)`, `Observations`) based on flight date/time and coordinates from Open-Meteo (primary with 7-day forecast fallback) and Visual Crossing (backup), editable by the pilot.
     - [x] **RQ-SCR-004.1** | **Status**: Implemented | **Phase**: 2 | **Description**: Historical Weather API Integration (Open-Meteo archive & forecast fallback, Visual Crossing Timeline backup, `WEATHER_PROVIDERS`, `VISUAL_CROSSING_API_KEY`).

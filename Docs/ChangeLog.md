@@ -15,6 +15,9 @@
     *   Added UTC midnight protection in `Code/XContest.gs` and `Code/Code.gs` to prevent Western hemisphere timezones (UTC-6/7) from rolling back `YYYY-MM-DD` dates to the previous day when converting from `Date` objects.
     *   Added explicit audit logging in `Code/Ingestion.gs` (`XC: Skipped (No XCONTEST_USERNAME in Parameters)`) to notify pilots when XContest verification is skipped due to a blank username in `Parameters`.
     *   Updated unit tests in `Code/Test.gs` with live matching (both string and Date inputs) and 14-day status validation.
+*   `[Imp]` **RQ-SYS-006.1 (In-App User Guide Tab Alignment & Refresh Action)**:
+    *   Updated `scaffoldUserGuide_` in `Code/Scaffold.gs` to ensure automatic creation of the `User Guide` tab if deleted, added `XCONTEST_USERNAME` configuration to Section 2, updated maintenance descriptions for XContest Direct Flight Probing in Section 4, and documented the `XContest` column and claim windows in the Comprehensive Metric Dictionary in Section 5.
+    *   Added `Admin: Refresh User Guide Tab` (`uiRefreshUserGuide_`) to the `Flight Log > Admin` menu in `Code/Code.gs` and hooked automatic guide updates into `updateValidationOnly_()`.
 
 ---
 

@@ -2,7 +2,7 @@
 
 ## 🧠 Agent Memory & Context
 **Status**: Active Development (v0.8.11)
-**Last Session Focus**: XContest Verification, Identifier Linking & Claim Deadline (`Bug-SCR-002`), Flight Maintenance Scope & Empty Row Detection (`Bug-SYS-005`).
+**Last Session Focus**: XContest Direct Verification, Permanent ID Linking, Claim Deadlines & Timezone Rollover Fix (`Bug-SCR-002`, `RQ-SCR-003`), In-App User Guide & Metric Dictionary Alignment (`RQ-SYS-006.1`), Flight Maintenance Scope & Empty Row Detection (`Bug-SYS-005`).
 **Next Focus**: Setup Wizard & Instance Templating (`RQ-SYS-008`), Dashboard & Inspector Pilot Profile Integration (`RQ-SYS-009.2`), Flight Inspector Enhancements (`RQ-SYS-004`).
 
 This file is the **long-term memory** for the project. Read this first to understand *how* we work and *where* we are.

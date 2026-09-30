@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 14:38:36
+ * Updated: 2026-09-30 14:52:12
  * Test access verification: Verified GAS write access on 2026-09-25 08:26:00.
  * 
  * CORE MODULE: Orchestration Only.
@@ -30,6 +30,7 @@ function onOpen(e) {
     .addSubMenu(ui.createMenu('Admin')
         .addItem('First Time Setup (Full Scaffold)', 'scaffoldAll_')
         .addItem('Admin: Update Validation & Params', 'updateValidationOnly_')
+        .addItem('Admin: Refresh User Guide Tab', 'uiRefreshUserGuide_')
         .addItem('Admin: Reapply Formatting (Safe)', 'reapplyFormatting_')
         .addItem('Admin: Backup Data', 'backupSystemSheets_')
         .addSeparator()

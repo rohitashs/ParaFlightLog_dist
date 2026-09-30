@@ -134,10 +134,11 @@ Fixed Header Schema (Row 4=Category, Row 5=Name). Data starts Row 6.
 *   **`scaffoldDashboard_(ss)`**: Creates KPI cards and Master Flight Log folder hyperlink in Row 2 (`A2:Q2`).
 *   **`scaffoldFlights_(ss)`**: Builds 2-row category headers, sets Master Flight Log folder hyperlink in Cell `A2`, and applies column header notes/tooltips to Row 4 (`colNotes`).
 *   **`scaffoldParameters_(ss)`**: Populates parameters with human-readable path enrichment in Column C (`Description`), strict Plain Text (`@`) formatting for format keys, and exact validation ranges (`I3:I7` for `DATE_FORMAT`, `J3:J4` for `TIME_FORMAT`) to eliminate trailing blank dropdown options.
-*   **`scaffoldUserGuide_(ss)` (`RQ-SYS-006.1`)**: Builds the in-app `User Guide` sheet tab with structured sections: System Overview, Setup, Normal Logging Usage, System Maintenance, and Metric Dictionary.
+*   **`scaffoldUserGuide_(ss)` (`RQ-SYS-006.1`)**: Builds or refreshes the in-app `User Guide` sheet tab with structured sections: System Overview, Setup & Configuration (including `XCONTEST_USERNAME`), Normal Logging Usage, System Maintenance (weather, geo, XContest verification, physics, sort), and Comprehensive Metric Dictionary (defining all calculated fields including XContest hyperlinking).
+*   **`uiRefreshUserGuide_()`**: Interactive menu action under `Flight Log > Admin > Admin: Refresh User Guide Tab` to safely re-scaffold the `User Guide` tab without touching flight data.
 *   **`scaffoldPilotProfile_(ss)` (`RQ-SYS-009.1`)**: Builds the `Pilot_Profile` sheet tab with structured fields (Personal info, Certifications, Org/Club memberships, Emergency contacts, Garmin inReach links, Insurance) and free-form notes.
 *   **`backupSystemSheets_()`**: Clones user data sheets (`Flights`, `Pilot_Profile`, `Equipment`, `Parameters`, `Lookups`) into dedicated backup tabs (`Backup Flights`, etc.), replacing any previous backup iterations.
-*   **`updateValidationOnly_()`**: Re-applies dropdowns and validation rules to `Flights` and `Equipment`.
+*   **`updateValidationOnly_()`**: Re-applies dropdowns and validation rules to `Flights` and `Equipment`, refreshes `Parameters`, and updates `User Guide`.
 *   **`applyFlightsValidation_(sh)`**: Applies validation to the top N rows of the Flights sheet.
 *   **`ensureSheet_(ss, name)`**: Utility to create a sheet if missing.
 

@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 14:38:36
+ * Updated: 2026-09-30 14:52:12
  * 
  * MODULE: File Handling Service
  * Handles Google Drive I/O, Watch Folder scanning, File Uploads, URL Fetching,
