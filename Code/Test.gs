@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 10:58:15
+ * Updated: 2026-09-30 11:20:40
  */
 /**
  * Paragliding Flight Log v2.0
@@ -18,6 +18,7 @@ function runAllTests() {
   results.push(testXContest_());
   results.push(testWeather_());
   results.push(testCleanDriveId_());
+  results.push(testValidateRequiredFolders_());
   
   var failures = results.filter(function(r) { return !r.idx || r.error; });
   if (failures.length > 0) {
@@ -146,4 +147,32 @@ function testCleanDriveId_() {
   if (cleanDriveId_(withSpaces) !== rawId) return { module: 'Utils', error: 'Whitespace trim fail' };
 
   return { module: 'Utils', idx: true };
+}
+
+function testValidateRequiredFolders_() {
+  if (typeof FILE_HANDLING.validateRequiredFolders !== 'function') {
+    return { module: 'FileHandling', error: 'FILE_HANDLING.validateRequiredFolders missing' };
+  }
+
+  // Test 1: Empty config fails validation
+  var emptyConfig = {};
+  var res1 = FILE_HANDLING.validateRequiredFolders(['MASTER_LOG_FOLDER_ID', 'ERROR_FOLDER_ID', 'UPLOAD_FOLDER_ID'], emptyConfig);
+  if (res1.valid !== false || !res1.error) {
+    return { module: 'FileHandling', error: 'Empty config validation should fail' };
+  }
+
+  // Test 2: Blank strings fail validation
+  var blankConfig = { MASTER_LOG_FOLDER_ID: '', ERROR_FOLDER_ID: '', UPLOAD_FOLDER_ID: '' };
+  var res2 = FILE_HANDLING.validateRequiredFolders(['MASTER_LOG_FOLDER_ID'], blankConfig);
+  if (res2.valid !== false || res2.error.indexOf('MASTER_LOG_FOLDER_ID') === -1) {
+    return { module: 'FileHandling', error: 'Blank folder ID should fail with specific error' };
+  }
+
+  // Test 3: Watch folder missing fails validation
+  var res3 = FILE_HANDLING.validateRequiredFolders(['WATCH_FOLDER_ID'], { WATCH_FOLDER_ID: '' });
+  if (res3.valid !== false || res3.error.indexOf('Watch Folder') === -1) {
+    return { module: 'FileHandling', error: 'Missing Watch Folder should fail with specific error' };
+  }
+
+  return { module: 'FileHandling', idx: true };
 }

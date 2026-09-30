@@ -1,5 +1,23 @@
 # Project Change Log
 
+## Session: Pre-Flight Folder Validation, Parameter Authority & Ingestion Cleanup
+**Date**: 2026-09-30
+**Versions**: v0.8.8
+**Focus**: Pre-flight Folder Validation & Source Deletion Behavior (`Bug-ING-004`).
+
+*   `[Fix]` **Bug-ING-004 (Strict Folder Validation & Parameter Authority)**:
+    *   Implemented `validateRequiredFolders_(requiredKeys, config)` in `Code/FileHandling.gs`: enforces that required Drive folders (`MASTER_LOG_FOLDER_ID`, `ERROR_FOLDER_ID`, `UPLOAD_FOLDER_ID`, and optionally `WATCH_FOLDER_ID`) exist and are accessible before ingestion starts.
+    *   Completely eliminated `getOrCreateFolder_` and any auto-creation of folders in Google Drive root (`DriveApp.createFolder()`). Missing folders immediately halt ingestion with descriptive user alerts prompting configuration in `Parameters` / `Flight Log > Admin > Update [Folder]...`.
+    *   Integrated pre-flight checks into `stageUrlOrDriveImport`, `stageUpload`, `scanWatchFolderNow_`, and `getWatchFolderStatus`.
+    *   Enforced exact `URL_CUSTOM` cleanup behavior:
+        *   When "Delete from source" is unchecked: copies successful files to `MASTER_LOG_FOLDER_ID` and failed files to `ERROR_FOLDER_ID`; leaves Google Drive source files completely intact.
+        *   When "Delete from source" is checked: copies files to master/error folders and trashes source files (`file.setTrashed(true)`).
+        *   Staged temporary files from web URLs or unzipped packages (`isDriveSource === false`) are always cleaned up from `UPLOAD_FOLDER_ID`.
+    *   Sanitized Google Drive folder IDs and URLs across all parameters via `cleanDriveId_` in `Code/Utils.gs`.
+    *   Added automated test `testValidateRequiredFolders_` in `Code/Test.gs`.
+
+---
+
 ## Session: Admin Backup Data Enhancement
 **Date**: 2026-09-30
 **Versions**: v0.8.7

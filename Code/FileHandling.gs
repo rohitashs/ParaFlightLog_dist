@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 10:58:15
+ * Updated: 2026-09-30 11:20:40
  * 
  * MODULE: File Handling Service
  * Handles Google Drive I/O, Watch Folder scanning, File Uploads, URL Fetching,
@@ -35,14 +35,15 @@ function scanWatchFolderNow_() {
      return stats;
   }
   
-  var folderIds = rawFolderIds.split(',').map(function(id) { return id.trim(); }).filter(function(id) { return id.length > 0; });
-  if (folderIds.length === 0) {
-    var msg = 'No Watch Folder ID configured.';
-    console.error(msg);
-    stats.log.push(msg);
+  var folderCheck = validateRequiredFolders_(['WATCH_FOLDER_ID', 'MASTER_LOG_FOLDER_ID', 'ERROR_FOLDER_ID'], config);
+  if (!folderCheck.valid) {
+    console.error(folderCheck.error);
     stats.errors++;
+    stats.log.push(folderCheck.error);
     return stats;
   }
+  
+  var folderIds = rawFolderIds.split(',').map(function(id) { return cleanDriveId_(id.trim()); }).filter(Boolean);
   
   var maxProcess = 25; // Cap to avoid execution timeouts per run
   var foundAny = false;
@@ -111,10 +112,11 @@ function scanWatchFolderNow_() {
  */
 function getWatchFolderStatus() {
   var config = getParameters_();
-  var rawFolderIds = config.WATCH_FOLDER_ID || '';
-  var folderIds = rawFolderIds.split(',').map(function(id) { return id.trim(); }).filter(function(id) { return id.length > 0; });
+  var folderCheck = validateRequiredFolders_(['WATCH_FOLDER_ID', 'MASTER_LOG_FOLDER_ID', 'ERROR_FOLDER_ID'], config);
+  if (!folderCheck.valid) return { error: folderCheck.error };
   
-  if (folderIds.length === 0) return { error: 'No Watch Folder ID configured.' };
+  var rawFolderIds = config.WATCH_FOLDER_ID || '';
+  var folderIds = rawFolderIds.split(',').map(function(id) { return cleanDriveId_(id.trim()); }).filter(Boolean);
   
   try {
     var folderNames = [];
@@ -168,12 +170,16 @@ function getWatchFolderStatus() {
  */
 function stageUpload(fileObj) {
   try {
+    var config = getParameters_();
+    var folderCheck = validateRequiredFolders_(['MASTER_LOG_FOLDER_ID', 'ERROR_FOLDER_ID', 'UPLOAD_FOLDER_ID'], config);
+    if (!folderCheck.valid) {
+      return { error: folderCheck.error };
+    }
+    
     var raw = Utilities.base64Decode(fileObj.data);
     var blob = Utilities.newBlob(raw, fileObj.type, fileObj.name);
-    var config = getParameters_();
-    
-    var uploadFolderId = config.UPLOAD_FOLDER_ID;
-    var folder = uploadFolderId ? DriveApp.getFolderById(uploadFolderId) : DriveApp.getRootFolder();
+    var uploadFolderId = cleanDriveId_(config.UPLOAD_FOLDER_ID);
+    var folder = DriveApp.getFolderById(uploadFolderId);
     
     var createdFiles = [];
     var lowerName = fileObj.name.toLowerCase();
@@ -303,6 +309,10 @@ function processFileById(fileId, source, deleteSource, isDriveSource) {
 function stageUrlOrDriveImport(input) {
   try {
     var config = getParameters_();
+    var folderCheck = validateRequiredFolders_(['MASTER_LOG_FOLDER_ID', 'ERROR_FOLDER_ID', 'UPLOAD_FOLDER_ID'], config);
+    if (!folderCheck.valid) {
+      return { error: folderCheck.error };
+    }
     if (!input) throw new Error('No URL or Folder ID provided');
     var str = String(input).trim();
     
@@ -437,8 +447,20 @@ function trashSourceFiles(fileIds) {
  * Helper to stage a Blob (from URL or Upload) to Drive
  */
 function stageBlob_(blob, fileName, config) {
-  var uploadFolderId = config.UPLOAD_FOLDER_ID;
-  var folder = uploadFolderId ? DriveApp.getFolderById(uploadFolderId) : DriveApp.getRootFolder();
+  config = config || getParameters_();
+  var uploadFolderId = cleanDriveId_(config.UPLOAD_FOLDER_ID);
+  if (!uploadFolderId) {
+    return { error: 'Upload Folder (UPLOAD_FOLDER_ID) is not configured in Parameters tab.' };
+  }
+  var folder = null;
+  try {
+    folder = DriveApp.getFolderById(uploadFolderId);
+  } catch (e) {
+    return { error: 'Upload Folder (ID: ' + uploadFolderId + ') is not accessible: ' + e.message };
+  }
+  if (!folder) {
+    return { error: 'Upload Folder could not be found with ID: ' + uploadFolderId };
+  }
   var createdFiles = [];
   var lowerName = fileName.toLowerCase();
   
@@ -501,81 +523,113 @@ function handleFileCleanup_(file, status, config) {
 }
 
 /**
- * Resolves a Drive Folder by parameter key, sanitizing IDs/URLs.
- * If the parameter is not set or invalid, searches for an existing folder with defaultName,
- * or creates it in Drive root, and updates the parameter in Parameters sheet!
- * @param {string} paramKey - e.g. 'MASTER_LOG_FOLDER_ID', 'ERROR_FOLDER_ID'
- * @param {string} defaultName - e.g. 'Master Flight Logs', 'Flight Log Errors'
+ * Validates that all required Google Drive folders are configured in Parameters and accessible.
+ * Never creates folders in Drive root.
+ * @param {Array<string>} requiredKeys - e.g. ['MASTER_LOG_FOLDER_ID', 'ERROR_FOLDER_ID', 'UPLOAD_FOLDER_ID']
  * @param {Object} [config]
- * @return {GoogleAppsScript.Drive.Folder|null}
+ * @return {{ valid: boolean, error?: string }}
  */
-function getOrCreateFolder_(paramKey, defaultName, config) {
+function validateRequiredFolders_(requiredKeys, config) {
   config = config || getParameters_();
-  var rawId = config[paramKey];
-  var cleanId = cleanDriveId_(rawId);
   
-  // 1. Try configured ID
-  if (cleanId) {
-    try {
-      var folder = DriveApp.getFolderById(cleanId);
-      if (folder) return folder;
-    } catch (e) {
-      console.warn('Folder ID ' + cleanId + ' for ' + paramKey + ' not accessible: ' + e.message);
-    }
-  }
-  
-  // 2. Search for existing folder with defaultName in Drive
-  try {
-    var it = DriveApp.getFoldersByName(defaultName);
-    if (it.hasNext()) {
-      var existingFolder = it.next();
-      var id = existingFolder.getId();
+  var folderLabels = {
+    MASTER_LOG_FOLDER_ID: { name: 'Master Log Folder', menu: 'Update Master Log Folder...' },
+    ERROR_FOLDER_ID: { name: 'Error Folder', menu: 'Update Error Folder...' },
+    UPLOAD_FOLDER_ID: { name: 'Upload Folder', menu: 'Update Upload Folder...' },
+    WATCH_FOLDER_ID: { name: 'Watch Folder', menu: 'Update Watch Folder...' }
+  };
+
+  for (var i = 0; i < requiredKeys.length; i++) {
+    var key = requiredKeys[i];
+    var label = folderLabels[key] || { name: key, menu: 'Parameters tab' };
+    
+    if (key === 'WATCH_FOLDER_ID') {
+      var rawWatch = config.WATCH_FOLDER_ID || '';
+      var watchIds = String(rawWatch).split(',').map(function(s) {
+        return cleanDriveId_(s.trim());
+      }).filter(Boolean);
+      
+      if (watchIds.length === 0) {
+        return {
+          valid: false,
+          error: 'Configuration Error: Watch Folder (' + key + ') is not configured. Please set it in the Parameters tab (Flight Log > Admin > ' + label.menu + ').'
+        };
+      }
+      
+      var anyAccessible = false;
+      for (var w = 0; w < watchIds.length; w++) {
+        try {
+          var wf = DriveApp.getFolderById(watchIds[w]);
+          if (wf) {
+            anyAccessible = true;
+            break;
+          }
+        } catch (eWatch) {}
+      }
+      if (!anyAccessible) {
+        return {
+          valid: false,
+          error: 'Configuration Error: None of the configured Watch Folder ID(s) are accessible (' + watchIds.join(', ') + '). Please verify permissions or update via Flight Log > Admin > ' + label.menu + '.'
+        };
+      }
+    } else {
+      var rawId = config[key];
+      var cleanId = cleanDriveId_(rawId);
+      if (!cleanId) {
+        return {
+          valid: false,
+          error: 'Configuration Error: ' + label.name + ' (' + key + ') is not configured. Please set it in the Parameters tab (Flight Log > Admin > ' + label.menu + ').'
+        };
+      }
       try {
-        saveFolderParam(paramKey, id, 'replace');
-      } catch (eSave) {}
-      config[paramKey] = id;
-      return existingFolder;
+        var folder = DriveApp.getFolderById(cleanId);
+        if (!folder) {
+          return {
+            valid: false,
+            error: 'Configuration Error: ' + label.name + ' (' + key + ') could not be found with ID "' + cleanId + '". Please update it via Flight Log > Admin > ' + label.menu + '.'
+          };
+        }
+      } catch (e) {
+        return {
+          valid: false,
+          error: 'Configuration Error: ' + label.name + ' (' + key + ') is not accessible with ID "' + cleanId + '": ' + e.message + '. Please verify permissions or update via Flight Log > Admin > ' + label.menu + '.'
+        };
+      }
     }
-  } catch (eSearch) {
-    console.warn('Search for ' + defaultName + ' failed: ' + eSearch.message);
   }
-  
-  // 3. Create new folder in Drive root
-  try {
-    var newFolder = DriveApp.createFolder(defaultName);
-    var newId = newFolder.getId();
-    if (paramKey === 'MASTER_LOG_FOLDER_ID') {
-      try {
-        newFolder.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-      } catch (eShare) {}
-    }
-    try {
-      saveFolderParam(paramKey, newId, 'replace');
-    } catch (eSave) {}
-    config[paramKey] = newId;
-    return newFolder;
-  } catch (eCreate) {
-    console.error('Failed to create folder ' + defaultName + ' for ' + paramKey, eCreate);
-    return null;
-  }
+
+  return { valid: true };
 }
 
 /**
  * Copies a failed/unsuccessful flight file to the Error Folder.
- * Auto-resolves ERROR_FOLDER_ID (creates 'Flight Log Errors' in Drive if not set).
+ * Strictly uses ERROR_FOLDER_ID from Parameters (never creates folders in Drive root).
  * Returns { success: boolean, fileId: string, error: string }
  */
 function copyToErrorFolder_(fileOrBlob, fileName, config) {
   var result = { success: false, fileId: null, error: null };
   config = config || getParameters_();
   
+  var folderId = cleanDriveId_(config.ERROR_FOLDER_ID);
+  if (!folderId) {
+    result.error = 'Error folder (ERROR_FOLDER_ID) is not configured in Parameters tab.';
+    return result;
+  }
+  
+  var errorFolder = null;
   try {
-    var errorFolder = getOrCreateFolder_('ERROR_FOLDER_ID', 'Flight Log Errors', config);
-    if (!errorFolder) {
-      result.error = 'Error folder could not be resolved or created.';
-      return result;
-    }
-    
+    errorFolder = DriveApp.getFolderById(folderId);
+  } catch (e) {
+    result.error = 'Error folder (ID: ' + folderId + ') is not accessible: ' + e.message;
+    return result;
+  }
+  
+  if (!errorFolder) {
+    result.error = 'Error folder could not be found with ID: ' + folderId;
+    return result;
+  }
+  
+  try {
     var errName = 'ERROR_' + (fileName || 'flight.igc');
     var newFile;
     if (fileOrBlob && typeof fileOrBlob.makeCopy === 'function') {
@@ -595,17 +649,30 @@ function copyToErrorFolder_(fileOrBlob, fileName, config) {
 
 /**
  * Copies the IGC file to the Master Log Folder.
+ * Strictly uses MASTER_LOG_FOLDER_ID from Parameters (never creates folders in Drive root).
  * Handles duplicates by renaming (append _copy) and flagging.
- * Auto-resolves MASTER_LOG_FOLDER_ID (creates 'Master Flight Logs' if not configured).
  * Returns { finalName: string, isDuplicate: boolean, error: string, fileId: string }
  */
 function copyToMasterLog_(blob, fileName, config) {
   var result = { finalName: fileName, isDuplicate: false, error: null, fileId: null };
   config = config || getParameters_();
   
-  var folder = getOrCreateFolder_('MASTER_LOG_FOLDER_ID', 'Master Flight Logs', config);
+  var folderId = cleanDriveId_(config.MASTER_LOG_FOLDER_ID);
+  if (!folderId) {
+    result.error = 'Master Log folder (MASTER_LOG_FOLDER_ID) is not configured in Parameters tab.';
+    return result;
+  }
+  
+  var folder = null;
+  try {
+    folder = DriveApp.getFolderById(folderId);
+  } catch (e) {
+    result.error = 'Master Log folder (ID: ' + folderId + ') is not accessible: ' + e.message;
+    return result;
+  }
+  
   if (!folder) {
-    result.error = 'Master Log folder could not be resolved or created.';
+    result.error = 'Master Log folder could not be found with ID: ' + folderId;
     return result;
   }
   
@@ -707,6 +774,6 @@ FILE_HANDLING.stageUrlOrDriveImport = stageUrlOrDriveImport;
 FILE_HANDLING.trashSourceFiles = trashSourceFiles;
 FILE_HANDLING.copyToMasterLog = copyToMasterLog_;
 FILE_HANDLING.copyToErrorFolder = copyToErrorFolder_;
-FILE_HANDLING.getOrCreateFolder = getOrCreateFolder_;
+FILE_HANDLING.validateRequiredFolders = validateRequiredFolders_;
 FILE_HANDLING.getFilesRecursive = getFilesRecursive_;
 FILE_HANDLING.getDriveIdFromUrl = getDriveIdFromUrl_;

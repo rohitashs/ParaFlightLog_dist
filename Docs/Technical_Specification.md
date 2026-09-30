@@ -131,13 +131,15 @@ Fixed Header Schema (Row 4=Category, Row 5=Name). Data starts Row 6.
 *   **`ensureSheet_(ss, name)`**: Utility to create a sheet if missing.
 
 ### `FileHandling.gs` (Drive & File Pipeline)
+*   **`validateRequiredFolders_(requiredKeys, config)`**: Pre-flight folder validator. Ensures all required folder keys for an ingestion mode (`MASTER_LOG_FOLDER_ID`, `ERROR_FOLDER_ID`, `UPLOAD_FOLDER_ID`, and optionally `WATCH_FOLDER_ID`) are configured in the `Parameters` sheet and accessible. Immediately halts and displays actionable error messages if folders are missing or invalid. Never creates folders in Google Drive root.
 *   **`scanWatchFolderNow_()`**: Automation entry point. Iterates over configured `WATCH_FOLDER_ID`s, recursively scans subfolders (up to 10 levels), unpacks archives, invokes processing, and executes automated file cleanup.
 *   **`getWatchFolderStatus()`**: Returns folder names and recursive flight counts across multiple watch folders for `ScanDialog.html`.
 *   **`stageUpload(fileObj)`**: Unpacks zip/gz archives and stages files to `UPLOAD_FOLDER_ID` for `UploadDialog.html`.
-*   **`processFileById(fileId, source, deleteSource)`**: Processes a staged Drive file by ID with context-aware cleanup (Upload/URL/Watch).
+*   **`processFileById(fileId, source, deleteSource, isDriveSource)`**: Processes a staged Drive file by ID with context-aware cleanup: for `URL_CUSTOM`, when "Delete from source" is unchecked, successful files copy to `MASTER_LOG_FOLDER_ID` and failed files copy to `ERROR_FOLDER_ID` while source files remain untouched; when checked, source files are deleted after copying. Staged temporary files (`isDriveSource === false`) are always trashed from `UPLOAD_FOLDER_ID`.
 *   **`stageUrlOrDriveImport(input)`**: Discovers, fetches, and stages files from external URLs or Drive folder/file IDs for `URLDialog.html`.
 *   **`trashSourceFiles(fileIds)`**: Trashes source archives after successful extraction/processing.
-*   **`copyToMasterLog_(blob, name, config)`**: Handles public mirroring and duplicate renaming in `MASTER_LOG_FOLDER_ID`.
+*   **`copyToMasterLog_(blob, name, config)`**: Handles public mirroring and duplicate renaming strictly in `MASTER_LOG_FOLDER_ID` configured in `Parameters` (never creates folders in Drive root).
+*   **`copyToErrorFolder_(fileOrBlob, fileName, config)`**: Copies failed/invalid files with `ERROR_` prefix strictly to `ERROR_FOLDER_ID` configured in `Parameters` (never creates folders in Drive root).
 *   **`getFilesRecursive_(folder, maxDepth, currentDepth)`**: Traverses a Drive folder tree and collects matching flight files (`.igc`, `.igx`, `.zip`, `.gz`).
 *   **`getDriveIdFromUrl_(url)`**: Extracts Google Drive file/folder ID from URLs or raw strings.
 

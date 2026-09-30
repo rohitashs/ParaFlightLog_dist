@@ -16,8 +16,11 @@ The system automates the import of flight logs (IGC) to reduce manual entry.
 *   **Smart Deduplication**: Uses MD5 hashing and time-overlap detection to prevent duplicate entries.
 *   **Multi-Source**: Supports Drag-and-Drop Uploads, Drive Folder/File URL imports, and Bulk ZIP extraction.
 *   **Parsing**: Extracts pilot details, glider type, and high-fidelity G-Record data (GNSS/Pressure altitude).
-*   **Master Log Mirror**: Automatically copies and standardizes flight logs to a public folder (e.g. for SeeYou Cloud and direct download).
-*   **Automated Cleanup**: Moves successfully processed files out of source folders (trashed once preserved in Master Log) and moves corrupt/errored files into the designated Error Folder.
+*   **Master Log Mirror & Strict Folder Authority**: Automatically copies and standardizes flight logs to the configured public folder (`MASTER_LOG_FOLDER_ID`) for SeeYou Cloud and direct downloads. Folders are strictly driven by the `Parameters` sheet; missing folders abort ingestion with clear user alerts and folders are never created in Drive root.
+*   **Context-Aware Cleanup**:
+    *   *Watch Folder*: Moves/trashes files upon successful ingestion per `MOVE_FROM_WATCH_FOLDER` setting; moves corrupt/errored files into `ERROR_FOLDER_ID`.
+    *   *URL & Drive Import*: When "Delete from source" is unchecked, successful files copy to Master Log and failed files copy to Error Folder, leaving all Drive source files intact. When checked, source files are trashed after copying. Staged temporary files from web URLs or unzipped packages are always cleaned up from `UPLOAD_FOLDER_ID`.
+    *   *File Upload*: Staged temporary uploads are mirrored to Master or Error folder and trashed from `UPLOAD_FOLDER_ID`.
 
 ## 2. ✈️ Automated Flight Logging
 *Maps to `RQ-ING-002`*
