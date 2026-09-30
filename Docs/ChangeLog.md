@@ -1,5 +1,18 @@
 # Project Change Log
 
+## Session: Code Check & Architectural Modularization
+**Date**: 2026-09-29
+**Versions**: v0.8.4
+**Focus**: Code Check Audit, Architectural Refactoring, Module Separation, Math Consolidation.
+
+*   `[Refactor]` **FileHandling.gs Extraction**: Separated all Google Drive I/O, watch folder scanning (`scanWatchFolderNow_`, `getWatchFolderStatus`), staged uploads (`stageUpload`), file processing (`processFileById`), URL/Drive staging (`stageUrlOrDriveImport`), source trashing (`trashSourceFiles`), and Master Log copying (`copyToMasterLog_`) from `Ingestion.gs` into dedicated `FileHandling.gs`. Reduced `Ingestion.gs` to ~540 lines focused purely on flight parsing, deduplication, scoring orchestration, and row mapping.
+*   `[Refactor]` **Utils.gs Math Consolidation**: Created `Utils.gs` providing shared geospatial math (`haversine_`, `bearing_`, `angleDiff_`) and time/duration formatting (`friendlyDuration_`, `formatTime_`) exported to `UTILS` namespace and backward-compatible global helpers.
+*   `[Refactor]` **Parser / Geo / Scoring / Analysis Alignment**: Converted `Parser.gs`, `Geo.gs`, and `Scoring.gs` duplicate haversine/bearing implementations into delegations to `Utils.gs`. Replaced manual bearing modulo math in `Analysis.gs` with `angleDiff_`.
+*   `[Fixed]` **Trigger Execution**: Created public wrapper `scanWatchFolderTrigger` in `Code.gs` for time-driven triggers to prevent private function dispatch failure.
+*   `[Fixed]` **XContest Time Rollover**: Improved fallback start-time calculation in `XContest.gs` to account for 24-hour UTC/local boundary differences (`diffMins = 1440 - diffMins`).
+*   `[Clean]` **Dead Code & Duplicates**: Removed duplicate `isHashSeen_` / `markHashSeen_` definitions and ~200 lines of deprecated legacy helpers from `Ingestion.gs`.
+*   `[Docs]`: Updated `Technical_Specification.md` with new `FileHandling.gs` and `Utils.gs` code organization and component reference.
+
 ## Session: In-App Folder Picker, Recursive Scanning & Master Log Hyperlinks
 **Date**: 2026-09-29
 **Versions**: v0.8.3

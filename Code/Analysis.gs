@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-29 23:04:10
+ * Updated: 2026-09-29 23:17:49
  */
 /**
  * Paragliding Flight Log v2.0
@@ -108,8 +108,7 @@ function computeDerivatives_(fixes) {
     var turnRate = 0;
     if (i > 1) {
        var prevBearing = processed[processed.length-1].bearing;
-       var diff = Math.abs(bearing - prevBearing);
-       if (diff > 180) diff = 360 - diff;
+       var diff = angleDiff_(bearing, prevBearing);
        turnRate = diff / dt;
     }
     
@@ -204,16 +203,12 @@ function checkReversals_(points, index, config) {
   // Look back within winSec for heading change >= 90 deg (ridge reversals / S-turns)
   for (var j = index - 1; j >= 0; j--) {
     if (targetT - points[j].t > winSec) break;
-    var diff = Math.abs(curBearing - points[j].bearing) % 360;
-    if (diff > 180) diff = 360 - diff;
-    if (diff >= 90) return true;
+    if (angleDiff_(curBearing, points[j].bearing) >= 90) return true;
   }
   // Look forward within winSec
   for (var j = index + 1; j < points.length; j++) {
     if (points[j].t - targetT > winSec) break;
-    var diff = Math.abs(curBearing - points[j].bearing) % 360;
-    if (diff > 180) diff = 360 - diff;
-    if (diff >= 90) return true;
+    if (angleDiff_(curBearing, points[j].bearing) >= 90) return true;
   }
   return false; 
 }

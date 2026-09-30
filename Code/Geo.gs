@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-29 23:04:10
+ * Updated: 2026-09-29 23:17:49
  * 
  * MODULE: Geo Service
  * Handles Reverse Geocoding (Nominatim) and Site Detection (Overpass API).
@@ -354,17 +354,7 @@ function getNearestSite(lat, lon, radiusM, config, siteType, altM) {
 }
 
 function haversineGeo_(lat1, lon1, lat2, lon2) {
-  // Duplicated simple math to avoid cross-module dependency if independent, 
-  // but ideally use PARSER.haversine if available globally.
-  // For safety/independence in this module:
-  var R = 6371000;
-  var dLat = (lat2 - lat1) * Math.PI / 180;
-  var dLon = (lon2 - lon1) * Math.PI / 180;
-  var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-          Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-          Math.sin(dLon / 2) * Math.sin(dLon / 2);
-  var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
+  return haversine_(lat1, lon1, lat2, lon2);
 }
 
 /**

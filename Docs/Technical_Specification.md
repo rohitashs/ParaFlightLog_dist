@@ -17,9 +17,11 @@ This document defines the **Code Organization**, **Algorithms**, and **Data Sche
     *   *Rule*: Never hardcode column indices. Use `Config` maps.
 3.  **Scaffold (`Scaffold.gs`)**: View Controller. Creates Sheets/Validations.
     *   *Map*: `RQ-SYS-002`.
-4.  **Ingestion Service (`Ingestion.gs`)**: Pipeline Controller.
+4.  **File Handling Service (`FileHandling.gs`)**: Drive I/O, Watch Folder scanning, Staged Uploads, ZIP extractions, File cleanup, and Master Log copying.
+5.  **Ingestion Service (`Ingestion.gs`)**: Pipeline Controller. Parse/Score orchestration, deduplication, and row mapping.
     *   *Map*: `RQ-ING-001`.
-5.  **Domain Logic**:
+6.  **Utilities (`Utils.gs`)**: Consolidated math (Haversine, Bearing, AngleDiff) and time formatting helpers.
+7.  **Domain Logic**:
     *   **`Parser.gs`**: IGC extraction (B-Records, H-Records).
     *   **`Analysis.gs`**: Physics engine (Thermals, Glide).
     *   **`Scoring.gs`**: Optimization engine (Graph theory/RDP).
@@ -112,21 +114,36 @@ Fixed Header Schema (Row 4=Category, Row 5=Name). Data starts Row 6.
 *   **`applyFlightsValidation_(sh)`**: Applies validation to the top N rows of the Flights sheet.
 *   **`ensureSheet_(ss, name)`**: Utility to create a sheet if missing.
 
-### `Ingestion.gs` (Data Pipeline)
-*   **`scanWatchFolderNow_()`**: Automation entry point. Iterates over comma-separated `WATCH_FOLDER_ID`s, recursively scans subfolders (up to 10 levels), extracts ZIPs, parses IGCs, and executes automated file cleanup.
+### `FileHandling.gs` (Drive & File Pipeline)
+*   **`scanWatchFolderNow_()`**: Automation entry point. Iterates over configured `WATCH_FOLDER_ID`s, recursively scans subfolders (up to 10 levels), unpacks archives, invokes processing, and executes automated file cleanup.
 *   **`getWatchFolderStatus()`**: Returns folder names and recursive flight counts across multiple watch folders for `ScanDialog.html`.
+*   **`stageUpload(fileObj)`**: Unpacks zip/gz archives and stages files to `UPLOAD_FOLDER_ID` for `UploadDialog.html`.
+*   **`processFileById(fileId, source, deleteSource)`**: Processes a staged Drive file by ID with context-aware cleanup (Upload/URL/Watch).
+*   **`stageUrlOrDriveImport(input)`**: Discovers, fetches, and stages files from external URLs or Drive folder/file IDs for `URLDialog.html`.
+*   **`trashSourceFiles(fileIds)`**: Trashes source archives after successful extraction/processing.
+*   **`copyToMasterLog_(blob, name, config)`**: Handles public mirroring and duplicate renaming in `MASTER_LOG_FOLDER_ID`.
 *   **`getFilesRecursive_(folder, maxDepth, currentDepth)`**: Traverses a Drive folder tree and collects matching flight files (`.igc`, `.igx`, `.zip`, `.gz`).
-*   **`processDriveFile_(file, config)`**: Processes a single Drive file.
-*   **`handleFileUpload(form)`**: Handles file uploads from the HTML picker.
-*   **`processSingleIgcBlob_(blob, ...)`**: Core logic to Parse -> Analyze -> Score -> Insert.
-*   **`insertFlightRow_(data, ...)`**: Maps processed data to `Flights` sheet columns. Wraps `Flight No` with direct download `=HYPERLINK(dlUrl, IFERROR(MAX(...), 0) + 1)` using `masterFileId`.
-*   **`handleFileCleanup_(file, status, config)`**: Moves successful files out of watch folder (trashed after master log copy) and moves errored files into `ERROR_FOLDER_ID`.
-*   **`copyToMasterLog_(blob, name, config)`**: Handles public mirroring and duplicate renaming.
+*   **`getDriveIdFromUrl_(url)`**: Extracts Google Drive file/folder ID from URLs or raw strings.
+
+### `Ingestion.gs` (Flight Data Pipeline & Row Mapping)
+*   **`processDriveFile_(file, config)`**: Reads file blob and delegates to `processBlob_`.
+*   **`processBlob_(blob, fileName, fileId, config)`**: Handles archive extraction or direct single IGC processing.
+*   **`processSingleIgcBlob_(blob, ...)`**: Core logic: Parse -> Analyze -> Score -> Geo -> XContest -> Insert.
+*   **`insertFlightRow_(data, ...)`**: Maps processed data to `Flights` sheet columns. Wraps `FlightID` with SeeYou link and `IGC File` with direct download link.
+*   **`uiAddManualFlight_()`**: Adds a blank manual flight row at Row 5 with smart ID generation and defaults.
+*   **`isHashSeen_(hashStr)` / `markHashSeen_(hashStr)`**: MD5 deduplication check via DocumentProperties.
 *   **`logImport_(...)`**: Appends specific errors or success messages to `App_Log`.
+
+### `Utils.gs` (Math & Formatting)
+*   **`haversine_(lat1, lon1, lat2, lon2)`**: Consolidated great-circle distance in meters.
+*   **`bearing_(lat1, lon1, lat2, lon2)`**: Consolidated initial compass bearing in degrees (0..360).
+*   **`angleDiff_(b1, b2)`**: Shortest angular difference between two headings in degrees (0..180).
+*   **`friendlyDuration_(sec)`**: Human-readable duration string (e.g. "45 min", "1.5 hrs").
+*   **`formatTime_(sec)`**: Seconds from midnight to `HH:mm:ss`.
 
 ### `Parser.gs`
 *   **`parseIgc(text, fileName)`**: Extracts fixes (B-records) and headers from IGC content.
-*   **`haversine_(lat1, lon1, lat2, lon2)`**: Calculates distance between two coordinates.
+*   **`PARSER.haversine_` / `PARSER.bearing_`**: Namespaced aliases delegating to `Utils.gs`.
 
 ### `Analysis.gs`
 *   **`analyzeFlight(fixes, config)`**: Main analysis routine.
