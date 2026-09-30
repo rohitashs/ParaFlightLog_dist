@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-29 12:09:53
+ * Updated: 2026-09-29 19:01:56
  * 
  * MODULE: Ingestion Service
  * Handles File inputs (Drive, URL), ZIP extraction, Deduplication, and calls Parser.
@@ -67,6 +67,11 @@ function scanWatchFolderNow_() {
             stats.flights += (result.count || 0);
             stats.log.push('Processed: ' + fName + ' (' + (result.count || 1) + ' flights)');
             handleFileCleanup_(file, 'SUCCESS', config);
+          } else if (result && result.isDuplicate) {
+            console.log('Skipped (All Duplicates): ' + fName);
+            stats.skipped++;
+            stats.log.push('Skipped (Duplicate): ' + fName);
+            handleFileCleanup_(file, 'DUPLICATE', config);
           } else {
             console.log('Skipped (Duplicate/Error): ' + fName);
             stats.skipped++;
@@ -233,7 +238,7 @@ function processFileById(fileId, source, deleteSource) {
     else if (source === 'URL_CUSTOM') {
        // URL or Google Drive source with optional delete from source
        if (deleteSource === true || deleteSource === 'true') {
-          if (result.processed) {
+          if (result.processed || result.isDuplicate) {
              try { file.setTrashed(true); } catch(e) { console.warn('Failed to trash source file', e); }
           } else {
              handleFileCleanup_(file, 'ERROR', config);
@@ -244,6 +249,8 @@ function processFileById(fileId, source, deleteSource) {
        // WATCH FOLDER Context (Default)
        if (result.processed) {
           handleFileCleanup_(file, 'SUCCESS', config);
+       } else if (result.isDuplicate) {
+          handleFileCleanup_(file, 'DUPLICATE', config);
        } else {
           handleFileCleanup_(file, 'ERROR', config);
        }
@@ -418,11 +425,13 @@ function stageUrlOrDriveImport(input) {
           return { error: 'No supported flight files (.igc, .zip, etc.) found in folder: ' + folder.getName() };
         }
         var filesList = [];
+        var sourceArchiveIds = [];
         for (var i = 0; i < foundFiles.length; i++) {
           var f = foundFiles[i];
           var fName = f.getName().toLowerCase();
           // If a file inside folder is a zip, unpack it
           if (fName.endsWith('.zip') || fName.endsWith('.gz')) {
+            sourceArchiveIds.push(f.getId());
             var stagedZip = stageBlob_(f.getBlob(), f.getName(), config);
             if (stagedZip && stagedZip.files) {
               filesList = filesList.concat(stagedZip.files);
@@ -439,7 +448,8 @@ function stageUrlOrDriveImport(input) {
           success: true,
           type: 'FOLDER',
           folderName: folder.getName(),
-          files: filesList
+          files: filesList,
+          sourceArchiveIds: sourceArchiveIds
         };
       }
     } catch (eNotFolder) {
@@ -454,13 +464,23 @@ function stageUrlOrDriveImport(input) {
           var fName = file.getName().toLowerCase();
           if (fName.endsWith('.zip') || fName.endsWith('.gz')) {
             var staged = stageBlob_(file.getBlob(), file.getName(), config);
+            if (staged && staged.files) {
+              return {
+                success: true,
+                type: 'FILE',
+                folderName: file.getName(),
+                files: staged.files,
+                sourceArchiveIds: [file.getId()]
+              };
+            }
             return staged;
           } else {
             return {
               success: true,
               type: 'FILE',
               folderName: file.getName(),
-              files: [{ id: file.getId(), name: file.getName(), isDriveSource: true }]
+              files: [{ id: file.getId(), name: file.getName(), isDriveSource: true }],
+              sourceArchiveIds: []
             };
           }
         }
@@ -493,6 +513,27 @@ function stageUrlOrDriveImport(input) {
     console.error('stageUrlOrDriveImport Error', e);
     return { error: e.message };
   }
+}
+
+/**
+ * Trash source files (e.g. source ZIP archives) when user selected 'deleteSource'
+ * @param {Array<string>} fileIds
+ */
+function trashSourceFiles(fileIds) {
+  if (!fileIds || !fileIds.length) return { success: true, count: 0 };
+  var trashedCount = 0;
+  for (var i = 0; i < fileIds.length; i++) {
+    try {
+      var f = DriveApp.getFileById(fileIds[i]);
+      if (f && !f.isTrashed()) {
+        f.setTrashed(true);
+        trashedCount++;
+      }
+    } catch (e) {
+      console.warn('trashSourceFiles error for ID ' + fileIds[i], e);
+    }
+  }
+  return { success: true, count: trashedCount };
 }
 
 /**
@@ -603,8 +644,8 @@ function handleFileCleanup_(file, status, config) {
     // Default shouldMove to true unless explicitly configured as FALSE
     var shouldMove = (rawMove !== false && String(rawMove).toUpperCase() !== 'FALSE');
     
-    // 1. Success
-    if (status === 'SUCCESS') {
+    // 1. Success or Duplicate (already imported)
+    if (status === 'SUCCESS' || status === 'DUPLICATE') {
       // NOTE: We do NOT copy to Master Log here anymore.
       // processBlob_ handles saving extracted IGCs to Master Log individually.
       // This prevents ZIP files or Archive containers from being copied to Master Log.
@@ -676,16 +717,24 @@ function processBlob_(blob, fileName, fileId, config) {
   if (lowerName.endsWith('.zip')) {
     try {
       var zipBlobs = Utilities.unzip(blob);
+      var totalInZip = 0;
+      var dupeCount = 0;
       zipBlobs.forEach(function(b) {
         var bName = b.getName();
         if (bName.match(/\.(igc|igx)$/i)) {
+          totalInZip++;
           var success = processSingleIgcBlob_(b, bName, fileId, fileName, config); // pass outer name
           if (success) {
              result.processed = true;
              result.count++;
+          } else {
+             dupeCount++;
           }
         }
       });
+      if (totalInZip > 0 && dupeCount === totalInZip && result.count === 0) {
+        result.isDuplicate = true;
+      }
     } catch (e) {
       console.warn('ZIP extraction failed: ' + fileName, e);
     }
@@ -701,6 +750,8 @@ function processBlob_(blob, fileName, fileId, config) {
       if (success) {
          result.processed = true;
          result.count = 1;
+      } else {
+         result.isDuplicate = true;
       }
     } catch (e) {
        console.warn('GZIP failed', e);
@@ -713,6 +764,8 @@ function processBlob_(blob, fileName, fileId, config) {
   if (success) {
      result.processed = true;
      result.count = 1;
+  } else {
+     result.isDuplicate = true;
   }
   return result;
 }
@@ -764,14 +817,22 @@ function processSingleIgcBlob_(blob, fileName, fileId, outerName, config) {
   // If error, we want to log it, but treat data as empty.
   if (geoLaunch.error) { geoLaunch = {}; } 
 
-  var siteLaunch = GEO.getNearestSite(launchFix.lat, launchFix.lon, config.OSM_RADIUS_M, config);
+  var siteLaunch = GEO.getNearestSite(launchFix.lat, launchFix.lon, config.OSM_RADIUS_M, config, 'takeoff', launchFix.alt);
   
   var geoLand = GEO.getReverseGeo(landFix.lat, landFix.lon, config);
   if (geoLand && geoLand.error) { noteLog.push(geoLand.error); }
   if (geoLand.error) { geoLand = {}; }
   geoLand = geoLand || {};
 
-  var siteLand = GEO.getNearestSite(landFix.lat, landFix.lon, config.OSM_RADIUS_M, config);
+  var siteLand = GEO.getNearestSite(landFix.lat, landFix.lon, config.OSM_RADIUS_M, config, 'landing', landFix.alt);
+  
+  // Top landing check: if landing is within 100m of launch and landing site is blank
+  if (launchFix && landFix && siteLaunch && !siteLand) {
+    var l2lDist = haversine_(launchFix.lat, launchFix.lon, landFix.lat, landFix.lon);
+    if (l2lDist <= 100) {
+      siteLand = siteLaunch;
+    }
+  }
   
   // TimeZone
   var timeZone = GEO.getTimezone(launchFix.lat, launchFix.lon, config); // Pass config
@@ -1051,20 +1112,20 @@ function insertFlightRow_(data, fileId, outerName, status, notes, analysis, scor
     }
   }
 
-  // Generate Flight No Direct Download Link if Master File ID exists
-  var flightNoVal = flightNoFormula;
+  // Generate IGC File Direct Download Link if Master File ID exists
+  var igcFileVal = igcFileName;
   if (masterFileId) {
     var config = config || getParameters_();
     var dlPattern = (config && config.GDRIVE_DOWNLOAD_URL_PATTERN) || 'https://drive.google.com/uc?export=download&id={ID}';
     var directDlUrl = dlPattern.replace('{ID}', masterFileId);
-    flightNoVal = '=HYPERLINK("' + directDlUrl + '", ' + flightNoFormula.substring(1) + ')';
+    igcFileVal = '=HYPERLINK("' + directDlUrl + '", "' + (igcFileName || 'Download') + '")';
   }
 
   setVal('FlightID', flightIdVal);
   setVal('Status', status);
-  setVal('Flight No', flightNoVal);
+  setVal('Flight No', flightNoFormula);
   setVal('Auto Summary', autoSummary);
-  setVal('IGC File', igcFileName);
+  setVal('IGC File', igcFileVal);
   setVal('Notes', notes); // Write System Notes (Geo errors, Validation, etc)
   setVal('Flight Type', scoring.flightType || 'Free Fly');
   setVal('Date', data.meta.dateIso);

@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-29 12:09:53
+ * Updated: 2026-09-29 19:01:56
  */
 /**
  * Paragliding Flight Log v2.0 - Configuration
@@ -44,8 +44,10 @@ var CFG = {
     { section: 'Integrations', key: 'XCONTEST_MATCH_START_TIME_TOLERANCE_MIN', val: 2, desc: 'Tolerance (min) for Start Time match (Fallback)', input: true },
     
     // Geo & Time
-    { section: 'Geo & Time', key: 'GEO_REV_PROVIDERS', val: 'big_data_cloud, nominatim_osm', desc: 'Reverse Geo Providers (comma-sep)' },
+    { section: 'Geo & Time', key: 'GEO_REV_PROVIDERS', val: 'google, big_data_cloud, nominatim_osm', desc: 'Reverse Geo Providers (comma-sep: google, big_data_cloud, nominatim_osm)' },
     { section: 'Geo & Time', key: 'GEO_SITE_PROVIDERS', val: 'paragliding_earth, overpass_api', desc: 'Site Name Providers (comma-sep: paragliding_earth, overpass_api)' },
+    { section: 'Geo & Time', key: 'LAUNCH_SITE_KEYWORDS', val: 'Launch, Takeoff, Take off', desc: 'Keywords to prioritize Launch sites' },
+    { section: 'Geo & Time', key: 'LANDING_SITE_KEYWORDS', val: 'Landing, LZ', desc: 'Keywords to prioritize Landing sites' },
     { section: 'Geo & Time', key: 'GEO_TZ_PROVIDERS', val: 'timeapi_io', desc: 'Time Zone Providers' },
     { section: 'Geo & Time', key: 'OSM_RADIUS_M', val: 3000, desc: 'Radius (m) to search for sites' },
     
@@ -98,6 +100,12 @@ var CFG = {
 // Bind defaults for backward compatibility
 CFG.defaults = CFG.getDefaults();
 
+// Site Keywords for Launch and Landing Disambiguation
+CFG.siteKeywords = {
+  launch: ['Launch', 'Takeoff', 'Take off'],
+  landing: ['Landing', 'LZ']
+};
+
 /* ==========================================================================================
    TAB DEFINITIONS
    ========================================================================================== */
@@ -130,7 +138,7 @@ var TABS = {
      */
     colNotes: {
       'FlightID': 'Click to view flight',
-      'Flight No': 'Click to download igc'
+      'IGC File': 'Click to download igc'
     },
     groups: [
       { 

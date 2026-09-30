@@ -1,6 +1,6 @@
 <!--
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-29 12:09:53
+ * Updated: 2026-09-29 19:01:56
  -->
 <!DOCTYPE html>
 <html>
@@ -225,6 +225,7 @@
         var navHistory = [{ id: "root", name: "My Drive" }];
 
         var processingQueue = [];
+        var sourceArchiveQueue = [];
         var totalFlightsToProcess = 0;
         var processedFlights = 0;
         var errorFlights = 0;
@@ -458,7 +459,11 @@
                         handleError(res.error);
                     } else if (res && res.files) {
                         processingQueue = res.files;
+                        sourceArchiveQueue = res.sourceArchiveIds || [];
                         log("Found " + processingQueue.length + " file(s) to process", "log-info");
+                        if (sourceArchiveQueue.length > 0 && shouldDeleteSource) {
+                            log("Tracking " + sourceArchiveQueue.length + " source archive(s) for cleanup", "log-info");
+                        }
                         startProcessing();
                     } else {
                         handleError("Unknown response from server.");
@@ -540,6 +545,18 @@
             log("Files Imported: " + processedFlights, "log-success");
             log("Skipped: " + skippedFlights);
             log("Errors: " + errorFlights, errorFlights > 0 ? "log-error" : "");
+
+            if (shouldDeleteSource && sourceArchiveQueue && sourceArchiveQueue.length > 0) {
+                log("Deleting " + sourceArchiveQueue.length + " source archive file(s)...", "log-info");
+                google.script.run
+                    .withSuccessHandler(function(res) {
+                        log("Source archive(s) deleted from Drive.", "log-success");
+                    })
+                    .withFailureHandler(function(err) {
+                        log("Notice: Could not delete some source archives: " + (err && err.message ? err.message : err), "log-error");
+                    })
+                    .trashSourceFiles(sourceArchiveQueue);
+            }
 
             document.getElementById("btn-close").style.display = "none";
             document.getElementById("btn-done").style.display = "inline-block";

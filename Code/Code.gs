@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-29 12:09:53
+ * Updated: 2026-09-29 19:01:56
  * Test access verification: Verified GAS write access on 2026-09-25 08:26:00.
  * 
  * CORE MODULE: Orchestration Only.
@@ -14,19 +14,22 @@
    ========================================================================================== */
 
 function onOpen(e) {
-  SpreadsheetApp.getUi()
-    .createMenu('Flight Log')
+  var ui = SpreadsheetApp.getUi();
+  ui.createMenu('Flight Log')
     .addItem('Flight Inspector', 'showInspectorSidebar')
     .addSeparator()
-    .addItem('Add manual flight (blank row)', 'uiAddManualFlight_')
-    .addItem('Add files from URL (folder, igc, zip)...', 'showUrlDialog')
-    .addItem('Add flight from Upload (Local File)...', 'showUploadDialog')
-    .addItem('Scan Watch Folder now', 'showScanDialog')
+    .addSubMenu(ui.createMenu('Add Flight')
+        .addItem('Add manual flight (blank row)', 'uiAddManualFlight_')
+        .addItem('Add files from URL (folder, igc, zip)...', 'showUrlDialog')
+        .addItem('Add flight from Upload (Local File)...', 'showUploadDialog')
+        .addItem('Scan Watch Folder Now', 'showScanDialog'))
+    .addSubMenu(ui.createMenu('Flight maintenance')
+        .addItem('Recompute Selected Flights', 'uiRecomputeSelected_')
+        .addItem('Sort All Flights by Date', 'sortFlightsByDate_')
+        .addItem('Update missing data for selected Flights', 'uiUpdateMissingDataSelected_')
+        .addItem('Update missing data for all flights', 'uiUpdateMissingDataAll_'))
     .addSeparator()
-    .addItem('Recompute selected flight(s)', 'uiRecomputeSelected_')
-    .addItem('Sort all Flights by Date', 'sortFlightsByDate_')
-    .addSeparator()
-    .addSubMenu(SpreadsheetApp.getUi().createMenu('Admin')
+    .addSubMenu(ui.createMenu('Admin')
         .addItem('First Time Setup (Full Scaffold)', 'scaffoldAll_')
         .addItem('Admin: Update Validation & Params', 'updateValidationOnly_')
         .addItem('Admin: Reapply Formatting (Safe)', 'reapplyFormatting_')
@@ -307,6 +310,14 @@ function showUploadDialog() {
 
 function uiRecomputeSelected_() {
   SpreadsheetApp.getUi().alert('Recompute not yet implemented.');
+}
+
+function uiUpdateMissingDataSelected_() {
+  SpreadsheetApp.getActive().toast('Update missing data for selected flights will be available soon.', 'Flight Log');
+}
+
+function uiUpdateMissingDataAll_() {
+  SpreadsheetApp.getActive().toast('Update missing data for all flights will be available soon.', 'Flight Log');
 }
 
 function setupWatcherTrigger_() {
