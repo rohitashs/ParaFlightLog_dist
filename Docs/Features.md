@@ -72,15 +72,17 @@ The visual layer where users interact with the data.
 *   **Flight Maintenance & Bulk Operations (`RQ-SYS-007`)**: A unified modal dialog (`FlightMaintenanceDialog.html`) allowing pilots to select scope (Selected rows vs. All flights) and execute batch operations: backfill historical weather, backfill missing geo/site data, re-verify XContest flight claims, recompute physics and thermalling modes, recalculate XC score, and sort flights by date.
 
 ## 7. 📊 Flight Dashboard
-*Maps to `RQ-SYS-005`, `CR-SYS-001`*
+*Maps to `RQ-SYS-005`, `CR-SYS-001`, `CR-SYS-002`*
 
-A high-level visual dashboard structured into a compact 8-column layout (Columns A through H) powered by resilient, insertion-safe `INDIRECT` Google Sheets formulas.
+A high-level visual dashboard structured into a compact 6-column layout (Columns A through F, ~930px width) powered by resilient, insertion-safe `INDIRECT` Google Sheets formulas with word wrapping across all cells.
 *   **Master Log Folder Link**: Row 2 features a prominent direct hyperlink to the Master Flight Log Google Drive folder.
-*   **Live KPI Cards**: 4 compact cards (2 cells wide each across A3:H5) calculating Total Flights, Total Airtime Hours (summed in decimal hours via `TIMEVALUE`), Total Distance (km), and Flights Flown in the Current Year.
-*   **2-Column Card Grid (2 + 2 + 1)**: Distinct cards (4 cells wide each across Major Columns A:D and E:H):
-    *   *Row 7–12*: **Top 5 by Duration** (numerically sorted via `TIMEVALUE`) & **Top 5 by Distance** (Track Length).
-    *   *Row 14–19*: **Recent Activity** (descending Date sort) & **Top Sites** (Launch Site frequency from Col AL).
-    *   *Row 21–26*: **Countries Flown** (Country frequency from Col AN).
+*   **Banner 1: All-Time Summary (3 KPIs)**: Columns `A:B`, `C:D`, and `E:F` showcase Total Flights, Total Airtime Hours (parsed and summed in decimal hours via `TIMEVALUE`), and Total Distance (km).
+*   **Banner 2: Year-to-Date Summary (3 KPIs)**: Columns `A:B`, `C:D`, and `E:F` dynamically compute Flights, Airtime Hours, and Distance flown in the current calendar year (`YEAR(TODAY())`).
+*   **Section 3: 6-Month Rolling Activity Timeline**: Columns A through F provide a horizontal monthly timeline of the last 6 months in ascending order (5 months ago to current month), dynamically displaying Month Name (`mmm-yyyy`), Total Flights, Total Airtime Hours, and Total Distance for each individual month.
+*   **Section 4: 2 x 3 Leaderboard Grid (6 Cards)**: Symmetrical cards (3 cells wide each across Columns A:C and D:F):
+    *   *Grid Row 1*: **Top 5 by Duration** (formatted cleanly as `Flight X - H:MM hrs (Summary)`) & **Top 5 by Distance** (Track Length in km).
+    *   *Grid Row 2*: **Recent Activity** (formatted as `Flight X - YYYY-MM-DD - H:MM hrs (Summary)`) & **Top 5 Launch Sites** (Site frequency from Col AL).
+    *   *Grid Row 3*: **Countries Flown** (Country frequency from Col AN) & **Top 5 Max Altitude** (Peak altitudes in meters from Col AB).
 *   **Immune to Row Operations**: All formulas reference `INDIRECT("Flights!..." & dataStartRow & ":...")`, ensuring that row insertions before row 5, deletions, or sorts never shift or break formula ranges.
 
 ## 8. 🛡️ Administration & Setup

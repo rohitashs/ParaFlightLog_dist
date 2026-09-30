@@ -5,12 +5,17 @@
 **Versions**: v0.8.12
 **Focus**: Dashboard formula resiliency & 8-column layout (`CR-SYS-002`, `Bug-SYS-006`), frozen columns (`CR-UI-017`), dynamic Lookups validation (`Bug-UI-006`), Closed? validation (`Bug-UI-007`), manual flight status default (`Bug-UI-005`), and schema streamlining (`CR-SCH-001`).
 
-*   `[Fix]` **Bug-SYS-006 & CR-SYS-002 (Dashboard Resiliency & 8-Column Layout)**:
-    *   Rebuilt `scaffoldDashboard_` in `Code/Scaffold.gs` with a compact 8-column layout (`A` to `H`), featuring 4 two-cell wide KPI summary cards (`A3:B5`, `C3:D5`, `E3:F5`, `G3:H5`), and a 2-column card grid (2 + 2 + 1: Top Duration, Top Distance, Recent Activity, Top Sites, Countries Flown).
-    *   Replaced vulnerable direct range formula references (`Flights!A5:A`) with string-literal `INDIRECT("Flights!..." & startRow & ":...")` formulas. This permanently prevents Google Sheets from shifting formula ranges downward (e.g. to `Flights!A6:A` or `Flights!A15:A`) when new flight rows are inserted via `insertRowBefore(5)`.
-    *   Corrected Total Hours calculation to parse `h:mm` flight durations into decimal hours using `SUMPRODUCT(IFERROR(TIMEVALUE(...) * 24, 0))`.
-    *   Corrected column letter references for Launch Site (`AL`) and Launch Country (`AN`) that had shifted following Phase 2 weather integrations.
-    *   Added `Admin: Refresh Dashboard` (`uiRefreshDashboard_`) menu action under `Flight Log > Admin` in `Code/Code.gs` and hooked it into `reapplyFormatting_()`.
+*   `[Fix]` **Bug-SYS-006 & CR-SYS-002 (Dashboard Restructuring, Number Formatting & 6-Month Timeline)**:
+    *   Rebuilt `scaffoldDashboard_` in `Code/Scaffold.gs` into a 6-column layout (`A` to `F`, ~930px width) with word wrapping enabled across all cells.
+    *   Added **Banner 1: All-Time Summary**: 3 KPI cards across Columns `A:B` (Total Flights), `C:D` (Total Hours), and `E:F` (Total Distance).
+    *   Added **Banner 2: Year-to-Date Summary**: 3 KPI cards across Columns `A:B` (Flights this year), `C:D` (Hours this year), and `E:F` (Distance this year), dynamically adjusting as the calendar year changes via `YEAR(TODAY())`.
+    *   Added **Section 3: 6-Month Rolling Activity Timeline**: Horizontal timeline spanning Columns A through F displaying the last 6 months in ascending order (5 months ago to current month), displaying Month Name (`mmm-yyyy`), Total Flights, Total Airtime Hours, and Total Distance for each month.
+    *   Added **Section 4: 2 x 3 Leaderboard Grid (6 Cards)**: Symmetrical cards across Columns A:C and D:F:
+        *   Row 1: Top 5 by Duration & Top 5 by Distance
+        *   Row 2: Recent Activity & Top 5 Launch Sites
+        *   Row 3: Countries Flown & Top 5 Max Altitude (peak altitudes achieved in meters from Col AB).
+    *   Resolved raw decimal duration numbers by formatting durations cleanly as `H:MM hrs` (`TEXT(..., "h:mm") & " hrs"`).
+    *   Replaced vulnerable direct range formula references with string-literal `INDIRECT("Flights!..." & startRow & ":...")` formulas.
 *   `[Imp]` **CR-UI-017 (Frozen Columns on Flights Sheet & Category Unmerge)**:
     *   Configured `frozenCols: 4` in `Code/Config.gs` (`TABS.FLIGHTS.frozenCols`), `scaffoldFlights_`, and `reapplyFormatting_`, locking Columns A through D (`FlightID`, `Status`, `Flight No`, `Auto Summary`) during horizontal scrolling.
     *   Resolved Google Sheets freeze boundary conflict ("You can't freeze cells across a merged cell") by unmerging Row 3 for the first 4 columns (`A3:D3` unmerged individual cells inside the frozen pane) and re-merging Columns E to N (`E3:N3`, length 10) as the `'Flight Info'` category header. Executed `breakApart()` on Row 3 prior to re-scaffolding to cleanly disband legacy merges.
