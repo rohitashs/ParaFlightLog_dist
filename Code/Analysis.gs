@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-29 19:13:05
+ * Updated: 2026-09-29 22:43:52
  */
 /**
  * Paragliding Flight Log v2.0
@@ -117,6 +117,7 @@ function computeDerivatives_(fixes) {
       t: c.t,
       dt: dt,
       alt: c.alt,
+      dAlt: dAlt,
       vario: vario,
       gs: gsKmh,
       bearing: bearing,
@@ -145,7 +146,10 @@ function computeDerivatives_(fixes) {
       avgGs: totalTime ? (totalDist / totalTime * 3.6) : 0,
       maxAlt: maxAlt,
       minAlt: minAlt,
-      totalDist: totalDist
+      totalDist: totalDist,
+      durationSec: totalTime,
+      startTime: fixes[0].t,
+      endTime: fixes[fixes.length - 1].t
     }
   };
 }
@@ -177,36 +181,48 @@ function classifyModes_(derived, config) {
     if (avgVario > config.THERMAL_MIN_CLIMB && avgTurn > config.THERMAL_MIN_TURN) {
       mode = 'Thermal';
     } 
-    else if (avgVario >= config.SOAR_VARIO_MIN && avgVario <= config.SOAR_VARIO_MAX && avgTurn <= config.SOAR_TURN_MAX && checkReversals_(points, i, config)) {
-       mode = 'Soar'; // Reversal check is expensive, maybe simplified?
-    }
     else if (avgVario < config.SINK_VARIO) {
        mode = 'Sink';
+    }
+    else if (avgVario >= config.SOAR_VARIO_MIN && (checkReversals_(points, i, config) || avgVario >= 0.2)) {
+       mode = 'Soar';
     }
     else {
        mode = 'Glide';
     }
     
-    modes.push({ t: points[i].t, dt: points[i].dt, mode: mode, vario: points[i].vario, dist: points[i].dist });
+    modes.push({ t: points[i].t, dt: points[i].dt, mode: mode, vario: points[i].vario, dist: points[i].dist, dAlt: points[i].dAlt });
   }
   return modes;
 }
 
 function checkReversals_(points, index, config) {
-  // Look back REVERSAL_WINDOW_SEC for heading change > 90 deg?
-  // Simplified: standard soaring involves frequent 180s.
-  // For MVP, just return false if standard soaring detection is too complex without proper heading analysis object.
-  // Let's rely on Turn Rate < MAX (straight) vs Turn Rate > MIN (thermal). 
-  // Soaring is tricky: Straight lines + quick 180s.
-  // Let's skip complex reversal logic for this iteration and focus on Vario/Turn.
+  var targetT = points[index].t;
+  var winSec = config.REVERSAL_WINDOW_SEC || 45;
+  var curBearing = points[index].bearing;
+  
+  // Look back within winSec for heading change >= 90 deg (ridge reversals / S-turns)
+  for (var j = index - 1; j >= 0; j--) {
+    if (targetT - points[j].t > winSec) break;
+    var diff = Math.abs(curBearing - points[j].bearing) % 360;
+    if (diff > 180) diff = 360 - diff;
+    if (diff >= 90) return true;
+  }
+  // Look forward within winSec
+  for (var j = index + 1; j < points.length; j++) {
+    if (points[j].t - targetT > winSec) break;
+    var diff = Math.abs(curBearing - points[j].bearing) % 360;
+    if (diff > 180) diff = 360 - diff;
+    if (diff >= 90) return true;
+  }
   return false; 
 }
 
 function aggregateModeStats_(modes, derived) {
   var stats = {
     thermal: { time: 0, gain: 0, count: 0, best: 0, avg: 0 },
-    soar: { time: 0 },
-    glide: { time: 0, dist: 0 },
+    soar: { time: 0, dist: 0, gain: 0, efficiency: '' },
+    glide: { time: 0, dist: 0, altLoss: 0, descDist: 0, ld: '' },
     sink: { time: 0 }
   };
   
@@ -222,11 +238,17 @@ function aggregateModeStats_(modes, derived) {
       if (m.vario > stats.thermal.best) stats.thermal.best = m.vario;
     } else if (m.mode === 'Soar') {
       stats.soar.time += m.dt;
+      stats.soar.dist += m.dist;
+      if (m.dAlt > 0) stats.soar.gain += m.dAlt;
     } else if (m.mode === 'Sink') {
       stats.sink.time += m.dt;
     } else {
       stats.glide.time += m.dt;
       stats.glide.dist += m.dist;
+      if (m.dAlt < 0) {
+        stats.glide.altLoss += Math.abs(m.dAlt);
+        stats.glide.descDist += m.dist;
+      }
     }
     
     // Count Thermals (State change)
@@ -241,7 +263,21 @@ function aggregateModeStats_(modes, derived) {
       stats.thermal.avg = stats.thermal.gain / stats.thermal.time;
   }
   
-  var totalTime = derived.summary.totalDist ? (derived.points[derived.points.length-1].t - derived.points[0].t) : 1;
+  // Soar Efficiency: Soar Height Gain (m) / Soar Distance (km)
+  var soarDistKm = stats.soar.dist / 1000;
+  if (soarDistKm > 0 && stats.soar.gain > 0) {
+    stats.soar.efficiency = (stats.soar.gain / soarDistKm).toFixed(1);
+  }
+  
+  // Glide L/D: Horizontal Glide Distance (m) / Altitude Lost in Glides (m)
+  if (stats.glide.altLoss > 0 && stats.glide.descDist > 0) {
+    stats.glide.ld = (stats.glide.descDist / stats.glide.altLoss).toFixed(1);
+  }
+  
+  var totalTime = (derived.points && derived.points.length > 1) 
+    ? (derived.points[derived.points.length-1].t - derived.points[0].t) 
+    : 1;
+  if (totalTime <= 0) totalTime = 1;
   
   return {
     raw: stats,

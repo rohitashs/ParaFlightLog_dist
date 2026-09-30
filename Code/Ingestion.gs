@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-29 19:13:05
+ * Updated: 2026-09-29 22:43:52
  * 
  * MODULE: Ingestion Service
  * Handles File inputs (Drive, URL), ZIP extraction, Deduplication, and calls Parser.
@@ -849,8 +849,8 @@ function processSingleIgcBlob_(blob, fileName, fileId, outerName, config) {
   if (config.XCONTEST_USERNAME) {
      try {
        var flightDate = new Date(parsed.meta.dateIso); // Parse ISO date
-       var durMin = Math.round(analysis.stats.durationSec / 60);
-       var startMin = Math.round(analysis.stats.startTime / 60);
+       var durMin = Math.round(parsed.stats.durationSec / 60);
+       var startMin = Math.round(parsed.stats.startTime / 60);
        xcStatus = XContest.checkFlight(flightDate, durMin, startMin, config);
        
        if (xcStatus.status === 'Error') {
@@ -1196,7 +1196,10 @@ function insertFlightRow_(data, fileId, outerName, status, notes, analysis, scor
   setVal('Landing Town', geo.d.town || '');
   setVal('Landing Country', geo.d.country || '');
   setVal('Landing Region', geo.d.region || '');
-  setVal('Launch-Landing Dist (km)', analysis.stats.straightDistKm ? analysis.stats.straightDistKm.toFixed(1) : '');
+  var launchLandDist = (data.stats && typeof data.stats.straightDistKm === 'number')
+    ? data.stats.straightDistKm.toFixed(1)
+    : '';
+  setVal('Launch-Landing Dist (km)', launchLandDist);
 
   // -- Weather (Blank) --
   // 'Wind@Launch', 'Wind@Landing', 'Cloud %', 'Cloudbase', 'Temp (C)', 'Observations'
@@ -1207,7 +1210,9 @@ function insertFlightRow_(data, fileId, outerName, status, notes, analysis, scor
   setVal('Thermal Avg (m/s)', raw.thermal.avg.toFixed(1));
   setVal('Thermal Best (m/s)', raw.thermal.best.toFixed(1));
   setVal('Soar %', (pct.soar * 100).toFixed(2) + '%');
+  setVal('Efficiency', raw.soar.efficiency || '');
   setVal('Glide %', (pct.glide * 100).toFixed(2) + '%');
+  setVal('Glide L/D', raw.glide.ld || '');
   setVal('Sink %', (pct.sink * 100).toFixed(2) + '%');
   setVal('Sink Time', Math.round(raw.sink.time/60) + ' min');
 

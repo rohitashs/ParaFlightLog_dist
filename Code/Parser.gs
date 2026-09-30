@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-29 19:13:05
+ * Updated: 2026-09-29 22:43:52
  */
 /**
  * Paragliding Flight Log v2.0
@@ -75,8 +75,14 @@ function parseIgc(text, fileName) {
   // 2. Validate & Post-Process
   if (fixes.length < 2) return null; // Need at least 2 points
   
-  // Backfill timestamps if date was found late (rare but happens)
-  // Or handle midnight crossover (advanced, skipped for MVP unless needed)
+  // Handle midnight UTC crossover: normalize timestamps to be monotonically increasing
+  var dayOffsetSec = 0;
+  for (var i = 1; i < fixes.length; i++) {
+    while ((fixes[i].t + dayOffsetSec) < fixes[i-1].t - 43200) {
+      dayOffsetSec += 86400;
+    }
+    fixes[i].t += dayOffsetSec;
+  }
   
   if (!meta.dateIso) {
     // Fallback: Current date if missing in header
@@ -187,7 +193,8 @@ function computeBasicStats_(fixes) {
     durationSec: duration,
     maxAlt: maxAlt,
     minAlt: minAlt,
-    startTime: startTime
+    startTime: startTime,
+    endTime: endTime
   };
 }
 
