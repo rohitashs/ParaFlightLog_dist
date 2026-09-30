@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 10:17:38
+ * Updated: 2026-09-30 10:58:15
  * Test access verification: Verified GAS write access on 2026-09-25 08:26:00.
  * 
  * CORE MODULE: Orchestration Only.
@@ -79,6 +79,20 @@ function getParameters_() {
     }
   }
   
+  // Clean folder parameter IDs so URLs/whitespace don't break DriveApp calls
+  var singleFolderKeys = ['MASTER_LOG_FOLDER_ID', 'UPLOAD_FOLDER_ID', 'ERROR_FOLDER_ID'];
+  singleFolderKeys.forEach(function(k) {
+    if (config[k]) {
+      config[k] = cleanDriveId_(config[k]);
+    }
+  });
+  if (config.WATCH_FOLDER_ID) {
+    var ids = String(config.WATCH_FOLDER_ID).split(',').map(function(s) {
+      return cleanDriveId_(s.trim());
+    }).filter(Boolean);
+    config.WATCH_FOLDER_ID = ids.join(', ');
+  }
+
   // Parse list types
   if (typeof config.FLIGHT_TYPES === 'string') {
     config.FLIGHT_TYPES_LIST = config.FLIGHT_TYPES.split(',').map(function(s) { return s.trim(); });
@@ -549,7 +563,7 @@ function executeFlightMaintenanceRow(rowNum, opConfig) {
   if (opConfig.physics || opConfig.scoring) {
     try {
       var igcVal = String(getV('IGC File') || '');
-      var masterFolderId = config.MASTER_LOG_FOLDER_ID;
+      var masterFolderId = cleanDriveId_(config.MASTER_LOG_FOLDER_ID);
       var masterFile = null;
 
       var fileNameMatch = igcVal.match(/,\s*"([^"]+)"\)/);
@@ -560,12 +574,30 @@ function executeFlightMaintenanceRow(rowNum, opConfig) {
         try { masterFile = DriveApp.getFileById(idMatch[1]); } catch(e) {}
       }
       if (!masterFile && masterFolderId && rawFileName) {
-        var mfFolder = DriveApp.getFolderById(masterFolderId);
-        var files = mfFolder.getFilesByName(rawFileName);
-        if (files.hasNext()) masterFile = files.next();
+        try {
+          var mfFolder = DriveApp.getFolderById(masterFolderId);
+          var files = mfFolder.getFilesByName(rawFileName);
+          if (files.hasNext()) masterFile = files.next();
+        } catch(eMf) {}
       }
 
       if (masterFile) {
+        // If IGC File is missing hyperlink, backfill it
+        if (!idMatch) {
+          var dlPattern = config.GDRIVE_DOWNLOAD_URL_PATTERN || 'https://drive.google.com/uc?export=download&id={ID}';
+          var directDlUrl = dlPattern.replace('{ID}', masterFile.getId());
+          setV('IGC File', '=HYPERLINK("' + directDlUrl + '", "' + (masterFile.getName() || rawFileName) + '")');
+          var rawFlightId = String(getV('FlightID') || '').replace(/=HYPERLINK\("[^"]*",\s*"([^"]+)"\)/, '$1');
+          if (rawFlightId) {
+            var syPattern = config.SEEYOU_CLOUD_URL_PATTERN;
+            if (syPattern) {
+              var syUrl = syPattern.replace('{URL}', encodeURIComponent(directDlUrl));
+              setV('FlightID', '=HYPERLINK("' + syUrl + '", "' + rawFlightId + '")');
+            }
+          }
+          updated.push('IGC Link');
+        }
+
         var blob = masterFile.getBlob();
         var parsed = PARSER.parseIgc(blob.getDataAsString(), masterFile.getName());
         if (parsed && parsed.fixes && parsed.fixes.length > 5) {
@@ -823,14 +855,15 @@ function getMultiFolderPath_(folderIdsStr) {
  */
 function saveFolderParam(key, folderId, mode) {
   try {
-    var finalValue = folderId;
+    var cleanId = cleanDriveId_(folderId);
+    var finalValue = cleanId;
     
     // Handle multi-folder append for WATCH_FOLDER_ID
     if (key === 'WATCH_FOLDER_ID' && mode === 'append') {
       var currentConfig = getParameters_();
-      var existingIds = String(currentConfig.WATCH_FOLDER_ID || '').split(',').map(function(s){ return s.trim(); }).filter(Boolean);
-      if (existingIds.indexOf(folderId) === -1) {
-        existingIds.push(folderId);
+      var existingIds = String(currentConfig.WATCH_FOLDER_ID || '').split(',').map(function(s){ return cleanDriveId_(s.trim()); }).filter(Boolean);
+      if (existingIds.indexOf(cleanId) === -1) {
+        existingIds.push(cleanId);
       }
       finalValue = existingIds.join(', ');
     }

@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 10:17:38
+ * Updated: 2026-09-30 10:58:15
  */
 /**
  * Paragliding Flight Log v2.0
@@ -17,6 +17,7 @@ function runAllTests() {
   results.push(testGeo_()); // Might fail if quota reached or network down
   results.push(testXContest_());
   results.push(testWeather_());
+  results.push(testCleanDriveId_());
   
   var failures = results.filter(function(r) { return !r.idx || r.error; });
   if (failures.length > 0) {
@@ -124,4 +125,25 @@ function testWeather_() {
   }
 
   return { module: 'Weather', idx: true };
+}
+
+function testCleanDriveId_() {
+  if (typeof cleanDriveId_ !== 'function') return { module: 'Utils', error: 'cleanDriveId_ missing' };
+
+  var rawId = "10l-5rIDf0osLjy46qbLm2skoyXQRFGq5Dj7dl5hScjhGdy0IO_BiQqol";
+  if (cleanDriveId_(rawId) !== rawId) return { module: 'Utils', error: 'Raw ID mismatch' };
+
+  var folderUrl = "https://drive.google.com/drive/folders/" + rawId + "?usp=sharing";
+  if (cleanDriveId_(folderUrl) !== rawId) return { module: 'Utils', error: 'Folder URL extraction fail' };
+
+  var openUrl = "https://drive.google.com/open?id=" + rawId;
+  if (cleanDriveId_(openUrl) !== rawId) return { module: 'Utils', error: 'Open URL extraction fail' };
+
+  var fileUrl = "https://drive.google.com/file/d/" + rawId + "/view";
+  if (cleanDriveId_(fileUrl) !== rawId) return { module: 'Utils', error: 'File URL extraction fail' };
+
+  var withSpaces = "  " + rawId + "  ";
+  if (cleanDriveId_(withSpaces) !== rawId) return { module: 'Utils', error: 'Whitespace trim fail' };
+
+  return { module: 'Utils', idx: true };
 }

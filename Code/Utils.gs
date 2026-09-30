@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 10:17:38
+ * Updated: 2026-09-30 10:58:15
  * 
  * MODULE: Utilities (Math & Formatting)
  * Consolidated geospatial calculations (Haversine, Bearing, Angular Difference)
@@ -81,9 +81,37 @@ function formatTime_(sec) {
   return ('0' + h).slice(-2) + ':' + ('0' + m).slice(-2) + ':' + ('0' + s).slice(-2);
 }
 
+/**
+ * Extracts a clean Google Drive folder or file ID from a URL, link, or raw string.
+ * Strips whitespace, query parameters, and folder/file URL paths.
+ * @param {string} input - Raw ID or URL
+ * @return {string} Extracted ID or empty string
+ */
+function cleanDriveId_(input) {
+  if (!input) return '';
+  var str = String(input).trim();
+  // Check for /folders/<id>
+  var folderMatch = str.match(/\/folders\/([-\w]+)/);
+  if (folderMatch) return folderMatch[1];
+  // Check for [?&]id=<id>
+  var idMatch = str.match(/[?&]id=([-\w]+)/);
+  if (idMatch) return idMatch[1];
+  // Check for /file/d/<id>
+  var fileMatch = str.match(/\/file\/d\/([-\w]+)/);
+  if (fileMatch) return fileMatch[1];
+  // Check for raw alphanumeric Drive ID (min 15 chars)
+  var rawMatch = str.match(/^[-\w]{15,}$/);
+  if (rawMatch) return rawMatch[0];
+  // General match for any 20+ char token if text contains one
+  var generalMatch = str.match(/[-\w]{20,}/);
+  if (generalMatch) return generalMatch[0];
+  return str;
+}
+
 // Export to UTILS namespace
 UTILS.haversine = haversine_;
 UTILS.bearing = bearing_;
 UTILS.angleDiff = angleDiff_;
 UTILS.friendlyDuration = friendlyDuration_;
 UTILS.formatTime = formatTime_;
+UTILS.cleanDriveId = cleanDriveId_;

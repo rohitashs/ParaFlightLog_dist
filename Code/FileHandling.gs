@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 10:17:38
+ * Updated: 2026-09-30 10:58:15
  * 
  * MODULE: File Handling Service
  * Handles Google Drive I/O, Watch Folder scanning, File Uploads, URL Fetching,
@@ -222,9 +222,11 @@ function stageUpload(fileObj) {
  * @param {string} source - 'WATCH', 'UPLOAD', 'URL', 'URL_CUSTOM'
  * @param {boolean} [deleteSource=false]
  */
-function processFileById(fileId, source, deleteSource) {
+function processFileById(fileId, source, deleteSource, isDriveSource) {
   var file = null;
   var config = getParameters_();
+  var isDelete = (deleteSource === true || deleteSource === 'true');
+  if (isDriveSource === undefined) isDriveSource = true;
 
   try {
     file = DriveApp.getFileById(fileId);
@@ -232,17 +234,26 @@ function processFileById(fileId, source, deleteSource) {
     
     // Context-Aware Cleanup
     if (source === 'UPLOAD' || source === 'URL') {
-       // ALWAYS delete temp files from Upload Folder
-       // The 'Master Log' copy is handled inside processDriveFile_ -> processBlob_ -> copyToMasterLog_
-       try { file.setTrashed(true); } catch(e) { console.warn('Failed to trash temp file', e); }
+       // Staged upload temp files are ALWAYS removed from Upload Folder
+       // Master Log copy is already handled inside processDriveFile_ -> processBlob_ -> copyToMasterLog_
+       if (!result.processed && !result.isDuplicate) {
+          copyToErrorFolder_(file, file.getName(), config);
+       }
+       try { file.setTrashed(true); } catch(e) { console.warn('Failed to trash temp upload file', e); }
     }
     else if (source === 'URL_CUSTOM') {
-       // URL or Google Drive source with optional delete from source
-       if (deleteSource === true || deleteSource === 'true') {
-          if (result.processed || result.isDuplicate) {
-             try { file.setTrashed(true); } catch(e) { console.warn('Failed to trash source file', e); }
-          } else {
-             handleFileCleanup_(file, 'ERROR', config);
+       if (result.processed || result.isDuplicate) {
+          // File was successfully processed (and copied to Master Log inside processSingleIgcBlob_)
+          // Or is duplicate (already in Master Log)
+          if (isDelete || isDriveSource === false) {
+             try { file.setTrashed(true); } catch(e) { console.warn('Failed to trash source/temp file', e); }
+          }
+       } else {
+          // Unsuccessful file (Parse failure / invalid / heuristic error)
+          // Always copy to Error Folder
+          copyToErrorFolder_(file, file.getName(), config);
+          if (isDelete || isDriveSource === false) {
+             try { file.setTrashed(true); } catch(e) { console.warn('Failed to trash failed source/temp file', e); }
           }
        }
     }
@@ -259,18 +270,22 @@ function processFileById(fileId, source, deleteSource) {
 
     return { 
       success: true, 
-      msg: result.processed ? 'Imported' : 'Skipped/Duplicate',
+      msg: result.processed ? 'Imported' : (result.isDuplicate ? 'Duplicate (Skipped)' : 'Failed/Invalid'),
       processed: result.processed,
+      isDuplicate: result.isDuplicate,
       flights: result.count || 0 
     };
   } catch (e) {
-    // On Fatal Error
+    console.error('processFileById fatal error for ' + fileId, e);
+    // On Fatal Error: always copy to error folder
+    if (file) {
+      copyToErrorFolder_(file, file.getName(), config);
+    }
     if (source === 'UPLOAD' || source === 'URL') {
-       if (file) handleFileCleanup_(file, 'ERROR', config);
        try { if (file && !file.isTrashed()) file.setTrashed(true); } catch(ex) {}
     } else if (source === 'URL_CUSTOM') {
-       if (deleteSource === true || deleteSource === 'true') {
-          if (file) handleFileCleanup_(file, 'ERROR', config);
+       if ((isDelete || isDriveSource === false) && file) {
+          try { if (!file.isTrashed()) file.setTrashed(true); } catch(ex) {}
        }
     } else {
        if (file) handleFileCleanup_(file, 'ERROR', config);
@@ -433,7 +448,7 @@ function stageBlob_(blob, fileName, config) {
          blobs.forEach(function(b) {
             if (b.getName().match(/\.(igc|igx)$/i)) {
                var f = folder.createFile(b);
-               createdFiles.push({ id: f.getId(), name: f.getName() });
+               createdFiles.push({ id: f.getId(), name: f.getName(), isDriveSource: false });
             }
          });
       } 
@@ -441,13 +456,13 @@ function stageBlob_(blob, fileName, config) {
          var b = Utilities.gunzip(blob);
          b.setName(fileName.replace(/\.gz$/i, ''));
          var f = folder.createFile(b);
-         createdFiles.push({ id: f.getId(), name: f.getName() });
+         createdFiles.push({ id: f.getId(), name: f.getName(), isDriveSource: false });
       }
       else {
          // Plain IGC
          blob.setName(fileName);
          var f = folder.createFile(blob);
-         createdFiles.push({ id: f.getId(), name: f.getName() });
+         createdFiles.push({ id: f.getId(), name: f.getName(), isDriveSource: false });
       }
       
       return { success: true, files: createdFiles };
@@ -474,12 +489,8 @@ function handleFileCleanup_(file, status, config) {
     }
     // 2. Error / Partial
     else if (status === 'ERROR') {
-      if (config.ERROR_FOLDER_ID) {
-        var errorFolder = DriveApp.getFolderById(config.ERROR_FOLDER_ID);
-        file.makeCopy('ERROR_' + file.getName(), errorFolder);
-      }
-      
-      if (shouldMove && config.ERROR_FOLDER_ID) {
+      copyToErrorFolder_(file, file.getName(), config);
+      if (shouldMove) {
         file.setTrashed(true);
       }
     }
@@ -490,18 +501,115 @@ function handleFileCleanup_(file, status, config) {
 }
 
 /**
- * Copies the IGC file to the Master Log Folder.
- * Handles duplicates by renaming (append _copy) and flagging.
- * Returns { finalName: string, isDuplicate: boolean, error: string }
+ * Resolves a Drive Folder by parameter key, sanitizing IDs/URLs.
+ * If the parameter is not set or invalid, searches for an existing folder with defaultName,
+ * or creates it in Drive root, and updates the parameter in Parameters sheet!
+ * @param {string} paramKey - e.g. 'MASTER_LOG_FOLDER_ID', 'ERROR_FOLDER_ID'
+ * @param {string} defaultName - e.g. 'Master Flight Logs', 'Flight Log Errors'
+ * @param {Object} [config]
+ * @return {GoogleAppsScript.Drive.Folder|null}
  */
-function copyToMasterLog_(blob, fileName, config) {
-  var result = { finalName: fileName, isDuplicate: false, error: null };
-  var folderId = config.MASTER_LOG_FOLDER_ID;
+function getOrCreateFolder_(paramKey, defaultName, config) {
+  config = config || getParameters_();
+  var rawId = config[paramKey];
+  var cleanId = cleanDriveId_(rawId);
   
-  if (!folderId) return result; // Feature disabled key missing
+  // 1. Try configured ID
+  if (cleanId) {
+    try {
+      var folder = DriveApp.getFolderById(cleanId);
+      if (folder) return folder;
+    } catch (e) {
+      console.warn('Folder ID ' + cleanId + ' for ' + paramKey + ' not accessible: ' + e.message);
+    }
+  }
+  
+  // 2. Search for existing folder with defaultName in Drive
+  try {
+    var it = DriveApp.getFoldersByName(defaultName);
+    if (it.hasNext()) {
+      var existingFolder = it.next();
+      var id = existingFolder.getId();
+      try {
+        saveFolderParam(paramKey, id, 'replace');
+      } catch (eSave) {}
+      config[paramKey] = id;
+      return existingFolder;
+    }
+  } catch (eSearch) {
+    console.warn('Search for ' + defaultName + ' failed: ' + eSearch.message);
+  }
+  
+  // 3. Create new folder in Drive root
+  try {
+    var newFolder = DriveApp.createFolder(defaultName);
+    var newId = newFolder.getId();
+    if (paramKey === 'MASTER_LOG_FOLDER_ID') {
+      try {
+        newFolder.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+      } catch (eShare) {}
+    }
+    try {
+      saveFolderParam(paramKey, newId, 'replace');
+    } catch (eSave) {}
+    config[paramKey] = newId;
+    return newFolder;
+  } catch (eCreate) {
+    console.error('Failed to create folder ' + defaultName + ' for ' + paramKey, eCreate);
+    return null;
+  }
+}
+
+/**
+ * Copies a failed/unsuccessful flight file to the Error Folder.
+ * Auto-resolves ERROR_FOLDER_ID (creates 'Flight Log Errors' in Drive if not set).
+ * Returns { success: boolean, fileId: string, error: string }
+ */
+function copyToErrorFolder_(fileOrBlob, fileName, config) {
+  var result = { success: false, fileId: null, error: null };
+  config = config || getParameters_();
   
   try {
-    var folder = DriveApp.getFolderById(folderId);
+    var errorFolder = getOrCreateFolder_('ERROR_FOLDER_ID', 'Flight Log Errors', config);
+    if (!errorFolder) {
+      result.error = 'Error folder could not be resolved or created.';
+      return result;
+    }
+    
+    var errName = 'ERROR_' + (fileName || 'flight.igc');
+    var newFile;
+    if (fileOrBlob && typeof fileOrBlob.makeCopy === 'function') {
+      newFile = fileOrBlob.makeCopy(errName, errorFolder);
+    } else {
+      var blob = (fileOrBlob && typeof fileOrBlob.getBlob === 'function') ? fileOrBlob.getBlob() : fileOrBlob;
+      newFile = errorFolder.createFile(blob).setName(errName);
+    }
+    result.success = true;
+    result.fileId = newFile.getId();
+  } catch (e) {
+    console.error('Error copying to error folder for ' + fileName, e);
+    result.error = e.message;
+  }
+  return result;
+}
+
+/**
+ * Copies the IGC file to the Master Log Folder.
+ * Handles duplicates by renaming (append _copy) and flagging.
+ * Auto-resolves MASTER_LOG_FOLDER_ID (creates 'Master Flight Logs' if not configured).
+ * Returns { finalName: string, isDuplicate: boolean, error: string, fileId: string }
+ */
+function copyToMasterLog_(blob, fileName, config) {
+  var result = { finalName: fileName, isDuplicate: false, error: null, fileId: null };
+  config = config || getParameters_();
+  
+  var folder = getOrCreateFolder_('MASTER_LOG_FOLDER_ID', 'Master Flight Logs', config);
+  if (!folder) {
+    result.error = 'Master Log folder could not be resolved or created.';
+    return result;
+  }
+  
+  try {
     var finalName = fileName;
     
     // Check for existing file with same name
@@ -521,12 +629,16 @@ function copyToMasterLog_(blob, fileName, config) {
     
     result.finalName = finalName;
     
-    // Create File
+    // Create File in Master Folder
     var newFile = folder.createFile(blob).setName(finalName);
     result.fileId = newFile.getId();
     
-    // Set Permission: Anyone with link can view
-    newFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    // Set Permission: Anyone with link can view (graceful if restricted)
+    try {
+      newFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    } catch (eShare) {
+      console.warn('Master Log public sharing note: ' + eShare.message);
+    }
     
   } catch (e) {
     console.error('Master Log Copy Error', e);
@@ -594,5 +706,7 @@ FILE_HANDLING.processFileById = processFileById;
 FILE_HANDLING.stageUrlOrDriveImport = stageUrlOrDriveImport;
 FILE_HANDLING.trashSourceFiles = trashSourceFiles;
 FILE_HANDLING.copyToMasterLog = copyToMasterLog_;
+FILE_HANDLING.copyToErrorFolder = copyToErrorFolder_;
+FILE_HANDLING.getOrCreateFolder = getOrCreateFolder_;
 FILE_HANDLING.getFilesRecursive = getFilesRecursive_;
 FILE_HANDLING.getDriveIdFromUrl = getDriveIdFromUrl_;

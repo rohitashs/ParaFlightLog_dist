@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 10:17:38
+ * Updated: 2026-09-30 10:58:15
  * 
  * MODULE: Ingestion Service
  * Handles Flight Log Parsing, Analysis/Scoring Orchestration, Geo-enrichment,
@@ -125,13 +125,7 @@ function processSingleIgcBlob_(blob, fileName, fileId, outerName, config) {
   var parsed = parseIgc(text, fileName);
   if (!parsed) {
      logImport_(new Date(), fileId, outerName, fileName, 'Parse Fail', 'Invalid IGC structure');
-     if (config.ERROR_FOLDER_ID) {
-        try {
-           var errFolder = DriveApp.getFolderById(config.ERROR_FOLDER_ID);
-           var errName = 'ERROR_PARSE_' + fileName;
-           errFolder.createFile(blob).setName(errName);
-        } catch(e) { console.error('Failed to save to Error Folder', e); }
-     }
+     copyToErrorFolder_(blob, fileName, config);
      return false;
   }
   
