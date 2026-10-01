@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 21:29:07
+ * Updated: 2026-09-30 21:59:57
  * 
  * MODULE: Ingestion Service
  * Handles Flight Log Parsing, Analysis/Scoring Orchestration, Geo-enrichment,
@@ -326,7 +326,7 @@ function isHashSeen_(hashStr, sh) {
 }
 
 /**
- * Marks a hash as seen in the memory cache and DocumentProperties.
+ * Marks a hash as seen in the memory cache.
  * @param {string} hashStr
  * @param {number} [rowNum]
  */
@@ -337,9 +337,6 @@ function markHashSeen_(hashStr, rowNum) {
     _cachedSheetHashes = {};
   }
   _cachedSheetHashes[hashStr] = rowNum || true;
-  try {
-    PropertiesService.getDocumentProperties().setProperty('HASH_' + hashStr, '1');
-  } catch (e) {}
 }
 
 /* ==========================================================================================
@@ -693,34 +690,9 @@ function formatDateToYmd_(dateVal) {
 
 function logImport_(date, fileId, outer, inner, status, notes) {
   var ss = SpreadsheetApp.getActive();
-  var sh = ss.getSheetByName(TABS.APP_LOG.name);
+  var sh = ss ? ss.getSheetByName(TABS.APP_LOG.name) : null;
   if (sh) {
-    var lastRow = sh.getLastRow();
-    var foundRow = -1;
-    
-    // Check last 50 rows for existing row to append
-    var checkRows = Math.min(lastRow, 50); 
-    if (checkRows > 0) {
-       var start = Math.max(1, lastRow - checkRows + 1);
-       var data = sh.getRange(start, 2, checkRows, 3).getValues();
-       
-       for (var i = data.length - 1; i >= 0; i--) {
-          if (data[i][0] == fileId && data[i][2] == inner) { 
-             foundRow = start + i;
-             break;
-          }
-       }
-    }
-    
-    if (foundRow > 0) {
-       var cell = sh.getRange(foundRow, 6);
-       var curr = cell.getValue();
-       var newInfo = curr ? (curr + ' | ' + notes) : notes;
-       cell.setValue(newInfo);
-       sh.getRange(foundRow, 5).setValue(status);
-    } else {
-       sh.appendRow([date, fileId, outer, inner, status, notes]);
-    }
+    sh.appendRow([date, fileId, outer, inner, status, notes]);
   }
 }
 

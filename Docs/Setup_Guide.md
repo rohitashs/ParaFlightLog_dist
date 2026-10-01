@@ -115,10 +115,10 @@ Many pilots record flights simultaneously on multiple devices (for example, a fl
 6.  **Review & Cleanup Workflow**:
     *   Review the paired flights in the `Flights` tab or via **Flight Log** > **Flight Inspector**.
     *   Change your preferred track's Status to **`Valid`**.
-    *   If you wish to discard the backup track, change its Status to **`Remove`**, then run **Flight Log** > **Admin** > **Sheet Maintenance & Views** > **Purge Flights Marked 'Remove'**. This cleanly moves the backup file to your Drive Trash folder, deletes the row, and updates deduplication tracking.
+    *   If you wish to discard the backup track, change its Status to **`Remove`**, then run **Flight Log** > **Flight maintenance** > **Purge Flights Marked 'Remove'**. This cleanly moves the backup file to your Drive Trash folder, deletes the row, and updates deduplication tracking.
 
 ## Maintenance & Bulk Operations
-*   **Purge Discarded Flights**: Mark unwanted backup or test rows as `Remove` in the Status column, then select **Flight Log** > **Admin** > **Sheet Maintenance & Views** > **Purge Flights Marked 'Remove'** to automatically delete the rows, move their Master IGC files to the Trash folder, and refresh deduplication hashes.
-*   **Re-sync from Master Folder**: If rows were accidentally deleted, run **Flight Log** > **Admin** > **Sheet Maintenance & Views** > **Re-sync Missing Flights from Master Folder** to scan your Master Log folder and restore missing flights with `Review?` status.
-*   **Unified Flight Maintenance**: Click **Flight Log** > **Flight maintenance** > **Flight Maintenance...** to open the unified dialog for batch weather backfill, geo resolution, XContest reverification, physics/scoring recalculation, and date sorting.
+*   **Purge Discarded Flights**: Mark unwanted backup or test rows as `Remove` in the Status column, then select **Flight Log** > **Flight maintenance** > **Purge Flights Marked 'Remove'** to automatically delete the rows, move their Master IGC files to the Trash folder, and refresh deduplication hashes.
+*   **Re-sync from Master Folder**: If rows were accidentally deleted, run **Flight Log** > **Flight maintenance** > **Re-sync Missing Flights from Master Folder** to open an interactive progress dialog that scans your Master Log folder and restores missing flights with `Review?` status.
+*   **Unified Flight Updates**: Click **Flight Log** > **Flight maintenance** > **Flight Updates...** to open the unified dialog for batch weather backfill, geo resolution, XContest reverification, physics/scoring recalculation, and date sorting.
 

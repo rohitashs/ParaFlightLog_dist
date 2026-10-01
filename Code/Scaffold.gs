@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 21:29:07
+ * Updated: 2026-09-30 21:59:57
  */
 /**
  * Paragliding Flight Log v2.0 - Scaffolding & Setup
@@ -1214,9 +1214,9 @@ function scaffoldUserGuide_(ss) {
   // Section 4: Flight Maintenance
   addSection('4. Flight Maintenance & Admin Operations', '#D84315');
   addRow('Operation', 'Tool / Menu', 'Behavior & Execution Details', 'When to Use', true);
-  addRow('Unified Maintenance', 'Flight Log > Flight maintenance > Flight Maintenance...', 'Configurable modal dialog: choose between Selected Rows vs All Flights, and check operations to batch process.', 'Periodic log maintenance, bulk backfilling, or score recalculation.');
-  addRow('Purge Flights Marked \'Remove\'', 'Flight Log > Admin > Sheet Maintenance & Views > Purge Flights Marked \'Remove\'', 'Prompts for confirmation, moves Master IGC files to TRASH_FOLDER_ID, deletes sheet rows bottom-up, refreshes deduplication hashes, and re-sorts flights.', 'Permanently discarding unwanted duplicates or test entries.');
-  addRow('Re-sync Missing Flights', 'Flight Log > Admin > Sheet Maintenance & Views > Re-sync Missing Flights from Master Folder', 'Self-healing tool that scans MASTER_LOG_FOLDER_ID for any orphaned files and recreates their flight rows as \'Review?\'.', 'Restoring accidentally deleted flight rows without duplicate files.');
+  addRow('Flight Updates', 'Flight Log > Flight maintenance > Flight Updates...', 'Configurable modal dialog: choose between Selected Rows vs All Flights, and check operations to batch process.', 'Periodic log maintenance, bulk backfilling, or score recalculation.');
+  addRow('Purge Flights Marked \'Remove\'', 'Flight Log > Flight maintenance > Purge Flights Marked \'Remove\'', 'Prompts for confirmation, moves Master IGC files to TRASH_FOLDER_ID, deletes sheet rows bottom-up, refreshes deduplication hashes, and re-sorts flights.', 'Permanently discarding unwanted duplicates or test entries.');
+  addRow('Re-sync Missing Flights', 'Flight Log > Flight maintenance > Re-sync Missing Flights from Master Folder', 'Interactive dialog with live progress bar and activity log that scans MASTER_LOG_FOLDER_ID for any orphaned files and restores their flight rows as \'Review?\'.', 'Restoring accidentally deleted flight rows without duplicate files.');
   addRow('Weather Backfill', 'Maintenance Dialog Checkbox', 'Fetches historical launch/landing wind, cloudbase, cloud %, temperature, and conditions via Open-Meteo & Visual Crossing.', 'Enriching older flights or flights imported while offline.');
   addRow('Geo & Site Backfill', 'Maintenance Dialog Checkbox', 'Reverse geocodes Lat/Lon coordinates into Town, Region, Country and matches nearest takeoff/landing site names.', 'Populating missing location names.');
   addRow('XContest Verification', 'Maintenance Dialog Checkbox', 'Directly probes XContest.org via UTC date/time (+/- 2 min) to verify if flight is published, links flight with permanent ID (e.g. XC#6952654), or flags claim deadline (Claim soon! if <= 14 days, Expired if > 14 days).', 'Updating XContest league claim status.');

@@ -35,9 +35,10 @@ Converts raw data into a structured Pilot Logbook in Google Sheets.
 *   **Status Taxonomy & Dashboard Protection**:
     *   Dropdown options: `Valid`, `Review?`, `Dup-Primary`, `Dup-Others`, `Invalid?`, `Remove`, `Duplicate`.
     *   All Dashboard KPI cards, 6-month currency timeline, and leaderboards strictly filter for `Status = "Valid"`, preventing unreviewed or duplicate tracks from polluting pilot statistics.
-*   **Self-Healing Admin Tools**:
+*   **Self-Healing Maintenance Tools (`Flight Log > Flight maintenance`)**:
+    *   *Flight Updates...*: Unified modal dialog to batch update weather, geo reverse lookup, XContest validation, physics/XC scoring, or sort flights.
     *   *Purge Flights Marked 'Remove'*: Moves Master IGC files to `TRASH_FOLDER_ID`, deletes sheet rows bottom-up, and refreshes hashes.
-    *   *Re-sync Missing Flights from Master Folder*: Scans `MASTER_LOG_FOLDER_ID` for orphaned IGCs and restores them to the `Flights` tab as `Review?`.
+    *   *Re-sync Missing Flights from Master Folder*: Interactive modal dialog with live progress bar and activity log that scans `MASTER_LOG_FOLDER_ID` for orphaned IGCs and restores them to the `Flights` tab as `Review?`.
 *   **Gear Tracking**: Auto-fills Wing, Harness, and Reserve based on the last valid flight ("Sticky Defaults") or Equipment defaults.
 
 ## 3. 📊 Flight Analysis

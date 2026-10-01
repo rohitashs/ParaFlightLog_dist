@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 21:29:07
+ * Updated: 2026-09-30 21:59:57
  * Test access verification: Verified GAS write access on 2026-09-25 08:26:00.
  * 
  * CORE MODULE: Orchestration Only.
@@ -24,18 +24,18 @@ function onOpen(e) {
         .addItem('Add flight from Upload (Local File)...', 'showUploadDialog')
         .addItem('Scan Watch Folder Now', 'showScanDialog'))
     .addSubMenu(ui.createMenu('Flight maintenance')
-        .addItem('Flight Maintenance...', 'showFlightMaintenanceDialog')
-        .addItem('Sort All Flights by Date', 'sortFlightsByDate'))
+        .addItem('Flight Updates...', 'showFlightMaintenanceDialog')
+        .addItem('Sort All Flights by Date', 'sortFlightsByDate')
+        .addSeparator()
+        .addItem('Purge Flights Marked \'Remove\'', 'purgeRemoveFlights')
+        .addItem('Re-sync Missing Flights from Master Folder', 'showResyncDialog'))
     .addSeparator()
     .addSubMenu(ui.createMenu('Admin')
         .addSubMenu(ui.createMenu('Sheet Maintenance & Views')
             .addItem('Refresh Dashboard (KPIs & Cards)', 'uiRefreshDashboard_')
             .addItem('Refresh User Guide & Metric Dictionary', 'uiRefreshUserGuide_')
             .addItem('Update Dropdowns, Parameters & Notes', 'updateValidationOnly_')
-            .addItem('Repair Sheet Schema & Formatting (Safe)', 'reapplyFormatting_')
-            .addSeparator()
-            .addItem('Purge Flights Marked \'Remove\'', 'purgeRemoveFlights')
-            .addItem('Re-sync Missing Flights from Master Folder', 'syncMasterLogsToSheet_'))
+            .addItem('Repair Sheet Schema & Formatting (Safe)', 'reapplyFormatting_'))
         .addSubMenu(ui.createMenu('Folder Configuration')
             .addItem('Set Watch Folder(s)...', 'uiUpdateWatchFolder_')
             .addItem('Set Upload Folder...', 'uiUpdateUploadFolder_')
@@ -45,8 +45,7 @@ function onOpen(e) {
         .addSubMenu(ui.createMenu('Data Backup')
             .addItem('Backup System Sheets', 'backupSystemSheets_'))
         .addSubMenu(ui.createMenu('Automation & Services')
-            .addItem('Setup / Reset 5-min Watcher Trigger', 'setupWatcherTrigger_')
-            .addItem('Clear Dedupe Cache', 'debugClearDedupe_'))
+            .addItem('Setup / Reset 5-min Watcher Trigger', 'setupWatcherTrigger_'))
         .addSeparator()
         .addSubMenu(ui.createMenu('System Setup & Reset (Danger Zone)')
             .addItem('First Time Setup (Full Scaffold)', 'scaffoldAll_')
@@ -156,6 +155,14 @@ function showScanDialog() {
       .setWidth(500)
       .setHeight(450);
   SpreadsheetApp.getUi().showModalDialog(html, 'Flight Import');
+}
+
+function showResyncDialog() {
+  var html = HtmlService.createTemplateFromFile('ResyncDialog')
+      .evaluate()
+      .setWidth(500)
+      .setHeight(450);
+  SpreadsheetApp.getUi().showModalDialog(html, 'Re-sync Master Logs');
 }
 
 
@@ -784,16 +791,6 @@ function setupWatcherTrigger_() {
   SpreadsheetApp.getUi().alert('Trigger set for every 5 minutes.');
 }
 
-function debugClearDedupe_() {
-  var props = PropertiesService.getDocumentProperties();
-  var keys = props.getKeys();
-  var toDel = keys.filter(function(k) { return k.indexOf('HASH_') === 0; });
-  toDel.forEach(function(k) { props.deleteProperty(k); });
-  if (typeof _cachedSheetHashes !== 'undefined') {
-    _cachedSheetHashes = null;
-  }
-  SpreadsheetApp.getActive().toast('Cleared ' + toDel.length + ' dedupe hashes & in-memory cache.');
-}
 
 /**
  * Admin action: Purges all flights marked 'Remove'.
@@ -867,17 +864,50 @@ function purgeRemoveFlights() {
     try {
       // Find IGC file link / ID
       if (igcCol) {
-        var igcVal = String(sh.getRange(rNum, igcCol).getValue() || '');
-        var idMatch = igcVal.match(/id=([a-zA-Z0-9_-]+)/);
+        var cell = sh.getRange(rNum, igcCol);
+        var igcVal = String(cell.getValue() || '');
+        var igcFormula = String(cell.getFormula() || '');
+        var rt = cell.getRichTextValue();
+        var linkUrl = rt ? String(rt.getLinkUrl() || '') : '';
+
+        var idMatch = igcFormula.match(/id=([a-zA-Z0-9_-]+)/) ||
+                      linkUrl.match(/id=([a-zA-Z0-9_-]+)/) ||
+                      igcVal.match(/id=([a-zA-Z0-9_-]+)/);
+
+        var fileToTrash = null;
         if (idMatch && idMatch[1]) {
           try {
-            var f = DriveApp.getFileById(idMatch[1]);
-            if (f) {
-              moveToTrashFolder_(f, f.getName(), config);
-              trashedFilesCount++;
-            }
+            fileToTrash = DriveApp.getFileById(idMatch[1]);
           } catch (fErr) {
-            console.warn('Could not move Master IGC file for row ' + rNum + ': ' + fErr.message);
+            console.warn('Could not find file by ID ' + idMatch[1] + ' for row ' + rNum + ': ' + fErr.message);
+          }
+        }
+
+        // Fallback: search Master Log folder by file name
+        if (!fileToTrash && igcVal) {
+          var cleanName = igcVal.replace(/^=HYPERLINK\("[^"]*",\s*"([^"]+)"\)$/i, '$1').trim();
+          if (cleanName && cleanName.match(/\.(igc|igx)$/i)) {
+            var masterFolderId = cleanDriveId_(config.MASTER_LOG_FOLDER_ID);
+            if (masterFolderId) {
+              try {
+                var mFolder = DriveApp.getFolderById(masterFolderId);
+                var fIter = mFolder.getFilesByName(cleanName);
+                if (fIter.hasNext()) {
+                  fileToTrash = fIter.next();
+                }
+              } catch (mfErr) {
+                console.warn('Could not find file by name ' + cleanName + ': ' + mfErr.message);
+              }
+            }
+          }
+        }
+
+        if (fileToTrash) {
+          try {
+            moveToTrashFolder_(fileToTrash, fileToTrash.getName(), config);
+            trashedFilesCount++;
+          } catch (tErr) {
+            console.warn('Could not move Master IGC file for row ' + rNum + ': ' + tErr.message);
           }
         }
       }
@@ -911,73 +941,153 @@ function purgeRemoveFlights() {
 }
 
 /**
- * Admin action: Scans the Master Log Folder and restores any orphaned IGC files
+ * Scans Master Log Folder and returns status and list of missing IGC files.
+ * Used by ResyncDialog.html.
+ */
+function getMissingMasterLogsStatus() {
+  try {
+    var ss = SpreadsheetApp.getActive();
+    var sh = ss ? ss.getSheetByName(TABS.FLIGHTS.name) : null;
+    if (!sh) return { error: 'Flights sheet not found.' };
+
+    var config = getParameters_();
+    var folderId = cleanDriveId_(config.MASTER_LOG_FOLDER_ID);
+    if (!folderId) {
+      return { error: 'Master Log Folder is not configured in Parameters.' };
+    }
+
+    var folder = null;
+    try {
+      folder = DriveApp.getFolderById(folderId);
+    } catch (e) {
+      return { error: 'Master Log Folder is inaccessible: ' + e.message };
+    }
+
+    if (!folder) {
+      return { error: 'Master Log Folder could not be found with ID: ' + folderId };
+    }
+
+    // Collect all known hashes and file IDs from Flights sheet
+    var knownHashes = (typeof getExistingSheetHashes_ === 'function') ? getExistingSheetHashes_(sh) : {};
+    var knownFileIds = {};
+    var map = getColumnMap_(sh);
+    var igcCol = map['IGC File'];
+
+    if (igcCol && sh.getLastRow() >= 5) {
+      var numRows = sh.getLastRow() - 4;
+      var igcRange = sh.getRange(5, igcCol, numRows, 1);
+      var igcVals = igcRange.getValues();
+      var igcFormulas = igcRange.getFormulas();
+      var richTexts = igcRange.getRichTextValues();
+
+      for (var k = 0; k < numRows; k++) {
+        var form = String(igcFormulas[k][0] || '');
+        var mForm = form.match(/id=([a-zA-Z0-9_-]+)/);
+        if (mForm && mForm[1]) {
+          knownFileIds[mForm[1]] = true;
+        }
+
+        var rt = richTexts ? richTexts[k][0] : null;
+        if (rt) {
+          var url = rt.getLinkUrl() || '';
+          var mRt = url.match(/id=([a-zA-Z0-9_-]+)/);
+          if (mRt && mRt[1]) {
+            knownFileIds[mRt[1]] = true;
+          }
+        }
+
+        var val = String(igcVals[k][0] || '');
+        var mVal = val.match(/id=([a-zA-Z0-9_-]+)/);
+        if (mVal && mVal[1]) {
+          knownFileIds[mVal[1]] = true;
+        }
+      }
+    }
+
+    // Scan Master Log folder
+    var files = folder.getFiles();
+    var missingFiles = [];
+    while (files.hasNext()) {
+      var f = files.next();
+      var fName = f.getName();
+      if (fName.match(/\.(igc|igx)$/i)) {
+        var fId = f.getId();
+        if (!knownFileIds[fId]) {
+          // Check hash
+          try {
+            var blob = f.getBlob();
+            var digest = Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, blob.getDataAsString());
+            var hashStr = digest.map(function(b) { return ('0' + (b & 0xFF).toString(16)).slice(-2); }).join('');
+            if (!knownHashes[hashStr]) {
+              missingFiles.push({ id: fId, name: fName });
+            }
+          } catch (eHash) {
+            console.warn('Error reading Master file ' + fName, eHash);
+          }
+        }
+      }
+    }
+
+    return {
+      folderName: folder.getName(),
+      files: missingFiles
+    };
+  } catch (err) {
+    return { error: err.message };
+  }
+}
+
+/**
+ * Restores a single file from Master Log folder by ID.
+ * Used by ResyncDialog.html.
+ */
+function restoreSingleMasterFlight(fileId) {
+  try {
+    var file = DriveApp.getFileById(fileId);
+    if (!file) return { success: false, name: fileId, error: 'File not found in Drive' };
+    var fName = file.getName();
+    var blob = file.getBlob();
+    var config = getParameters_();
+
+    var success = processSingleIgcBlob_(blob, fName, file.getId(), fName, config);
+    if (success) {
+      return { success: true, name: fName, msg: 'Restored to Flights sheet' };
+    } else {
+      return { success: false, name: fName, error: 'Skipped (Duplicate or already present)' };
+    }
+  } catch (e) {
+    return { success: false, name: fileId, error: e.message };
+  }
+}
+
+/**
+ * Post-resync cleanup: resets cache and sorts logbook.
+ */
+function finalizeResync_() {
+  if (typeof _cachedSheetHashes !== 'undefined') {
+    _cachedSheetHashes = null;
+  }
+  try {
+    sortFlightsByDate_();
+  } catch (e) {
+    console.warn('Post-resync sort warning:', e);
+  }
+  return { success: true };
+}
+
+/**
+ * Admin action / Headless utility: Scans the Master Log Folder and restores any orphaned IGC files
  * that are missing from the Flights tab.
  * Helps self-heal the sheet if flight rows were accidentally deleted.
  */
 function syncMasterLogsToSheet_() {
-  var ss = SpreadsheetApp.getActive();
-  var sh = ss.getSheetByName(TABS.FLIGHTS.name);
-  if (!sh) return;
-
-  var config = getParameters_();
-  var folderId = cleanDriveId_(config.MASTER_LOG_FOLDER_ID);
-  if (!folderId) {
-    SpreadsheetApp.getUi().alert('Master Log Folder is not configured in Parameters.');
+  var status = getMissingMasterLogsStatus();
+  if (status.error) {
+    SpreadsheetApp.getUi().alert(status.error);
     return;
   }
 
-  var folder = null;
-  try {
-    folder = DriveApp.getFolderById(folderId);
-  } catch (e) {
-    SpreadsheetApp.getUi().alert('Master Log Folder is inaccessible: ' + e.message);
-    return;
-  }
-
-  // Collect all known hashes and file IDs from Flights sheet
-  var knownHashes = (typeof getExistingSheetHashes_ === 'function') ? getExistingSheetHashes_(sh) : {};
-  var knownFileIds = {};
-  var map = getColumnMap_(sh);
-  var igcCol = map['IGC File'];
-  
-  if (igcCol && sh.getLastRow() >= 5) {
-    var numRows = sh.getLastRow() - 4;
-    var igcVals = sh.getRange(5, igcCol, numRows, 1).getValues();
-    for (var k = 0; k < igcVals.length; k++) {
-      var val = String(igcVals[k][0] || '');
-      var m = val.match(/id=([a-zA-Z0-9_-]+)/);
-      if (m && m[1]) {
-        knownFileIds[m[1]] = true;
-      }
-    }
-  }
-
-  // Scan Master Log folder
-  var files = folder.getFiles();
-  var missingFiles = [];
-  while (files.hasNext()) {
-    var f = files.next();
-    var fName = f.getName();
-    if (fName.match(/\.(igc|igx)$/i)) {
-      var fId = f.getId();
-      if (!knownFileIds[fId]) {
-        // Check hash
-        try {
-          var blob = f.getBlob();
-          var digest = Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, blob.getDataAsString());
-          var hashStr = digest.map(function(b) { return ('0' + (b & 0xFF).toString(16)).slice(-2); }).join('');
-          if (!knownHashes[hashStr]) {
-            missingFiles.push({ file: f, hashStr: hashStr, blob: blob });
-          }
-        } catch (eHash) {
-          console.warn('Error reading Master file ' + fName, eHash);
-        }
-      }
-    }
-  }
-
-  if (missingFiles.length === 0) {
+  if (!status.files || status.files.length === 0) {
     SpreadsheetApp.getUi().alert('All flights in the Master Log folder are already present in the Flights sheet. No missing flights found.');
     return;
   }
@@ -985,7 +1095,7 @@ function syncMasterLogsToSheet_() {
   var ui = SpreadsheetApp.getUi();
   var confirm = ui.alert(
     'Sync Master Log Folder',
-    'Found ' + missingFiles.length + ' flight file(s) in Master Log folder that are missing from the Flights tab.\n\n' +
+    'Found ' + status.files.length + ' flight file(s) in Master Log folder that are missing from the Flights tab.\n\n' +
     'Would you like to restore them to the Flights tab as \'Review?\'?',
     ui.ButtonSet.YES_NO
   );
@@ -993,22 +1103,15 @@ function syncMasterLogsToSheet_() {
   if (confirm !== ui.Button.YES) return;
 
   var restoredCount = 0;
-  for (var m = 0; m < missingFiles.length; m++) {
-    var item = missingFiles[m];
-    try {
-      var success = processSingleIgcBlob_(item.blob, item.file.getName(), item.file.getId(), item.file.getName(), config);
-      if (success) {
-        restoredCount++;
-      }
-    } catch (rErr) {
-      console.error('Error restoring Master flight ' + item.file.getName(), rErr);
+  for (var m = 0; m < status.files.length; m++) {
+    var res = restoreSingleMasterFlight(status.files[m].id);
+    if (res && res.success) {
+      restoredCount++;
     }
   }
 
   if (restoredCount > 0) {
-    try {
-      sortFlightsByDate_();
-    } catch (eSort) {}
+    finalizeResync_();
   }
 
   ui.alert(

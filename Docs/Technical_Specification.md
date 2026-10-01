@@ -74,9 +74,10 @@ Fixed Header Schema (Row 3=Category, Row 4=Name). Data starts Row 5.
     *   Higher-scoring candidate is assigned `Dup-Primary`; backup candidate is assigned `Dup-Others`.
     *   Injects standardized pairing note into `Notes`: `[DupRef: DUP_YYYYMMDD_HHMM | Paired with <FlightID> (Score: X vs Y)]`.
     *   **Dashboard Protection**: All KPI banners, timeline currency, and leaderboard cards strictly filter for `Status = "Valid"`, preventing unreviewed duplicates from polluting statistics.
-7.  **Admin Maintenance Actions**:
+7.  **Flight Maintenance Actions (`Flight Log > Flight maintenance`)**:
+    *   `Flight Updates...`: Unified configurable modal dialog to batch process weather, geo lookup, XContest verification, or scoring.
     *   `Purge Flights Marked 'Remove'`: Prompts with count, moves Master IGC files to `TRASH_FOLDER_ID`, deletes sheet rows from bottom to top, refreshes hashes, and sorts.
-    *   `Re-sync Missing Flights from Master Folder`: Scans `MASTER_LOG_FOLDER_ID` for orphaned IGCs missing from the `Flights` tab and restores them with status `Review?`.
+    *   `Re-sync Missing Flights from Master Folder`: Opens `ResyncDialog.html` (interactive modal with live progress bar and status), scanning `MASTER_LOG_FOLDER_ID` for orphaned IGCs missing from the `Flights` tab and restoring them with status `Review?`.
 
 ### B. Flight Mode Detection (`RQ-ANA-001`)
 *   **Window**: 10s sliding window.

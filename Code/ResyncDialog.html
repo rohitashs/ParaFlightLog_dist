@@ -1,0 +1,179 @@
+<!--
+ * Paragliding Flight Log v2.0
+ * Updated: 2026-09-30 21:59:57
+ -->
+<!DOCTYPE html>
+<html>
+
+<head>
+    <base target="_top">
+    <?!= HtmlService.createTemplateFromFile('Style').evaluate().getContent(); ?>
+</head>
+
+<body>
+    <!-- Header: Text Color Only, No Background -->
+    <div class="header-large text-blue">Re-sync Master Flight Logs</div>
+
+    <div class="main-content">
+        <!-- Instructions -->
+        <div class="instructions">
+            Scanning Master Log folder for missing flights...<br>
+            Please wait while processing completes.
+        </div>
+
+        <!-- Buttons: Left Aligned -->
+        <div class="control-group">
+            <!-- Action Button (Hidden start, becomes Done) -->
+            <button id="btn-action" onclick="google.script.host.close()" class="action"
+                style="display:none;">Done</button>
+            <!-- Close Button (Acts as Cancel during process) -->
+            <button id="btn-close" onclick="google.script.host.close()" class="secondary">Cancel</button>
+        </div>
+
+        <div class="instructions" style="margin-top:15px; font-weight:bold;">Activity Log:</div>
+        <div id="log-console"></div>
+    </div>
+
+    <div class="footer">
+        <div class="status-line">
+            <span id="status-left">Initializing...</span>
+            <span id="status-right">0%</span>
+        </div>
+        <div class="progress-bar-bg">
+            <div id="progress-bar" class="progress-bar-fill"></div>
+        </div>
+    </div>
+
+    <script>
+        var fileList = [];
+        var processedFiles = 0;
+        var skippedFiles = 0;
+        var errorFiles = 0;
+        var totalFiles = 0;
+
+        window.onload = function () {
+            setStatus('Scanning Master Log folder...', '0%');
+            log('Scanning Master Log folder for missing flights...');
+
+            google.script.run
+                .withSuccessHandler(showResyncResultsAndProcess)
+                .withFailureHandler(showError)
+                .getMissingMasterLogsStatus();
+        };
+
+        function showResyncResultsAndProcess(result) {
+            if (result.error) {
+                showError(result.error);
+                return;
+            }
+
+            if (!result.files || result.files.length === 0) {
+                log('Master Log Folder: ' + (result.folderName || 'Master Logs'));
+                log('All flights in the Master Log folder are already present in the Flights sheet.');
+                log('No missing flights found.');
+                finish(true);
+            } else {
+                fileList = result.files;
+                totalFiles = fileList.length;
+
+                log('Master Log Folder: ' + (result.folderName || 'Master Logs'));
+                log('Found ' + totalFiles + ' missing flight file(s). Restoring to Flights sheet...');
+                processNext(0);
+            }
+        }
+
+        function showError(msg) {
+            setStatus('Error', 'Failed');
+            log('Error: ' + msg, 'log-error');
+            document.getElementById('progress-bar').classList.add('error-fill');
+            document.getElementById('btn-close').innerHTML = 'Close';
+            document.getElementById('btn-close').style.display = 'inline-block';
+        }
+
+        function processNext(index) {
+            if (index >= fileList.length) {
+                finish(false);
+                return;
+            }
+
+            var file = fileList[index];
+            var pct = Math.round((index / fileList.length) * 100) + '%';
+
+            var statusStr = (index + 1) + '/' + totalFiles + ' Files | ' + pct + ' | ' + file.name;
+            setStatus(statusStr, pct);
+            setProgress(pct);
+
+            google.script.run
+                .withSuccessHandler(function (res) {
+                    if (res.success) {
+                        var msg = file.name + ': ' + (res.msg || 'Restored (Review?)');
+                        log(msg, 'log-success');
+                        processedFiles++;
+                    } else {
+                        var errMsg = file.name + ': ' + (res.error || 'Skipped');
+                        if (res.error && res.error.indexOf('Skipped') !== -1) {
+                            log(errMsg, 'log-info');
+                            skippedFiles++;
+                        } else {
+                            log(errMsg, 'log-error');
+                            errorFiles++;
+                        }
+                    }
+                    processNext(index + 1);
+                })
+                .withFailureHandler(function (e) {
+                    log(file.name + ': Fatal Error ' + e.message, 'log-error');
+                    errorFiles++;
+                    processNext(index + 1);
+                })
+                .restoreSingleMasterFlight(file.id);
+        }
+
+        function finish(isEmpty) {
+            setProgress('100%');
+
+            var statusStr = totalFiles + '/' + totalFiles + ' Files | 100% | Completed';
+            setStatus(statusStr, '100%');
+
+            if (!isEmpty) {
+                log('------------------------------------------------');
+                log('Re-sync Complete.');
+                log('Files Restored: ' + processedFiles);
+                log('Skipped: ' + skippedFiles);
+                log('Errors: ' + errorFiles);
+                log('Sorting logbook and refreshing indexes...');
+
+                google.script.run
+                    .withSuccessHandler(function() {
+                        log('Logbook sorted successfully.');
+                    })
+                    .finalizeResync_();
+            }
+
+            // Button Swap: Hide Cancel, Show Done
+            document.getElementById('btn-close').style.display = 'none';
+            var btn = document.getElementById('btn-action');
+            btn.style.display = 'inline-block';
+        }
+
+        function setStatus(left, right) {
+            document.getElementById('status-left').textContent = left;
+            document.getElementById('status-right').textContent = right;
+        }
+
+        function setProgress(pct) {
+            document.getElementById('progress-bar').style.width = pct;
+        }
+
+        function log(msg, cls) {
+            var div = document.getElementById('log-console');
+            var p = document.createElement('div');
+            p.textContent = msg;
+            if (cls) p.className = cls;
+            div.appendChild(p);
+            div.scrollTop = div.scrollHeight;
+        }
+    </script>
+</body>
+
+</html>
