@@ -32,6 +32,8 @@ function onOpen(e) {
         .addItem('Re-sync Missing Flights from Master Folder', 'showResyncDialog'))
     .addSeparator()
     .addSubMenu(ui.createMenu('Admin')
+        .addItem('Bulk Flight Ingestion (Batch)...', 'showBulkIngestionDialog')
+        .addSeparator()
         .addSubMenu(ui.createMenu('Configuration Management')
             .addItem('Save Config (Export JSON)...', 'showSaveConfigDialog')
             .addItem('Load Config (Import JSON)...', 'showLoadConfigDialog'))
@@ -135,6 +137,14 @@ function showUrlDialog() {
       .setWidth(580)
       .setHeight(570);
   SpreadsheetApp.getUi().showModalDialog(html, 'Flight Import');
+}
+
+function showBulkIngestionDialog() {
+  var html = HtmlService.createTemplateFromFile('BulkIngestDialog')
+      .evaluate()
+      .setWidth(680)
+      .setHeight(620);
+  SpreadsheetApp.getUi().showModalDialog(html, 'Bulk Flight Ingestion');
 }
 
 function showInspectorSidebar() {
@@ -1799,3 +1809,20 @@ function setParameter_(key, value, description) {
     }
   }
 }
+
+/**
+ * Public wrapper for high-speed bulk batch ingestion.
+ * Must not have a trailing underscore so client-side HTML dialogs can dispatch it.
+ */
+function processBulkBatch(batchFiles, options) {
+  return INGESTION.processBulkBatch(batchFiles, options);
+}
+
+/**
+ * Public wrapper for finalizing bulk import by sorting the logbook chronologically.
+ */
+function finalizeBulkImport() {
+  sortFlightsByDate_();
+  return { success: true, message: 'All flights imported and logbook sorted.' };
+}
+

@@ -14,7 +14,8 @@ The system automates the import of flight logs (IGC) to reduce manual entry.
 *   **Watch Folder**: Automatically detects and processes new files dropped into one or more designated Google Drive folders (comma-separated list supported).
 *   **Recursive Traversal**: Recursively scans all subfolders up to 10 levels deep for supported files (`.igc`, `.igx`, `.zip`, `.gz`).
 *   **Smart Deduplication**: Uses MD5 hashing and time-overlap detection to prevent duplicate entries.
-*   **Multi-Source**: Supports Drag-and-Drop Uploads, Drive Folder/File URL imports, and Bulk ZIP extraction.
+*   **Multi-Source**: Supports Drag-and-Drop Uploads, Drive Folder/File URL imports, Bulk ZIP extraction, and dedicated High-Speed Bulk Batch Ingestion.
+*   **High-Speed Bulk Ingestion (`Flight Log > Admin > Bulk Flight Ingestion (Batch)...`)**: Purpose-built utility for large-scale initial onboarding (e.g. hundreds of flight logs across multiple devices). Implements 3 high-impact performance optimizations: (1) multi-file RPC batching (3, 5, or 10 files per call) to eliminate container spin-up overhead, (2) atomic batch appending to the bottom of the Flights sheet with a single final sort to eliminate grid-shifting formula recalculations, and (3) configurable enrichment checkboxes for non-critical web lookups (Site Detection, Reverse Geo, Open-Meteo Weather, XContest sync, XC Scoring, Analytics, and source deletion safety).
 *   **Parsing**: Extracts pilot details, glider type, and high-fidelity G-Record data (GNSS/Pressure altitude).
 *   **Master Log Mirror & Strict Folder Authority**: Automatically copies and standardizes flight logs to the configured public folder (`MASTER_LOG_FOLDER_ID`) for SeeYou Cloud and direct downloads. Folders are strictly driven by the `Parameters` sheet; missing folders abort ingestion with clear user alerts and folders are never created in Drive root.
 *   **Context-Aware Cleanup**:

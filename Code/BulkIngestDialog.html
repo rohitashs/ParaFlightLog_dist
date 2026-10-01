@@ -1,0 +1,764 @@
+<!--
+ * Paragliding Flight Log v2.0
+ * High-Speed Bulk Ingestion Dialog
+ * Optimized multi-file batch execution with configurable enrichment toggles.
+-->
+<!DOCTYPE html>
+<html>
+
+<head>
+    <base target="_top">
+    <?!= HtmlService.createTemplateFromFile('Style').evaluate().getContent(); ?>
+    <style>
+        .picker-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            overflow-y: auto;
+            max-height: 480px;
+            padding-right: 4px;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .input-row input {
+            flex-grow: 1;
+            padding: 7px 10px;
+            font-size: 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            outline: none;
+        }
+
+        .input-row input:focus {
+            border-color: #FFA000;
+        }
+
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 4px;
+            padding: 5px 10px;
+            background: #F8F9FA;
+            border: 1px solid #E0E0E0;
+            border-radius: 4px;
+            font-size: 11px;
+            color: #555;
+        }
+
+        .breadcrumb-item {
+            cursor: pointer;
+            color: #1A73E8;
+            font-weight: 500;
+        }
+
+        .breadcrumb-item:hover {
+            text-decoration: underline;
+        }
+
+        .folder-list-container {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            height: 110px;
+            overflow-y: auto;
+            background: #fff;
+        }
+
+        .folder-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 12px;
+            border-bottom: 1px solid #f1f1f1;
+            user-select: none;
+        }
+
+        .folder-item:hover {
+            background-color: #F1F3F4;
+        }
+
+        .folder-item.selected {
+            background-color: #E3F2FD !important;
+            border-left: 4px solid #1976D2 !important;
+            color: #0D47A1 !important;
+            font-weight: 600 !important;
+        }
+
+        .selection-preview {
+            background: #FAFAFA;
+            border: 1px solid #EEEEEE;
+            border-radius: 4px;
+            padding: 6px 10px;
+            font-size: 11px;
+            color: #333;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 4px;
+        }
+
+        .option-card {
+            border: 1px solid #E0E0E0;
+            border-radius: 6px;
+            background: #FAFAFA;
+            padding: 8px 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .option-card-title {
+            font-size: 11px;
+            font-weight: 700;
+            color: #333;
+            border-bottom: 1px solid #EAEAEA;
+            padding-bottom: 4px;
+            margin-bottom: 2px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 6px;
+            font-size: 11px;
+            color: #444;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .checkbox-item input {
+            margin-top: 2px;
+            cursor: pointer;
+        }
+
+        .checkbox-item .label-text {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.25;
+        }
+
+        .checkbox-item .sub-desc {
+            font-size: 10px;
+            color: #777;
+        }
+
+        .pills-container {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+        }
+
+        .metric-pill {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .pill-staged { background: #E3F2FD; color: #1565C0; }
+        .pill-success { background: #E8F5E9; color: #2E7D32; }
+        .pill-dupe { background: #FFF8E1; color: #F57F17; }
+        .pill-error { background: #FFEBEE; color: #C62828; }
+
+        .log-success { color: #2E7D32; font-weight: 500; }
+        .log-info { color: #1565C0; }
+        .log-warn { color: #E65100; font-weight: 500; }
+        .log-error { color: #C62828; font-weight: bold; }
+
+        .primary-action {
+            background-color: #FFA000;
+            color: white;
+            padding: 7px 16px;
+            font-size: 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .primary-action:hover {
+            background-color: #FF8F00;
+        }
+
+        .primary-action:disabled {
+            background-color: #FFE082;
+            cursor: not-allowed;
+        }
+
+        .btn-done-style {
+            background-color: #2E7D32 !important;
+            color: white !important;
+        }
+        .btn-done-style:hover {
+            background-color: #1B5E20 !important;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Header -->
+    <div class="header-large text-amber" style="display:flex; justify-content:space-between; align-items:center; padding-bottom:8px;">
+        <span>⚡ Bulk Flight Ingestion</span>
+        <span onclick="google.script.host.close()" style="cursor:pointer; font-size:22px; color:#888; line-height:1;" title="Close">&times;</span>
+    </div>
+
+    <div class="main-content">
+        <!-- Configuration Panel (Shown before execution) -->
+        <div id="config-panel" class="picker-container">
+            <div class="instructions" style="font-size:11px; margin-bottom:4px; color:#555;">
+                High-speed batch ingestion groups flights into small batches and writes rows directly to the bottom in single atomic operations.
+            </div>
+
+            <!-- Option A: Paste URL or ID -->
+            <div style="font-weight:600; font-size:11px; color:#333;">Source Folder URL or Google Drive Folder ID:</div>
+            <div class="input-row">
+                <input type="text" id="urlInput" placeholder="https://drive.google.com/drive/folders/... or Folder ID" autofocus />
+                <button type="button" class="secondary" onclick="verifyInput()">Verify</button>
+            </div>
+
+            <!-- Option B: Browse Google Drive -->
+            <div style="font-weight:600; font-size:11px; color:#333; margin-top:2px;">Or browse Google Drive folders:</div>
+            
+            <div class="breadcrumb" id="breadcrumb-bar">
+                <span class="breadcrumb-item" onclick="navigateTo('root')">📁 My Drive</span>
+            </div>
+
+            <div class="folder-list-container" id="folder-list">
+                <div class="empty-folders">Loading folders...</div>
+            </div>
+
+            <!-- Selected Target Display -->
+            <div class="selection-preview">
+                <strong>Selected:</strong> <span id="target-name-disp" style="font-weight:bold; color:#1565C0;">None</span>
+                <div id="target-path-disp" style="color:#777; margin-top:2px; font-size:10px;">Select a folder above or enter a URL</div>
+            </div>
+
+            <!-- Batch & Performance Options -->
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
+                <span style="font-weight:600; font-size:11px; color:#333;">Batch Execution & Enrichment Settings:</span>
+                <div style="font-size:11px; color:#555;">
+                    Batch size: 
+                    <select id="opt-batch-size" style="padding:2px 6px; font-size:11px; border:1px solid #ccc; border-radius:3px;">
+                        <option value="3">3 files / batch (Ultra-Safe)</option>
+                        <option value="5" selected>5 files / batch (Recommended)</option>
+                        <option value="10">10 files / batch (Max Speed)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="options-grid">
+                <!-- Card 1: Web Lookups -->
+                <div class="option-card">
+                    <div class="option-card-title">🌐 Web Lookups (API Intensive)</div>
+                    <label class="checkbox-item">
+                        <input type="checkbox" id="opt-site" checked />
+                        <div class="label-text">
+                            <strong>Site Detection (PGE / Overpass)</strong>
+                            <span class="sub-desc">Identifies takeoff & landing sites</span>
+                        </div>
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" id="opt-geo" />
+                        <div class="label-text">
+                            <strong>Reverse Geocoding</strong>
+                            <span class="sub-desc">Town, Region, Country via Nominatim</span>
+                        </div>
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" id="opt-weather" />
+                        <div class="label-text">
+                            <strong>Historical Weather Archive</strong>
+                            <span class="sub-desc">Wind, clouds, temp from Open-Meteo</span>
+                        </div>
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" id="opt-xcontest" />
+                        <div class="label-text">
+                            <strong>XContest Sync Check</strong>
+                            <span class="sub-desc">Verifies claimed flights & 14d deadline</span>
+                        </div>
+                    </label>
+                </div>
+
+                <!-- Card 2: Local Calculations & Safety -->
+                <div class="option-card">
+                    <div class="option-card-title">⚙️ Local Processing & Safety</div>
+                    <label class="checkbox-item">
+                        <input type="checkbox" id="opt-xc" checked />
+                        <div class="label-text">
+                            <strong>XC Scoring & Flight Class</strong>
+                            <span class="sub-desc">Free flight, triangles, out-and-return</span>
+                        </div>
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" id="opt-analytics" checked />
+                        <div class="label-text">
+                            <strong>Flight Analytics Breakdown</strong>
+                            <span class="sub-desc">Thermals, soaring %, glide efficiency</span>
+                        </div>
+                    </label>
+                    <div style="border-top:1px dashed #E0E0E0; margin-top:2px; padding-top:4px;"></div>
+                    <label class="checkbox-item" style="color:#B71C1C;">
+                        <input type="checkbox" id="opt-delete" />
+                        <div class="label-text">
+                            <strong>Delete from source folder</strong>
+                            <span class="sub-desc">⚠️ Trashes original files! Keep unchecked for archives.</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Start Actions -->
+            <div class="control-group" style="margin-top:8px;">
+                <button type="button" id="btn-start" onclick="startBulkImport()" class="primary-action" disabled>Start Bulk Ingestion</button>
+                <button type="button" class="secondary" onclick="google.script.host.close()">Cancel</button>
+            </div>
+        </div>
+
+        <!-- Progress Panel (Shown during and after execution) -->
+        <div id="progress-panel" style="display:none; flex-direction:column; height:100%;">
+            <div class="pills-container">
+                <span class="metric-pill pill-staged">📂 Staged: <span id="pill-staged-val">0</span></span>
+                <span class="metric-pill pill-success">✅ Imported: <span id="pill-imported-val">0</span></span>
+                <span class="metric-pill pill-dupe">⚡ Duplicates: <span id="pill-dupes-val">0</span></span>
+                <span class="metric-pill pill-error">❌ Errors: <span id="pill-errors-val">0</span></span>
+            </div>
+
+            <div id="log-console" style="flex:1 1 auto; height:240px; border:1px solid #ddd; border-radius:4px; background:#FAFAFA; padding:8px; overflow-y:auto; font-family:monospace; font-size:11px;"></div>
+
+            <div class="control-group" style="margin-top:10px;">
+                <button type="button" id="btn-cancel" onclick="cancelBulkImport()" class="secondary">Cancel</button>
+                <button type="button" id="btn-done" onclick="google.script.host.close()" class="primary-action btn-done-style" style="display:none;">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <div class="status-line">
+            <span id="status-left">Select a folder or enter a URL</span>
+            <span id="status-right">0%</span>
+        </div>
+        <div class="progress-bar-bg">
+            <div id="progress-bar" class="progress-bar-fill"></div>
+        </div>
+    </div>
+
+    <script>
+        var currentNavId = 'root';
+        var selectedTarget = null;
+        var selectedTargetName = null;
+        var selectedTargetPath = null;
+        var navHistory = [{ id: 'root', name: 'My Drive' }];
+
+        var processingQueue = [];
+        var currentBatchIndex = 0;
+        var batchSize = 5;
+        var totalStaged = 0;
+        var countImported = 0;
+        var countDuplicates = 0;
+        var countErrors = 0;
+        var isCancelled = false;
+        var activeOptions = {};
+
+        window.onload = function() {
+            loadFolder('root');
+        };
+
+        function setStatus(text, pct) {
+            document.getElementById("status-left").innerText = text;
+            if (pct !== undefined) {
+                document.getElementById("status-right").innerText = pct;
+            }
+        }
+
+        function setProgress(pct) {
+            document.getElementById("progress-bar").style.width = pct;
+        }
+
+        function log(msg, className) {
+            var consoleEl = document.getElementById("log-console");
+            var line = document.createElement("div");
+            if (className) line.className = className;
+            var timeStr = new Date().toLocaleTimeString();
+            line.innerText = "[" + timeStr + "] " + msg;
+            consoleEl.appendChild(line);
+            consoleEl.scrollTop = consoleEl.scrollHeight;
+        }
+
+        function updatePills() {
+            document.getElementById("pill-staged-val").innerText = totalStaged;
+            document.getElementById("pill-imported-val").innerText = countImported;
+            document.getElementById("pill-dupes-val").innerText = countDuplicates;
+            document.getElementById("pill-errors-val").innerText = countErrors;
+        }
+
+        function loadFolder(folderId) {
+            setStatus("Loading folders...");
+            var container = document.getElementById("folder-list");
+            container.innerHTML = '<div class="empty-folders">Loading folders...</div>';
+
+            google.script.run
+                .withSuccessHandler(function(res) {
+                    if (!res || !res.success) {
+                        container.innerHTML = '<div class="empty-folders" style="color:red;">Error: ' + (res ? res.error : 'Failed to load') + '</div>';
+                        setStatus("Error loading folders", "0%");
+                        return;
+                    }
+
+                    currentNavId = res.currentId;
+                    renderBreadcrumb(res.isRoot ? "root" : res.currentId, res.currentName);
+                    renderFolderList(res.subfolders, res.currentId, res.actualId, res.currentName, res.currentPath);
+                    setStatus("Ready", "0%");
+                })
+                .withFailureHandler(function(err) {
+                    var errMsg = err && err.message ? err.message : String(err);
+                    container.innerHTML = '<div class="empty-folders" style="color:red;">Error: ' + errMsg + '</div>';
+                    setStatus("Error: " + errMsg, "0%");
+                })
+                .getDriveFolderContents(folderId);
+        }
+
+        function renderBreadcrumb(currId, currName) {
+            var bar = document.getElementById("breadcrumb-bar");
+            if (currId === "root") {
+                navHistory = [{ id: "root", name: "My Drive" }];
+            } else {
+                var existsIdx = -1;
+                for (var i = 0; i < navHistory.length; i++) {
+                    if (navHistory[i].id === currId) { existsIdx = i; break; }
+                }
+                if (existsIdx >= 0) {
+                    navHistory = navHistory.slice(0, existsIdx + 1);
+                } else {
+                    navHistory.push({ id: currId, name: currName });
+                }
+            }
+
+            var html = "";
+            for (var j = 0; j < navHistory.length; j++) {
+                if (j > 0) html += ' <span class="breadcrumb-sep">&gt;</span> ';
+                html += '<span class="breadcrumb-item" onclick="navigateTo(\'' + navHistory[j].id + '\')">' + escapeHtml(navHistory[j].name) + '</span>';
+            }
+            bar.innerHTML = html;
+        }
+
+        function navigateTo(folderId) {
+            loadFolder(folderId);
+        }
+
+        function renderFolderList(subfolders, parentId, actualId, parentName, parentPath) {
+            var container = document.getElementById("folder-list");
+            container.innerHTML = "";
+
+            var selectTargetId = actualId || parentId;
+            var isCurrentSelected = (selectedTarget === selectTargetId);
+            var selfItem = document.createElement("div");
+            selfItem.className = "folder-item" + (isCurrentSelected ? " selected" : "");
+            selfItem.setAttribute("data-id", selectTargetId);
+            selfItem.setAttribute("data-is-self", "true");
+            selfItem.style.backgroundColor = isCurrentSelected ? "#E3F2FD" : "#F9FBE7";
+            selfItem.innerHTML = '<span class="folder-icon">📍</span> <strong style="flex-grow:1;">[Select Current] ' + escapeHtml(parentName) + '</strong><span class="sel-indicator" style="font-size:11px; font-weight:bold; color:#1976D2; margin-right:4px;' + (isCurrentSelected ? '' : 'display:none;') + '">✓ Selected</span>';
+            selfItem.onclick = function() {
+                chooseTarget(selectTargetId, parentName, parentPath);
+            };
+            container.appendChild(selfItem);
+
+            if (!subfolders || subfolders.length === 0) {
+                var emptyDiv = document.createElement("div");
+                emptyDiv.className = "empty-folders";
+                emptyDiv.innerText = "No subfolders found inside " + parentName;
+                container.appendChild(emptyDiv);
+                return;
+            }
+
+            subfolders.forEach(function(sub) {
+                var isSelected = (selectedTarget === sub.id);
+                var div = document.createElement("div");
+                div.className = "folder-item" + (isSelected ? " selected" : "");
+                div.setAttribute("data-id", sub.id);
+                div.innerHTML = '<span class="folder-icon">📁</span> <span style="flex-grow:1;">' + escapeHtml(sub.name) + '</span>' +
+                                '<span class="sel-indicator" style="font-size:11px; font-weight:bold; color:#1976D2; margin-right:6px;' + (isSelected ? '' : 'display:none;') + '">✓ Selected</span>' +
+                                '<button type="button" class="secondary" style="padding:2px 8px; font-size:11px;" onclick="event.stopPropagation(); navigateTo(\'' + sub.id + '\')">Open &gt;</button>';
+                div.onclick = function() {
+                    chooseTarget(sub.id, sub.name, (parentPath ? parentPath + " / " : "") + sub.name);
+                };
+                container.appendChild(div);
+            });
+        }
+
+        function chooseTarget(id, name, path) {
+            selectedTarget = id;
+            selectedTargetName = name;
+            selectedTargetPath = path || name;
+
+            document.getElementById("urlInput").value = "";
+
+            var items = document.querySelectorAll(".folder-item");
+            items.forEach(function(el) {
+                var elId = el.getAttribute("data-id");
+                var ind = el.querySelector(".sel-indicator");
+                if (elId === id) {
+                    el.classList.add("selected");
+                    if (ind) ind.style.display = "inline";
+                } else {
+                    el.classList.remove("selected");
+                    if (ind) ind.style.display = "none";
+                }
+            });
+
+            document.getElementById("target-name-disp").innerText = name + " (" + id + ")";
+            document.getElementById("target-path-disp").innerText = "Path: " + selectedTargetPath;
+            document.getElementById("btn-start").disabled = false;
+            setStatus("Ready to import: " + name, "0%");
+        }
+
+        function verifyInput() {
+            var inputVal = document.getElementById("urlInput").value.trim();
+            if (!inputVal) {
+                setStatus("Please enter a URL or Drive ID", "0%");
+                return;
+            }
+
+            setStatus("Verifying URL / ID...", "0%");
+            google.script.run
+                .withSuccessHandler(function(res) {
+                    if (res && res.success) {
+                        chooseTarget(res.id, res.name, res.path);
+                        setStatus("Verified: " + res.name, "0%");
+                    } else {
+                        selectedTarget = inputVal;
+                        selectedTargetName = inputVal;
+                        selectedTargetPath = "External URL";
+                        document.getElementById("target-name-disp").innerText = inputVal;
+                        document.getElementById("target-path-disp").innerText = "External URL / Direct Link";
+                        document.getElementById("btn-start").disabled = false;
+                        setStatus("External URL ready to import", "0%");
+                    }
+                })
+                .withFailureHandler(function(err) {
+                    selectedTarget = inputVal;
+                    selectedTargetName = inputVal;
+                    selectedTargetPath = "URL Input";
+                    document.getElementById("target-name-disp").innerText = inputVal;
+                    document.getElementById("target-path-disp").innerText = "Direct Link";
+                    document.getElementById("btn-start").disabled = false;
+                    setStatus("Input set", "0%");
+                })
+                .resolveFolderInput(inputVal);
+        }
+
+        function startBulkImport() {
+            var inputVal = document.getElementById("urlInput").value.trim();
+            var target = selectedTarget || inputVal;
+            if (!target) {
+                alert("Please select a folder or enter a URL/Folder ID.");
+                return;
+            }
+
+            batchSize = parseInt(document.getElementById("opt-batch-size").value, 10) || 5;
+
+            activeOptions = {
+                batchSize: batchSize,
+                siteLookup: document.getElementById("opt-site").checked,
+                geoLookup: document.getElementById("opt-geo").checked,
+                weatherLookup: document.getElementById("opt-weather").checked,
+                xcontestLookup: document.getElementById("opt-xcontest").checked,
+                xcScoring: document.getElementById("opt-xc").checked,
+                analytics: document.getElementById("opt-analytics").checked,
+                deleteSource: document.getElementById("opt-delete").checked
+            };
+
+            // Switch to progress panel
+            document.getElementById("config-panel").style.display = "none";
+            document.getElementById("progress-panel").style.display = "flex";
+
+            log("Starting bulk discovery for: " + (selectedTargetName || target));
+            if (activeOptions.deleteSource) {
+                log("⚠️ OPTION ACTIVE: 'Delete from source' is ENABLED", "log-warn");
+            }
+            log("Enrichment Toggles: Site=" + (activeOptions.siteLookup ? "ON" : "OFF") + 
+                " | Geo=" + (activeOptions.geoLookup ? "ON" : "OFF") + 
+                " | Weather=" + (activeOptions.weatherLookup ? "ON" : "OFF") + 
+                " | XC=" + (activeOptions.xcScoring ? "ON" : "OFF") + 
+                " | BatchSize=" + batchSize, "log-info");
+
+            setStatus("Discovering flight files in folder...", "5%");
+            setProgress("5%");
+
+            google.script.run
+                .withSuccessHandler(function(res) {
+                    if (res && res.error) {
+                        handleFatalError(res.error);
+                    } else if (res && res.files) {
+                        processingQueue = res.files;
+                        totalStaged = processingQueue.length;
+                        updatePills();
+                        log("Discovered " + totalStaged + " flight file(s) across folder hierarchy.", "log-info");
+                        startBatchExecution();
+                    } else {
+                        handleFatalError("Unknown staging response from server.");
+                    }
+                })
+                .withFailureHandler(function(err) {
+                    handleFatalError("Staging Error: " + (err.message || String(err)));
+                })
+                .stageUrlOrDriveImport(target);
+        }
+
+        function startBatchExecution() {
+            currentBatchIndex = 0;
+            countImported = 0;
+            countDuplicates = 0;
+            countErrors = 0;
+            isCancelled = false;
+
+            if (totalStaged === 0) {
+                log("No valid flight files (.igc, .zip) found to import.", "log-info");
+                finish();
+                return;
+            }
+
+            log("Executing batch ingestion (" + batchSize + " files per atomic execution)...");
+            processNextBatch();
+        }
+
+        function processNextBatch() {
+            if (isCancelled) {
+                log("Ingestion cancelled by user.", "log-warn");
+                finalizeExecution();
+                return;
+            }
+
+            if (currentBatchIndex >= totalStaged) {
+                log("All batches completed! Finalizing logbook...", "log-info");
+                finalizeExecution();
+                return;
+            }
+
+            var batch = processingQueue.slice(currentBatchIndex, currentBatchIndex + batchSize);
+            var batchNumber = Math.floor(currentBatchIndex / batchSize) + 1;
+            var totalBatches = Math.ceil(totalStaged / batchSize);
+
+            var pctNum = Math.round((currentBatchIndex / totalStaged) * 90) + 5;
+            var pctStr = pctNum + "%";
+
+            var fileStart = currentBatchIndex + 1;
+            var fileEnd = Math.min(currentBatchIndex + batch.length, totalStaged);
+            var statusMsg = "Batch " + batchNumber + "/" + totalBatches + " (Files " + fileStart + "-" + fileEnd + " of " + totalStaged + ") | " + pctStr;
+
+            setStatus(statusMsg, pctStr);
+            setProgress(pctStr);
+
+            google.script.run
+                .withSuccessHandler(function(res) {
+                    if (res && res.success) {
+                        countImported += (res.processedCount || 0);
+                        countDuplicates += (res.duplicateCount || 0);
+                        countErrors += (res.errorCount || 0);
+                        updatePills();
+
+                        if (res.results && res.results.length > 0) {
+                            res.results.forEach(function(r) {
+                                if (r.isDuplicate) {
+                                    log("[DUPE] " + r.name + " (Already in logbook)", "log-info");
+                                } else if (r.success) {
+                                    log("[OK] " + r.name + " -> " + (r.flightId ? r.flightId + " " : "") + "[" + (r.status || 'OK') + "]", "log-success");
+                                } else {
+                                    log("[ERR] " + r.name + ": " + (r.msg || 'Failed'), "log-error");
+                                }
+                            });
+                        }
+
+                        currentBatchIndex += batch.length;
+                        processNextBatch();
+                    } else {
+                        handleFatalError(res ? res.error : "Unknown batch failure.");
+                    }
+                })
+                .withFailureHandler(function(err) {
+                    handleFatalError("Batch Fatal Error: " + (err.message || String(err)));
+                })
+                .processBulkBatch(batch, activeOptions);
+        }
+
+        function finalizeExecution() {
+            setStatus("Sorting Flights chronologically...", "95%");
+            setProgress("95%");
+            log("Sorting logbook by date & time and refreshing formula rows...", "log-info");
+
+            google.script.run
+                .withSuccessHandler(function(res) {
+                    log("Logbook successfully sorted.", "log-success");
+                    finish();
+                })
+                .withFailureHandler(function(err) {
+                    log("Sort warning: " + (err.message || String(err)), "log-warn");
+                    finish();
+                })
+                .finalizeBulkImport();
+        }
+
+        function finish() {
+            setStatus("Ingestion Finished: " + countImported + " imported, " + countDuplicates + " duplicates, " + countErrors + " errors.", "100%");
+            setProgress("100%");
+
+            log("=== BULK INGESTION COMPLETE ===", "log-success");
+            log("Successfully Imported: " + countImported + " flight(s)");
+            log("Duplicates Skipped: " + countDuplicates + " flight(s)");
+            log("Errors: " + countErrors + " file(s)");
+
+            // UI Finish: Hide cancel, show Done
+            document.getElementById("btn-cancel").style.display = "none";
+            var btnDone = document.getElementById("btn-done");
+            btnDone.style.display = "inline-block";
+        }
+
+        function cancelBulkImport() {
+            if (confirm("Are you sure you want to stop bulk ingestion? Remaining files will be skipped.")) {
+                isCancelled = true;
+                setStatus("Cancelling ingestion...", "Cancelled");
+                log("Cancellation requested. Finishing current batch...", "log-warn");
+                document.getElementById("btn-cancel").disabled = true;
+            }
+        }
+
+        function handleFatalError(errMsg) {
+            log("FATAL ERROR: " + errMsg, "log-error");
+            setStatus("Error: " + errMsg, "Error");
+            document.getElementById("btn-cancel").style.display = "none";
+            var btnDone = document.getElementById("btn-done");
+            btnDone.innerText = "Close";
+            btnDone.style.display = "inline-block";
+        }
+
+        function escapeHtml(text) {
+            if (!text) return "";
+            return String(text)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+
+</html>

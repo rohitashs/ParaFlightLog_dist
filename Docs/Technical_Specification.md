@@ -207,14 +207,18 @@ Fixed Header Schema (Row 3=Category, Row 4=Name). Data starts Row 5.
 *   **`processBlob_(blob, fileName, fileId, config)`**: Handles archive extraction or direct single IGC processing.
 *   **`processSingleIgcBlob_(blob, ...)`**: Core logic: Parse -> Analyze -> Score -> Geo -> XContest -> Insert.
 *   **`ensureFlightCapacity_(sh, minBuffer)`**: Dynamically monitors remaining row capacity on the `Flights` sheet during flight insertion; automatically appends 200 rows if the remaining empty buffer drops below 50 rows.
-*   **`insertFlightRow_(data, ...)`**: Maps processed data to `Flights` sheet columns with pre-insertion capacity validation. Wraps `FlightID` with SeeYou link and `IGC File` with direct download link.
+*   **`insertFlightRow_(data, ...)`**: Standard ingestion pathway: maps processed data to `Flights` sheet columns via `buildFlightRowArray_` and inserts before Row 5 (top insertion preserved).
+*   **`buildFlightRowArray_(data, ...)`**: Constructs the standard 60-column row array for a flight, shared by both standard top-insertion and bulk bottom-insertion pathways for 100% data consistency.
+*   **`processBulkBatch(batchFiles, options)` (`CR-ING-008`)**: High-speed batch processor for bulk flight ingestion (`BulkIngestDialog.html`). Groups files into small batches (3, 5, or 10), pre-loads in-memory hashes and flight summaries, executes user-toggled enrichments, and appends entire batches to the bottom of the `Flights` tab in single atomic spreadsheet operations.
+*   **`finalizeBulkImport()` (`CR-ING-008`)**: Finalizes bulk batch import by invoking `sortFlightsByDate_()` to chronologically order all flights by date and launch time and refresh dynamic formula references.
 *   **`uiAddManualFlight_()`**: Adds a blank manual flight row at Row 5 with smart ID generation and defaults.
 *   **`isHashSeen_(hashStr, sh)` / `markHashSeen_(hashStr, rowNum)`**: Row-based MD5 deduplication check against the `Flights` sheet's Column 70 (`IGC Hash`) via memory cache `getCachedSheetHashes_`.
 *   **`getCachedSheetHashes_(sh, forceRefresh)` / `getExistingSheetHashes_(sh)`**: Loads or retrieves cached MD5 hashes mapped to row numbers from the sheet.
 *   **`scoreFlightQuality_(parsed, rawText, fileName)`**: Computes 0–100 data quality score (XCTrack=40, Vario=30, Baro sensor integrity=30, 1Hz resolution=15, duration, metadata).
 *   **`findHeuristicOverlap_(flightData, existingFlights)`**: Detects multi-device overlaps on the same day (+/- 15 min or interval overlap, launch distance <= 1000m).
+*   **`findHeuristicOverlapInMemory_(parsed, ...)`**: In-memory overlap detection for bulk batches, preventing redundant sheet grid reads.
 *   **`syncMasterLogsToSheet_()`**: Scans `MASTER_LOG_FOLDER_ID` for orphaned IGCs missing from `Flights` and restores them with status `Review?`.
-*   **`logImport_(...)`**: Appends specific errors or success messages to `App_Log`.
+*   **`logImport_(...)` / `logImportBatch_(logs)`**: Appends single or batch audit records to `App_Log`.
 
 ### `Utils.gs` (Math & Formatting)
 *   **`haversine_(lat1, lon1, lat2, lon2)`**: Consolidated great-circle distance in meters.

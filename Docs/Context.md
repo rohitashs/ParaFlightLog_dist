@@ -1,8 +1,8 @@
 # Project Context & Ways of Working (Source of Truth)
 
 ## 🧠 Agent Memory & Context
-**Status**: Active Development (v0.8.16)
-**Last Session Focus**: Out-and-Return XC scoring (`CR-SCORE-002`), 4-class taxonomy harmonization across system, static RPC analysis guardrail in test runner (`CR-DEV-001`), elimination of trailing underscore execution failures across dialogs (`Bug-RPC-001`), modal dialog scrollbar containment (`Bug-UI-008`), and purge dialog messaging update (`Bug-PURGE-002`).
+**Status**: Active Development (v0.8.17)
+**Last Session Focus**: High-speed Bulk Flight Ingestion utility (`CR-ING-008`), atomic batch RPC orchestration, bottom-appending spreadsheet write optimizations, configurable web lookup & calculation toggles, Out-and-Return XC scoring (`CR-SCORE-002`), 4-class taxonomy harmonization, and static RPC guardrail (`CR-DEV-001`).
 **Next Focus**: Large Scale Ingestion discussion (`RQ-ING-001.4`), Setup Wizard & Instance Templating (`RQ-SYS-008`), Configurable RDP Tolerance (`CR-CFG-002`).
 
 This file is the **long-term memory** for the project. Read this first to understand *how* we work and *where* we are.
