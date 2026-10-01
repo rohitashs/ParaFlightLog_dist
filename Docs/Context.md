@@ -17,6 +17,7 @@ The project follows a strict folder hierarchy. `Docs/Context.md` is the source o
 *   **Purpose**: Long-term, evolving documentation. Source of Truth.
 *   **Files**:
     *   **`Context.md`**: Project Context, Ways of Working.
+    *   **`User_Guide.md`**: Complete Pilot Handbook, Setup Walkthrough & Metric Dictionary.
     *   **`Features.md`**: Functional capabilities (Admin, UI, System).
     *   **`Technical_Specification.md`**: detailed Tech Specs & Code Reference.
     *   **`Backlog.md`**: Requirements, CRs, Bugs.
