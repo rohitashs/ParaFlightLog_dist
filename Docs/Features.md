@@ -18,9 +18,9 @@ The system automates the import of flight logs (IGC) to reduce manual entry.
 *   **Parsing**: Extracts pilot details, glider type, and high-fidelity G-Record data (GNSS/Pressure altitude).
 *   **Master Log Mirror & Strict Folder Authority**: Automatically copies and standardizes flight logs to the configured public folder (`MASTER_LOG_FOLDER_ID`) for SeeYou Cloud and direct downloads. Folders are strictly driven by the `Parameters` sheet; missing folders abort ingestion with clear user alerts and folders are never created in Drive root.
 *   **Context-Aware Cleanup**:
-    *   *Watch Folder*: Moves/trashes files upon successful ingestion per `MOVE_FROM_WATCH_FOLDER` setting; moves corrupt/errored files into `ERROR_FOLDER_ID`.
-    *   *URL & Drive Import*: When "Delete from source" is unchecked, successful files copy to Master Log and failed files copy to Error Folder, leaving all Drive source files intact. When checked, source files are trashed after copying. Staged temporary files from web URLs or unzipped packages are always cleaned up from `UPLOAD_FOLDER_ID`.
-    *   *File Upload*: Staged temporary uploads are mirrored to Master or Error folder and trashed from `UPLOAD_FOLDER_ID`.
+    *   *Watch Folder*: Moves processed source files and skipped duplicates to `TRASH_FOLDER_ID` per `MOVE_FROM_WATCH_FOLDER` setting; quarantines corrupt/unparseable files requiring investigation into `ERROR_FOLDER_ID`.
+    *   *URL & Drive Import*: When "Delete from source" is unchecked, successful files copy to Master Log, skipped duplicates move to Trash, and failed files copy to Error Folder, leaving all Drive source files intact. When checked, source files are trashed after copying. Staged temporary files from web URLs or unzipped packages are always cleaned up from `UPLOAD_FOLDER_ID`.
+    *   *File Upload*: Staged temporary uploads are mirrored to Master, skipped duplicates move to Trash, errors copy to Error folder, and temporary uploads are trashed from `UPLOAD_FOLDER_ID`.
 
 ## 2. ✈️ Automated Flight Logging & Smart Deduplication
 *Maps to `RQ-ING-002`, `CR-ING-006`*

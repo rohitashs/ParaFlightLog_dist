@@ -93,8 +93,32 @@ To have the sheet automatically check for new flights dropped into your Watch Fo
 *   **File Upload**: Click **Flight Log** > **Add Flight** > **Add flight from Upload (Local File)...** to upload directly from your computer.
 *   **Manual Entry**: Click **Flight Log** > **Add Flight** > **Add manual flight (blank row)** to log a non-tracked flight.
 *   **Inspect & Edit**: Highlight a flight and click **Flight Log** > **Flight Inspector** to view telemetry analysis, track log links, or edit notes.
-*   **Duplicate Triage & Status Review**: When duplicate or overlapping flights are detected, they are flagged as `Dup-Primary` (gold) and `Dup-Others` (orange) with pairing reference notes. The Dashboard strictly counts flights with `Status = "Valid"`, preventing stats pollution until you review and confirm them.
+## Multi-Device Logging & Smart Deduplication
+Many pilots record flights simultaneously on multiple devices (for example, a flight phone running XCTrack paired via Bluetooth to a Stodeus UltraBliP, alongside a backup GPS/audio vario). The system handles this gracefully:
+
+1.  **Exact File Duplicates (Hard Match)**:
+    *   Identical files (MD5 content match) are automatically skipped upon re-import and routed to your Drive `TRASH_FOLDER_ID`.
+    *   If you previously deleted a flight row from the sheet but the IGC still exists in your `MASTER_LOG_FOLDER_ID`, the system intelligently re-links to that existing Master file rather than creating duplicate `_copy.igc` files.
+2.  **Heuristic Overlap Detection (Multi-Device Match)**:
+    *   When multiple tracks occur on the same day within $\pm 15$ minutes of launch (or overlapping duration intervals) and launch within $1{,}000$ meters of each other, the system recognizes them as candidate recordings of the same flight.
+3.  **Automatic Quality Scoring (0–100 Points)**:
+    *   **Device Preference (Max 40 pts)**: XCTrack (40 pts — preferred primary BLE instrument), Dedicated flight vario (30 pts — UltraBliP, XC Tracer, Flymaster, etc.), Generic apps (20 pts), Unknown (10 pts).
+    *   **Barometric Pressure Sensor (Max 30 pts)**: Authentic barometric sensor readings differing from GPS altitude.
+    *   **Sampling Resolution & Duration (Max 20 pts)**: High-frequency $\le 1$s/1Hz recording (15 pts) + duration $> 30$ min (5 pts).
+    *   **Metadata Richness (Max 10 pts)**: Glider type, pilot name, and hardware headers.
+4.  **Candidate Status Tagging & Pairing Notes**:
+    *   The highest-scoring track is assigned **`Dup-Primary`** (highlighted in gold).
+    *   The backup track(s) are assigned **`Dup-Others`** (highlighted in orange).
+    *   Both rows receive cross-referencing audit notes (e.g. `[DupRef: DUP_20260930_1420 | Paired with F20260930_02 (Score: 85 vs 60)]`).
+5.  **Dashboard Protection**:
+    *   All Dashboard KPIs, flight counts, currency timelines, and leaderboards strictly filter for **`Status = "Valid"`**. Incoming `Review?`, `Dup-Primary`, or `Dup-Others` flights will never pollute your pilot statistics until you confirm them.
+6.  **Review & Cleanup Workflow**:
+    *   Review the paired flights in the `Flights` tab or via **Flight Log** > **Flight Inspector**.
+    *   Change your preferred track's Status to **`Valid`**.
+    *   If you wish to discard the backup track, change its Status to **`Remove`**, then run **Flight Log** > **Admin** > **Sheet Maintenance & Views** > **Purge Flights Marked 'Remove'**. This cleanly moves the backup file to your Drive Trash folder, deletes the row, and updates deduplication tracking.
+
+## Maintenance & Bulk Operations
 *   **Purge Discarded Flights**: Mark unwanted backup or test rows as `Remove` in the Status column, then select **Flight Log** > **Admin** > **Sheet Maintenance & Views** > **Purge Flights Marked 'Remove'** to automatically delete the rows, move their Master IGC files to the Trash folder, and refresh deduplication hashes.
-*   **Re-sync from Master Folder**: If rows were accidentally deleted, run **Flight Log** > **Admin** > **Sheet Maintenance & Views** > **Re-sync Missing Flights from Master Folder** to scan your Master Log folder and restore missing flights.
-*   **Flight Maintenance**: Click **Flight Log** > **Flight maintenance** > **Flight Maintenance...** to open the unified dialog for batch weather backfill, geo resolution, XContest reverification, physics/scoring recalculation, and date sorting.
+*   **Re-sync from Master Folder**: If rows were accidentally deleted, run **Flight Log** > **Admin** > **Sheet Maintenance & Views** > **Re-sync Missing Flights from Master Folder** to scan your Master Log folder and restore missing flights with `Review?` status.
+*   **Unified Flight Maintenance**: Click **Flight Log** > **Flight maintenance** > **Flight Maintenance...** to open the unified dialog for batch weather backfill, geo resolution, XContest reverification, physics/scoring recalculation, and date sorting.
 

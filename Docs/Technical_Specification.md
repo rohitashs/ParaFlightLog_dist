@@ -148,7 +148,8 @@ Fixed Header Schema (Row 3=Category, Row 4=Name). Data starts Row 5.
 *   **`resolveFolderInput_(input)`**: Verifies and extracts folder metadata from an input URL or raw folder ID.
 *   **`getFolderPath_(folder)` / `getMultiFolderPath_(folderIds)`**: Computes human-readable breadcrumb paths (e.g. `My Drive / Paragliding / Logs`).
 *   **`saveFolderParam_(paramKey, folderId, mode)`**: Saves folder IDs to the `Parameters` sheet (supports 'replace' or 'append' for multi-folders) and writes breadcrumbs to `Description`.
-*   **`uiUpdateWatchFolder_() / uiUpdateUploadFolder_() / uiUpdateMasterLogFolder_() / uiUpdateErrorFolder_()`**: Menu actions triggering the in-app folder picker.
+*   **`uiUpdateWatchFolder_() / uiUpdateUploadFolder_() / uiUpdateMasterLogFolder_() / uiUpdateErrorFolder_() / uiUpdateTrashFolder_()`**: Menu actions triggering the in-app folder picker.
+*   **`purgeRemoveFlights()`**: Admin tool that prompts confirmation, moves Master IGC files to `TRASH_FOLDER_ID`, deletes sheet rows bottom-up, refreshes deduplication hashes, and re-sorts flights.
 *   **`uiEnableWatch_() / uiDisableWatch_()`**: Toggles the watch folder feature.
 *   **`setupWatcherTrigger_()`**: Installs the time-driven trigger for automation.
 
@@ -178,6 +179,8 @@ Fixed Header Schema (Row 3=Category, Row 4=Name). Data starts Row 5.
 *   **`trashSourceFiles(fileIds)`**: Trashes source archives after successful extraction/processing.
 *   **`copyToMasterLog_(blob, name, config)`**: Handles public mirroring and duplicate renaming strictly in `MASTER_LOG_FOLDER_ID` configured in `Parameters` (never creates folders in Drive root).
 *   **`copyToErrorFolder_(fileOrBlob, fileName, config)`**: Copies failed/invalid files with `ERROR_` prefix strictly to `ERROR_FOLDER_ID` configured in `Parameters` (never creates folders in Drive root).
+*   **`moveToTrashFolder_(fileOrBlob, fileName, config)`**: Moves discarded, duplicate, or purged files strictly to `TRASH_FOLDER_ID` configured in `Parameters` (never creates folders in Drive root).
+*   **`handleFileCleanup_(file, status, config)`**: Routes processed watch folder files: `SUCCESS` and `DUPLICATE` to `TRASH_FOLDER_ID`, and `ERROR` to `ERROR_FOLDER_ID`.
 *   **`getFilesRecursive_(folder, maxDepth, currentDepth)`**: Traverses a Drive folder tree and collects matching flight files (`.igc`, `.igx`, `.zip`, `.gz`).
 *   **`getDriveIdFromUrl_(url)`**: Extracts Google Drive file/folder ID from URLs or raw strings.
 
@@ -188,7 +191,11 @@ Fixed Header Schema (Row 3=Category, Row 4=Name). Data starts Row 5.
 *   **`ensureFlightCapacity_(sh, minBuffer)`**: Dynamically monitors remaining row capacity on the `Flights` sheet during flight insertion; automatically appends 200 rows if the remaining empty buffer drops below 50 rows.
 *   **`insertFlightRow_(data, ...)`**: Maps processed data to `Flights` sheet columns with pre-insertion capacity validation. Wraps `FlightID` with SeeYou link and `IGC File` with direct download link.
 *   **`uiAddManualFlight_()`**: Adds a blank manual flight row at Row 5 with smart ID generation and defaults.
-*   **`isHashSeen_(hashStr)` / `markHashSeen_(hashStr)`**: MD5 deduplication check via DocumentProperties.
+*   **`isHashSeen_(hashStr, sh)` / `markHashSeen_(hashStr, rowNum)`**: Row-based MD5 deduplication check against the `Flights` sheet's Column 70 (`IGC Hash`) via memory cache `getCachedSheetHashes_`.
+*   **`getCachedSheetHashes_(sh, forceRefresh)` / `getExistingSheetHashes_(sh)`**: Loads or retrieves cached MD5 hashes mapped to row numbers from the sheet.
+*   **`scoreFlightQuality_(parsed, rawText, fileName)`**: Computes 0–100 data quality score (XCTrack=40, Vario=30, Baro sensor integrity=30, 1Hz resolution=15, duration, metadata).
+*   **`findHeuristicOverlap_(flightData, existingFlights)`**: Detects multi-device overlaps on the same day (+/- 15 min or interval overlap, launch distance <= 1000m).
+*   **`syncMasterLogsToSheet_()`**: Scans `MASTER_LOG_FOLDER_ID` for orphaned IGCs missing from `Flights` and restores them with status `Review?`.
 *   **`logImport_(...)`**: Appends specific errors or success messages to `App_Log`.
 
 ### `Utils.gs` (Math & Formatting)
