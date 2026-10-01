@@ -116,8 +116,8 @@ Tools for managing the system's lifecycle.
 *   **Human-Readable Path Enrichment**: Folder parameter updates automatically write human-readable folder breadcrumb paths (`[Path: My Drive / ...]`) to the `Description` column in the `Parameters` sheet.
 *   **First Time Setup & Scaffold**: A "Scaffold" feature automatically creates all necessary sheets, headers, and validation rules if they are missing or deleted. Generates 7 core tabs (`Dashboard`, `Flights`, `Pilot_Profile`, `Equipment`, `User Guide`, `Config`, `App_Log`).
 *   **Interactive Setup Wizard & Templating (`RQ-SYS-008`)**: Streamlined onboarding workflow designed to replace manual script setup with a copyable sheet template and an interactive setup wizard guiding initial folder configuration, pilot credentials, equipment defaults, and trigger installation.
-*   **Configuration Management (`Save Config` / `Load Config`)**: Built-in JSON export and import tools under `Flight Log > Admin > Configuration Management` to backup and restore system parameters, pilot profile, and lookup settings.
-*   **Consolidated Config Tab**: A unified `Config` sheet combines system parameters (Columns A:C) and dynamic/static lookup tables (Columns E:N, separated by blank Column D) to simplify navigation.
+*   **Configuration Management (`Save Config` / `Load Config`)**: Built-in JSON export and import tools under `Flight Log > Admin > Configuration Management` to backup and restore system parameters, pilot profile, and lookup settings. Supports 5 granular parameter export/import groups (8 Ingestion, 16 Integrations & Geo/Time, 19 Scoring & Physics, 2 Format and Units, 4 UI & Dashboard Currency) alongside Pilot Profile (34 fields) and Lookups (6 manual lists). Pure key-value synchronization on Columns A/B protects sheet layout, section dividers, and formula integrity. Load Config features automated section detection, live count badges, and dynamic UI protection (unchecking, disabling, and dimming missing sections).
+*   **Consolidated Config Tab**: A unified `Config` sheet combines system parameters (Columns A:C organized under sub-headers `[ Ingestion ]`, `[ Integrations ]`, `[ Geo & Time ]` with `CONTACT_EMAIL`, `[ Validation ]`, `[ Analysis Rules ]`, `[ Analysis - Adv ]`, `[ Scoring ]`, `[ Format and Units ]`, `[ Dashboard & Currency ]`), blank spacer Column D, and lookup tables (Columns E:N): manual controlled vocabularies on the left in Columns 5–10 (`Equipment Categories`, `Flight Status`, `Flight Type`, `XC Classes`, `Date Formats`, `Time Formats`) and dynamic equipment queries on the right in Columns 11–14 (`Wings (Auto)`, `Harnesses (Auto)`, `Reserves (Auto)`, `Other (Auto)`).
 *   **Maintenance**: Admin tools to "Reset System", "Reformat Sheets", and "Backup Data" (creates safety copies of `Flights`, `Pilot_Profile`, `Equipment`, and `Config`).
 *   **Equipment Manager**: dedicated tab for `Equipment`. Rows added here immediately appear in the Flights dropdowns via dynamic queries on the `Config` tab.
 
@@ -138,14 +138,16 @@ Comprehensive documentation designed to guide pilots from initial setup to day-t
 *   **External Onboarding Guide (`RQ-SYS-006.2`)**: A standalone document (`User_Guide.md`) containing the complete system overview, prerequisites, folder setup, duplicate review workflows, initial setup walkthrough, and full metric dictionary so new pilots can review and prepare before creating their Google Sheet.
 
 ## 11. 👤 Pilot Profile & Credentials
-*Maps to `RQ-SYS-009`*
+*Maps to `RQ-SYS-009`, `CR-SYS-004`*
 
-A centralized profile tab (`Pilot_Profile`) to record pilot certifications, emergency information, and tracking gear:
-*   **Personal & Contact Details**: Pilot full name, email, phone, and home address.
-*   **Certifications & Memberships**: National org ratings (e.g. USHPA, BHPA, FAI license number) and local flying club affiliations.
-*   **Emergency & Medical Evacuation**: Emergency contacts, next of kin, emergency medical insurance policy numbers, and search-and-rescue coverage details.
-*   **Live Tracking & Satellites**: Garmin inReach IMEI, MapShare public tracking URL, and live flight tracking links.
-*   **Free-Form & Structured Notes**: Formatted prompt sections alongside free-form notes.
+A centralized profile tab (`Pilot_Profile`) structured into a clean 3-column layout (`Field`, `Value`, `Notes / Instructions`) with merged section divider headers and 34 standardized fields:
+*   **`[ Identity ]`**: Legal Full Name, Callsign / Nickname, Email, Phone Number, Home Country & Town, and Other Identity Info.
+*   **`[ Licensing ]`**: National Association, Pilot Rating, National Licence Info, FAI Sporting Licence Info, CIVL ID, and Other Licensing Info.
+*   **`[ Affiliations ]`**: Primary Flying Club, Secondary Clubs, National Federation Member #, and Other Affiliations Info.
+*   **`[ Emergency / SAR ]`**: Primary Emergency Contact Info, 2nd Emergency Contact Info, 3rd Emergency Contact Info, SAR / Evac Provider Info, Medical Insurance Info, Blood Type, Medical Conditions / Allergies, and Other Emergency Info.
+*   **`[ Tracking / Gear ]`**: Garmin inReach IMEI, Garmin MapShare URL, Flymaster Live URL, XContest Live URL, Emergency Beacon Hex ID, and Other Tracking / Gear Info.
+*   **`[ Progression ]`**: Current Season XC Goals, SIV / Maneuver Notes, General Flying Notes, and Other Progression Info.
+*   **Non-Destructive Key-Value Sync**: Scaffolding, JSON config export, and JSON config restore treat the profile as a pure key-value store, matching by Field name and writing strictly into the Value column without disturbing section headers, formatting, or instructions.
 *   **Dashboard & Inspector Integration**: Surfaces pilot name, rating, and quick-access emergency tracking links onto the `Dashboard` and `Flight Inspector` sidebar.
 
 

@@ -1,5 +1,34 @@
 # Project Change Log
 
+## Session: Bulk Flight Ingestion, Pilot Profile Subheaders, Config Reorganization, & Config Backup Granularity
+**Date**: 2026-10-01
+**Versions**: v0.8.18
+**Focus**: High-speed Bulk Flight Ingestion utility (`CR-ING-008`), Pilot Profile 3-column layout with section dividers and 34-field taxonomy (`CR-SYS-004`), Config tab parameters and lookups reorganization (`CR-CFG-006`), Granular 5-group configuration export/import with dynamic UI protection (`CR-CFG-007`), standardized 24 public menu callback wrappers in `Code.gs` (`CR-DEV-002`), batch audit logging undefined tab reference fix (`Bug-ING-005`), bulk batch default status Review? enforcement (`Bug-ING-006`), and Load Config dialog sticky Apply button & file chooser fix (`Bug-UI-009`).
+
+*   `[Imp]` **CR-ING-008 (High-Speed Bulk Ingestion Utility)**:
+    *   Created `Code/BulkIngestDialog.html` providing a dedicated onboarding utility for large-scale flight ingestion.
+    *   Implemented multi-file RPC batching (`processBulkBatch`) with selectable batch sizing (3, 5, or 10 files per call) to eliminate container spin-up overhead.
+    *   Implemented atomic batch row insertion appending entire batches to the bottom of the `Flights` tab in single calls, followed by a single final chronological sort (`finalizeBulkImport`).
+    *   Added configurable enrichment checkboxes for non-critical web lookups (Site Detection, Reverse Geo, Open-Meteo Weather, XContest sync, XC Scoring, Analytics, and source deletion safety).
+*   `[Imp]` **CR-SYS-004 (Pilot Profile 3-Column Layout with Section Dividers & 34 Field Taxonomy)**:
+    *   Overhauled `Pilot_Profile` tab to a clean 3-column layout (`Field`, `Value`, `Notes / Instructions`) with merged section divider headers across 6 functional blocks (`[ Identity ]`, `[ Licensing ]`, `[ Affiliations ]`, `[ Emergency / SAR ]`, `[ Tracking / Gear ]`, `[ Progression ]`).
+    *   Added "Other Info" fallback fields to all 6 sections, consolidated 3 emergency contacts, renamed license fields to Info format, added CIVL ID, and implemented migration field aliases.
+    *   Guaranteed pure key-value non-destructive synchronization matching on Col A and writing Col B.
+*   `[Imp]` **CR-CFG-006 (Config Tab Lookups & Parameters Structural Reorganization)**:
+    *   Renamed `[ Lists ]` parameter subheader to `[ Format and Units ]`, removed `[ Admin ]` subheader, and relocated `CONTACT_EMAIL` into `[ Geo & Time ]`.
+    *   Reorganized lookups with manual controlled vocabularies on the left in Columns 5–10 (`Equipment Categories`, `Flight Status`, `Flight Type`, `XC Classes`, `Date Formats`, `Time Formats`) and dynamic equipment queries on the right in Columns 11–14 (`Wings (Auto)`, `Harnesses (Auto)`, `Reserves (Auto)`, `Other (Auto)`).
+*   `[Imp]` **CR-CFG-007 (Granular 5-Group Configuration Export/Import with Dynamic UI Protection)**:
+    *   Upgraded `SaveConfigDialog.html` and `LoadConfigDialog.html` to support 5 granular parameter sub-groups (8 Ingestion, 16 Integrations & Geo/Time, 19 Scoring & Physics, 2 Format and Units, 4 UI & Dashboard Currency) alongside Pilot Profile (34 fields) and Lookups (6 manual lists).
+    *   Implemented live entity count badges and dynamic UI protection in `LoadConfigDialog.html` (automatically unchecking, disabling, and dimming missing sections with visual opacity transitions).
+*   `[Imp]` **CR-DEV-002 (Standardized 24 Public Menu Callback Wrappers in Code.gs)**:
+    *   Defined explicit public wrapper functions for all 24 custom spreadsheet menu items in `Code/Code.gs`, eliminating trailing underscores and ensuring strict compatibility with Google Apps Script onOpen execution rules.
+*   `[Fix]` **Bug-ING-005 (Batch Audit Logging Undefined Tab Reference)**:
+    *   Fixed fatal error during bulk flight ingestion caused by `logImportBatch_` in `Code/Ingestion.gs` referencing non-existent `TABS.ACTIVITY.name` instead of `TABS.APP_LOG.name`. Added defensive `try/catch` guard.
+*   `[Fix]` **Bug-ING-006 (Bulk Batch Default Status Review? Enforcement)**:
+    *   Resolved data validation violation where bulk flight ingestion inserted `'OK'` into the `Status` column. Aligned default status to `'Review?'` in `Code/Ingestion.gs` and `Code/BulkIngestDialog.html` to match standard ingestion and controlled dropdown vocabulary.
+*   `[Fix]` **Bug-UI-009 (Load Config Dialog Sticky Apply Button & Left-Aligned File Chooser)**:
+    *   Fixed issue where Load Config dialog parsed file at 50% but hid the Apply button due to container overflow, and the file chooser input obfuscated the file name. Added sticky footer button bar and left-aligned file chooser.
+
 ## Session: Out-and-Return XC Scoring, Taxonomy Harmonization, RPC Gateways & Modal Layout Fixes
 **Date**: 2026-10-01
 **Versions**: v0.8.16

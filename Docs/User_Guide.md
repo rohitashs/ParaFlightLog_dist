@@ -131,21 +131,36 @@ Now link the 5 Google Drive folders you created in Step 1 to the spreadsheet:
    * Click **Flight Log > Admin > Folder Configuration > Set Error Folder...** and select your `Error Folder`.
    * Click **Flight Log > Admin > Folder Configuration > Set Trash / Discard Folder...** and select your `Trash Folder`.
 2. **Review Parameter Settings**:
-   Navigate to the **`Config`** tab (Columns A:C) and review the configuration:
-   * **`CONTACT_EMAIL`**: *[REQUIRED]* Enter your email address. This is required by open geocoding and weather APIs (Nominatim, Overpass, Open-Meteo) as a polite `User-Agent` contact header to prevent rate-limiting or HTTP 403 errors.
-   * **`XCONTEST_USERNAME`**: Enter your public XContest pilot username (e.g. `rohitash`). This enables automatic flight verification, permanent flight ID linking (e.g. `XC#6952654`), and competition claim window tracking.
-   * **`WEATHER_PROVIDERS`**: Defaults to `open_meteo, visual_crossing`. Open-Meteo runs automatically out of the box with zero API keys required.
-   * **`VISUAL_CROSSING_API_KEY`**: *(Optional)* If you wish to use Visual Crossing as an atmospheric backup, obtain a free API key (1,000 free requests/day) from [visualcrossing.com](https://www.visualcrossing.com) and paste it here. Otherwise, leave blank.
-   * **`TIMELINE_FLIGHTS_LOW` / `MED`**: Flight count thresholds (default `2` and `6`) for orange/yellow/green pilot currency color coding on the Dashboard rolling timeline.
-   * **`TIMELINE_HOURS_LOW` / `MED`**: Flight hour thresholds (default `1.0` and `4.0` hours) for currency shading on the Dashboard.
+   Navigate to the **`Config`** tab (Columns A:C) and review the configuration organized under clear subheaders:
+   * **`[ Geo & Time ]`**:
+     * **`CONTACT_EMAIL`**: *[REQUIRED]* Enter your email address. Required by Nominatim, Overpass, and Open-Meteo as a polite `User-Agent` contact header to prevent rate-limiting or HTTP 403 errors.
+     * **`GEO_REV_PROVIDERS`**: Reverse geocoding provider fallback chain (`google, big_data_cloud, nominatim_osm`).
+     * **`GEO_SITE_PROVIDERS`**: Takeoff/landing site identification (`paragliding_earth, overpass_api`).
+   * **`[ Integrations ]`**:
+     * **`XCONTEST_USERNAME`**: Enter your public XContest pilot username (e.g. `rohitash`). Enables automatic flight verification, permanent flight ID linking (e.g. `XC#6952654`), and competition claim window tracking.
+     * **`WEATHER_PROVIDERS`**: Defaults to `open_meteo, visual_crossing`. Open-Meteo runs automatically out of the box with zero API keys required.
+     * **`VISUAL_CROSSING_API_KEY`**: *(Optional)* API key for Visual Crossing atmospheric backup.
+   * **`[ Format and Units ]`**:
+     * **`DATE_FORMAT`** (`yyyy-MM-dd`) and **`TIME_FORMAT`** (`h:mm a`) with enforced Plain Text formatting.
+   * **`[ Dashboard & Currency ]`**:
+     * **`TIMELINE_FLIGHTS_LOW` / `MED`**: Flight count thresholds (default `2` and `6`) for orange/yellow/green pilot currency color coding on the Dashboard rolling timeline.
+     * **`TIMELINE_HOURS_LOW` / `MED`**: Flight hour thresholds (default `1.0` and `4.0` hours) for currency shading on the Dashboard.
+   * **Controlled Vocabularies & Lookups (Columns E:N)**:
+     * Manual lists on the left (Columns 5–10): `Equipment Categories`, `Flight Status`, `Flight Type`, `XC Classes`, `Date Formats`, `Time Formats`.
+     * Dynamic queries on the right (Columns 11–14): `Wings (Auto)`, `Harnesses (Auto)`, `Reserves (Auto)`, `Other (Auto)` automatically populated from the `Equipment` tab.
 
 ---
 
 ### Step 6: Complete Your Pilot Profile
-Navigate to the **`Pilot_Profile`** tab and fill out your information:
-* **Personal & Ratings**: Enter your pilot name, primary club, national association ID (e.g., USHPA, BHPA, DHV, FFVL), and FAI sporting license number.
-* **Emergency & Medical Information**: Record emergency contacts, ICE phone numbers, blood type, and medical evacuation membership details (e.g., Garmin Search & Rescue, Air-Glaciers, Rega).
-* **Live Tracking**: Enter your Garmin inReach MapShare URL, Flymaster Live tracking URL, or XCTrack livetracking link.
+Navigate to the **`Pilot_Profile`** tab. The sheet is organized into a clean 3-column layout (`Field`, `Value`, `Notes / Instructions`) across 6 sections with 34 standardized fields:
+* **`[ Identity ]`**: Full Legal Name, Callsign / Nickname, Email, Phone Number, Home Country & Town, and Other Identity Info.
+* **`[ Licensing ]`**: National Association (e.g. USHPA, BHPA, FFVL, DHV), Pilot Rating, National Licence Info, FAI Sporting Licence Info, CIVL ID, and Other Licensing Info.
+* **`[ Affiliations ]`**: Primary Flying Club, Secondary Clubs, National Federation Member #, and Other Affiliations Info.
+* **`[ Emergency / SAR ]`**: Primary Emergency Contact Info, 2nd Emergency Contact Info, 3rd Emergency Contact Info, SAR / Evac Provider Info (e.g. Garmin SAR, GEOS, Global Rescue), Medical Insurance Info, Blood Type, Medical Conditions / Allergies, and Other Emergency Info.
+* **`[ Tracking / Gear ]`**: Garmin inReach IMEI, Garmin MapShare URL, Flymaster Live URL, XContest Live URL, Emergency Beacon Hex ID, and Other Tracking / Gear Info.
+* **`[ Progression ]`**: Current Season XC Goals, SIV / Maneuver Notes, General Flying Notes, and Other Progression Info.
+> [!NOTE]
+> All data entries in Column B (`Value`) are preserved automatically during scaffolding and JSON configuration restores. Section divider headers and instructions are never overwritten.
 
 ---
 
@@ -185,14 +200,15 @@ To have your logbook automatically ingest new flight tracks in the background:
 
 # 3. Day-to-Day Flight Ingestion Workflows
 
-The logbook provides four flexible ways to add flights depending on your setup and flight gear:
+The logbook provides five flexible ways to add flights depending on your setup and flight gear:
 
 ```
 Flight Log > Add Flight
 ├── Scan Watch Folder Now                     (Instant trigger of automated watch folders)
 ├── Add files from URL (folder, igc, zip)...  (Import from Google Drive folders or web links)
 ├── Add flight from Upload (Local File)...    (Browser drag-and-drop modal dialog)
-└── Add manual flight (blank row)             (Quick blank row for non-GPS flights)
+├── Add manual flight (blank row)             (Quick blank row for non-GPS flights)
+└── [Admin] Bulk Flight Ingestion (Batch)...  (High-speed batch processor for large onboarding)
 ```
 
 ### Method A: Automated Watch Folder Scanning
@@ -218,6 +234,14 @@ Flight Log > Add Flight
 * **Execution**: Click **Flight Log > Add Flight > Add manual flight (blank row)**:
   * Inserts a pre-formatted row at Row 5 with an auto-generated flight ID (`FYYYYMMDD_01`), status set to `'Review?'`, and sticky gear pre-populated.
   * Enter your duration, takeoff site, and pilot notes directly in the row.
+
+### Method E: High-Speed Bulk Flight Ingestion (Batch)
+* **Best For**: Initial migration and onboarding of large flight archives (hundreds of `.igc`, `.zip`, `.gz` files across multiple instruments or seasons).
+* **Execution**: Click **Flight Log > Admin > Bulk Flight Ingestion (Batch)...**:
+  * **Select Source Folder**: Enter a Google Drive folder link or pick a folder interactively via the built-in Drive browser.
+  * **Select Batch Size**: Choose **3**, **5**, or **10** files per execution (default: 5) to optimize execution speed within Apps Script quotas.
+  * **Configure Enrichments**: Toggle non-critical web lookups (Takeoff/Landing Site Detection, Reverse Geocoding, Open-Meteo Weather, XContest Claims, XC Scoring, Analytics) to maximize throughput.
+  * **Atomic Appending & Sorting**: Batches are written directly to the bottom of the `Flights` tab in single atomic spreadsheet operations. Upon completion, a single chronological sort (`sortFlightsByDate_`) re-indexes your entire logbook descending by date and launch time.
 
 ---
 
@@ -305,6 +329,17 @@ Flight Log > Flight maintenance
 ├── Purge Flights Marked 'Remove'...               (Interactive stepping modal with trash transfer & row deletion)
 └── Re-sync Missing Flights from Master Folder...  (Interactive modal self-healing tool)
 ```
+
+### Configuration Management (Backup & Restore Settings)
+Under **`Flight Log > Admin > Configuration Management`**:
+* **`Save Config...`**: Opens `SaveConfigDialog.html` allowing you to export your settings to a portable `.json` file. Supports granular selection across:
+  * **Pilot Profile** (34 fields)
+  * **System Parameters** (5 sub-groups: 8 Ingestion, 16 Integrations & Geo/Time, 19 Scoring & Physics, 2 Format and Units, 4 UI & Dashboard Currency)
+  * **Lookups** (6 manual controlled vocabularies)
+* **`Load Config...`**: Opens `LoadConfigDialog.html` allowing you to upload and restore settings from a previous backup:
+  * Automatically detects populated sections in your `.json` file and displays live count badges.
+  * Sections not present in the uploaded file are automatically unchecked, disabled, and dimmed to prevent configuration errors.
+  * Writes purely to Column B (`Value`), completely preserving sheet layout, section header rows, and formulas.
 
 ### Flight Updates Dialog
 Click **Flight Log > Flight maintenance > Flight Updates...** to open the unified operations dialog:

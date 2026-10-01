@@ -1,8 +1,8 @@
 # Project Context & Ways of Working (Source of Truth)
 
 ## 🧠 Agent Memory & Context
-**Status**: Active Development (v0.8.17)
-**Last Session Focus**: High-speed Bulk Flight Ingestion utility (`CR-ING-008`), atomic batch RPC orchestration, bottom-appending spreadsheet write optimizations, configurable web lookup & calculation toggles, Out-and-Return XC scoring (`CR-SCORE-002`), 4-class taxonomy harmonization, and static RPC guardrail (`CR-DEV-001`).
+**Status**: Active Development (v0.8.18)
+**Last Session Focus**: Bulk Flight Ingestion (`CR-ING-008`), Pilot Profile 3-column sub-header schema overhaul (`CR-SYS-004`), Config tab lookups & parameters structural reorganization (`CR-CFG-006`), granular 5-group configuration export/import with dynamic UI protection (`CR-CFG-007`), standardized public menu wrappers (`CR-DEV-002`), batch audit logging fix (`Bug-ING-005`), and bulk status validation (`Bug-ING-006`).
 **Next Focus**: Large Scale Ingestion discussion (`RQ-ING-001.4`), Setup Wizard & Instance Templating (`RQ-SYS-008`), Configurable RDP Tolerance (`CR-CFG-002`).
 
 This file is the **long-term memory** for the project. Read this first to understand *how* we work and *where* we are.
@@ -195,7 +195,7 @@ Edit the header of [`Code/Code.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFl
 clasp status
 clasp push
 ```
-*Expected*: `Pushed 21 files.` with zero errors.
+*Expected*: `Pushed 27 files.` with zero errors.
 
 #### Step 4: Verify & Commit to Git
 ```powershell
