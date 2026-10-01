@@ -41,13 +41,22 @@ The project follows a strict folder hierarchy. `Docs/Context.md` is the source o
 
 ## 🛠 Ways of Working (Standard Operating Procedures)
 
-### 1. Document-First Development
+### 1. Plan-First & Intent Alignment (Strict Pre-Execution Gate)
+*   **Trigger**: Anytime the user requests an action involving modifying or adding code, configuration, or documentation.
+*   **Mandatory Pre-Execution Protocol**:
+    1.  **Analyze Intent**: Deeply analyze the user's intent, core motivation, edge cases, and functional ripple effects across the system.
+    2.  **Surface Objections & Decisions**: Proactively surface any architectural trade-offs, potential pitfalls, design decisions, alternative approaches, or suggestions.
+    3.  **Present an Unambiguous Plan**: Clearly lay out the proposed implementation plan, affected modules, schema impacts, and testing strategy.
+    4.  **Iterate Collaboratively**: If the user has feedback or questions, iterate and refine the design until total alignment is reached.
+    5.  **Wait for Explicit Approval**: **NEVER edit code or persistent documentation prematurely**. Only when an unambiguous plan has been presented and the user explicitly gives the command to **"execute"** (or unambiguous go-ahead) should execution begin.
+
+### 2. Document-First Development
 *   **Features.md**: Define *what* we want.
 *   **Technical_Specification.md**: Define *how* to build it.
 *   **Backlog.md**: Track *status* of implementation.
 *   **Code**: Implement only after documentation is aligned.
 
-### 2. Backlog Management (`Docs/Backlog.md`)
+### 3. Backlog Management (`Docs/Backlog.md`)
 The backlog has 5 strict sections:
 1.  **Description**: Meta-info on usage.
 2.  **ToDos**: Future tasks (Checkbox, Status, Importance, Description).
@@ -60,12 +69,12 @@ The backlog has 5 strict sections:
     *   *Status Flags*: `Open`, `Implemented`, `Blocked`, `Discarded`, `Future`.
 5.  **Bugs (`Bug`)**: Flat list linking to Requirements or CRs.
 
-### 3. Change Logging (`Docs/ChangeLog.md`)
+### 4. Change Logging (`Docs/ChangeLog.md`)
 *   Update at the end of every session.
 *   Group by **Session** and **Date**.
 *   List all `[Imp]` (Implemented) items from Backlog.
 
-### 4. Session Summary Reports (`Plans/SessionSummary/`)
+### 5. Session Summary Reports (`Plans/SessionSummary/`)
 *   **Naming**: `YYYY-MM-DD_SessionSummary.md` (e.g. `2026-02-10_SessionSummary.md`).
 *   **Purpose**: A snapshot of the session's achievements, discussions, and decisions.
 *   **Structure**:
@@ -76,7 +85,7 @@ The backlog has 5 strict sections:
     5.  **Open Issues / Next Steps**: What was left undone or added to backlog.
     6.  **References**: Links to relevant artifacts or docs.
 
-### 5. Code Check Reports (`Plans/CodeCheckReports/`)
+### 6. Code Check Reports (`Plans/CodeCheckReports/`)
 *   **Naming**: `YYYY-MM-DD_CodeCheck.md`.
 *   **Purpose**: Result of automated or manual code reviews (`/code_check`).
 *   **Structure**:
@@ -86,7 +95,7 @@ The backlog has 5 strict sections:
     4.  **Warnings**: Style, Optimization, Readability (Should Fix).
     5.  **Suggestions**: Refactoring ideas (Nice to have).
 
-### 6. Doc Check Reports (`Plans/DocCheckReports/`)
+### 7. Doc Check Reports (`Plans/DocCheckReports/`)
 *   **Naming**: `YYYY-MM-DD_DocCheck.md`.
 *   **Purpose**: Result of automated documentation synchronization audits (`/doc_check`).
 *   **Structure**:
@@ -98,13 +107,13 @@ The backlog has 5 strict sections:
     6.  **Stale References & Dead Links**: Obsolete names or broken links.
     7.  **Proposed Remediation Plan**: File-by-file update plan.
 
-### 7. Code Standards
+### 8. Code Standards
 *   **Naming**: `Service.gs` for modules. `privateFunction_` (trailing underscore) for non-exported helpers.
 *   **Config**: Separation of Concerns. `Code.gs` = Logic, `Config.gs` = Constants, `Parameters Sheet` = Runtime Values.
 *   **Validation**: Validate early. Fail gracefully with logs.
 *   **Timestamps**: Always update file header timestamps before pushing. Use `.\update_headers.ps1` to automate this.
 
-### 8. Multi-Device Workflow (`Docs/Workflows/Multi_Device_Setup.md`)
+### 9. Multi-Device Workflow (`Docs/Workflows/Multi_Device_Setup.md`)
 *   **Critical**: Never work on two computers at once.
 *   **Protocol**: Always wait for Google Drive sync **before** opening VS Code. Acknowledge the risk of Git inside Drive.
 *   **Hand-off**: Commit & Push on A -> Wait for Sync -> Pull on B.
