@@ -105,12 +105,29 @@ sequenceDiagram
 
 ---
 
-## 6. Dependencies & Ripple Effects
-<!-- INSTRUCTION: Check what other parts of the project are touched by this change. -->
-* **Sheets Affected**: `[Sheet1]`, `[Sheet2]`
-* **Code Modules Affected**: `[Code.gs]`, `[Module.gs]`, `[Dialog.html]`
-* **Triggers / Services**: [Time-driven triggers, Drive events, external APIs]
-* **Backward Compatibility**: How do existing sheets or prior versions migrate cleanly?
+## 6. System Relationships & Dependencies
+
+### 6.1 Upstream Consumers ("Who Uses This")
+<!-- INSTRUCTION: 
+  - For domain-specific features: List the primary caller modules, triggers, or user dialogs that invoke this feature.
+  - For generic infrastructure (e.g. Logger, Utils, Config): Do NOT attempt to list every individual call site. Instead, describe the INTENDED CONSUMER ARCHETYPES and illustrative integration examples (e.g. 'Background watcher triggers', 'Client dialog step loops', 'Batch processors').
+-->
+* **Primary Callers / Triggers**: `[e.g. Ingestion.gs, FlightMaintenanceDialog.html]`
+* **Consumer Integration Patterns**: `[e.g. Calls LOG.createSession() at start of batch, flushes on completion]`
+
+### 6.2 Downstream Dependencies ("What This Uses")
+<!-- INSTRUCTION: List the internal modules, Google Workspace services, and external APIs this component requires to operate. -->
+* **Internal Code Services**: `[e.g. Code/Utils.gs, Code/Config.gs]`
+* **Google Workspace Services**: `[e.g. SpreadsheetApp (Activity Logs tab), DriveApp (Trash folder)]`
+* **External APIs / Network**: `[e.g. Open-Meteo Archive API, Nominatim (None if purely internal)]`
+* **Platform Permissions & Scopes**: `[e.g. https://www.googleapis.com/auth/drive]`
+
+### 6.3 Storage & Schema Ripple Effects
+* **Sheets Modified**: `[e.g. Flights (Rows appended), Activity Logs (Appended)]`
+* **Formulas / Named Ranges Affected**: `[e.g. None (formula-free design)]`
+
+### 6.4 Backward Compatibility & Migration
+* **Existing Data / Upgrades**: `[e.g. Auto-renames App_Log to Activity Logs on first run]`
 
 ---
 

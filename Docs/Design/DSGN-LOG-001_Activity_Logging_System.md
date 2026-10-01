@@ -241,19 +241,49 @@ In all dialogs containing an activity console ([`BulkIngestDialog.html`](file://
 
 ---
 
-## 6. Dependencies & Ripple Effects
+## 6. System Relationships & Dependencies
 
-* **Sheets Affected**:
-  * `'App_Log'` $\to$ Migrated and renamed to `'Activity Logs'`.
-  * `'Config'` $\to$ New section `[ Logging & Admin ]` with 5 parameters and dropdown validation.
-* **Code Modules Affected**:
-  * [`Code/Config.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Config.gs): Tab constants, parameter definitions, `CFG.LOG_PROCESSES`, and `CFG.LOG_PREFIXES`.
-  * [`Code/Scaffold.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Scaffold.gs): `scaffoldAppLog_` updated for new schema, dimensions, and auto-migration of old tab name.
-  * [`Code/Logger.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Logger.gs): New central module.
-  * [`Code/Ingestion.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Ingestion.gs): Replace `logImport_` and `logImportBatch_` with `LOG.write` / `LOG.writeBatch`.
-  * [`Code/FileHandling.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/FileHandling.gs): Background watcher scan lifecycle logging.
-  * [`Code/Code.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Code.gs): Wire logging into Purge, Re-sync, Config Save/Load, and register menu callback `cleanActivityLogs`.
-  * Dialogs ([`BulkIngestDialog.html`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/BulkIngestDialog.html), [`ResyncDialog.html`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/ResyncDialog.html), [`PurgeDialog.html`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/PurgeDialog.html), [`URLDialog.html`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/URLDialog.html), [`ScanDialog.html`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/ScanDialog.html)): Add `Copy Log` button.
+### 6.1 Upstream Consumers ("Who Uses This")
+The Activity Logging System is a core foundational service designed to be consumed system-wide. Rather than maintaining an exhaustive call-site list, its primary consumer archetypes include:
+* **Background Automated Services**:
+  * `Code/FileHandling.gs:processWatchFolder` (Start, discovered folders, file scan counts, errors, and completion).
+  * Time-driven trigger routines (heartbeats, auto log maintenance).
+* **High-Throughput Batch Ingestion Engines**:
+  * `Code/Ingestion.gs:processBulkBatch` & `finalizeBulkImport` (Multi-file batching, atomic appending, and chronological sort milestones).
+  * `Code/Ingestion.gs:insertFlightRow_` (Single file ingest via URL, manual upload, or watch folder).
+* **Interactive Maintenance & Triage Operations**:
+  * `Code/Code.gs:purgeRemoveFlights` (Drive trashing, row deletion progress, and completion).
+  * `Code/Code.gs:restoreSingleMasterFlight` & `finalizeResync_` (Master Log re-sync milestones).
+  * `Code/Code.gs:markDuplicatesForRemoval` (Duplicate triage staging).
+  * `Code/Code.gs:saveInspectorData` & `executeMaintenanceBatch_`.
+* **Configuration & Administrative Lifecycles**:
+  * `Code/Code.gs:exportConfigJson_` (Save config transactions).
+  * `Code/Code.gs:importConfigJson_` (Load config application and section counts).
+  * `Code/Scaffold.gs:scaffoldAll_` & `deleteSystemSheets_` (System setup and danger zone resets).
+* **Client-Side Modal Dialog Consoles (via RPC Gateway `logClientActivity`)**:
+  * `BulkIngestDialog.html`, `ResyncDialog.html`, `PurgeDialog.html`, `URLDialog.html`, `ScanDialog.html`.
+
+### 6.2 Downstream Dependencies ("What This Uses")
+* **Internal Code Services**:
+  * [`Code/Config.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Config.gs): Resolves `CFG.LOG_PROCESSES`, `CFG.LOG_PREFIXES`, `TABS.APP_LOG.name`, and runtime parameters (`LOG_LEVEL`, `LOG_AUTO_CLEAN`, etc.).
+* **Google Workspace Services**:
+  * `SpreadsheetApp`: Writes directly to `SpreadsheetApp.getActive().getSheetByName('Activity Logs')` using single-call `setValues()` batching and `deleteRows()`.
+  * `PropertiesService.getScriptProperties()`: Stores timestamp of last automated maintenance run (`LOG_LAST_CLEAN_DATE`).
+* **External APIs & Permissions**:
+  * Zero external API dependencies (100% native, offline-capable).
+  * Requires standard spreadsheet read/write authorization scope (`https://www.googleapis.com/auth/spreadsheets`).
+
+### 6.3 Storage & Schema Ripple Effects
+* **Sheets Modified**:
+  * `'App_Log'` tab is migrated and renamed to `'Activity Logs'`.
+  * `'Config'` tab adds 5 parameters under `[ Logging & Admin ]`.
+* **Formulas & Grid Shifting**:
+  * Zero formulas reside in `Activity Logs`, ensuring no `#REF!` risks or formula recalculation slowdowns.
+  * Preserves 2 frozen header rows across all operations.
+
+### 6.4 Backward Compatibility & Migration
+* **Automatic In-Place Renaming**: On initial run, `Scaffold.gs` detects if an existing tab named `'App_Log'` is present and renames it to `'Activity Logs'` without data loss or tab duplication.
+* **Legacy Function Aliases**: Retains `logImport_` and `logImportBatch_` as deprecated backwards-compatibility wrappers that route into `LOG.write` and `LOG.writeBatch`, preventing runtime errors if older code invokes them.
 
 ---
 
