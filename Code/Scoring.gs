@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 17:48:50
+ * Updated: 2026-09-30 18:33:37
  */
 /**
  * Paragliding Flight Log v2.0
@@ -234,10 +234,6 @@ function perpendicularDist_(p, lineStart, lineEnd) {
 function dist_(p1, p2) {
   // Use Haversine for real distances
   return haversine_(p1.lat, p1.lon, p2.lat, p2.lon);
-}
-
-function haversineScore_(lat1, lon1, lat2, lon2) {
-  return haversine_(lat1, lon1, lat2, lon2);
 }
 
 // Export to Namespace

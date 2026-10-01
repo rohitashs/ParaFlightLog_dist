@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 17:48:50
+ * Updated: 2026-09-30 18:33:37
  * 
  * MODULE: Geo Service
  * Handles Reverse Geocoding (Nominatim) and Site Detection (Overpass API).
@@ -226,7 +226,7 @@ function getNearestSite(lat, lon, radiusM, config, siteType, altM) {
               var distM = parseFloat(p.distance);
               if (isNaN(distM)) {
                 if (feat.geometry && feat.geometry.coordinates) {
-                  distM = haversineGeo_(lat, lon, feat.geometry.coordinates[1], feat.geometry.coordinates[0]);
+                  distM = haversine_(lat, lon, feat.geometry.coordinates[1], feat.geometry.coordinates[0]);
                 } else {
                   distM = 9999;
                 }
@@ -329,7 +329,7 @@ function getNearestSite(lat, lon, radiusM, config, siteType, altM) {
                var elLat = el.lat || (el.center && el.center.lat);
                var elLon = el.lon || (el.center && el.center.lon);
                if (elLat && elLon) {
-                 var dist = haversineGeo_(lat, lon, elLat, elLon);
+                 var dist = haversine_(lat, lon, elLat, elLon);
                  if (dist < bestDist) {
                    var name = (el.tags && (el.tags.name || el.tags.site_name)) || '';
                    if (name) { bestDist = dist; bestName = name; }
@@ -351,10 +351,6 @@ function getNearestSite(lat, lon, radiusM, config, siteType, altM) {
     }
   }
   return '';
-}
-
-function haversineGeo_(lat1, lon1, lat2, lon2) {
-  return haversine_(lat1, lon1, lat2, lon2);
 }
 
 /**

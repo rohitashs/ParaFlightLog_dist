@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 17:48:50
+ * Updated: 2026-09-30 18:33:37
  * 
  * MODULE: File Handling Service
  * Handles Google Drive I/O, Watch Folder scanning, File Uploads, URL Fetching,
@@ -97,12 +97,15 @@ function scanWatchFolderNow_() {
     }
   }
   
-  if (!foundAny) {
-    stats.log.push('Watch Folders are empty.');
-  } else if (stats.processed === 0 && stats.skipped === 0 && stats.errors === 0) {
-    stats.log.push('No relevant files found (only ignored types).'); 
+  if (stats.processed > 0) {
+    try {
+      sortFlightsByDate_();
+      stats.log.push('Logbook sorted chronologically.');
+    } catch (sortErr) {
+      console.warn('Watch scan auto-sort warning:', sortErr);
+    }
   }
-  
+
   return stats;
 }
 

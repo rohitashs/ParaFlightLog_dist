@@ -109,15 +109,16 @@ Fixed Header Schema (Row 3=Category, Row 4=Name). Data starts Row 5.
 *Function-level breakdown of the codebase.*
 
 ### `Code.gs` (Orchestration)
-*   **`onOpen(e)`**: Creates the "Flight Log" menu.
+*   **`onOpen(e)`**: Creates the "Flight Log" menu reorganized into 5 functional submenus: *Sheet Maintenance & Views*, *Folder Configuration*, *Data Backup*, *Automation & Services*, and *System Setup & Reset (Danger Zone)*.
 *   **`showFlightMaintenanceDialog()` (`RQ-SYS-007`)**: Unified dialog launcher. Opens `FlightMaintenanceDialog.html` modal for batch maintenance operations.
 *   **`getActualFlightRows_(sh)` (`Bug-SYS-005`)**: Inspects the `FlightID` column from row 5 down using `getDisplayValues()` to extract `{ row, id }` strictly for populated flights, safely ignoring trailing rows that only contain scaffolded validations.
 *   **`getMaintenanceScopeInfo()`**: Detects active row selection on `Flights` tab and counts actual flights populated with a `FlightID`.
 *   **`getMaintenanceTargetRows(scope)`**: Returns array of target row indices and flight IDs for batch processing filtered against actual flights.
 *   **`executeFlightMaintenanceRow(rowNum, opConfig)`**: Executes selected operations for a single row (weather backfill, geo resolution, XContest verification, physics recompute, XC rescore).
-*   **`sortFlightsByDate_()`**: Chronologically sorts data rows descending by `Date` and re-indexes sequential `Flight No` formulas, bounded strictly to actual flight rows.
+*   **`sortFlightsByDate()`**: Public RPC endpoint callable from client-side dialogs (`FlightMaintenanceDialog`, `URLDialog`, `UploadDialog`) to trigger multi-level flight sorting and sequential re-indexing.
+*   **`sortFlightsByDate_()`**: Chronologically sorts data rows descending multi-level by `Date` (primary) and `Launch Time` (secondary), and re-indexes sequential `Flight No` formulas, bounded strictly to actual flight rows.
 *   **`getParameters_()`**: Reads configuration from the `Parameters` sheet.
-*   **`uiAddManualFlight_()`**: Helper to trigger manual flight entry.
+*   **`uiAddManualFlight_()`**: Helper to trigger manual flight entry with auto-capacity check.
 *   **`showUrlDialog_()`**: Shows the IGC URL import dialog.
 *   **`showUploadDialog_()`**: Shows the File Upload picker.
 *   **`openFolderPicker_(paramKey, title)`**: Opens the in-app Google Drive folder picker dialog.
@@ -132,7 +133,7 @@ Fixed Header Schema (Row 3=Category, Row 4=Name). Data starts Row 5.
 ### `Scaffold.gs` (Setup & Validation)
 *   **`scaffoldAll_()`**: Master function to create/repair all sheets (`Dashboard`, `Flights`, `Parameters`, `Equipment`, `Lookups`, `App_Log`, `User Guide`, `Pilot_Profile`).
 *   **`scaffoldDashboard_(ss)` (`RQ-SYS-005`, `CR-SYS-001`, `CR-SYS-002`)**: Builds the compact 6-column Dashboard (`A` to `F`), featuring two 3-KPI summary banners (All-Time and Year-to-Date with `[h]:mm "hrs"` duration), a dynamic 6-month activity timeline with pure numeric values (`0 "flts"`, `[h]:mm "hrs"`, `#,##0 "km"`) and pilot currency color shading (Orange / Yellow / Green based on `TIMELINE_FLIGHTS_LOW/MED` and `TIMELINE_HOURS_LOW/MED`), a 4 x 2 leaderboard grid with 8 cards (Top 5 Duration, Top 5 Distance, Top 5 Max Alt, Top 5 Alt Gain, Top 5 Thermal Flights, Top 5 Soaring Flights, Top 5 XC Score, Top 5 Max Speed), and a dedicated complete lists section (20-row pre-scaffolded Launch Sites and Countries Flown ordered by flight count). All cells have word wrapping enabled and use resilient `INDIRECT("Flights!..." & startRow & ":...")` formulas immune to row insertions and deletions.
-*   **`scaffoldFlights_(ss)`**: Builds 2-row category headers, sets Master Flight Log folder hyperlink in Cell `A2`, freezes 4 columns (`A:D`), and applies column header notes/tooltips to Row 4 (`colNotes`).
+*   **`scaffoldFlights_(ss)`**: Builds 2-row category headers, sets Master Flight Log folder hyperlink in Cell `A2`, freezes 4 columns (`A:D`), ensures minimum 2,000 rows and 69 columns capacity via `ensureDimensions_`, and applies column header notes/tooltips to Row 4 (`colNotes`).
 *   **`scaffoldParameters_(ss)`**: Populates parameters with human-readable path enrichment in Column C (`Description`), strict Plain Text (`@`) formatting for format keys, `[h]:mm "hrs"` formatting for `TIMELINE_HOURS_LOW/MED` day fractions, `0 "flts"` for `TIMELINE_FLIGHTS_LOW/MED`, and exact validation ranges (`I3:I7` for `DATE_FORMAT`, `J3:J4` for `TIME_FORMAT`) to eliminate trailing blank dropdown options.
 *   **`scaffoldUserGuide_(ss)` (`RQ-SYS-006.1`)**: Builds or refreshes the in-app `User Guide` sheet tab with structured sections: System Overview, Setup & Configuration (including `XCONTEST_USERNAME`), Normal Logging Usage, System Maintenance (weather, geo, XContest verification, physics, sort), and Comprehensive Metric Dictionary (defining all calculated fields including XContest hyperlinking).
 *   **`uiRefreshUserGuide_()`**: Interactive menu action under `Flight Log > Admin > Admin: Refresh User Guide Tab` to safely re-scaffold the `User Guide` tab without touching flight data.
@@ -140,7 +141,9 @@ Fixed Header Schema (Row 3=Category, Row 4=Name). Data starts Row 5.
 *   **`scaffoldPilotProfile_(ss)` (`RQ-SYS-009.1`)**: Builds the `Pilot_Profile` sheet tab with structured fields (Personal info, Certifications, Org/Club memberships, Emergency contacts, Garmin inReach links, Insurance) and free-form notes.
 *   **`backupSystemSheets_()`**: Clones user data sheets (`Flights`, `Pilot_Profile`, `Equipment`, `Parameters`, `Lookups`) into dedicated backup tabs (`Backup Flights`, etc.), replacing any previous backup iterations.
 *   **`updateValidationOnly_()`**: Re-applies dropdowns and validation rules to `Flights` and `Equipment`, refreshes `Parameters`, and updates `User Guide`.
-*   **`applyFlightsValidation_(sh)`**: Applies dynamic validation from the `Lookups` tab (`Flight Type` from `Lookups!G3:G`, `XC Flight Class` from `Lookups!H3:H`), `Closed?` list validation (`['Yes', 'No']`), and dropdowns across the top N rows of the `Flights` sheet.
+*   **`applyFlightsValidation_(sh)`**: Applies dynamic validation from the `Lookups` tab (`Flight Type` from `Lookups!G3:G`, `XC Flight Class` from `Lookups!H3:H`), `Closed?` list validation (`['Yes', 'No']`), and dropdowns across dynamically scaled rows (`Math.max(sh.getLastRow() + 50, 100)`).
+*   **`reapplyFormatting_()`**: Re-applies conditional formatting rules, alternating row colors, number formatting, and ensures minimum 2,000 row capacity across the `Flights` tab without modifying existing data.
+*   **`ensureDimensions_(sh, minRows, minCols)`**: Utility to safely ensure a sheet meets minimum row and column capacities without deleting or truncating existing content.
 *   **`ensureSheet_(ss, name)`**: Utility to create a sheet if missing.
 
 ### `FileHandling.gs` (Drive & File Pipeline)
@@ -160,7 +163,8 @@ Fixed Header Schema (Row 3=Category, Row 4=Name). Data starts Row 5.
 *   **`processDriveFile_(file, config)`**: Reads file blob and delegates to `processBlob_`.
 *   **`processBlob_(blob, fileName, fileId, config)`**: Handles archive extraction or direct single IGC processing.
 *   **`processSingleIgcBlob_(blob, ...)`**: Core logic: Parse -> Analyze -> Score -> Geo -> XContest -> Insert.
-*   **`insertFlightRow_(data, ...)`**: Maps processed data to `Flights` sheet columns. Wraps `FlightID` with SeeYou link and `IGC File` with direct download link.
+*   **`ensureFlightCapacity_(sh, minBuffer)`**: Dynamically monitors remaining row capacity on the `Flights` sheet during flight insertion; automatically appends 200 rows if the remaining empty buffer drops below 50 rows.
+*   **`insertFlightRow_(data, ...)`**: Maps processed data to `Flights` sheet columns with pre-insertion capacity validation. Wraps `FlightID` with SeeYou link and `IGC File` with direct download link.
 *   **`uiAddManualFlight_()`**: Adds a blank manual flight row at Row 5 with smart ID generation and defaults.
 *   **`isHashSeen_(hashStr)` / `markHashSeen_(hashStr)`**: MD5 deduplication check via DocumentProperties.
 *   **`logImport_(...)`**: Appends specific errors or success messages to `App_Log`.
@@ -178,18 +182,18 @@ Fixed Header Schema (Row 3=Category, Row 4=Name). Data starts Row 5.
 
 ### `Parser.gs`
 *   **`parseIgc(text, fileName)`**: Extracts fixes (B-records) and headers from IGC content.
-*   **`PARSER.haversine_` / `PARSER.bearing_`**: Namespaced aliases delegating to `Utils.gs`.
+*   **`PARSER.parseIgc`**: Core IGC extraction entry point delegating to `parseIgc`.
 
 ### `Analysis.gs`
 *   **`analyzeFlight(fixes, config)`**: Main analysis routine.
 *   **`validateFlight_(fixes, ...)`**: Checks heuristics (Short flight, Kiting, Driving).
 
 ### `Scoring.gs`
-*   **`calculateXcScore(fixes)`**: Computes XC distance (Free, Triangle) using RDP simplification.
+*   **`calculateXcScore(fixes)`**: Computes XC distance (Free, Triangle) using RDP simplification and consolidated `haversine_` from `Utils.gs`.
 
 ### `Geo.gs`
 *   **`getReverseGeo(lat, lon, config)`**: Returns Town/Region/Country (Nominatim/BigDataCloud).
-*   **`getNearestSite(lat, lon, ...)`**: Finds nearest Takeoff/Landing site (Overpass API).
+*   **`getNearestSite(lat, lon, ...)`**: Finds nearest Takeoff/Landing site (Overpass API) using consolidated `haversine_` from `Utils.gs`.
 *   **`getTimezone(lat, lon, ...)`**: Returns TZ ID.
 
 ### `XContest.gs` (XContest Verification)

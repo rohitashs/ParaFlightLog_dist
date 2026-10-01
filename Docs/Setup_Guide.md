@@ -57,10 +57,14 @@ This guide walks you through setting up the Paragliding Flight Log System from s
     *   **CONTACT_EMAIL**: *[REQUIRED]* Your contact email (required for User-Agent in OSM/Nominatim/Open-Meteo requests).
     *   **ENABLE_WATCH_FOLDER**: `TRUE` / `FALSE` to control automated watcher scanning.
     *   **MOVE_FROM_WATCH_FOLDER**: `TRUE` to move files from Watch Folder after successful ingestion.
-    *   **GEO_REV_PROVIDERS**: `bigdatacloud,nominatim` (fallback chain for reverse geocoding).
-    *   **GEO_SITE_PROVIDERS**: `paraglidingearth,overpass` (fallback chain for launch/landing site detection).
+    *   **GEO_REV_PROVIDERS**: `google, big_data_cloud, nominatim_osm` (fallback chain for reverse geocoding).
+    *   **GEO_SITE_PROVIDERS**: `paragliding_earth, overpass_api` (fallback chain for launch/landing site detection).
     *   **OSM_RADIUS_M**: `3000` (search radius in meters for nearby sites).
     *   **XCONTEST_USERNAME**: Pilot username on XContest for flight verification.
+    *   **TIMELINE_FLIGHTS_LOW**: `2` (Monthly flight count threshold for moderate activity / yellow shading on dashboard timeline).
+    *   **TIMELINE_FLIGHTS_MED**: `5` (Monthly flight count threshold for high activity / green shading on dashboard timeline).
+    *   **TIMELINE_HOURS_LOW**: `0.04166666667` (1.0 hr/month day fraction threshold for moderate currency / yellow shading, formatted as `[h]:mm "hrs"`).
+    *   **TIMELINE_HOURS_MED**: `0.1666666667` (4.0 hrs/month day fraction threshold for high currency / green shading, formatted as `[h]:mm "hrs"`).
     *   **THERMAL_MIN_CLIMB**: `0.3` (m/s climb rate threshold).
     *   **THERMAL_MIN_TURN**: `8` (degrees/sec turning rate threshold).
     *   **VALIDATION_MIN_DURATION_SEC**: `120` (minimum flight duration in seconds).
@@ -77,7 +81,7 @@ This guide walks you through setting up the Paragliding Flight Log System from s
 
 ## Step 7: Automation Setup (Optional)
 To have the sheet automatically check for new flights dropped into your Watch Folder:
-1.  Click **Flight Log** > **Admin** > **Setup 5-min watcher trigger**.
+1.  Click **Flight Log** > **Admin** > **Automation & Services** > **Setup 5-min watcher trigger**.
 2.  This schedules an automatic background job that checks your Watch Folder every 5 minutes.
 
 ---

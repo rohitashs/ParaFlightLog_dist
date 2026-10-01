@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 17:48:50
+ * Updated: 2026-09-30 18:33:37
  */
 /**
  * Paragliding Flight Log v2.0
@@ -198,8 +198,6 @@ function computeBasicStats_(fixes) {
   };
 }
 
-// Export to Namespace (consolidated in Utils.gs)
+// Export to Namespace
 PARSER.parseIgc = parseIgc;
-PARSER.haversine_ = haversine_;
-PARSER.bearing_ = bearing_;
 

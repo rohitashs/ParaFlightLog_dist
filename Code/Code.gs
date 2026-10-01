@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 17:48:50
+ * Updated: 2026-09-30 18:33:37
  * Test access verification: Verified GAS write access on 2026-09-25 08:26:00.
  * 
  * CORE MODULE: Orchestration Only.
@@ -25,25 +25,28 @@ function onOpen(e) {
         .addItem('Scan Watch Folder Now', 'showScanDialog'))
     .addSubMenu(ui.createMenu('Flight maintenance')
         .addItem('Flight Maintenance...', 'showFlightMaintenanceDialog')
-        .addItem('Sort All Flights by Date', 'sortFlightsByDate_'))
+        .addItem('Sort All Flights by Date', 'sortFlightsByDate'))
     .addSeparator()
     .addSubMenu(ui.createMenu('Admin')
-        .addItem('First Time Setup (Full Scaffold)', 'scaffoldAll_')
-        .addItem('Admin: Update Validation & Params', 'updateValidationOnly_')
-        .addItem('Admin: Refresh User Guide Tab', 'uiRefreshUserGuide_')
-        .addItem('Admin: Refresh Dashboard', 'uiRefreshDashboard_')
-        .addItem('Admin: Reapply Formatting (Safe)', 'reapplyFormatting_')
-        .addItem('Admin: Backup Data', 'backupSystemSheets_')
+        .addSubMenu(ui.createMenu('Sheet Maintenance & Views')
+            .addItem('Refresh Dashboard (KPIs & Cards)', 'uiRefreshDashboard_')
+            .addItem('Refresh User Guide & Metric Dictionary', 'uiRefreshUserGuide_')
+            .addItem('Update Dropdowns, Parameters & Notes', 'updateValidationOnly_')
+            .addItem('Repair Sheet Schema & Formatting (Safe)', 'reapplyFormatting_'))
+        .addSubMenu(ui.createMenu('Folder Configuration')
+            .addItem('Set Watch Folder(s)...', 'uiUpdateWatchFolder_')
+            .addItem('Set Upload Folder...', 'uiUpdateUploadFolder_')
+            .addItem('Set Master Log Folder...', 'uiUpdateMasterLogFolder_')
+            .addItem('Set Error Folder...', 'uiUpdateErrorFolder_'))
+        .addSubMenu(ui.createMenu('Data Backup')
+            .addItem('Backup System Sheets', 'backupSystemSheets_'))
+        .addSubMenu(ui.createMenu('Automation & Services')
+            .addItem('Setup / Reset 5-min Watcher Trigger', 'setupWatcherTrigger_')
+            .addItem('Clear Dedupe Cache', 'debugClearDedupe_'))
         .addSeparator()
-        .addItem('Admin: Delete System Sheets (Reset)', 'deleteSystemSheets_')
-        .addSeparator()
-        .addItem('Update Watch Folder...', 'uiUpdateWatchFolder_')
-        .addItem('Update Upload Folder...', 'uiUpdateUploadFolder_')
-        .addItem('Update Master Log Folder...', 'uiUpdateMasterLogFolder_')
-        .addItem('Update Error Folder...', 'uiUpdateErrorFolder_')
-        .addSeparator()
-        .addItem('Setup 5-min watcher trigger', 'setupWatcherTrigger_')
-        .addItem('Debug: Clear dedupe cache', 'debugClearDedupe_'))
+        .addSubMenu(ui.createMenu('System Setup & Reset (Danger Zone)')
+            .addItem('First Time Setup (Full Scaffold)', 'scaffoldAll_')
+            .addItem('Delete System Sheets (Full Reset)', 'deleteSystemSheets_')))
     .addToUi();
 }
 
@@ -707,6 +710,15 @@ function executeFlightMaintenanceRow(rowNum, opConfig) {
   return { success: true, updated: updated };
 }
 
+/**
+ * Public RPC endpoint to sort flights chronologically (most recent first).
+ * Callable from client-side HTML dialogs (FlightMaintenanceDialog, URLDialog, UploadDialog).
+ */
+function sortFlightsByDate() {
+  sortFlightsByDate_();
+  return { success: true };
+}
+
 function sortFlightsByDate_() {
   var ss = SpreadsheetApp.getActive();
   var sh = ss.getSheetByName(TABS.FLIGHTS.name);
@@ -722,12 +734,19 @@ function sortFlightsByDate_() {
   var maxRow = actualFlights[actualFlights.length - 1].row;
   var map = getColumnMap_(sh);
   var dateCol = map['Date'] || 8;
+  var launchTimeCol = map['Launch Time'] || 10;
   var lastCol = sh.getLastColumn();
 
-  // Sort only actual flight rows (from minRow to maxRow) by Date descending
+  // Multi-level sort: Date descending (primary), Launch Time descending (secondary)
+  var sortSpecs = [{ column: dateCol, ascending: false }];
+  if (launchTimeCol) {
+    sortSpecs.push({ column: launchTimeCol, ascending: false });
+  }
+
+  // Sort only actual flight rows (from minRow to maxRow)
   var numRows = maxRow - minRow + 1;
   var dataRange = sh.getRange(minRow, 1, numRows, lastCol);
-  dataRange.sort({ column: dateCol, ascending: false });
+  dataRange.sort(sortSpecs);
 
   // Re-apply Flight No formula only to actual flight rows
   var flightNoCol = map['Flight No'] || 3;
@@ -735,7 +754,7 @@ function sortFlightsByDate_() {
     sh.getRange(r, flightNoCol).setFormula('=IFERROR(MAX(INDIRECT("C" & (ROW()+1) & ":C")), 0) + 1');
   }
 
-  ss.toast('Flights (' + actualFlights.length + ') sorted chronologically by date.', 'Flight Log');
+  ss.toast('Flights (' + actualFlights.length + ') sorted chronologically by date & time.', 'Flight Log');
 }
 
 /**

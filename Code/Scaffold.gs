@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 17:48:50
+ * Updated: 2026-09-30 18:33:37
  */
 /**
  * Paragliding Flight Log v2.0 - Scaffolding & Setup
@@ -524,6 +524,8 @@ function scaffoldParameters_(ss) {
 
 function scaffoldEquipment_(ss) {
   var sh = ss.getSheetByName(TABS.EQUIPMENT.name);
+  if (!sh) return;
+  ensureDimensions_(sh, 55, 13);
   if (sh.getLastRow() === 0) {
     // Header Row 1
     sh.getRange('A1').setValue(TABS.EQUIPMENT.name).setFontWeight('bold').setFontSize(12);
@@ -590,6 +592,8 @@ function scaffoldLookups_(ss) {
 
 function scaffoldAppLog_(ss) {
   var sh = ss.getSheetByName(TABS.APP_LOG.name);
+  if (!sh) return;
+  ensureDimensions_(sh, 50, 6);
   if (sh.getLastRow() === 0) {
     sh.getRange('A1').setValue(TABS.APP_LOG.name).setFontWeight('bold').setFontSize(12);
     sh.getRange('A1:F1').setBackground(TABS.APP_LOG.color).setFontColor('white');
@@ -615,6 +619,7 @@ function scaffoldFlights_(ss) {
   var groups = TABS.FLIGHTS.groups;
   var flatHeaders = [];
   groups.forEach(function(g) { flatHeaders = flatHeaders.concat(g.cols); });
+  ensureDimensions_(sh, 2000, flatHeaders.length);
   
   // Write Headers (Row 4)
   sh.getRange(4, 1, 1, flatHeaders.length).setValues([flatHeaders]);
@@ -742,7 +747,7 @@ function applyFlightsValidation_(sh) {
   var map = getColumnMap_(sh);
   
   var startRow = TABS.FLIGHTS.dataStartRow;
-  var endRow = TABS.FLIGHTS.dataEndRow; 
+  var endRow = Math.max(sh.getLastRow() + 50, TABS.FLIGHTS.dataEndRow || 100); 
   var valRows = endRow - startRow + 1;
   if (valRows < 1) return;
 
@@ -879,6 +884,7 @@ function reapplyFormatting_() {
      var groups = TABS.FLIGHTS.groups;
      var flatHeaders = [];
      groups.forEach(function(g) { flatHeaders = flatHeaders.concat(g.cols); });
+     ensureDimensions_(shF, 2000, flatHeaders.length);
      shF.getRange(4, 1, 1, flatHeaders.length).setValues([flatHeaders]);
      shF.getRange(4, 1, 1, flatHeaders.length).setFontWeight('bold').setBorder(true, true, true, true, true, true).setWrapStrategy(SpreadsheetApp.WrapStrategy.WRAP).setVerticalAlignment("top");
 

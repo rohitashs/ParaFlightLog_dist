@@ -169,7 +169,7 @@ clasp show-authorized-user
 *Expected*: All commands resolve, and `show-authorized-user` outputs your Google account email.
 
 #### Step 2: Make a Test Code Change
-Edit the header of [`Code/Code.gs`](file:///g:/My%20Drive/~RS2ndBrain/~Projects/ParaFlightLogProject/Code/Code.gs) to update the timestamp and test note:
+Edit the header of [`Code/Code.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Code.gs) to update the timestamp and test note:
 ```javascript
 /**
  * Paragliding Flight Log v2.0
@@ -185,7 +185,7 @@ Edit the header of [`Code/Code.gs`](file:///g:/My%20Drive/~RS2ndBrain/~Projects/
 clasp status
 clasp push
 ```
-*Expected*: `Pushed 16 files.` with zero errors.
+*Expected*: `Pushed 21 files.` with zero errors.
 
 #### Step 4: Verify & Commit to Git
 ```powershell

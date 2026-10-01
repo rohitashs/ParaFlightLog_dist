@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 17:48:50
+ * Updated: 2026-09-30 18:33:37
  * 
  * MODULE: Ingestion Service
  * Handles Flight Log Parsing, Analysis/Scoring Orchestration, Geo-enrichment,
@@ -122,7 +122,7 @@ function processSingleIgcBlob_(blob, fileName, fileId, outerName, config) {
   }
   
   // B. Parse
-  var parsed = parseIgc(text, fileName);
+  var parsed = PARSER.parseIgc(text, fileName);
   if (!parsed) {
      logImport_(new Date(), fileId, outerName, fileName, 'Parse Fail', 'Invalid IGC structure');
      copyToErrorFolder_(blob, fileName, config);
@@ -299,6 +299,7 @@ function uiAddManualFlight_() {
   var ss = SpreadsheetApp.getActive();
   var sh = ss.getSheetByName(TABS.FLIGHTS.name);
   if (!sh) return;
+  ensureFlightCapacity_(sh, 50);
   
   // 1. Generate ID
   var dateObj = new Date();
@@ -354,6 +355,8 @@ function uiAddManualFlight_() {
 function insertFlightRow_(data, fileId, outerName, status, notes, analysis, scoring, igcFileName, masterFileId, geo, xcStatus, weather) {
   var ss = SpreadsheetApp.getActive();
   var sh = ss.getSheetByName(TABS.FLIGHTS.name);
+  if (!sh) return;
+  ensureFlightCapacity_(sh, 50);
   
   // Geo Fallbacks
   geo = geo || { l:{}, ls:'', d:{}, ds:'', tz:'UTC' };
@@ -546,6 +549,22 @@ function insertFlightRow_(data, fileId, outerName, status, notes, analysis, scor
   // Insert
   sh.insertRowBefore(5);
   sh.getRange(5, 1, 1, row.length).setValues([row]);
+}
+
+/**
+ * Ensures the Flights sheet maintains at least minBuffer empty rows at the bottom.
+ * If capacity drops below minBuffer, automatically appends 200 rows.
+ * @param {Sheet} sh - The Flights sheet
+ * @param {number} minBuffer - Minimum buffer rows (default: 50)
+ */
+function ensureFlightCapacity_(sh, minBuffer) {
+  if (!sh) return;
+  minBuffer = minBuffer || 50;
+  var maxRows = sh.getMaxRows();
+  var lastRow = sh.getLastRow();
+  if (maxRows - lastRow < minBuffer) {
+    sh.insertRowsAfter(maxRows, 200);
+  }
 }
 
 function getNextFlightNo_(sh) {

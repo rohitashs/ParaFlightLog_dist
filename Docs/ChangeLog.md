@@ -38,8 +38,23 @@
     *   Eliminated unused gear baseline snapshot columns `GlideRatio_LD (snap)`, `Trim_kmh (snap)`, and `FullBar_kmh (snap)` from the Gear group in `Code/Config.gs`, `Code/Ingestion.gs`, and `Code/Scaffold.gs`.
     *   Eliminated redundant `FLIGHT_TYPES` from `CFG.parameters` in `Code/Config.gs` and `Code/Code.gs` (flight types are configured directly on the `Lookups` tab).
     *   Removed yellow input shading from internal XContest match tolerances `XCONTEST_MATCH_DURATION_TOLERANCE_MIN` and `XCONTEST_MATCH_START_TIME_TOLERANCE_MIN` in `Code/Config.gs`.
-*   `[Imp]` **CR-UI-018 (Admin Refresh User Guide Menu Action)**:
-    *   Added `Admin: Refresh User Guide Tab` (`uiRefreshUserGuide_`) under `Flight Log > Admin` in `Code/Code.gs`.
+*   `[Imp]` **CR-SYS-003 (Admin Menu Functional Grouping & Flights Sheet 2,000-Row Capacity Auto-Buffer)**:
+    *   Reorganized the flat 13-item Admin menu into 5 structured functional submenus: *Sheet Maintenance & Views*, *Folder Configuration*, *Data Backup*, *Automation & Services*, and *System Setup & Reset (Danger Zone)* with clear, descriptive action names.
+    *   Pre-scaffolds the `Flights` sheet to 2,000 rows with 69 columns using `ensureDimensions_(sh, 2000, flatHeaders.length)` during setup and formatting reapplying.
+    *   Added `ensureFlightCapacity_(sh, 50)` to automatically append 200 rows whenever remaining sheet capacity drops below 50 rows, supporting indefinite flight expansion (1,500+ flights).
+    *   Updated `applyFlightsValidation_` to dynamically compute `endRow = Math.max(sh.getLastRow() + 50, 100)` so all existing flights and upcoming buffer rows receive dropdown validations and conditional formatting.
+*   `[Imp]` **CR-ING-005 (Automated Multi-Level Chronological Sorting Post-Ingestion)**:
+    *   Enhanced `sortFlightsByDate_()` to execute multi-level sorting: primary by `Date` descending, secondary by `Launch Time` descending, ensuring multiple flights on the same day are correctly sequenced from latest to earliest.
+    *   Provided public wrapper `sortFlightsByDate()` in `Code/Code.gs` callable via client-side `google.script.run`.
+    *   Wired automated post-ingestion sorting upon completion in `URLDialog.html`, `UploadDialog.html`, and `FileHandling.gs` (`scanWatchFolderNow_`), guaranteeing the logbook is immediately restored to reverse-chronological order with sequential flight numbers.
+*   `[Fix]` **Bug-SYS-007 (Out-of-Bounds Range Dimensions Exception During Scaffolding)**:
+    *   Resolved runtime error (`Exception: The coordinates of the range are outside the dimensions of the sheet.`) when scaffolding or reapplying formatting on sheets with fewer rows or columns than target ranges.
+    *   Implemented defensive helper `ensureDimensions_(sh, minRows, minCols)` in `Code/Scaffold.gs` and integrated across all 8 sheets (`Dashboard`, `Parameters`, `Lookups`, `Pilot_Profile`, `User Guide`, `Equipment`, `Flights`, `App_Log`).
+*   `[Fix]` **Code Cleanup & Namespace Consistency (Code Check Remediation)**:
+    *   Fixed client-side private function call in `FlightMaintenanceDialog.html` by routing to public wrapper `sortFlightsByDate()`.
+    *   Eliminated dead legacy function `haversineScore_` in `Code/Scoring.gs` and redundant wrapper `haversineGeo_` in `Code/Geo.gs`.
+    *   Removed orphaned namespace assignments `PARSER.haversine_` and `PARSER.bearing_` from `Code/Parser.gs`.
+    *   Standardized `Ingestion.gs` to invoke `PARSER.parseIgc(...)`.
 *   `[Test]` **Automated Testing**:
     *   Added `testDashboardAndSchema_()` in `Code/Test.gs` verifying frozen column settings, eliminated column removals, Lookups range validations, and live Dashboard `INDIRECT` formula evaluation.
 

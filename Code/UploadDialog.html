@@ -1,6 +1,6 @@
 <!--
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 17:48:50
+ * Updated: 2026-09-30 18:33:37
  -->
 <!DOCTYPE html>
 <html>
@@ -194,6 +194,18 @@
       log('Flights Imported: ' + processedFlights);
       log('Skipped: ' + skippedFlights);
       log('Errors: ' + errorFlights);
+
+      if (processedFlights > 0) {
+        log('Sorting logbook chronologically (most recent flight first)...');
+        google.script.run
+          .withSuccessHandler(function() {
+            log('Logbook sorted chronologically.');
+          })
+          .withFailureHandler(function(err) {
+            console.warn('Auto-sort notice:', err);
+          })
+          .sortFlightsByDate();
+      }
 
       // Button Swap: Hide Cancel, Show Done
       document.getElementById('btn-close').style.display = 'none';
