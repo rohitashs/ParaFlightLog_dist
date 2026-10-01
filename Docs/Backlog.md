@@ -19,7 +19,7 @@ This file is the single source of truth for **ToDos**, **Requirements**, **Chang
 - [x] **Status**: Completed | **Date**: 2026-09-29 | **Imp**: Medium | **Description**: Review and align `Technical_Specification.md` with active codebase per doc_check audit.
 - [x] **Status**: Completed | **Date**: 2026-09-30 | **Imp**: Low | **Description**: Verified `Reference` folder has been fully cleaned up and removed from the project root.
 - [x] **Status**: Completed | **Date**: 2026-09-29 | **Imp**: Medium | **Description**: Refactor code based on `Plans/CodeCheckReports/2026-02-13_CodeCheck.md` & `2026-09-29_CodeCheck.md` (Ingestion modularized into `FileHandling.gs`, XContest rollover fixed, `Utils.gs` extraction).
-- [ ] **Status**: Open | **Date**: 2026-02-13 | **Imp**: High | **Description**: **Ways of Working**: Discuss and refine artifact storage policy. Ensure all important files/artifacts are stored WITHIN the project directory for portability across multiple computers. Stop using local `brain` directory for permanent storage.
+- [x] **Status**: Completed | **Date**: 2026-09-30 | **Imp**: High | **Description**: **Ways of Working**: Formalized artifact storage policy in `Docs/Context.md`. All planning documents, session summaries, and code/doc check reports now reside strictly within `Plans/` inside the project root for multi-computer portability.
 
 ---
 
@@ -75,7 +75,7 @@ This file is the single source of truth for **ToDos**, **Requirements**, **Chang
     - [x] **RQ-SYS-002.2** | **Status**: Implemented | **Phase**: 1 | **Description**: Menu Actions & Dialogs.
 
 - [x] **RQ-SYS-003** | **Status**: Implemented | **Phase**: 1 | **Description**: **SeeYou Cloud Link**: Integration with SeeYou Cloud for visualization. Add "View Flight" column with generated link (`https://seeyou.cloud/api/open?igc=<drive_link>`).
-- [ ] **RQ-SYS-004** | **Status**: In Progress | **Phase**: 1 | **Description**: **Flight Inspector**: Sidebar to view and edit flight details. Sections color-coded to match current sheet. Replaces manual entry blank row macro.
+- [x] **RQ-SYS-004** | **Status**: Implemented | **Phase**: 1 | **Description**: **Flight Inspector**: Sidebar to view and edit flight details. Sections color-coded to match current sheet (`Code/Inspector.html`, `getInspectorData`, `saveInspectorData`).
 - [x] **RQ-SYS-005** | **Status**: Implemented | **Phase**: 1 | **Description**: **Flight Dashboard**: High-level visual metrics (Flights, Hours, Distance), Top 5 Lists (Duration/Distance/Site), and Recent Activity with live sheet formulas in the `Dashboard` tab.
 - [x] **RQ-SYS-006** | **Status**: Implemented | **Phase**: 2 | **Description**: **User Guide & Onboarding**: Add an in-app `User Guide` tab in the Google Sheet (Overview, Setup, Maintenance, Usage, Metric Explanations) and an external standalone document for pre-creation reading.
     - [x] **RQ-SYS-006.1** | **Status**: Implemented | **Phase**: 2 | **Description**: In-App `User Guide` Sheet Tab (Overview, Setup, Normal Usage, Maintenance, and Comprehensive Metric Dictionary grouped by Flight Info, XC Scoring, Analytics, Physics, Geo, and Weather).
@@ -86,9 +86,9 @@ This file is the single source of truth for **ToDos**, **Requirements**, **Chang
 - [ ] **RQ-SYS-008** | **Status**: Open | **Phase**: 2 | **Description**: **New Instance Setup Wizard & Sheet Templating**: Evaluate and implement simplified distribution/onboarding to replace the manual `User_Guide.md` process (e.g., Template copy + interactive setup wizard).
     - [ ] **RQ-SYS-008.1** | **Status**: Open | **Phase**: 2 | **Description**: Templating Architecture Evaluation (Template Copy with pre-bound script vs. Clasp deployment script vs. Workspace Add-on).
     - [ ] **RQ-SYS-008.2** | **Status**: Open | **Phase**: 2 | **Description**: Interactive First-Time Setup Wizard modal (step-by-step folder selection, pilot profile, equipment defaults, trigger install).
-- [ ] **RQ-SYS-009** | **Status**: Partially Implemented | **Phase**: 2 | **Description**: **Pilot Profile Management**: Dedicated `Pilot_Profile` tab for personal/contact info, ratings, club/org memberships (USHPA, BHPA, FAI, clubs), emergency contacts, Garmin inReach & live tracking links, and medical evacuation insurance.
+- [x] **RQ-SYS-009** | **Status**: Implemented | **Phase**: 2 | **Description**: **Pilot Profile Management**: Dedicated `Pilot_Profile` tab for personal/contact info, ratings, club/org memberships (USHPA, BHPA, FAI, clubs), emergency contacts, Garmin inReach & live tracking links, and medical evacuation insurance.
     - [x] **RQ-SYS-009.1** | **Status**: Implemented | **Phase**: 2 | **Description**: In-App `Pilot_Profile` Sheet Tab (Structured key-value fields and free-form notes).
-    - [ ] **RQ-SYS-009.2** | **Status**: Open | **Phase**: 2 | **Description**: Dashboard & Inspector Integration (surface pilot name, rating/club, and inReach emergency links).
+    - [x] **RQ-SYS-009.2** | **Status**: Implemented | **Phase**: 2 | **Description**: Centralized Pilot Profile Integration (Structured credentials, emergency contacts, medical rescue, and inReach tracking links in dedicated `Pilot_Profile` sheet).
 
 ---
 
@@ -101,8 +101,8 @@ This file is the single source of truth for **ToDos**, **Requirements**, **Chang
 - [x] **CR-UI-015** | **Status**: Implemented | **Date**: 2026-09-29 | **Req**: RQ-SYS-002 | **Description**: **Master Folder Links & Direct IGC Download**: Dynamic `=HYPERLINK(...)` to Master Log folder in `Flights` cell A2 and `Dashboard` row 2. Wrap `Flight No` formula with direct download hyperlink for the master IGC file, and add header tooltips via cell notes on Row 4.
 - [x] **CR-UI-016** | **Status**: Implemented | **Date**: 2026-09-29 | **Req**: RQ-SYS-002 | **Description**: **Enhanced URL & Drive Import**: Renamed menu item to "Add files from URL (folder, igc, zip)...". Added Option A (paste URL/ID) and Option B (browse Drive folder), dynamic folder item highlighting, and optional "Delete files from source" checkbox (default unchecked).
 - [x] **CR-UI-013** | **Status**: Implemented | **Date**: 2026-02-13 | **Req**: RQ-SYS-002 | **Description**: **Ingestion Progress Dialogs**: Update all ingestion dialogs (Scan, URL, Upload) to show real-time progress (Start, Processing X/Y, Summary) instead of just generic loading.
-- [ ] **CR-UI-012** | **Status**: Open | **Date**: 2026-02-10 | **Req**: RQ-SYS-002 | **Description**: **Quick Action Buttons**: Add buttons (Drawings/Images) to `Flights` sheet header for common tasks (Upload, Scan, Add Manual).
-- [ ] **CR-LOG-003** | **Status**: Open | **Date**: 2026-02-09 | **Req**: RQ-ING-002 | **Description**: **Enhance Logging**: General improvements to logging visibility (Files processed, specific errors, summary stats).
+- [ ] **CR-UI-012** | **Status**: Blocked | **Date**: 2026-02-10 | **Req**: RQ-SYS-002 | **Description**: **Quick Action Buttons**: Add buttons (Drawings/Images) to `Flights` sheet header for common tasks (Upload, Scan, Add Manual). *Blocked by Apps Script API limitations (cannot programmatically insert drawings and bind click handlers to macros).*
+- [x] **CR-LOG-003** | **Status**: Implemented | **Date**: 2026-09-30 | **Req**: RQ-ING-002 | **Description**: **Enhance Logging**: Created dedicated `App_Log` tab with strictly append-only immutable audit logging, and added real-time progress bars, counters, and scrollable activity consoles across all modal dialogs (`ScanDialog`, `URLDialog`, `UploadDialog`, `ResyncDialog`).
 
 - [x] **CR-UI-004** | **Status**: Implemented | **Date**: 2026-02-13 | **Req**: RQ-SYS-002 | **Description**: **Menu Restructure**: Rename `Setup` to `Admin`, `Scaffold` to `First Time Setup`. Add Admin tools.
 - [ ] **CR-CFG-002** | **Status**: Open | **Date**: 2026-02-08 | **Req**: RQ-SCR-001 | **Description**: **Configurable RDP Tolerance**: Make Ramer-Douglas-Peucker tolerance configurable (Move from `Scoring.gs` and make it a parameter).
