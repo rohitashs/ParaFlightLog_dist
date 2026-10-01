@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 20:55:36
+ * Updated: 2026-09-30 21:05:27
  */
 /**
  * Paragliding Flight Log v2.0 - Scaffolding & Setup
@@ -1143,7 +1143,7 @@ function scaffoldUserGuide_(ss) {
     sh.setTabColor(TABS.USER_GUIDE.color);
   }
   sh.clear();
-  ensureDimensions_(sh, 120, 4);
+  ensureDimensions_(sh, 160, 4);
 
   // Title
   sh.getRange('A1').setValue("Paragliding Flight Log - In-App User Guide & Metric Dictionary").setFontWeight('bold').setFontSize(16);
@@ -1186,11 +1186,12 @@ function scaffoldUserGuide_(ss) {
   rIdx++;
 
   // Section 2: Setup & Folders
-  addSection('2. Initial Configuration & Weather Setup', '#2E7D32');
+  addSection('2. Initial Configuration & Folder Setup', '#2E7D32');
   addRow('Setting / Folder', 'Key Parameter', 'Configuration Instructions', 'Default / Recommendation', true);
-  addRow('Watch Folder', 'WATCH_FOLDER_ID', 'Google Drive folder where flight instruments or XC apps drop .igc / .zip files. Multiple folders supported via comma-separation.', 'Use Admin > Update Watch Folder... to select via in-app picker.');
-  addRow('Master Log Folder', 'MASTER_LOG_FOLDER_ID', 'Google Drive folder holding permanent, clean flight log copies for public sharing and 3D viewer links.', 'Set via Admin > Update Master Log Folder... Share folder as Anyone with link.');
-  addRow('Upload / Error Folders', 'UPLOAD_FOLDER_ID / ERROR_FOLDER_ID', 'Temporary staging folder for browser uploads, and quarantine folder for corrupt / unparseable files.', 'Set via Admin > Update Upload Folder... / Update Error Folder...');
+  addRow('Watch Folder', 'WATCH_FOLDER_ID', 'Google Drive folder where flight instruments or XC apps drop .igc / .zip files. Multiple folders supported via comma-separation.', 'Use Admin > Set Watch Folder(s)... to select via in-app picker.');
+  addRow('Master Log Folder', 'MASTER_LOG_FOLDER_ID', 'Google Drive folder holding permanent, clean flight log copies for public sharing and 3D viewer links.', 'Set via Admin > Set Master Log Folder... Share folder as Anyone with link.');
+  addRow('Upload / Error Folders', 'UPLOAD_FOLDER_ID / ERROR_FOLDER_ID', 'Temporary staging folder for browser uploads, and quarantine folder strictly for corrupt / unparseable files requiring investigation.', 'Set via Admin > Set Upload Folder... / Set Error Folder...');
+  addRow('Trash / Discard Folder', 'TRASH_FOLDER_ID', 'Dedicated Drive folder for discarded, duplicate, and purged flight logs. Safe to empty anytime without data loss risk.', 'Set via Admin > Set Trash / Discard Folder...');
   addRow('Weather Providers', 'WEATHER_PROVIDERS', 'Comma-separated order of weather services: "open_meteo, visual_crossing". Open-Meteo runs with zero API keys required.', 'open_meteo, visual_crossing');
   addRow('Visual Crossing Key', 'VISUAL_CROSSING_API_KEY', 'Optional API key for Visual Crossing backup (1,000 free calls/day). Sign up at visualcrossing.com.', 'Leave blank to use free Open-Meteo exclusively.');
   addRow('Contact Email', 'CONTACT_EMAIL', 'Your email address used in User-Agent headers for open Nominatim / Open-Meteo / Overpass API requests.', 'Required to prevent HTTP 403 API blocking.');
@@ -1205,14 +1206,17 @@ function scaffoldUserGuide_(ss) {
   addRow('Drive / URL Import', 'Flight Log > Add Flight > Add files from URL...', 'Option A: Paste any Google Drive folder/file URL or public IGC link. Option B: Browse Drive folders directly with optional source deletion.', 'Bulk importing historical logs or shared club folders.');
   addRow('Browser Upload', 'Flight Log > Add Flight > Add flight from Upload...', 'Drag and drop single or multiple .igc, .zip, or .gz files directly from your computer into the modal window.', 'Quick manual imports from desktop downloads.');
   addRow('Manual Blank Row', 'Flight Log > Add Flight > Add manual flight', 'Inserts a clean, pre-formatted flight row with sticky equipment defaults for flights without GPS track logs.', 'Tandem flights, dune soaring, or flights where instrument was off.');
+  addRow('Duplicate & Overlap Triage', 'Automated on Ingestion', 'Detects duplicate flights (+/- 15m, <= 1000m). Scores candidate quality (XCTrack=40, Vario=30, Baro sensor integrity=30, 1Hz resolution=15, duration, metadata) and tags Dup-Primary (gold) and Dup-Others (orange) with pairing [DupRef: ...] notes.', 'Preserves all logs while highlighting the superior track log.');
   addRow('Flight Inspector', 'Flight Log > Flight Inspector', 'Highlight any flight row and open the sidebar to review detailed thermal analysis, mode breakdowns, and edit notes.', 'In-depth post-flight analysis.');
 
   rIdx++;
 
   // Section 4: Flight Maintenance
-  addSection('4. Flight Maintenance & Bulk Operations', '#D84315');
+  addSection('4. Flight Maintenance & Admin Operations', '#D84315');
   addRow('Operation', 'Tool / Menu', 'Behavior & Execution Details', 'When to Use', true);
   addRow('Unified Maintenance', 'Flight Log > Flight maintenance > Flight Maintenance...', 'Configurable modal dialog: choose between Selected Rows vs All Flights, and check operations to batch process.', 'Periodic log maintenance, bulk backfilling, or score recalculation.');
+  addRow('Purge Flights Marked \'Remove\'', 'Flight Log > Admin > Sheet Maintenance & Views > Purge Flights Marked \'Remove\'', 'Prompts for confirmation, moves Master IGC files to TRASH_FOLDER_ID, deletes sheet rows bottom-up, refreshes deduplication hashes, and re-sorts flights.', 'Permanently discarding unwanted duplicates or test entries.');
+  addRow('Re-sync Missing Flights', 'Flight Log > Admin > Sheet Maintenance & Views > Re-sync Missing Flights from Master Folder', 'Self-healing tool that scans MASTER_LOG_FOLDER_ID for any orphaned files and recreates their flight rows as \'Review?\'.', 'Restoring accidentally deleted flight rows without duplicate files.');
   addRow('Weather Backfill', 'Maintenance Dialog Checkbox', 'Fetches historical launch/landing wind, cloudbase, cloud %, temperature, and conditions via Open-Meteo & Visual Crossing.', 'Enriching older flights or flights imported while offline.');
   addRow('Geo & Site Backfill', 'Maintenance Dialog Checkbox', 'Reverse geocodes Lat/Lon coordinates into Town, Region, Country and matches nearest takeoff/landing site names.', 'Populating missing location names.');
   addRow('XContest Verification', 'Maintenance Dialog Checkbox', 'Directly probes XContest.org via UTC date/time (+/- 2 min) to verify if flight is published, links flight with permanent ID (e.g. XC#6952654), or flags claim deadline (Claim soon! if <= 14 days, Expired if > 14 days).', 'Updating XContest league claim status.');
@@ -1226,6 +1230,7 @@ function scaffoldUserGuide_(ss) {
   addRow('Category', 'Metric / Column', 'Calculation / Formula', 'Description & Interpretation', true);
   
   // Flight Info
+  addRow('Flight Info', 'Status', 'Valid, Review?, Dup-Primary, Dup-Others, Invalid?, Remove, Duplicate', 'Flight validation state. Dashboard KPIs strictly count "Valid" flights. New files default to "Review?". Overlap winners are "Dup-Primary" (gold) and backups "Dup-Others" (orange). Mark unwanted flights as "Remove" to purge.');
   addRow('Flight Info', 'FlightID', 'F{YYYYMMDD}_{DailySeq}', 'Unique flight identifier linking directly to 3D SeeYou Cloud track visualization.');
   addRow('Flight Info', 'Flight No', '=IFERROR(MAX(INDIRECT("C" & (ROW()+1) & ":C")), 0) + 1', 'Sequential flight counter from first flight to present. Automatically adjusts on sort.');
   addRow('Flight Info', 'Auto Summary', 'Duration + Flight Type + Site + Max Alt', 'Concise human-readable flight summary (e.g. "2h 15m XC at Bir Billing 3100m").');
@@ -1235,7 +1240,6 @@ function scaffoldUserGuide_(ss) {
 
   // Gear
   addRow('Gear Tracking', 'Wing / Harness / Reserves', 'Inherited from previous flight or Equipment defaults', 'Equipment logged for flight. Equipment tab manages fleet hours and specs.');
-
 
   // XC Scoring
   addRow('XC Scoring', 'XC Distance (km)', 'Optimal 3 Turnpoints via Ramer-Douglas-Peucker', 'Optimized cross-country distance under league scoring rules.');
@@ -1267,9 +1271,12 @@ function scaffoldUserGuide_(ss) {
   addRow('Weather', 'Temp (C)', 'Ambient 2m air temperature in Celsius', 'Surface temperature at takeoff.');
   addRow('Weather', 'Observations', 'WMO weather code condition text', 'General atmospheric condition (e.g. "Partly cloudy", "Clear sky").');
 
-  // Validation
+  // Validation & Audit
   addRow('Validation', 'Validation Status', 'Valid, Needs Review, or Invalid', 'Automated heuristics check (e.g. driving, kiting, short flights).');
   addRow('Validation', 'Val: Reason', 'Specific heuristic rule violation message', 'Details for flights flagged for review.');
+  addRow('Audit / Meta', 'IGC Hash', 'MD5 content digest', 'Row-based file hash in Column 70. Deleting a flight row automatically removes its hash, allowing clean re-import without blanket cache purges.');
+  addRow('Audit / Meta', 'Import ID / File', 'Drive file ID & Source Name', 'Provenance tracking linking the row back to the source file and Drive upload record.');
+  addRow('Audit / Meta', 'Notes', 'Pilot & system notes', 'Pilot notes, paired duplicate cross-references [DupRef: ...], and system audit messages.');
 
   sh.autoResizeColumns(1, 4);
   sh.setColumnWidth(1, 160);

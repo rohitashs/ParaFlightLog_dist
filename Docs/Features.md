@@ -22,14 +22,23 @@ The system automates the import of flight logs (IGC) to reduce manual entry.
     *   *URL & Drive Import*: When "Delete from source" is unchecked, successful files copy to Master Log and failed files copy to Error Folder, leaving all Drive source files intact. When checked, source files are trashed after copying. Staged temporary files from web URLs or unzipped packages are always cleaned up from `UPLOAD_FOLDER_ID`.
     *   *File Upload*: Staged temporary uploads are mirrored to Master or Error folder and trashed from `UPLOAD_FOLDER_ID`.
 
-## 2. ✈️ Automated Flight Logging
-*Maps to `RQ-ING-002`*
+## 2. ✈️ Automated Flight Logging & Smart Deduplication
+*Maps to `RQ-ING-002`, `CR-ING-006`*
 
 Converts raw data into a structured Pilot Logbook in Google Sheets.
-*   **Auto-Summary**: Generates human-readable summaries (e.g. "2h 10m XC at Bir Billing").
-*   **Data Validation**: Flags flights as `Needs Review`, `Valid`, or `Invalid` based on heuristic checks (e.g. Flight looks like a car drive).
-*   **Gear Tracking**: Auto-fills Wing, Harness, and Reserve based on the last valid flight ("Sticky Defaults") or IGC headers.
-*   **Snapshotting**: Records equipment performance metrics (e.g. Trim Speed, Glide) at the time of the flight.
+*   **Auto-Summary**: Generates human-readable summaries (e.g. "2h 10m XC at Bir Billing 3100m").
+*   **Row-Based Hashes (Zero Black Box)**: MD5 file hashes are stored directly on the flight row in Column 70 (`IGC Hash`). Deleting a flight row automatically removes its hash, allowing clean re-import without blanket cache wipes.
+*   **Smart Deduplication & Device Overlap Triage**:
+    *   *Hard Dedupe*: Identical file content (MD5 match) is recognized immediately. Re-links to existing Master IGC files if rows were deleted without generating `_copy.igc` duplicates, and moves source files to the Trash folder.
+    *   *Heuristic Overlap*: When multiple instruments record the same flight (same date, $\pm 15$ min or interval overlap, launch distance $\le 1{,}000$ m), the system calculates a 0–100 quality score (XCTrack primary device = 40 pts, dedicated vario = 30 pts, baro sensor integrity = 30 pts, 1Hz resolution = 15 pts, duration, and metadata).
+    *   *Candidate Tagging*: The superior track is marked `Dup-Primary` (gold) and the backup track is marked `Dup-Others` (orange), with cross-referencing pairing notes `[DupRef: DUP_YYYYMMDD_HHMM | Paired with <FlightID> (Score: X vs Y)]`.
+*   **Status Taxonomy & Dashboard Protection**:
+    *   Dropdown options: `Valid`, `Review?`, `Dup-Primary`, `Dup-Others`, `Invalid?`, `Remove`, `Duplicate`.
+    *   All Dashboard KPI cards, 6-month currency timeline, and leaderboards strictly filter for `Status = "Valid"`, preventing unreviewed or duplicate tracks from polluting pilot statistics.
+*   **Self-Healing Admin Tools**:
+    *   *Purge Flights Marked 'Remove'*: Moves Master IGC files to `TRASH_FOLDER_ID`, deletes sheet rows bottom-up, and refreshes hashes.
+    *   *Re-sync Missing Flights from Master Folder*: Scans `MASTER_LOG_FOLDER_ID` for orphaned IGCs and restores them to the `Flights` tab as `Review?`.
+*   **Gear Tracking**: Auto-fills Wing, Harness, and Reserve based on the last valid flight ("Sticky Defaults") or Equipment defaults.
 
 ## 3. 📊 Flight Analysis
 *Maps to `RQ-ANA-001`, `RQ-ANA-002`*
@@ -120,8 +129,8 @@ Under-the-hood capabilities that drive reliability.
 *Maps to `RQ-SYS-006`*
 
 Comprehensive documentation designed to guide pilots from initial setup to day-to-day operation.
-*   **In-App User Guide Tab (`RQ-SYS-006.1`)**: A dedicated sheet tab (`User Guide`) containing structured reference documentation: System Overview & Architecture, Initial Configuration & Folders (including `XCONTEST_USERNAME`, `WEATHER_PROVIDERS`, and folder paths), Daily Flight Logging Workflows, System Maintenance & Bulk Operations (weather backfill, geo resolution, XContest verification, physics recompute, date sorting), and a **Comprehensive Metric Dictionary** defining all calculated fields (Flight Info, Gear Tracking, XC Scoring & XContest hyperlinking, Analytics & Thermal %, Launch/Landing Geo, Weather, and Validation). Includes a dedicated `Flight Log > Admin > Admin: Refresh User Guide Tab` menu command to re-sync the guide at any time without disturbing flight records.
-*   **External Onboarding Guide (`RQ-SYS-006.2`)**: A standalone document (viewable in Markdown/web) containing the high-level system overview, prerequisites, and initial setup steps so new pilots can review and prepare before creating their Google Sheet.
+*   **In-App User Guide Tab (`RQ-SYS-006.1`)**: A dedicated sheet tab (`User Guide`) containing structured reference documentation: System Overview & Architecture, Initial Configuration & Folders (including `TRASH_FOLDER_ID`, `XCONTEST_USERNAME`, `WEATHER_PROVIDERS`, and folder paths), Daily Flight Logging Workflows (including duplicate detection, device quality scoring, and `Dup-Primary`/`Dup-Others` candidate triage), System Maintenance & Admin Operations (purging `Remove` flights, re-syncing from master folder, weather backfill, geo resolution, XContest verification, physics recompute, date sorting), and a **Comprehensive Metric Dictionary** defining all calculated fields (Status taxonomy, Flight Info, Gear Tracking, XC Scoring & XContest hyperlinking, Analytics & Thermal %, Launch/Landing Geo, Weather, Validation, and Column 70 `IGC Hash`). Includes a dedicated `Flight Log > Admin > Sheet Maintenance & Views > Refresh User Guide & Metric Dictionary` menu command to re-sync the guide at any time without disturbing flight records.
+*   **External Onboarding Guide (`RQ-SYS-006.2`)**: A standalone document (`Setup_Guide.md`) containing the high-level system overview, prerequisites, folder setup, duplicate review workflows, and initial setup steps so new pilots can review and prepare before creating their Google Sheet.
 
 ## 11. 👤 Pilot Profile & Credentials
 *Maps to `RQ-SYS-009`*
