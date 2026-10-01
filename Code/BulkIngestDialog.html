@@ -680,7 +680,7 @@
                                 if (r.isDuplicate) {
                                     log("[DUPE] " + r.name + " (Already in logbook)", "log-info");
                                 } else if (r.success) {
-                                    log("[OK] " + r.name + " -> " + (r.flightId ? r.flightId + " " : "") + "[" + (r.status || 'OK') + "]", "log-success");
+                                    log("[OK] " + r.name + " -> " + (r.flightId ? r.flightId + " " : "") + "[" + (r.status || 'Review?') + "]", "log-success");
                                 } else {
                                     log("[ERR] " + r.name + ": " + (r.msg || 'Failed'), "log-error");
                                 }

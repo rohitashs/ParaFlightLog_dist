@@ -1132,7 +1132,7 @@ function processBulkBatch(batchFiles, options) {
         }
 
         // 8. Status & Overlap Deduplication
-        var status = 'OK';
+        var status = 'Review?';
         if (scoring.error) {
           status = 'Invalid?';
           noteLog.push('Scoring Error: ' + scoring.error);
