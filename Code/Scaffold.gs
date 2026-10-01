@@ -459,16 +459,16 @@ function scaffoldConfig_(ss) {
 
   // Right side (E2:N2)
   var lookupCols = [
-    'Categories',
-    'Wings (Auto)',
-    'Harnesses (Auto)',
-    'Reserves (Auto)',
-    'Other (Auto)',
+    'Equipment Categories',
     'Flight Status',
     'Flight Type',
     'XC Classes',
     'Date Formats',
-    'Time Formats'
+    'Time Formats',
+    'Wings (Auto)',
+    'Harnesses (Auto)',
+    'Reserves (Auto)',
+    'Other (Auto)'
   ];
   sh.getRange(2, 5, 1, lookupCols.length).setValues([lookupCols]);
   sh.getRange(2, 5, 1, lookupCols.length).setFontWeight('bold').setBackground('#EEEEEE');
@@ -535,32 +535,32 @@ function scaffoldConfig_(ss) {
   }
 
   // Populate Lookups on Right (Row 3+)
-  // E3:E6: Static Categories
+  // E3:E6: Static Equipment Categories (Col 5)
   sh.getRange('E3:E6').setValues([['Wing'], ['Harness'], ['Reserve'], ['Other']]);
 
-  // F3:I3: Dynamic Queries from Equipment
-  var eqName = TABS.EQUIPMENT.name;
-  sh.getRange('F3').setFormula('=IFERROR(QUERY(' + eqName + '!A:M, "select B where A=\'Wing\' and H=FALSE order by B asc label B \'\'", 0), "")');
-  sh.getRange('G3').setFormula('=IFERROR(QUERY(' + eqName + '!A:M, "select B where A=\'Harness\' and H=FALSE order by B asc label B \'\'", 0), "")');
-  sh.getRange('H3').setFormula('=IFERROR(QUERY(' + eqName + '!A:M, "select B where A=\'Reserve\' and H=FALSE order by B asc label B \'\'", 0), "")');
-  sh.getRange('I3').setFormula('=IFERROR(QUERY(' + eqName + '!A:M, "select B where A=\'Other\' and H=FALSE order by B asc label B \'\'", 0), "")');
-
-  // Status & Types from CFG (Soft dedupe scoring only)
+  // Status & Types from CFG (Manual Lookups: Cols F=6, G=7, H=8, I=9, J=10)
   var statuses = ['Valid', 'Review?', 'Dup-Primary', 'Dup-Others', 'Invalid?', 'Remove'];
   var types = ['Free Fly', 'XC', 'Soaring', 'Comp', 'SIV / Maneuvers', 'Training', 'Other'];
   var xcClasses = ['Free Flight', 'Flat Triangle', 'FAI Triangle', 'Out-and-Return'];
   var dateFormats = ['yyyy-MM-dd', 'MM/dd/yyyy', 'dd/MM/yyyy', 'MMM dd, yyyy', 'ddd, MMM dd'];
   var timeFormats = ['HH:mm', 'h:mm a'];
 
-  if (statuses.length > 0) sh.getRange(3, 10, statuses.length, 1).setValues(statuses.map(function(s) { return [s]; }));
-  if (types.length > 0) sh.getRange(3, 11, types.length, 1).setValues(types.map(function(t) { return [t]; }));
-  if (xcClasses.length > 0) sh.getRange(3, 12, xcClasses.length, 1).setValues(xcClasses.map(function(t) { return [t]; }));
-  if (dateFormats.length > 0) sh.getRange(3, 13, dateFormats.length, 1).setNumberFormat('@').setValues(dateFormats.map(function(t) { return [t]; }));
-  if (timeFormats.length > 0) sh.getRange(3, 14, timeFormats.length, 1).setNumberFormat('@').setValues(timeFormats.map(function(t) { return [t]; }));
+  if (statuses.length > 0) sh.getRange(3, 6, statuses.length, 1).setValues(statuses.map(function(s) { return [s]; }));
+  if (types.length > 0) sh.getRange(3, 7, types.length, 1).setValues(types.map(function(t) { return [t]; }));
+  if (xcClasses.length > 0) sh.getRange(3, 8, xcClasses.length, 1).setValues(xcClasses.map(function(t) { return [t]; }));
+  if (dateFormats.length > 0) sh.getRange(3, 9, dateFormats.length, 1).setNumberFormat('@').setValues(dateFormats.map(function(t) { return [t]; }));
+  if (timeFormats.length > 0) sh.getRange(3, 10, timeFormats.length, 1).setNumberFormat('@').setValues(timeFormats.map(function(t) { return [t]; }));
+
+  // K3:N3: Dynamic Queries from Equipment (Auto Lookups: Cols K=11, L=12, M=13, N=14)
+  var eqName = TABS.EQUIPMENT.name;
+  sh.getRange('K3').setFormula('=IFERROR(QUERY(' + eqName + '!A:M, "select B where A=\'Wing\' and H=FALSE order by B asc label B \'\'", 0), "")');
+  sh.getRange('L3').setFormula('=IFERROR(QUERY(' + eqName + '!A:M, "select B where A=\'Harness\' and H=FALSE order by B asc label B \'\'", 0), "")');
+  sh.getRange('M3').setFormula('=IFERROR(QUERY(' + eqName + '!A:M, "select B where A=\'Reserve\' and H=FALSE order by B asc label B \'\'", 0), "")');
+  sh.getRange('N3').setFormula('=IFERROR(QUERY(' + eqName + '!A:M, "select B where A=\'Other\' and H=FALSE order by B asc label B \'\'", 0), "")');
 
   // Validation for Date/Time Formats & Booleans in Parameters
-  var dateRange = sh.getRange('M3:M7');
-  var timeRange = sh.getRange('N3:N4');
+  var dateRange = sh.getRange('I3:I7');
+  var timeRange = sh.getRange('J3:J4');
   var dateRule = SpreadsheetApp.newDataValidation().requireValueInRange(dateRange, true).build();
   var timeRule = SpreadsheetApp.newDataValidation().requireValueInRange(timeRange, true).build();
 
@@ -791,16 +791,16 @@ function applyFlightsValidation_(sh) {
     sh.setConditionalFormatRules(rules);
   }
 
-  // Flight Type (Config Col K)
+  // Flight Type (Config Col G)
   if (map['Flight Type']) {
       var shConfig = ss.getSheetByName(TABS.CONFIG.name);
       if (shConfig) {
-        var rule = SpreadsheetApp.newDataValidation().requireValueInRange(shConfig.getRange('K3:K'), true).build();
+        var rule = SpreadsheetApp.newDataValidation().requireValueInRange(shConfig.getRange('G3:G'), true).build();
         sh.getRange(startRow, map['Flight Type'], valRows, 1).setDataValidation(rule);
       }
   }
 
-  // Equipment (Config Cols F, G, H)
+  // Equipment (Config Cols K, L, M)
   var shConfig = ss.getSheetByName(TABS.CONFIG.name);
   if (shConfig) {
     var apply = function(colName, rngA1) {
@@ -809,15 +809,15 @@ function applyFlightsValidation_(sh) {
          sh.getRange(startRow, map[colName], valRows, 1).setDataValidation(rule);
        }
     };
-    apply('Wing', 'F3:F');
-    apply('Harness', 'G3:G');
-    apply('Reserve 1', 'H3:H');
-    apply('Reserve 2', 'H3:H');
+    apply('Wing', 'K3:K');
+    apply('Harness', 'L3:L');
+    apply('Reserve 1', 'M3:M');
+    apply('Reserve 2', 'M3:M');
   }
   
-  // XC Flight Class (Config Col L)
+  // XC Flight Class (Config Col H)
   if (map['XC Flight Class'] && shConfig) {
-      var rule = SpreadsheetApp.newDataValidation().requireValueInRange(shConfig.getRange('L3:L'), true).build();
+      var rule = SpreadsheetApp.newDataValidation().requireValueInRange(shConfig.getRange('H3:H'), true).build();
       sh.getRange(startRow, map['XC Flight Class'], valRows, 1).setDataValidation(rule);
   }
   
@@ -843,7 +843,7 @@ function applyEquipmentValidation_(sh) {
       
       if (numRows < 1) return;
 
-      // Category Range (Config Col E: Categories)
+      // Category Range (Config Col E: Equipment Categories)
       var range = shConfig.getRange('E3:E');
       var rule = SpreadsheetApp.newDataValidation().requireValueInRange(range, true).setAllowInvalid(true).build();
       
@@ -981,10 +981,13 @@ function reapplyFormatting_() {
       scaffoldConfig_(ss);
   }
 
-  // 4. Dashboard
+  // 4. Pilot Profile
+  scaffoldPilotProfile_(ss);
+
+  // 5. Dashboard
   scaffoldDashboard_(ss);
 
-  ss.toast('Formatting Re-applied: Obsolete columns eliminated, Config updated, Dashboard refreshed, Flights frozen.');
+  ss.toast('Formatting Re-applied: Obsolete columns eliminated, Config updated, Pilot Profile refreshed, Dashboard refreshed, Flights frozen.');
 }
 
 function backupSystemSheets_() {
@@ -1057,100 +1060,139 @@ function scaffoldPilotProfile_(ss) {
   var existingVals = {};
   if (sh.getLastRow() >= 4) {
     try {
-      var raw = sh.getRange(4, 2, sh.getLastRow() - 3, 2).getValues();
+      var numCols = Math.min(sh.getLastColumn(), 4);
+      var raw = sh.getRange(4, 1, sh.getLastRow() - 3, numCols).getValues();
       raw.forEach(function(r) {
-        if (r[0]) existingVals[r[0]] = r[1];
+        // If old 4-column layout: Col A was Category, Col B was Field, Col C was Value
+        if (r.length >= 3 && r[1] && r[2] !== '' && !String(r[0]).startsWith('[')) {
+          existingVals[String(r[1]).trim()] = r[2];
+        }
+        // If 3-column layout: Col A is Field (and not a section header '['), Col B is Value
+        if (r[0] && !String(r[0]).startsWith('[') && r[1] !== undefined && r[1] !== '') {
+          existingVals[String(r[0]).trim()] = r[1];
+        }
       });
     } catch(e) { console.warn('Pilot Profile preservation error', e); }
   }
 
   sh.clear();
-  ensureDimensions_(sh, 50, 4);
+  ensureDimensions_(sh, 45, 3);
 
   // Header Title
   sh.getRange('A1').setValue("Pilot Profile & Credentials").setFontWeight('bold').setFontSize(16);
-  sh.getRange('A1:D1').setBackground(TABS.PILOT_PROFILE.color).setFontColor('white').merge();
+  sh.getRange('A1:C1').setBackground(TABS.PILOT_PROFILE.color).setFontColor('white').merge();
   sh.getRange('A1').setHorizontalAlignment('center').setVerticalAlignment('middle');
   sh.setRowHeight(1, 38);
 
   sh.getRange('A2').setValue("Personal credentials, licensing, emergency info, and live satellite tracking gear").setFontStyle('italic').setFontSize(10);
-  sh.getRange('A2:D2').merge().setHorizontalAlignment('center');
+  sh.getRange('A2:C2').merge().setHorizontalAlignment('center');
   sh.setRowHeight(2, 22);
 
   // Column Headers Row 3
-  sh.getRange(3, 1, 1, 4).setValues([['Category', 'Field', 'Value', 'Notes / Instructions']]);
-  sh.getRange(3, 1, 1, 4).setBackground('#37474F').setFontColor('white').setFontWeight('bold');
+  sh.getRange(3, 1, 1, 3).setValues([['Field', 'Value', 'Notes / Instructions']]);
+  sh.getRange(3, 1, 1, 3).setBackground('#37474F').setFontColor('white').setFontWeight('bold');
+  sh.setRowHeight(3, 26);
 
-  var profileFields = [
-    // Section 1: Pilot Identity
-    { cat: 'Identity', field: 'Full Name', val: '', note: 'Legal name as shown on official pilot license' },
-    { cat: 'Identity', field: 'Callsign / Nickname', val: '', note: 'Radio callsign or competition display name' },
-    { cat: 'Identity', field: 'Email', val: '', note: 'Primary contact email' },
-    { cat: 'Identity', field: 'Phone Number', val: '', note: 'Mobile phone with international dialing code' },
-    { cat: 'Identity', field: 'Home Country & Town', val: '', note: 'Home flying base location' },
-
-    // Section 2: Ratings & Certifications
-    { cat: 'Licensing', field: 'National Association', val: '', note: 'e.g. USHPA, BHPA, FFVL, DHV, HPAC, FAI' },
-    { cat: 'Licensing', field: 'Pilot Rating', val: '', note: 'e.g. P2 (Novice), P3, P4 (Advanced), APPI 4' },
-    { cat: 'Licensing', field: 'License Number', val: '', note: 'National association member / pilot license ID' },
-    { cat: 'Licensing', field: 'FAI Sporting License #', val: '', note: 'Required for FAI Category 1 & 2 competitions' },
-    { cat: 'Licensing', field: 'Tandem / Instructor', val: '', note: 'Tandem T1/T2, Instructor, or No' },
-    { cat: 'Licensing', field: 'License Expiration Date', val: '', note: 'YYYY-MM-DD' },
-
-    // Section 3: Clubs & Federations
-    { cat: 'Affiliations', field: 'Primary Flying Club', val: '', note: 'Home club name' },
-    { cat: 'Affiliations', field: 'Secondary Clubs', val: '', note: 'Regional or visiting club memberships' },
-    { cat: 'Affiliations', field: 'National Federation Member #', val: '', note: 'Aero club or federation identifier' },
-
-    // Section 4: Emergency, Medical & SAR
-    { cat: 'Emergency / SAR', field: 'Primary Emergency Contact', val: '', note: 'Full Name and Relationship (e.g. Spouse, Parent)' },
-    { cat: 'Emergency / SAR', field: 'Primary Contact Phone', val: '', note: 'Emergency mobile number with country code' },
-    { cat: 'Emergency / SAR', field: 'Secondary Contact & Phone', val: '', note: 'Alternate emergency contact details' },
-    { cat: 'Emergency / SAR', field: 'SAR / Evacuation Insurance', val: '', note: 'Provider (e.g. GEOS, Garmin SAR, Global Rescue, AAC)' },
-    { cat: 'Emergency / SAR', field: 'Insurance Policy Number', val: '', note: 'Medical evacuation policy number' },
-    { cat: 'Emergency / SAR', field: 'Blood Type', val: '', note: 'e.g. O+, A+, B+, etc.' },
-    { cat: 'Emergency / SAR', field: 'Medical Conditions / Allergies', val: '', note: 'Critical details for first responders' },
-
-    // Section 5: Live Tracking & Satellite Gear
-    { cat: 'Tracking / Gear', field: 'Garmin inReach IMEI', val: '', note: 'Satellite messenger IMEI number' },
-    { cat: 'Tracking / Gear', field: 'Garmin MapShare URL', val: '', note: 'https://share.garmin.com/username' },
-    { cat: 'Tracking / Gear', field: 'Flymaster Live URL', val: '', note: 'Flymaster / Livetrack24 public link' },
-    { cat: 'Tracking / Gear', field: 'XContest Live URL', val: '', note: 'XContest live tracking pilot link' },
-    { cat: 'Tracking / Gear', field: 'Emergency Beacon Hex ID', val: '', note: '406 MHz PLB / ELT 15-character hex ID' },
-
-    // Section 6: Notes & Progression
-    { cat: 'Progression', field: 'Current Season XC Goals', val: '', note: 'Targets for season (distance, triangles, hours)' },
-    { cat: 'Progression', field: 'SIV / Maneuver Notes', val: '', note: 'Stalls, spins, collapses, acro progression log' },
-    { cat: 'Progression', field: 'General Flying Notes', val: '', note: 'Free-form reflections, wing trim checks, line check dates' }
+  var sections = [
+    {
+      title: '[ Identity ]',
+      fields: [
+        { field: 'Full Name', val: '', note: 'Legal name as shown on official pilot license' },
+        { field: 'Callsign / Nickname', val: '', note: 'Radio callsign or competition display name' },
+        { field: 'Email', val: '', note: 'Primary contact email' },
+        { field: 'Phone Number', val: '', note: 'Mobile phone with international dialing code' },
+        { field: 'Home Country & Town', val: '', note: 'Home flying base location' }
+      ]
+    },
+    {
+      title: '[ Licensing ]',
+      fields: [
+        { field: 'National Association', val: '', note: 'e.g. USHPA, BHPA, FFVL, DHV, HPAC, FAI' },
+        { field: 'Pilot Rating', val: '', note: 'e.g. P2 (Novice), P3, P4 (Advanced), APPI 4' },
+        { field: 'License Number', val: '', note: 'National association member / pilot license ID' },
+        { field: 'FAI Sporting License #', val: '', note: 'Required for FAI Category 1 & 2 competitions' },
+        { field: 'Tandem / Instructor', val: '', note: 'Tandem T1/T2, Instructor, or No' },
+        { field: 'License Expiration Date', val: '', note: 'YYYY-MM-DD' }
+      ]
+    },
+    {
+      title: '[ Affiliations ]',
+      fields: [
+        { field: 'Primary Flying Club', val: '', note: 'Home club name' },
+        { field: 'Secondary Clubs', val: '', note: 'Regional or visiting club memberships' },
+        { field: 'National Federation Member #', val: '', note: 'Aero club or federation identifier' }
+      ]
+    },
+    {
+      title: '[ Emergency / SAR ]',
+      fields: [
+        { field: 'Primary Emergency Contact', val: '', note: 'Full Name and Relationship (e.g. Spouse, Parent)' },
+        { field: 'Primary Contact Phone', val: '', note: 'Emergency mobile number with country code' },
+        { field: 'Secondary Contact & Phone', val: '', note: 'Alternate emergency contact details' },
+        { field: 'SAR / Evacuation Insurance', val: '', note: 'Provider (e.g. GEOS, Garmin SAR, Global Rescue, AAC)' },
+        { field: 'Insurance Policy Number', val: '', note: 'Medical evacuation policy number' },
+        { field: 'Blood Type', val: '', note: 'e.g. O+, A+, B+, etc.' },
+        { field: 'Medical Conditions / Allergies', val: '', note: 'Critical details for first responders' }
+      ]
+    },
+    {
+      title: '[ Tracking / Gear ]',
+      fields: [
+        { field: 'Garmin inReach IMEI', val: '', note: 'Satellite messenger IMEI number' },
+        { field: 'Garmin MapShare URL', val: '', note: 'https://share.garmin.com/username' },
+        { field: 'Flymaster Live URL', val: '', note: 'Flymaster / Livetrack24 public link' },
+        { field: 'XContest Live URL', val: '', note: 'XContest live tracking pilot link' },
+        { field: 'Emergency Beacon Hex ID', val: '', note: '406 MHz PLB / ELT 15-character hex ID' }
+      ]
+    },
+    {
+      title: '[ Progression ]',
+      fields: [
+        { field: 'Current Season XC Goals', val: '', note: 'Targets for season (distance, triangles, hours)' },
+        { field: 'SIV / Maneuver Notes', val: '', note: 'Stalls, spins, collapses, acro progression log' },
+        { field: 'General Flying Notes', val: '', note: 'Free-form reflections, wing trim checks, line check dates' }
+      ]
+    }
   ];
 
   var rows = [];
-  for (var i = 0; i < profileFields.length; i++) {
-    var f = profileFields[i];
-    var val = (existingVals[f.field] !== undefined && existingVals[f.field] !== '') ? existingVals[f.field] : f.val;
-    rows.push([f.cat, f.field, val, f.note]);
-  }
+  sections.forEach(function(sec) {
+    rows.push([sec.title, '', '']);
+    sec.fields.forEach(function(f) {
+      var val = (existingVals[f.field] !== undefined && existingVals[f.field] !== '') ? existingVals[f.field] : f.val;
+      rows.push([f.field, val, f.note]);
+    });
+  });
 
-  sh.getRange(4, 1, rows.length, 4).setValues(rows);
+  sh.getRange(4, 1, rows.length, 3).setValues(rows);
 
   // Formatting rows
-  var curCat = '';
   for (var r = 0; r < rows.length; r++) {
     var rowIdx = r + 4;
-    var rowCat = rows[r][0];
-    if (rowCat !== curCat) {
-      sh.getRange(rowIdx, 1).setFontWeight('bold').setBackground('#ECEFF1');
-      curCat = rowCat;
+    var rowKey = rows[r][0];
+    if (rowKey.indexOf('[') === 0) {
+      // Section header row: merged A:C with subtle background
+      sh.getRange(rowIdx, 1, 1, 3).merge().setBackground('#CFD8DC').setFontWeight('bold').setFontColor('#37474F');
+      sh.setRowHeight(rowIdx, 26);
+    } else {
+      // Field label
+      sh.getRange(rowIdx, 1).setFontWeight('bold').setFontColor('#212121');
+      // Editable value column
+      sh.getRange(rowIdx, 2).setBackground('#FFFDE7').setBorder(true, true, true, true, true, true, '#BDBDBD', SpreadsheetApp.BorderStyle.SOLID);
+      // Notes column
+      sh.getRange(rowIdx, 3).setFontSize(9).setFontColor('#616161');
+      sh.setRowHeight(rowIdx, 22);
     }
-    // Highlight editable value column
-    sh.getRange(rowIdx, 3).setBackground('#FFFDE7').setBorder(true, true, true, true, true, true, '#BDBDBD', SpreadsheetApp.BorderStyle.SOLID);
-    sh.getRange(rowIdx, 4).setFontSize(9).setFontColor('#616161');
   }
 
-  sh.autoResizeColumns(1, 4);
-  sh.setColumnWidth(2, 220);
-  sh.setColumnWidth(3, 280);
-  sh.setColumnWidth(4, 380);
+  sh.setColumnWidth(1, 240);
+  sh.setColumnWidth(2, 300);
+  sh.setColumnWidth(3, 440);
+
+  // Clean excess columns if present
+  if (sh.getMaxColumns() > 3) {
+    try { sh.deleteColumns(4, sh.getMaxColumns() - 3); } catch (e) {}
+  }
 }
 
 /* ==========================================================================================

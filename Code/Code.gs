@@ -19,7 +19,7 @@ function onOpen(e) {
     .addItem('Flight Inspector', 'showInspectorSidebar')
     .addSeparator()
     .addSubMenu(ui.createMenu('Add Flight')
-        .addItem('Add manual flight (blank row)', 'uiAddManualFlight_')
+        .addItem('Add manual flight (blank row)', 'uiAddManualFlight')
         .addItem('Add files from URL (folder, igc, zip)...', 'showUrlDialog')
         .addItem('Add flight from Upload (Local File)...', 'showUploadDialog')
         .addItem('Scan Watch Folder Now', 'showScanDialog'))
@@ -38,24 +38,24 @@ function onOpen(e) {
             .addItem('Save Config (Export JSON)...', 'showSaveConfigDialog')
             .addItem('Load Config (Import JSON)...', 'showLoadConfigDialog'))
         .addSubMenu(ui.createMenu('Sheet Maintenance & Views')
-            .addItem('Refresh Dashboard (KPIs & Cards)', 'uiRefreshDashboard_')
-            .addItem('Refresh User Guide & Metric Dictionary', 'uiRefreshUserGuide_')
-            .addItem('Update Dropdowns, Parameters & Notes', 'updateValidationOnly_')
-            .addItem('Repair Sheet Schema & Formatting (Safe)', 'reapplyFormatting_'))
+            .addItem('Refresh Dashboard (KPIs & Cards)', 'uiRefreshDashboard')
+            .addItem('Refresh User Guide & Metric Dictionary', 'uiRefreshUserGuide')
+            .addItem('Update Dropdowns, Parameters & Notes', 'updateValidationOnly')
+            .addItem('Repair Sheet Schema & Formatting (Safe)', 'reapplyFormatting'))
         .addSubMenu(ui.createMenu('Folder Configuration')
-            .addItem('Set Watch Folder(s)...', 'uiUpdateWatchFolder_')
-            .addItem('Set Upload Folder...', 'uiUpdateUploadFolder_')
-            .addItem('Set Master Log Folder...', 'uiUpdateMasterLogFolder_')
-            .addItem('Set Error Folder...', 'uiUpdateErrorFolder_')
-            .addItem('Set Trash / Discard Folder...', 'uiUpdateTrashFolder_'))
+            .addItem('Set Watch Folder(s)...', 'uiUpdateWatchFolder')
+            .addItem('Set Upload Folder...', 'uiUpdateUploadFolder')
+            .addItem('Set Master Log Folder...', 'uiUpdateMasterLogFolder')
+            .addItem('Set Error Folder...', 'uiUpdateErrorFolder')
+            .addItem('Set Trash / Discard Folder...', 'uiUpdateTrashFolder'))
         .addSubMenu(ui.createMenu('Data Backup')
-            .addItem('Backup System Sheets', 'backupSystemSheets_'))
+            .addItem('Backup System Sheets', 'backupSystemSheets'))
         .addSubMenu(ui.createMenu('Automation & Services')
-            .addItem('Setup / Reset 5-min Watcher Trigger', 'setupWatcherTrigger_'))
+            .addItem('Setup / Reset 5-min Watcher Trigger', 'setupWatcherTrigger'))
         .addSeparator()
         .addSubMenu(ui.createMenu('System Setup & Reset (Danger Zone)')
-            .addItem('First Time Setup (Full Scaffold)', 'scaffoldAll_')
-            .addItem('Delete System Sheets (Full Reset)', 'deleteSystemSheets_')))
+            .addItem('First Time Setup (Full Scaffold)', 'scaffoldAll')
+            .addItem('Delete System Sheets (Full Reset)', 'deleteSystemSheets')))
     .addToUi();
 }
 
@@ -1219,6 +1219,29 @@ function markDuplicatesForRemoval(includeOthers, includePrimary) {
 }
 
 /**
+ * Maps a parameter key and sheet section to one of the 5 granular configuration groups.
+ */
+function getParameterGroup_(key, section) {
+  var s = String(section || '').trim();
+  if (s === 'Ingestion' || key.indexOf('FOLDER') !== -1 || key.indexOf('WATCH') !== -1) {
+    return 'Ingestion and Folders';
+  }
+  if (s === 'Integrations' || s === 'Geo & Time' || key.indexOf('WEATHER') !== -1 || key.indexOf('GEO_') !== -1 || key.indexOf('XCONTEST') !== -1 || key === 'CONTACT_EMAIL') {
+    return 'Integrations';
+  }
+  if (s === 'Validation' || s === 'Analysis Rules' || s === 'Analysis - Adv' || s === 'Scoring' || key.indexOf('VALIDATION') !== -1 || key.indexOf('THERMAL') !== -1 || key.indexOf('SOAR') !== -1 || key.indexOf('GLIDE') !== -1 || key.indexOf('SINK') !== -1 || key.indexOf('BONUS') !== -1) {
+    return 'Flight Scoring, Physics and Analysis';
+  }
+  if (s === 'Format and Units' || s === 'Lists' || key === 'DATE_FORMAT' || key === 'TIME_FORMAT') {
+    return 'Formats and Units';
+  }
+  if (s === 'Dashboard & Currency' || s === 'UI' || key.indexOf('TIMELINE') !== -1) {
+    return 'UI (dashboard etc)';
+  }
+  return 'Integrations';
+}
+
+/**
  * Serializes configuration from Pilot_Profile and Config into JSON string.
  * Used by SaveConfigDialog.html.
  */
@@ -1231,22 +1254,24 @@ function exportConfigJson_(options) {
     sections: {}
   };
 
-  // 1. Pilot Profile
+  // 1. Pilot Profile (Pure Key-Value: Col A = Field, Col B = Value)
   if (options && options.pilotProfile) {
     var shP = ss.getSheetByName(TABS.PILOT_PROFILE ? TABS.PILOT_PROFILE.name : 'Pilot_Profile');
-    if (shP && shP.getLastRow() >= 2) {
+    if (shP && shP.getLastRow() >= 4) {
       result.sections.pilotProfile = {};
-      var pData = shP.getRange(2, 1, shP.getLastRow() - 1, 2).getValues();
+      var numCols = Math.min(shP.getLastColumn(), 3);
+      var pData = shP.getRange(4, 1, shP.getLastRow() - 3, numCols).getValues();
       pData.forEach(function(row) {
         var k = String(row[0]).trim();
-        if (k && row[1] !== '') {
+        // Skip section headers '[ ... ]' and empty fields
+        if (k && k.indexOf('[') !== 0) {
           result.sections.pilotProfile[k] = row[1];
         }
       });
     }
   }
 
-  // 2. Parameters
+  // 2. System Parameters (Organized into 5 Granular Sub-Groups)
   if (options && options.parameters) {
     result.sections.parameters = {};
     var paramGroups = (options && options.paramGroups) || {};
@@ -1260,32 +1285,35 @@ function exportConfigJson_(options) {
         if (k.indexOf('[') === 0) {
           currentSection = k.replace(/[\[\]]/g, '').trim();
         } else if (k && v !== '') {
+          var groupName = getParameterGroup_(k, currentSection);
           var includeGroup = true;
-          if (currentSection === 'Ingestion' && paramGroups.ingestion === false) includeGroup = false;
-          if (currentSection === 'Integrations' && paramGroups.integrations === false) includeGroup = false;
-          if (currentSection === 'Scoring' && paramGroups.scoring === false) includeGroup = false;
-          if (currentSection === 'UI' && paramGroups.ui === false) includeGroup = false;
+          if (groupName === 'Ingestion and Folders' && paramGroups.ingestion === false) includeGroup = false;
+          if (groupName === 'Integrations' && paramGroups.integrations === false) includeGroup = false;
+          if (groupName === 'Flight Scoring, Physics and Analysis' && paramGroups.scoring === false) includeGroup = false;
+          if (groupName === 'Formats and Units' && paramGroups.format === false) includeGroup = false;
+          if (groupName === 'UI (dashboard etc)' && paramGroups.ui === false) includeGroup = false;
           
           if (includeGroup) {
-            if (!result.sections.parameters[currentSection]) result.sections.parameters[currentSection] = {};
-            result.sections.parameters[currentSection][k] = v;
+            if (!result.sections.parameters[groupName]) result.sections.parameters[groupName] = {};
+            result.sections.parameters[groupName][k] = v;
           }
         }
       });
     }
   }
 
-  // 3. Lookups
+  // 3. Lookups (Exactly 6 Manual Controlled Vocabularies)
   if (options && options.lookups) {
     result.sections.lookups = {};
     var shC = ss.getSheetByName(TABS.CONFIG.name);
     if (shC && shC.getLastRow() >= 3) {
       var lookupDefs = [
-        { key: 'Flight Status', col: 10, count: 6 },
-        { key: 'Flight Type', col: 11, count: 7 },
-        { key: 'XC Classes', col: 12, count: 4 },
-        { key: 'Date Formats', col: 13, count: 5 },
-        { key: 'Time Formats', col: 14, count: 2 }
+        { key: 'Equipment Categories', col: 5, count: 4 },
+        { key: 'Flight Status', col: 6, count: 6 },
+        { key: 'Flight Type', col: 7, count: 7 },
+        { key: 'XC Classes', col: 8, count: 4 },
+        { key: 'Date Formats', col: 9, count: 5 },
+        { key: 'Time Formats', col: 10, count: 2 }
       ];
       lookupDefs.forEach(function(ld) {
         var vals = shC.getRange(3, ld.col, ld.count, 1).getValues();
@@ -1318,49 +1346,60 @@ function importConfigJson_(configPayload, selectedOptions) {
   var sections = configPayload.sections || configPayload;
   var res = { success: true, profileUpdated: 0, paramsUpdated: 0, lookupsUpdated: 0 };
 
-  // 1. Apply Pilot Profile
+  // 1. Apply Pilot Profile (Match Col A Field, write strictly to Col B Value)
   if (selectedOptions && selectedOptions.pilotProfile && sections.pilotProfile) {
     var shP = ss.getSheetByName(TABS.PILOT_PROFILE ? TABS.PILOT_PROFILE.name : 'Pilot_Profile');
-    if (shP && shP.getLastRow() >= 2) {
-      var pData = shP.getRange(2, 1, shP.getLastRow() - 1, 2).getValues();
+    if (shP && shP.getLastRow() >= 4) {
+      var pData = shP.getRange(4, 1, shP.getLastRow() - 3, 2).getValues();
       for (var i = 0; i < pData.length; i++) {
-        var k = String(pData[i][0]).trim();
-        if (sections.pilotProfile[k] !== undefined) {
-          shP.getRange(i + 2, 2).setValue(sections.pilotProfile[k]);
+        var fieldKey = String(pData[i][0]).trim();
+        if (fieldKey && fieldKey.indexOf('[') !== 0 && sections.pilotProfile[fieldKey] !== undefined) {
+          shP.getRange(i + 4, 2).setValue(sections.pilotProfile[fieldKey]);
           res.profileUpdated++;
         }
       }
     }
   }
 
-  // 2. Apply Parameters
+  // 2. Apply Parameters (Match Col A Key, write strictly to Col B Value)
   if (selectedOptions && selectedOptions.parameters && sections.parameters) {
     var shC = ss.getSheetByName(TABS.CONFIG.name);
     if (shC && shC.getLastRow() >= 3) {
       var flatParams = {};
       var pObj = sections.parameters;
+      var paramGroups = selectedOptions.paramGroups || {};
+
       Object.keys(pObj).forEach(function(g) {
         if (typeof pObj[g] === 'object' && pObj[g] !== null) {
-          var canApply = true;
-          if (g === 'Ingestion' && selectedOptions.paramGroups && selectedOptions.paramGroups.ingestion === false) canApply = false;
-          if (g === 'Integrations' && selectedOptions.paramGroups && selectedOptions.paramGroups.integrations === false) canApply = false;
-          if (g === 'Scoring' && selectedOptions.paramGroups && selectedOptions.paramGroups.scoring === false) canApply = false;
-          if (g === 'UI' && selectedOptions.paramGroups && selectedOptions.paramGroups.ui === false) canApply = false;
-
-          if (canApply) {
-            Object.keys(pObj[g]).forEach(function(k) {
-              flatParams[k] = pObj[g][k];
-            });
-          }
+          Object.keys(pObj[g]).forEach(function(k) {
+            var val = pObj[g][k];
+            var gName = getParameterGroup_(k, g);
+            var canApply = true;
+            if (gName === 'Ingestion and Folders' && paramGroups.ingestion === false) canApply = false;
+            if (gName === 'Integrations' && paramGroups.integrations === false) canApply = false;
+            if (gName === 'Flight Scoring, Physics and Analysis' && paramGroups.scoring === false) canApply = false;
+            if (gName === 'Formats and Units' && paramGroups.format === false) canApply = false;
+            if (gName === 'UI (dashboard etc)' && paramGroups.ui === false) canApply = false;
+            if (canApply) flatParams[k] = val;
+          });
         } else {
-          flatParams[g] = pObj[g];
+          var k = g;
+          var val = pObj[g];
+          var gName = getParameterGroup_(k, '');
+          var canApply = true;
+          if (gName === 'Ingestion and Folders' && paramGroups.ingestion === false) canApply = false;
+          if (gName === 'Integrations' && paramGroups.integrations === false) canApply = false;
+          if (gName === 'Flight Scoring, Physics and Analysis' && paramGroups.scoring === false) canApply = false;
+          if (gName === 'Formats and Units' && paramGroups.format === false) canApply = false;
+          if (gName === 'UI (dashboard etc)' && paramGroups.ui === false) canApply = false;
+          if (canApply) flatParams[k] = val;
         }
       });
 
       var cData = shC.getRange(3, 1, shC.getLastRow() - 2, 2).getValues();
       for (var j = 0; j < cData.length; j++) {
         var paramKey = String(cData[j][0]).trim();
-        if (flatParams[paramKey] !== undefined) {
+        if (paramKey && paramKey.indexOf('[') !== 0 && flatParams[paramKey] !== undefined) {
           shC.getRange(j + 3, 2).setValue(flatParams[paramKey]);
           res.paramsUpdated++;
         }
@@ -1368,16 +1407,18 @@ function importConfigJson_(configPayload, selectedOptions) {
     }
   }
 
-  // 3. Apply Lookups
+  // 3. Apply Lookups (Manual Controlled Vocabularies only)
   if (selectedOptions && selectedOptions.lookups && sections.lookups) {
     var shC = ss.getSheetByName(TABS.CONFIG.name);
     if (shC && shC.getLastRow() >= 3) {
       var lookupColMap = {
-        'Flight Status': 10,
-        'Flight Type': 11,
-        'XC Classes': 12,
-        'Date Formats': 13,
-        'Time Formats': 14
+        'Equipment Categories': 5,
+        'Categories': 5,
+        'Flight Status': 6,
+        'Flight Type': 7,
+        'XC Classes': 8,
+        'Date Formats': 9,
+        'Time Formats': 10
       };
       Object.keys(sections.lookups).forEach(function(lKey) {
         var col = lookupColMap[lKey];
@@ -1825,4 +1866,24 @@ function finalizeBulkImport() {
   sortFlightsByDate_();
   return { success: true, message: 'All flights imported and logbook sorted.' };
 }
+
+/* ==========================================================================================
+   PUBLIC WRAPPERS FOR UI MENU CALLBACKS
+   ========================================================================================== */
+
+function scaffoldAll() { return scaffoldAll_(); }
+function scaffoldPilotProfile() { return scaffoldPilotProfile_(SpreadsheetApp.getActive()); }
+function deleteSystemSheets() { return deleteSystemSheets_(); }
+function backupSystemSheets() { return backupSystemSheets_(); }
+function setupWatcherTrigger() { return setupWatcherTrigger_(); }
+function uiRefreshDashboard() { return uiRefreshDashboard_(); }
+function uiRefreshUserGuide() { return uiRefreshUserGuide_(); }
+function updateValidationOnly() { return updateValidationOnly_(); }
+function reapplyFormatting() { return reapplyFormatting_(); }
+function uiAddManualFlight() { return uiAddManualFlight_(); }
+function uiUpdateWatchFolder() { return uiUpdateWatchFolder_(); }
+function uiUpdateUploadFolder() { return uiUpdateUploadFolder_(); }
+function uiUpdateMasterLogFolder() { return uiUpdateMasterLogFolder_(); }
+function uiUpdateErrorFolder() { return uiUpdateErrorFolder_(); }
+function uiUpdateTrashFolder() { return uiUpdateTrashFolder_(); }
 

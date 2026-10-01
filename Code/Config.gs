@@ -52,6 +52,7 @@ var CFG = {
     
     // Geo & Time
     { section: 'Geo & Time', key: 'GEO_REV_PROVIDERS', val: 'google, big_data_cloud, nominatim_osm', desc: 'Reverse Geo Providers (comma-sep: google, big_data_cloud, nominatim_osm)' },
+    { section: 'Geo & Time', key: 'CONTACT_EMAIL', val: '', desc: 'Required for open Nominatim / Overpass APIs (User-Agent header)', input: true },
     { section: 'Geo & Time', key: 'GEO_SITE_PROVIDERS', val: 'paragliding_earth, overpass_api', desc: 'Site Name Providers (comma-sep: paragliding_earth, overpass_api)' },
     { section: 'Geo & Time', key: 'LAUNCH_SITE_KEYWORDS', val: 'Launch, Takeoff, Take off', desc: 'Keywords to prioritize Launch sites' },
     { section: 'Geo & Time', key: 'LANDING_SITE_KEYWORDS', val: 'Landing, LZ', desc: 'Keywords to prioritize Landing sites' },
@@ -84,13 +85,10 @@ var CFG = {
     // Scoring
     { section: 'Scoring', key: 'NATIONAL_BONUS_MULTIPLIER', val: 1.2, desc: 'Triangle Multiplier' },
     { section: 'Scoring', key: 'NATIONAL_BONUS_WITHIN_PCT', val: 5, desc: 'Triangle gap tolerance %' },
-
-    // Admin
-    { section: 'Admin', key: 'CONTACT_EMAIL', val: '', desc: 'Required for APIs', input: true },
     
-    // Lists
-    { section: 'Lists', key: 'DATE_FORMAT', val: 'yyyy-MM-dd', desc: 'Date Display Format' },
-    { section: 'Lists', key: 'TIME_FORMAT', val: 'h:mm a', desc: 'Time Display Format' },
+    // Format and Units
+    { section: 'Format and Units', key: 'DATE_FORMAT', val: 'yyyy-MM-dd', desc: 'Date Display Format' },
+    { section: 'Format and Units', key: 'TIME_FORMAT', val: 'h:mm a', desc: 'Time Display Format' },
 
     // Dashboard & Currency
     { section: 'Dashboard & Currency', key: 'TIMELINE_FLIGHTS_LOW', val: 2, desc: 'Monthly flights low threshold (Orange < X)' },
@@ -233,9 +231,9 @@ var TABS = {
     name: CFG.sheets.pilotProfile,
     color: '#00695C', // Deep Teal
     index: 3,
-    headerRow: 2,
+    headerRow: 3,
     frozenRows: 0,
-    columns: ['Category', 'Field', 'Value', 'Notes']
+    columns: ['Field', 'Value', 'Notes / Instructions']
   },
   EQUIPMENT: {
     name: CFG.sheets.equipment,

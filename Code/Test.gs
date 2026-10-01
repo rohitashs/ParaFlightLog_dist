@@ -24,6 +24,7 @@ function runAllTests() {
   results.push(testDashboardAndSchema_());
   results.push(testDedupeAndQualityScoring_());
   results.push(testConfigAndDedupeEnhancements_());
+  results.push(testConfigStructureAndGrouping_());
   
   var failures = results.filter(function(r) { return !r.idx || r.error; });
   if (failures.length > 0) {
@@ -507,4 +508,59 @@ function testConfigAndDedupeEnhancements_() {
   }
 
   return { module: 'ConfigAndDedupe', idx: true };
+}
+
+function testConfigStructureAndGrouping_() {
+  // 1. Verify Pilot Profile 3-column definition
+  if (!TABS.PILOT_PROFILE || TABS.PILOT_PROFILE.headerRow !== 3) {
+    return { module: 'ConfigStructure', error: 'TABS.PILOT_PROFILE headerRow should be 3' };
+  }
+  if (!TABS.PILOT_PROFILE.columns || TABS.PILOT_PROFILE.columns.length !== 3) {
+    return { module: 'ConfigStructure', error: 'TABS.PILOT_PROFILE should have exactly 3 columns (Field, Value, Notes)' };
+  }
+
+  // 2. Verify Parameter Counts & 5 Granular Sub-Groups
+  var counts = {
+    'Ingestion and Folders': 0,
+    'Integrations': 0,
+    'Flight Scoring, Physics and Analysis': 0,
+    'Formats and Units': 0,
+    'UI (dashboard etc)': 0
+  };
+
+  CFG.parameters.forEach(function(p) {
+    var g = getParameterGroup_(p.key, p.section);
+    if (counts[g] !== undefined) {
+      counts[g]++;
+    } else {
+      counts['Unknown: ' + g] = 1;
+    }
+  });
+
+  if (counts['Ingestion and Folders'] !== 8) {
+    return { module: 'ConfigStructure', error: 'Ingestion and Folders expected 8 keys, got ' + counts['Ingestion and Folders'] };
+  }
+  if (counts['Integrations'] !== 16) {
+    return { module: 'ConfigStructure', error: 'Integrations expected 16 keys, got ' + counts['Integrations'] };
+  }
+  if (counts['Flight Scoring, Physics and Analysis'] !== 19) {
+    return { module: 'ConfigStructure', error: 'Flight Scoring expected 19 keys, got ' + counts['Flight Scoring, Physics and Analysis'] };
+  }
+  if (counts['Formats and Units'] !== 2) {
+    return { module: 'ConfigStructure', error: 'Formats and Units expected 2 keys, got ' + counts['Formats and Units'] };
+  }
+  if (counts['UI (dashboard etc)'] !== 4) {
+    return { module: 'ConfigStructure', error: 'UI expected 4 keys, got ' + counts['UI (dashboard etc)'] };
+  }
+
+  // 3. Verify Lookups order & Equipment Categories naming in scaffoldConfig_
+  var scaffoldStr = scaffoldConfig_.toString();
+  if (scaffoldStr.indexOf("'Equipment Categories'") === -1) {
+    return { module: 'ConfigStructure', error: 'scaffoldConfig_ must declare Equipment Categories' };
+  }
+  if (scaffoldStr.indexOf("'Categories'") !== -1) {
+    return { module: 'ConfigStructure', error: 'scaffoldConfig_ contains obsolete Categories header' };
+  }
+
+  return { module: 'ConfigStructure', idx: true };
 }

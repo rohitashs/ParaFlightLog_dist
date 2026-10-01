@@ -37,6 +37,7 @@
             cursor: pointer;
             font-size: 13px;
             color: #333;
+            transition: opacity 0.2s ease;
         }
 
         .check-item:last-child {
@@ -50,12 +51,27 @@
             accent-color: #2196F3;
         }
 
+        .check-item.disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+            color: #888;
+        }
+
+        .check-item.disabled input {
+            cursor: not-allowed;
+        }
+
         .sub-group {
             margin-left: 24px;
             margin-top: 4px;
             margin-bottom: 6px;
             padding-left: 8px;
             border-left: 2px solid #ddd;
+        }
+
+        .sub-group .check-item {
+            font-size: 12px;
+            margin-bottom: 4px;
         }
 
         .badge-count {
@@ -66,6 +82,11 @@
             padding: 2px 6px;
             border-radius: 10px;
             font-weight: 600;
+        }
+
+        .badge-count.disabled-badge {
+            background-color: #f1f5f9;
+            color: #94a3b8;
         }
     </style>
 </head>
@@ -86,44 +107,53 @@
         <div id="section-container" style="display:none;">
             <div class="instructions" style="font-weight:bold; margin-bottom:8px;">Available Configuration Sections:</div>
 
-            <div id="card-profile" class="section-box" style="display:none;">
-                <label class="check-item">
+            <div id="card-profile" class="section-box">
+                <label id="lbl-profile" class="check-item">
                     <input type="checkbox" id="chk-load-profile" checked>
-                    <span><strong>Pilot Profile</strong></span>
+                    <span><strong>Pilot Profile</strong> (Identity, Licensing, SAR, Tracking)</span>
                     <span id="badge-load-profile" class="badge-count">0 fields</span>
                 </label>
             </div>
 
-            <div id="card-params" class="section-box" style="display:none;">
-                <label class="check-item">
+            <div id="card-params" class="section-box">
+                <label id="lbl-params" class="check-item">
                     <input type="checkbox" id="chk-load-params" checked onchange="toggleLoadParamSubgroups()">
                     <span><strong>System Parameters</strong></span>
                     <span id="badge-load-params" class="badge-count">0 keys</span>
                 </label>
                 <div id="load-param-subgroups" class="sub-group">
-                    <label id="lbl-sub-ingestion" class="check-item" style="display:none;">
-                        <input type="checkbox" id="load-sub-ingestion" checked>
-                        <span>Ingestion & Folder IDs</span>
+                    <label id="lbl-sub-ingestion" class="check-item">
+                        <input type="checkbox" id="load-sub-ingestion" checked onchange="onLoadSubParamChange()">
+                        <span>Ingestion and Folders</span>
+                        <span id="badge-sub-ingestion" class="badge-count">0 keys</span>
                     </label>
-                    <label id="lbl-sub-integrations" class="check-item" style="display:none;">
-                        <input type="checkbox" id="load-sub-integrations" checked>
-                        <span>Integrations (Weather, XContest, APIs)</span>
+                    <label id="lbl-sub-integrations" class="check-item">
+                        <input type="checkbox" id="load-sub-integrations" checked onchange="onLoadSubParamChange()">
+                        <span>Integrations (Weather, XContest, Elevation, Geo)</span>
+                        <span id="badge-sub-integrations" class="badge-count">0 keys</span>
                     </label>
-                    <label id="lbl-sub-scoring" class="check-item" style="display:none;">
-                        <input type="checkbox" id="load-sub-scoring" checked>
-                        <span>Scoring & Physics</span>
+                    <label id="lbl-sub-scoring" class="check-item">
+                        <input type="checkbox" id="load-sub-scoring" checked onchange="onLoadSubParamChange()">
+                        <span>Flight Scoring, Physics and Analysis</span>
+                        <span id="badge-sub-scoring" class="badge-count">0 keys</span>
                     </label>
-                    <label id="lbl-sub-ui" class="check-item" style="display:none;">
-                        <input type="checkbox" id="load-sub-ui" checked>
-                        <span>UI & Regional</span>
+                    <label id="lbl-sub-format" class="check-item">
+                        <input type="checkbox" id="load-sub-format" checked onchange="onLoadSubParamChange()">
+                        <span>Formats and Units</span>
+                        <span id="badge-sub-format" class="badge-count">0 keys</span>
+                    </label>
+                    <label id="lbl-sub-ui" class="check-item">
+                        <input type="checkbox" id="load-sub-ui" checked onchange="onLoadSubParamChange()">
+                        <span>UI (dashboard etc)</span>
+                        <span id="badge-sub-ui" class="badge-count">0 keys</span>
                     </label>
                 </div>
             </div>
 
-            <div id="card-lookups" class="section-box" style="display:none;">
-                <label class="check-item">
+            <div id="card-lookups" class="section-box">
+                <label id="lbl-lookups" class="check-item">
                     <input type="checkbox" id="chk-load-lookups" checked>
-                    <span><strong>Lookups</strong></span>
+                    <span><strong>Lookups</strong> (Equipment Categories, Status, Types, XC Classes, Formats)</span>
                     <span id="badge-load-lookups" class="badge-count">0 lists</span>
                 </label>
             </div>
@@ -152,6 +182,46 @@
     <script>
         var parsedConfig = null;
 
+        function classifyParamKey(k, groupHint) {
+            var s = String(groupHint || '').trim();
+            if (s === 'Ingestion' || s === 'Ingestion and Folders' || k.indexOf('FOLDER') !== -1 || k.indexOf('WATCH') !== -1) {
+                return 'ingestion';
+            }
+            if (s === 'Integrations' || s === 'Geo & Time' || k.indexOf('WEATHER') !== -1 || k.indexOf('GEO_') !== -1 || k.indexOf('XCONTEST') !== -1 || k === 'CONTACT_EMAIL') {
+                return 'integrations';
+            }
+            if (s === 'Scoring' || s === 'Flight Scoring, Physics and Analysis' || s === 'Validation' || s === 'Analysis Rules' || s === 'Analysis - Adv' || k.indexOf('VALIDATION') !== -1 || k.indexOf('THERMAL') !== -1 || k.indexOf('SOAR') !== -1 || k.indexOf('GLIDE') !== -1 || k.indexOf('SINK') !== -1 || k.indexOf('BONUS') !== -1) {
+                return 'scoring';
+            }
+            if (s === 'Formats and Units' || s === 'Format and Units' || s === 'Lists' || k === 'DATE_FORMAT' || k === 'TIME_FORMAT') {
+                return 'format';
+            }
+            if (s === 'UI (dashboard etc)' || s === 'UI' || s === 'Dashboard & Currency' || k.indexOf('TIMELINE') !== -1) {
+                return 'ui';
+            }
+            return 'integrations';
+        }
+
+        function setElementState(chkId, lblId, badgeId, count, unit) {
+            var chk = document.getElementById(chkId);
+            var lbl = document.getElementById(lblId);
+            var badge = document.getElementById(badgeId);
+            if (badge) {
+                badge.innerText = count + ' ' + unit;
+            }
+            if (count > 0) {
+                chk.disabled = false;
+                chk.checked = true;
+                if (lbl) lbl.classList.remove('disabled');
+                if (badge) badge.classList.remove('disabled-badge');
+            } else {
+                chk.disabled = true;
+                chk.checked = false;
+                if (lbl) lbl.classList.add('disabled');
+                if (badge) badge.classList.add('disabled-badge');
+            }
+        }
+
         function onFileSelected(input) {
             var file = input.files[0];
             if (!file) return;
@@ -174,56 +244,53 @@
 
         function inspectConfig(cfg, fileName) {
             var sections = cfg.sections || cfg;
-            var hasProfile = sections.pilotProfile && Object.keys(sections.pilotProfile).length > 0;
-            var hasParams = sections.parameters && Object.keys(sections.parameters).length > 0;
-            var hasLookups = sections.lookups && Object.keys(sections.lookups).length > 0;
+            
+            // 1. Profile count
+            var pCount = (sections.pilotProfile && typeof sections.pilotProfile === 'object') ? Object.keys(sections.pilotProfile).length : 0;
+            setElementState('chk-load-profile', 'lbl-profile', 'badge-load-profile', pCount, 'fields');
 
-            if (!hasProfile && !hasParams && !hasLookups) {
+            // 2. Parameters count
+            var paramCounts = { ingestion: 0, integrations: 0, scoring: 0, format: 0, ui: 0 };
+            if (sections.parameters && typeof sections.parameters === 'object') {
+                Object.keys(sections.parameters).forEach(function (k) {
+                    var val = sections.parameters[k];
+                    if (typeof val === 'object' && val !== null) {
+                        Object.keys(val).forEach(function (subKey) {
+                            var g = classifyParamKey(subKey, k);
+                            if (paramCounts[g] !== undefined) paramCounts[g]++;
+                        });
+                    } else {
+                        var g = classifyParamKey(k, '');
+                        if (paramCounts[g] !== undefined) paramCounts[g]++;
+                    }
+                });
+            }
+            var totalParamKeys = paramCounts.ingestion + paramCounts.integrations + paramCounts.scoring + paramCounts.format + paramCounts.ui;
+            setElementState('chk-load-params', 'lbl-params', 'badge-load-params', totalParamKeys, 'keys');
+            setElementState('load-sub-ingestion', 'lbl-sub-ingestion', 'badge-sub-ingestion', paramCounts.ingestion, 'keys');
+            setElementState('load-sub-integrations', 'lbl-sub-integrations', 'badge-sub-integrations', paramCounts.integrations, 'keys');
+            setElementState('load-sub-scoring', 'lbl-sub-scoring', 'badge-sub-scoring', paramCounts.scoring, 'keys');
+            setElementState('load-sub-format', 'lbl-sub-format', 'badge-sub-format', paramCounts.format, 'keys');
+            setElementState('load-sub-ui', 'lbl-sub-ui', 'badge-sub-ui', paramCounts.ui, 'keys');
+
+            // 3. Lookups count
+            var lCount = (sections.lookups && typeof sections.lookups === 'object') ? Object.keys(sections.lookups).length : 0;
+            setElementState('chk-load-lookups', 'lbl-lookups', 'badge-load-lookups', lCount, 'lists');
+
+            if (pCount === 0 && totalParamKeys === 0 && lCount === 0) {
                 showError('File does not contain valid Paragliding Flight Log configuration sections.');
+                document.getElementById('section-container').style.display = 'none';
+                document.getElementById('btn-apply').style.display = 'none';
                 return;
             }
 
             document.getElementById('section-container').style.display = 'block';
-
-            if (hasProfile) {
-                var pCount = Object.keys(sections.pilotProfile).length;
-                document.getElementById('card-profile').style.display = 'block';
-                document.getElementById('badge-load-profile').innerText = pCount + ' fields';
-            }
-
-            if (hasParams) {
-                var paramObj = sections.parameters;
-                var totalKeys = 0;
-                var groupNames = Object.keys(paramObj);
-                groupNames.forEach(function (g) {
-                    if (typeof paramObj[g] === 'object' && paramObj[g] !== null) {
-                        totalKeys += Object.keys(paramObj[g]).length;
-                    } else {
-                        totalKeys++;
-                    }
-                });
-
-                document.getElementById('card-params').style.display = 'block';
-                document.getElementById('badge-load-params').innerText = totalKeys + ' keys';
-
-                if (paramObj.Ingestion) document.getElementById('lbl-sub-ingestion').style.display = 'flex';
-                if (paramObj.Integrations) document.getElementById('lbl-sub-integrations').style.display = 'flex';
-                if (paramObj.Scoring) document.getElementById('lbl-sub-scoring').style.display = 'flex';
-                if (paramObj.UI) document.getElementById('lbl-sub-ui').style.display = 'flex';
-            }
-
-            if (hasLookups) {
-                var lCount = Object.keys(sections.lookups).length;
-                document.getElementById('card-lookups').style.display = 'block';
-                document.getElementById('badge-load-lookups').innerText = lCount + ' lists';
-            }
-
             setStatus('File parsed successfully', '50%');
             setProgress('50%');
             log('Detected configuration from ' + fileName + ':');
-            if (hasProfile) log(' - Pilot Profile: ' + Object.keys(sections.pilotProfile).length + ' fields');
-            if (hasParams) log(' - Parameters: groups available');
-            if (hasLookups) log(' - Lookups: ' + Object.keys(sections.lookups).length + ' tables');
+            if (pCount > 0) log(' - Pilot Profile: ' + pCount + ' fields found.');
+            if (totalParamKeys > 0) log(' - Parameters: ' + totalParamKeys + ' keys found across groups.');
+            if (lCount > 0) log(' - Lookups: ' + lCount + ' controlled lists found.');
             log('Review your selections above and click "Apply Selected Configuration".');
 
             document.getElementById('btn-apply').style.display = 'inline-block';
@@ -231,25 +298,36 @@
 
         function toggleLoadParamSubgroups() {
             var checked = document.getElementById('chk-load-params').checked;
-            document.getElementById('load-sub-ingestion').checked = checked;
-            document.getElementById('load-sub-integrations').checked = checked;
-            document.getElementById('load-sub-scoring').checked = checked;
-            document.getElementById('load-sub-ui').checked = checked;
+            ['ingestion', 'integrations', 'scoring', 'format', 'ui'].forEach(function (g) {
+                var chk = document.getElementById('load-sub-' + g);
+                if (!chk.disabled) {
+                    chk.checked = checked;
+                }
+            });
+        }
+
+        function onLoadSubParamChange() {
+            var anyChecked = ['ingestion', 'integrations', 'scoring', 'format', 'ui'].some(function (g) {
+                var chk = document.getElementById('load-sub-' + g);
+                return !chk.disabled && chk.checked;
+            });
+            document.getElementById('chk-load-params').checked = anyChecked;
         }
 
         function applyConfig() {
             if (!parsedConfig) return;
 
             var selectedOptions = {
-                pilotProfile: document.getElementById('chk-load-profile').checked,
-                parameters: document.getElementById('chk-load-params').checked,
+                pilotProfile: !document.getElementById('chk-load-profile').disabled && document.getElementById('chk-load-profile').checked,
+                parameters: !document.getElementById('chk-load-params').disabled && document.getElementById('chk-load-params').checked,
                 paramGroups: {
-                    ingestion: document.getElementById('load-sub-ingestion').checked,
-                    integrations: document.getElementById('load-sub-integrations').checked,
-                    scoring: document.getElementById('load-sub-scoring').checked,
-                    ui: document.getElementById('load-sub-ui').checked
+                    ingestion: !document.getElementById('load-sub-ingestion').disabled && document.getElementById('load-sub-ingestion').checked,
+                    integrations: !document.getElementById('load-sub-integrations').disabled && document.getElementById('load-sub-integrations').checked,
+                    scoring: !document.getElementById('load-sub-scoring').disabled && document.getElementById('load-sub-scoring').checked,
+                    format: !document.getElementById('load-sub-format').disabled && document.getElementById('load-sub-format').checked,
+                    ui: !document.getElementById('load-sub-ui').disabled && document.getElementById('load-sub-ui').checked
                 },
-                lookups: document.getElementById('chk-load-lookups').checked
+                lookups: !document.getElementById('chk-load-lookups').disabled && document.getElementById('chk-load-lookups').checked
             };
 
             if (!selectedOptions.pilotProfile && !selectedOptions.parameters && !selectedOptions.lookups) {

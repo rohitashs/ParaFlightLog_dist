@@ -54,6 +54,16 @@
             color: #555;
             margin-bottom: 4px;
         }
+
+        .badge-count {
+            margin-left: 8px;
+            font-size: 11px;
+            background-color: #e0f2fe;
+            color: #0369a1;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
     </style>
 </head>
 
@@ -69,31 +79,42 @@
         <div class="section-box">
             <label class="check-item">
                 <input type="checkbox" id="chk-profile" checked>
-                <span><strong>Pilot Profile</strong> (Name, CIVL ID, contact, default equipment)</span>
+                <span><strong>Pilot Profile</strong> (Identity, Licensing, SAR, Tracking)</span>
+                <span class="badge-count">29 fields</span>
             </label>
         </div>
 
         <div class="section-box">
             <label class="check-item">
                 <input type="checkbox" id="chk-params" checked onchange="toggleParamSubgroups()">
-                <span><strong>System Parameters</strong> (Folder IDs, integrations, scoring, UI)</span>
+                <span><strong>System Parameters</strong></span>
+                <span class="badge-count">49 keys</span>
             </label>
             <div id="param-subgroups" class="sub-group">
                 <label class="check-item">
-                    <input type="checkbox" id="sub-ingestion" checked>
-                    <span>Folder IDs & Ingestion Automation</span>
+                    <input type="checkbox" id="sub-ingestion" checked onchange="onSubParamChange()">
+                    <span>Ingestion and Folders</span>
+                    <span class="badge-count">8 keys</span>
                 </label>
                 <label class="check-item">
-                    <input type="checkbox" id="sub-integrations" checked>
-                    <span>Integrations (Weather, XContest Username, API Keys)</span>
+                    <input type="checkbox" id="sub-integrations" checked onchange="onSubParamChange()">
+                    <span>Integrations (Weather, XContest, Elevation, Geo)</span>
+                    <span class="badge-count">16 keys</span>
                 </label>
                 <label class="check-item">
-                    <input type="checkbox" id="sub-scoring" checked>
-                    <span>Flight Scoring & Physics Detection Heuristics</span>
+                    <input type="checkbox" id="sub-scoring" checked onchange="onSubParamChange()">
+                    <span>Flight Scoring, Physics and Analysis</span>
+                    <span class="badge-count">19 keys</span>
                 </label>
                 <label class="check-item">
-                    <input type="checkbox" id="sub-ui" checked>
-                    <span>UI, Regional Dates & Timeline Thresholds</span>
+                    <input type="checkbox" id="sub-format" checked onchange="onSubParamChange()">
+                    <span>Formats and Units</span>
+                    <span class="badge-count">2 keys</span>
+                </label>
+                <label class="check-item">
+                    <input type="checkbox" id="sub-ui" checked onchange="onSubParamChange()">
+                    <span>UI (dashboard etc)</span>
+                    <span class="badge-count">4 keys</span>
                 </label>
             </div>
         </div>
@@ -101,7 +122,8 @@
         <div class="section-box">
             <label class="check-item">
                 <input type="checkbox" id="chk-lookups" checked>
-                <span><strong>Lookups</strong> (Flight types, XC classes, date/time formats)</span>
+                <span><strong>Lookups</strong> (Equipment Categories, Status, Types, XC Classes, Formats)</span>
+                <span class="badge-count">6 lists</span>
             </label>
         </div>
 
@@ -131,7 +153,17 @@
             document.getElementById('sub-ingestion').checked = checked;
             document.getElementById('sub-integrations').checked = checked;
             document.getElementById('sub-scoring').checked = checked;
+            document.getElementById('sub-format').checked = checked;
             document.getElementById('sub-ui').checked = checked;
+        }
+
+        function onSubParamChange() {
+            var anyChecked = document.getElementById('sub-ingestion').checked ||
+                             document.getElementById('sub-integrations').checked ||
+                             document.getElementById('sub-scoring').checked ||
+                             document.getElementById('sub-format').checked ||
+                             document.getElementById('sub-ui').checked;
+            document.getElementById('chk-params').checked = anyChecked;
         }
 
         function exportConfig() {
@@ -142,6 +174,7 @@
                     ingestion: document.getElementById('sub-ingestion').checked,
                     integrations: document.getElementById('sub-integrations').checked,
                     scoring: document.getElementById('sub-scoring').checked,
+                    format: document.getElementById('sub-format').checked,
                     ui: document.getElementById('sub-ui').checked
                 },
                 lookups: document.getElementById('chk-lookups').checked
