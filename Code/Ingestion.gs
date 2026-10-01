@@ -1207,10 +1207,11 @@ function processBulkBatch(batchFiles, options) {
       }
 
     } catch (err) {
-      console.error('Error processing bulk file ' + item.name + ':', err);
+      var itemName = (item && item.name) ? item.name : (item && item.id ? item.id : 'Unknown');
+      console.error('Error processing bulk file ' + itemName + ':', err);
       errorCount++;
-      batchLogs.push([new Date(), item.id, item.name, item.name, 'Error', err.message]);
-      results.push({ name: item.name, success: false, msg: err.message });
+      batchLogs.push([new Date(), (item && item.id) ? item.id : '', itemName, itemName, 'Error', err.message]);
+      results.push({ name: itemName, success: false, msg: err.message });
     }
   }
 
@@ -1409,11 +1410,16 @@ function createLightweightScoring_(parsed) {
  */
 function logImportBatch_(logs) {
   if (!logs || logs.length === 0) return;
-  var ss = SpreadsheetApp.getActive();
-  var sh = ss ? ss.getSheetByName(TABS.ACTIVITY.name) : null;
-  if (!sh) return;
-  var lastRow = Math.max(1, sh.getLastRow());
-  sh.getRange(lastRow + 1, 1, logs.length, logs[0].length).setValues(logs);
+  try {
+    var ss = SpreadsheetApp.getActive();
+    var logSheetName = (typeof TABS !== 'undefined' && TABS.APP_LOG) ? TABS.APP_LOG.name : 'App_Log';
+    var sh = ss ? ss.getSheetByName(logSheetName) : null;
+    if (!sh) return;
+    var lastRow = Math.max(1, sh.getLastRow());
+    sh.getRange(lastRow + 1, 1, logs.length, logs[0].length).setValues(logs);
+  } catch (e) {
+    console.warn('logImportBatch_ error: ' + e.message);
+  }
 }
 
 /**
