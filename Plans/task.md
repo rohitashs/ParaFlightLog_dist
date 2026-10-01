@@ -1,6 +1,17 @@
 # Project Tasks & Status
 *This file tracks the active tasks for the Paragliding Flight Log Project.*
 
+## Completed in Latest Session (2026-10-01) - Bulk Ingestion, Profile Schema, Config Reorg & Granular Backup (v0.8.18)
+- [x] **[ING-008]** High-Speed Bulk Flight Ingestion (`CR-ING-008`, `BulkIngestDialog.html`, `processBulkBatch`, `finalizeBulkImport`).
+- [x] **[PRF-001]** Pilot Profile 3-column sub-header overhaul (`CR-SYS-004`: 34 fields, section dividers, 6 "Other Info" fields, 3 emergency contacts, pure key-value sync).
+- [x] **[CFG-006]** Config tab parameters and lookups structural reorganization (`[ Format and Units ]`, `CONTACT_EMAIL` in `[ Geo & Time ]`, manual lookups in Cols 5-10, auto queries in Cols 11-14).
+- [x] **[CFG-007]** Granular 5-group configuration backup/restore (`SaveConfigDialog.html`, `LoadConfigDialog.html`, pure key-value sync, live count badges, dynamic UI disable).
+- [x] **[DEV-002]** Standardized 24 public menu callback wrappers in `Code.gs` eliminating trailing underscores in custom spreadsheet menus.
+- [x] **[BUG-005]** Fixed fatal error in batch audit logging (`Bug-ING-005`, `TABS.ACTIVITY` fixed to `TABS.APP_LOG.name` with `try/catch`).
+- [x] **[BUG-006]** Enforced `Review?` status dropdown validation in bulk flight ingestion (`Bug-ING-006`).
+- [x] **[BUG-009]** Fixed missing Apply button and file chooser overlap in Load Config dialog (`Bug-UI-009`).
+- [x] **[AUD-001]** Comprehensive code check (`/code_check`) and documentation audit (`/doc_check`) with 100% synchronization and reports in `Plans/`.
+
 ## Completed in Recent Sessions (2026-09-30 Part 2) - Smart Deduplication, Overlap Scoring & Trash Folder
 - [x] **[DED-001]** Row-Based MD5 Hashes (`IGC Hash` Column 70 in Meta group) to eliminate black-box cache de-sync.
 - [x] **[DED-002]** Dedicated `TRASH_FOLDER_ID` parameter, folder picker action, and clean routing of duplicates and purged flights.
