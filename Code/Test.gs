@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 21:05:27
+ * Updated: 2026-09-30 21:29:07
  */
 /**
  * Paragliding Flight Log v2.0
@@ -351,6 +351,15 @@ function testDashboardAndSchema_() {
   // 8. Verify ensureDimensions_ function exists
   if (typeof ensureDimensions_ !== 'function') {
     return { module: 'DashboardAndSchema', error: 'ensureDimensions_ function missing' };
+  }
+
+  // 9. Verify scaffoldDashboard_ status filter targets Column B (Status) and not Column A (FlightID)
+  var dashFnStr = scaffoldDashboard_.toString();
+  if (dashFnStr.indexOf("!A' + fStart + ':A\"), \"Valid\"") !== -1 || dashFnStr.indexOf("!A' + fStart + ':A\")=\"Valid\"") !== -1) {
+    return { module: 'DashboardAndSchema', error: 'Dashboard formulas incorrectly filter on Column A instead of Column B for Status' };
+  }
+  if (dashFnStr.indexOf("!B' + fStart + ':B\"), \"Valid\"") === -1 && dashFnStr.indexOf("!B' + fStart + ':B\")=\"Valid\"") === -1) {
+    return { module: 'DashboardAndSchema', error: 'Dashboard formulas should filter on Column B for Valid Status' };
   }
 
   return { module: 'DashboardAndSchema', idx: true };
