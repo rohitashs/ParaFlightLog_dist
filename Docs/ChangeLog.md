@@ -5,8 +5,9 @@
 **Versions**: v0.8.18
 **Focus**: High-speed Bulk Flight Ingestion utility (`CR-ING-008`), Pilot Profile 3-column layout with section dividers and 34-field taxonomy (`CR-SYS-004`), Config tab parameters and lookups reorganization (`CR-CFG-006`), Granular 5-group configuration export/import with dynamic UI protection (`CR-CFG-007`), standardized 24 public menu callback wrappers in `Code.gs` (`CR-DEV-002`), batch audit logging undefined tab reference fix (`Bug-ING-005`), bulk batch default status Review? enforcement (`Bug-ING-006`), and Load Config dialog sticky Apply button & file chooser fix (`Bug-UI-009`).
 
-*   `[Imp]` **CR-ING-008 (High-Speed Bulk Ingestion Utility)**:
-    *   Created `Code/BulkIngestDialog.html` providing a dedicated onboarding utility for large-scale flight ingestion.
+*   `[Imp]` **CR-ING-008 / RQ-ING-001.4 (High-Speed Bulk Ingestion Utility & Large Scale Ingestion)**:
+    *   Verified pilot sign-off and closed out requirement `RQ-ING-001.4` as fully implemented via `CR-ING-008`.
+    *   Created `Code/BulkIngestDialog.html` providing a dedicated onboarding utility for large-scale flight ingestion (>5 files queue / batch processing).
     *   Implemented multi-file RPC batching (`processBulkBatch`) with selectable batch sizing (3, 5, or 10 files per call) to eliminate container spin-up overhead.
     *   Implemented atomic batch row insertion appending entire batches to the bottom of the `Flights` tab in single calls, followed by a single final chronological sort (`finalizeBulkImport`).
     *   Added configurable enrichment checkboxes for non-critical web lookups (Site Detection, Reverse Geo, Open-Meteo Weather, XContest sync, XC Scoring, Analytics, and source deletion safety).

@@ -2,7 +2,7 @@
 *This file tracks the active tasks for the Paragliding Flight Log Project.*
 
 ## Completed in Latest Session (2026-10-01) - Bulk Ingestion, Profile Schema, Config Reorg & Granular Backup (v0.8.18)
-- [x] **[ING-008]** High-Speed Bulk Flight Ingestion (`CR-ING-008`, `BulkIngestDialog.html`, `processBulkBatch`, `finalizeBulkImport`).
+- [x] **[ING-008]** High-Speed Bulk Flight Ingestion & Large Scale Ingestion (`CR-ING-008`, `RQ-ING-001.4`, `BulkIngestDialog.html`, `processBulkBatch`, `finalizeBulkImport`).
 - [x] **[PRF-001]** Pilot Profile 3-column sub-header overhaul (`CR-SYS-004`: 34 fields, section dividers, 6 "Other Info" fields, 3 emergency contacts, pure key-value sync).
 - [x] **[CFG-006]** Config tab parameters and lookups structural reorganization (`[ Format and Units ]`, `CONTACT_EMAIL` in `[ Geo & Time ]`, manual lookups in Cols 5-10, auto queries in Cols 11-14).
 - [x] **[CFG-007]** Granular 5-group configuration backup/restore (`SaveConfigDialog.html`, `LoadConfigDialog.html`, pure key-value sync, live count badges, dynamic UI disable).
@@ -42,5 +42,4 @@
 - [ ] **RQ-SYS-008**: Template Distribution Model & First-Time Setup Wizard.
 - [ ] **RQ-SYS-009.2**: Dashboard & Inspector Pilot Profile Integration.
 - [ ] **RQ-SYS-004**: Flight Inspector Enhancements.
-- [ ] **RQ-ING-001.4**: Large Scale Batch Ingestion.
 - [ ] **RQ-ANA-002.2**: Polar Curve Estimation.

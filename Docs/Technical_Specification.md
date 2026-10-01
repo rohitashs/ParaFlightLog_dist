@@ -21,7 +21,7 @@ This document defines the **Code Organization**, **Algorithms**, and **Data Sche
     *   *Map*: `RQ-SYS-002`.
 4.  **File Handling Service (`FileHandling.gs`)**: Drive I/O, Watch Folder scanning, Staged Uploads, ZIP extractions, File cleanup, and Master Log copying.
 5.  **Ingestion Service (`Ingestion.gs`)**: Pipeline Controller. Parse/Score orchestration, deduplication, and row mapping.
-    *   *Map*: `RQ-ING-001`.
+    *   *Map*: `RQ-ING-001`, `RQ-ING-001.4`, `CR-ING-008`.
 6.  **Utilities (`Utils.gs`)**: Consolidated math (Haversine, Bearing, AngleDiff) and time formatting helpers.
 7.  **Weather Service (`Weather.gs`)**: Automated historical & forecast weather enrichment (`RQ-SCR-004`). Open-Meteo archive with 7-day forecast API fallback (primary) and Visual Crossing Timeline API (backup), Lawrence cloudbase spread estimation, and cardinal wind formatting.
 8.  **Domain Logic**:
@@ -300,7 +300,7 @@ Fixed Header Schema (Row 3=Category, Row 4=Name). Data starts Row 5.
 
 ### HTML Dialog Templates (User Interface)
 *   **`FlightMaintenanceDialog.html`**: Unified batch maintenance modal interface supporting scope selection (Selected rows vs All flights), operation checkboxes, real-time client-side stepping, and live progress bar.
-*   **`BulkIngestDialog.html` (`CR-ING-008`)**: High-speed bulk flight ingestion modal interface featuring Drive folder discovery, batch size selection (3, 5, or 10 files per call), enrichment toggles, real-time activity console, and progress tracking.
+*   **`BulkIngestDialog.html` (`RQ-ING-001.4`, `CR-ING-008`)**: High-speed bulk flight ingestion modal interface featuring Drive folder discovery, batch size selection (3, 5, or 10 files per call), enrichment toggles, real-time activity console, and progress tracking.
 *   **`PurgeDialog.html`**: Interactive stepping purge modal with live candidate detection, real-time progress bar, Google Drive trash transfer, row deletion, and primary Done button.
 *   **`MarkDuplicatesDialog.html`**: Duplicate staging modal with `Dup - Others` and `Dup - Primary` checkboxes and live match counts.
 *   **`SaveConfigDialog.html` (`CR-CFG-007`)**: Configuration export modal with 5 granular parameter group checkboxes, Pilot Profile, and Lookups, with client-side JSON download.

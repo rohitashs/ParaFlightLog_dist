@@ -8,7 +8,7 @@ This document describes the *intent* and *capabilities* of the Paragliding Fligh
 ---
 
 ## 1. 📂 Intelligent File Ingestion
-*Maps to `RQ-ING-001`*
+*Maps to `RQ-ING-001`, `RQ-ING-001.4`, `CR-ING-008`*
 
 The system automates the import of flight logs (IGC) to reduce manual entry.
 *   **Watch Folder**: Automatically detects and processes new files dropped into one or more designated Google Drive folders (comma-separated list supported).

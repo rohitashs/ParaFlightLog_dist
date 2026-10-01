@@ -31,7 +31,7 @@ This file is the single source of truth for **ToDos**, **Requirements**, **Chang
     - [x] **RQ-ING-001.1** | **Status**: Implemented | **Phase**: 1 | **Description**: Manual File Upload (Multi-file support).
     - [x] **RQ-ING-001.2** | **Status**: Implemented | **Phase**: 1 | **Description**: Watch Folder Scanning (Drive).
     - [x] **RQ-ING-001.3** | **Status**: Implemented | **Phase**: 1 | **Description**: URL Import (Drive Links).
-    - [ ] **RQ-ING-001.4** | **Status**: Future | **Phase**: 2 | **Description**: Large Scale Ingestion (>5 files queue).
+    - [x] **RQ-ING-001.4** | **Status**: Implemented | **Phase**: 2 | **Description**: Large Scale Ingestion (>5 files queue / batch processing utility via `CR-ING-008`).
 
 - [x] **RQ-ING-002** | **Status**: Implemented | **Phase**: 1 | **Description**: Data Logging & Quality
     - [x] **RQ-ING-002.1** | **Status**: Implemented | **Phase**: 1 | **Description**: Row Insertion (Top of sheet).
