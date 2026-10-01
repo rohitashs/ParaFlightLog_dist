@@ -11,6 +11,7 @@ Every significant subsystem, engine, and feature follows the standardized templa
 | Design ID | Title | Status | Revision | Parent Design | Umbrella Code | Description |
 | :--- | :--- | :---: | :---: | :--- | :--- | :--- |
 | [`DSGN-LOG-001`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Design/DSGN-LOG-001_Activity_Logging_System.md) | Activity Logging System | `Under Review` | `Rev 1.0` | None (Root) | [`Code/Logger.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Logger.gs) | Extensible 4-column Activity Logs tab, tiered levels (Brief/Normal/Debug), conservative retention guardrails, and dialog clipboard sync. |
+| [`DSGN-AUT-001`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Design/DSGN-AUT-001_Table_Driven_Automation_Engine.md) | Table-Driven Automation Engine | `Under Review` | `Rev 1.0` | None (Root) | [`Code/Automation.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Automation.gs) | Table-driven Automation tab rules engine, Single Heartbeat Dispatcher, Scope DSL, Predefined Templates, and Rule Validation Engine. |
 
 ---
 
