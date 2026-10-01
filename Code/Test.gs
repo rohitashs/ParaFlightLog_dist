@@ -562,5 +562,29 @@ function testConfigStructureAndGrouping_() {
     return { module: 'ConfigStructure', error: 'scaffoldConfig_ contains obsolete Categories header' };
   }
 
+  // 4. Verify Pilot Profile fields in scaffoldPilotProfile_
+  var profileStr = scaffoldPilotProfile_.toString();
+  var requiredProfileFields = [
+    "'CIVL ID'",
+    "'National Licence Info'",
+    "'FAI Sporting Licence Info'",
+    "'Other Identity Info'",
+    "'Other Licensing Info'",
+    "'Other Affiliations Info'",
+    "'Other Emergency Info'",
+    "'Other Tracking / Gear Info'",
+    "'Other Progression Info'",
+    "'Primary Emergency Contact Info'",
+    "'2nd Emergency Contact Info'",
+    "'3rd Emergency Contact Info'",
+    "'SAR / Evac Provider Info'",
+    "'Medical Insurance Info'"
+  ];
+  for (var k = 0; k < requiredProfileFields.length; k++) {
+    if (profileStr.indexOf(requiredProfileFields[k]) === -1) {
+      return { module: 'ConfigStructure', error: 'Missing profile field in scaffoldPilotProfile_: ' + requiredProfileFields[k] };
+    }
+  }
+
   return { module: 'ConfigStructure', idx: true };
 }

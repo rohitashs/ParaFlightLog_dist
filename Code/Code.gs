@@ -182,16 +182,16 @@ function showMarkDuplicatesDialog() {
 function showSaveConfigDialog() {
   var html = HtmlService.createTemplateFromFile('SaveConfigDialog')
       .evaluate()
-      .setWidth(540)
-      .setHeight(520);
+      .setWidth(580)
+      .setHeight(600);
   SpreadsheetApp.getUi().showModalDialog(html, 'Save Configuration');
 }
 
 function showLoadConfigDialog() {
   var html = HtmlService.createTemplateFromFile('LoadConfigDialog')
       .evaluate()
-      .setWidth(550)
-      .setHeight(540);
+      .setWidth(580)
+      .setHeight(620);
   SpreadsheetApp.getUi().showModalDialog(html, 'Load Configuration');
 }
 
@@ -1350,12 +1350,35 @@ function importConfigJson_(configPayload, selectedOptions) {
   if (selectedOptions && selectedOptions.pilotProfile && sections.pilotProfile) {
     var shP = ss.getSheetByName(TABS.PILOT_PROFILE ? TABS.PILOT_PROFILE.name : 'Pilot_Profile');
     if (shP && shP.getLastRow() >= 4) {
+      var fieldAliases = {
+        'Primary Emergency Contact': 'Primary Emergency Contact Info',
+        'Primary Contact Phone': 'Primary Emergency Contact Info',
+        'Secondary Contact & Phone': '2nd Emergency Contact Info',
+        'License Number': 'National Licence Info',
+        'FAI Sporting License #': 'FAI Sporting Licence Info',
+        'Tandem / Instructor': 'Other Licensing Info',
+        'License Expiration Date': 'Other Licensing Info',
+        'SAR / Evacuation Insurance': 'SAR / Evac Provider Info',
+        'Insurance Policy Number': 'Medical Insurance Info'
+      };
       var pData = shP.getRange(4, 1, shP.getLastRow() - 3, 2).getValues();
       for (var i = 0; i < pData.length; i++) {
         var fieldKey = String(pData[i][0]).trim();
-        if (fieldKey && fieldKey.indexOf('[') !== 0 && sections.pilotProfile[fieldKey] !== undefined) {
-          shP.getRange(i + 4, 2).setValue(sections.pilotProfile[fieldKey]);
-          res.profileUpdated++;
+        if (fieldKey && fieldKey.indexOf('[') !== 0) {
+          var valToSet = undefined;
+          if (sections.pilotProfile[fieldKey] !== undefined) {
+            valToSet = sections.pilotProfile[fieldKey];
+          } else {
+            Object.keys(fieldAliases).forEach(function(oldKey) {
+              if (fieldAliases[oldKey] === fieldKey && sections.pilotProfile[oldKey] !== undefined) {
+                valToSet = sections.pilotProfile[oldKey];
+              }
+            });
+          }
+          if (valToSet !== undefined) {
+            shP.getRange(i + 4, 2).setValue(valToSet);
+            res.profileUpdated++;
+          }
         }
       }
     }

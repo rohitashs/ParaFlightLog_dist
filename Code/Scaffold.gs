@@ -1056,6 +1056,19 @@ function scaffoldPilotProfile_(ss) {
   var sh = ss.getSheetByName(TABS.PILOT_PROFILE.name);
   if (!sh) return;
   
+  // Field aliases for seamless migration from older versions
+  var fieldAliases = {
+    'Primary Emergency Contact': 'Primary Emergency Contact Info',
+    'Primary Contact Phone': 'Primary Emergency Contact Info',
+    'Secondary Contact & Phone': '2nd Emergency Contact Info',
+    'License Number': 'National Licence Info',
+    'FAI Sporting License #': 'FAI Sporting Licence Info',
+    'Tandem / Instructor': 'Other Licensing Info',
+    'License Expiration Date': 'Other Licensing Info',
+    'SAR / Evacuation Insurance': 'SAR / Evac Provider Info',
+    'Insurance Policy Number': 'Medical Insurance Info'
+  };
+
   // Preserve existing values if user already entered data
   var existingVals = {};
   if (sh.getLastRow() >= 4) {
@@ -1076,7 +1089,7 @@ function scaffoldPilotProfile_(ss) {
   }
 
   sh.clear();
-  ensureDimensions_(sh, 45, 3);
+  ensureDimensions_(sh, 50, 3);
 
   // Header Title
   sh.getRange('A1').setValue("Pilot Profile & Credentials").setFontWeight('bold').setFontSize(16);
@@ -1101,38 +1114,41 @@ function scaffoldPilotProfile_(ss) {
         { field: 'Callsign / Nickname', val: '', note: 'Radio callsign or competition display name' },
         { field: 'Email', val: '', note: 'Primary contact email' },
         { field: 'Phone Number', val: '', note: 'Mobile phone with international dialing code' },
-        { field: 'Home Country & Town', val: '', note: 'Home flying base location' }
+        { field: 'Home Country & Town', val: '', note: 'Home flying base location' },
+        { field: 'Other Identity Info', val: '', note: 'Additional personal, passport, or identity information' }
       ]
     },
     {
       title: '[ Licensing ]',
       fields: [
-        { field: 'National Association', val: '', note: 'e.g. USHPA, BHPA, FFVL, DHV, HPAC, FAI' },
-        { field: 'Pilot Rating', val: '', note: 'e.g. P2 (Novice), P3, P4 (Advanced), APPI 4' },
-        { field: 'License Number', val: '', note: 'National association member / pilot license ID' },
-        { field: 'FAI Sporting License #', val: '', note: 'Required for FAI Category 1 & 2 competitions' },
-        { field: 'Tandem / Instructor', val: '', note: 'Tandem T1/T2, Instructor, or No' },
-        { field: 'License Expiration Date', val: '', note: 'YYYY-MM-DD' }
+        { field: 'National Association', val: '', note: 'Issuing aero club or national body (e.g. USHPA, BHPA, FFVL, DHV, HPAC)' },
+        { field: 'Pilot Rating', val: '', note: 'Current pilot rating / level (e.g. P2 Novice, P3, P4 Advanced, APPI 4)' },
+        { field: 'National Licence Info', val: '', note: 'National license number, ratings, expiration, and endorsements' },
+        { field: 'FAI Sporting Licence Info', val: '', note: 'FAI sporting license number, validity, and issuing NAC' },
+        { field: 'CIVL ID', val: '', note: 'CIVL pilot ranking ID for FAI sanctioned competitions' },
+        { field: 'Other Licensing Info', val: '', note: 'Tandem, instructor ratings, additional foreign licenses, APPI ratings' }
       ]
     },
     {
       title: '[ Affiliations ]',
       fields: [
-        { field: 'Primary Flying Club', val: '', note: 'Home club name' },
+        { field: 'Primary Flying Club', val: '', note: 'Home club name and flying site' },
         { field: 'Secondary Clubs', val: '', note: 'Regional or visiting club memberships' },
-        { field: 'National Federation Member #', val: '', note: 'Aero club or federation identifier' }
+        { field: 'National Federation Member #', val: '', note: 'Aero club or national federation identifier' },
+        { field: 'Other Affiliations Info', val: '', note: 'Other club memberships, team affiliations, community groups' }
       ]
     },
     {
       title: '[ Emergency / SAR ]',
       fields: [
-        { field: 'Primary Emergency Contact', val: '', note: 'Full Name and Relationship (e.g. Spouse, Parent)' },
-        { field: 'Primary Contact Phone', val: '', note: 'Emergency mobile number with country code' },
-        { field: 'Secondary Contact & Phone', val: '', note: 'Alternate emergency contact details' },
-        { field: 'SAR / Evacuation Insurance', val: '', note: 'Provider (e.g. GEOS, Garmin SAR, Global Rescue, AAC)' },
-        { field: 'Insurance Policy Number', val: '', note: 'Medical evacuation policy number' },
-        { field: 'Blood Type', val: '', note: 'e.g. O+, A+, B+, etc.' },
-        { field: 'Medical Conditions / Allergies', val: '', note: 'Critical details for first responders' }
+        { field: 'Primary Emergency Contact Info', val: '', note: 'Primary contact name, relationship, phone, and email' },
+        { field: '2nd Emergency Contact Info', val: '', note: 'Secondary contact name, relationship, phone, and email' },
+        { field: '3rd Emergency Contact Info', val: '', note: 'Tertiary contact name, relationship, phone, and email' },
+        { field: 'SAR / Evac Provider Info', val: '', note: 'Evacuation provider, policy / member #, and emergency hotline (e.g. Garmin SAR, GEOS, Global Rescue)' },
+        { field: 'Medical Insurance Info', val: '', note: 'Medical insurer, policy #, group #, and emergency assistance phone' },
+        { field: 'Blood Type', val: '', note: 'Blood group and Rh factor (e.g. O+, A+, B+, AB-)' },
+        { field: 'Medical Conditions / Allergies', val: '', note: 'Critical medical conditions, allergies, or medications for first responders' },
+        { field: 'Other Emergency Info', val: '', note: 'Hospital preferences, organ donor status, additional medical notes' }
       ]
     },
     {
@@ -1140,9 +1156,10 @@ function scaffoldPilotProfile_(ss) {
       fields: [
         { field: 'Garmin inReach IMEI', val: '', note: 'Satellite messenger IMEI number' },
         { field: 'Garmin MapShare URL', val: '', note: 'https://share.garmin.com/username' },
-        { field: 'Flymaster Live URL', val: '', note: 'Flymaster / Livetrack24 public link' },
+        { field: 'Flymaster Live URL', val: '', note: 'Flymaster / Livetrack24 public tracking link' },
         { field: 'XContest Live URL', val: '', note: 'XContest live tracking pilot link' },
-        { field: 'Emergency Beacon Hex ID', val: '', note: '406 MHz PLB / ELT 15-character hex ID' }
+        { field: 'Emergency Beacon Hex ID', val: '', note: '406 MHz PLB / ELT 15-character hex ID' },
+        { field: 'Other Tracking / Gear Info', val: '', note: 'Spot messenger, OGN / FANET ID, radio frequencies, gear notes' }
       ]
     },
     {
@@ -1150,7 +1167,8 @@ function scaffoldPilotProfile_(ss) {
       fields: [
         { field: 'Current Season XC Goals', val: '', note: 'Targets for season (distance, triangles, hours)' },
         { field: 'SIV / Maneuver Notes', val: '', note: 'Stalls, spins, collapses, acro progression log' },
-        { field: 'General Flying Notes', val: '', note: 'Free-form reflections, wing trim checks, line check dates' }
+        { field: 'General Flying Notes', val: '', note: 'Free-form reflections, wing trim checks, line check dates' },
+        { field: 'Other Progression Info', val: '', note: 'Coaching clinics, thermal camps, mentor notes, future aspirations' }
       ]
     }
   ];
@@ -1159,7 +1177,15 @@ function scaffoldPilotProfile_(ss) {
   sections.forEach(function(sec) {
     rows.push([sec.title, '', '']);
     sec.fields.forEach(function(f) {
-      var val = (existingVals[f.field] !== undefined && existingVals[f.field] !== '') ? existingVals[f.field] : f.val;
+      var val = (existingVals[f.field] !== undefined && existingVals[f.field] !== '') ? existingVals[f.field] : '';
+      if (!val) {
+        Object.keys(fieldAliases).forEach(function(oldKey) {
+          if (fieldAliases[oldKey] === f.field && existingVals[oldKey]) {
+            val = existingVals[oldKey];
+          }
+        });
+      }
+      if (!val) val = f.val;
       rows.push([f.field, val, f.note]);
     });
   });
@@ -1185,9 +1211,9 @@ function scaffoldPilotProfile_(ss) {
     }
   }
 
-  sh.setColumnWidth(1, 240);
-  sh.setColumnWidth(2, 300);
-  sh.setColumnWidth(3, 440);
+  sh.setColumnWidth(1, 250);
+  sh.setColumnWidth(2, 320);
+  sh.setColumnWidth(3, 450);
 
   // Clean excess columns if present
   if (sh.getMaxColumns() > 3) {

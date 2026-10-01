@@ -13,13 +13,36 @@
     <base target="_top">
     <?!= HtmlService.createTemplateFromFile('Style').evaluate().getContent(); ?>
     <style>
+        body {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .main-content {
+            flex: 1 1 auto;
+            overflow-y: auto !important;
+            min-height: 0;
+            padding: 12px 16px;
+        }
+
         .file-upload-box {
             background-color: #f8f9fa;
-            border: 2px dashed #cfd8dc;
+            border: 2px dashed #90caf9;
             border-radius: 6px;
-            padding: 14px;
-            text-align: center;
+            padding: 10px 14px;
+            text-align: left;
             margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+        }
+
+        .file-upload-box input[type="file"] {
+            width: 100%;
+            cursor: pointer;
+            font-size: 13px;
+            color: #333;
         }
 
         .section-box {
@@ -87,6 +110,35 @@
         .badge-count.disabled-badge {
             background-color: #f1f5f9;
             color: #94a3b8;
+        }
+
+        .control-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-top: 12px;
+            margin-bottom: 10px;
+            padding: 8px 0;
+        }
+
+        .control-group button {
+            padding: 8px 16px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        #log-console {
+            margin-top: 6px;
+            background-color: #f8f9fa;
+            border: 1px solid #eee;
+            border-radius: 4px;
+            padding: 8px;
+            font-family: monospace;
+            font-size: 11px;
+            white-space: pre-wrap;
+            color: #444;
+            max-height: 90px;
+            overflow-y: auto;
         }
     </style>
 </head>
@@ -165,7 +217,7 @@
             <button id="btn-close" onclick="google.script.host.close()" class="secondary">Cancel</button>
         </div>
 
-        <div class="instructions" style="margin-top:15px; font-weight:bold;">Activity Log:</div>
+        <div class="instructions" style="margin-top:10px; font-weight:bold;">Activity Log:</div>
         <div id="log-console">Select a .json configuration file above to begin.</div>
     </div>
 
@@ -293,7 +345,13 @@
             if (lCount > 0) log(' - Lookups: ' + lCount + ' controlled lists found.');
             log('Review your selections above and click "Apply Selected Configuration".');
 
-            document.getElementById('btn-apply').style.display = 'inline-block';
+            var btnApply = document.getElementById('btn-apply');
+            btnApply.style.display = 'inline-block';
+            setTimeout(function() {
+                if (btnApply && btnApply.scrollIntoView) {
+                    btnApply.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            }, 100);
         }
 
         function toggleLoadParamSubgroups() {
