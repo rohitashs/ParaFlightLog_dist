@@ -1,8 +1,8 @@
 # Project Context & Ways of Working (Source of Truth)
 
 ## 🧠 Agent Memory & Context
-**Status**: Active Development (v0.8.15)
-**Last Session Focus**: Config tab consolidation (`CR-CFG-005`, 7-tab architecture), JSON Configuration Management (`Save Config` / `Load Config`), interactive stepping Purge modal (`PurgeDialog.html`), Mark Duplicates for Removal dialog (`MarkDuplicatesDialog.html`), Resync modal Done button, elimination of obsolete `'Duplicate'` status, and drift self-healing.
+**Status**: Active Development (v0.8.16)
+**Last Session Focus**: Out-and-Return XC scoring (`CR-SCORE-002`), 4-class taxonomy harmonization across system, static RPC analysis guardrail in test runner (`CR-DEV-001`), elimination of trailing underscore execution failures across dialogs (`Bug-RPC-001`), modal dialog scrollbar containment (`Bug-UI-008`), and purge dialog messaging update (`Bug-PURGE-002`).
 **Next Focus**: Large Scale Ingestion discussion (`RQ-ING-001.4`), Setup Wizard & Instance Templating (`RQ-SYS-008`), Configurable RDP Tolerance (`CR-CFG-002`).
 
 This file is the **long-term memory** for the project. Read this first to understand *how* we work and *where* we are.

@@ -1,5 +1,36 @@
 # Project Change Log
 
+## Session: Out-and-Return XC Scoring, Taxonomy Harmonization, RPC Gateways & Modal Layout Fixes
+**Date**: 2026-10-01
+**Versions**: v0.8.16
+**Focus**: Out-and-Return geometric optimization and scoring (`CR-SCORE-002`), 4-class XC Flight Class taxonomy harmonization across Scoring, Scaffold, Ingestion, and UI, automated static RPC verification guardrail (`CR-DEV-001`), elimination of trailing underscore execution failures across dialogs (`Bug-RPC-001`), modal dialog scrollbar containment (`Bug-UI-008`), and purge dialog messaging update (`Bug-PURGE-002`).
+
+*   `[Imp]` **CR-SCORE-002 (Out-and-Return XC Scoring & 4-Class Taxonomy Harmonization)**:
+    *   Implemented `optimizeOutAndReturn_` in `Code/Scoring.gs` evaluating single-turnpoint out-and-back flights ($P_i \to P_j \to P_k$ where $i < j < k$).
+    *   Enforces CIVL / XContest closure rule: distance between finish and start must be $\le 20\%$ of total course distance ($2 \times D_{\text{tp}}$).
+    *   Scores $(2 \times D_{\text{tp}} - \text{Gap}) \times 1.2$ points ($1.2\times$ league multiplier).
+    *   Harmonized standard 4-class taxonomy across the system: `['Free Flight', 'Flat Triangle', 'FAI Triangle', 'Out-and-Return']`.
+    *   Refactored `optimizeTriangle_` in `Code/Scoring.gs` to require 3 distinct legs ($P_i \to P_j \to P_k \to P_m$) with closure gap $\le 20\%$ and minimum leg threshold $\ge 5\%$ of perimeter, preventing degenerate collapse into out-and-return flights.
+    *   Added `normalizeXcClass_` in `Code/Utils.gs` and mapped `XC Flight Class` across `Code/Ingestion.gs`, `Code/Code.gs`, and `Code/Scaffold.gs` (`Config!L3:L`).
+*   `[Imp]` **CR-DEV-001 (Automated Static RPC Verification Guardrail in Test Suite)**:
+    *   Added automated static analysis in `scratch/run_unit_tests.js` scanning all HTML templates in `Code/` for `google.script.run` invocations.
+    *   Enforces that: 1) no client-called function ends with a trailing underscore `_`, and 2) every called function exists in `Code/*.gs`.
+    *   Causes the test suite to fail immediately with exit code 1 if any private RPC call is detected.
+*   `[Fix]` **Bug-RPC-001 (Private RPC Functions Freezing Client Dialogs)**:
+    *   Fixed trailing underscore execution errors in Google Apps Script by introducing public RPC gateway functions in `Code/Code.gs`:
+        *   `finalizeResync()` -> wraps `finalizeResync_()`
+        *   `finalizePurge()` -> wraps `finalizePurge_()`
+        *   `exportConfigJson(options)` -> wraps `exportConfigJson_(options)`
+        *   `importConfigJson(payload, opts)` -> wraps `importConfigJson_(payload, opts)`
+        *   `markDuplicatesForRemoval(chkOthers, chkPrimary)` -> wraps `markDuplicatesForRemoval_(chkOthers, chkPrimary)`
+    *   Updated client-side calls in `ResyncDialog.html`, `PurgeDialog.html`, `SaveConfigDialog.html`, `LoadConfigDialog.html`, and `MarkDuplicatesDialog.html`.
+*   `[Fix]` **Bug-UI-008 (Modal Dialog Layout & Contained Log Scrolling)**:
+    *   Updated `Code/Style.html` with universal `box-sizing: border-box`, configured `.main-content` as `display: flex; flex-direction: column; overflow: hidden; min-height: 0; flex: 1 1 auto;`, eliminating outer dialog scrollbars.
+    *   Constrained `#log-console` with `max-height: 180px; flex: 1 1 auto; overflow-y: auto`, ensuring all scrolling is strictly contained within the activity console.
+    *   Increased modal dialog sizes in `Code/Code.gs`: `showResyncDialog` (540x500), `showPurgeDialog` (540x500), `showSaveConfigDialog` (540x520), `showLoadConfigDialog` (550x540), `showScanDialog` (540x480), and `showMarkDuplicatesDialog` (520x460).
+*   `[Fix]` **Bug-PURGE-002 (Purge Dialog Message Alignment)**:
+    *   Updated finalization log message in `Code/PurgeDialog.html` from `"Sorting logbook and refreshing deduplication cache..."` to `"Sorting logbook chronologically and re-indexing flights..."`.
+
 ## Session: Config Consolidation, Interactive Purge Stepping, Mark Duplicates for Removal & Dedupe Cleanup
 **Date**: 2026-09-30
 **Versions**: v0.8.15

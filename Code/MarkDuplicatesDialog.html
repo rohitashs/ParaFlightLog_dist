@@ -1,6 +1,6 @@
 <!--
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 23:53:37
+ * Updated: 2026-10-01 01:31:18
  -->
 <!--
  * Paragliding Flight Log v2.0
@@ -189,7 +189,7 @@
                 .withFailureHandler(function (err) {
                     showError(err.message);
                 })
-                .markDuplicatesForRemoval_(chkOthers, chkPrimary);
+                .markDuplicatesForRemoval(chkOthers, chkPrimary);
         }
 
         function setDoneButton() {

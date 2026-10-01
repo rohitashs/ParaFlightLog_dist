@@ -164,9 +164,10 @@ Fixed Header Schema (Row 3=Category, Row 4=Name). Data starts Row 5.
 *   **`showPurgeDialog()`**: Opens `PurgeDialog.html` for interactive client-stepping flight removal.
 *   **`showMarkDuplicatesDialog()`**: Opens `MarkDuplicatesDialog.html` to batch-stage `Dup-Primary` and/or `Dup-Others` flights to `Remove`.
 *   **`showSaveConfigDialog()` / `showLoadConfigDialog()`**: Opens Configuration Management export and import modal dialogs.
-*   **`getPurgeCandidateFlightsStatus()` / `purgeSingleCandidateFlight(target)` / `finalizePurge_()`**: Stepping backend handlers for interactive purge.
-*   **`getDuplicateCounts()` / `markDuplicatesForRemoval_(markOthers, markPrimary)`**: Handlers for staging duplicates to `Remove`.
-*   **`exportConfigJson_(selectedSections)` / `importConfigJson_(jsonStr, selectedSections)`**: Configuration export and import logic.
+*   **`getPurgeCandidateFlightsStatus()` / `purgeSingleCandidateFlight(target)` / `finalizePurge()`**: Stepping backend handlers and public RPC completion gateway for interactive purge.
+*   **`getMissingMasterLogsStatus()` / `restoreSingleMasterFlight(fileId)` / `finalizeResync()`**: Stepping backend handlers and public RPC completion gateway for master log re-sync.
+*   **`getDuplicateCounts()` / `markDuplicatesForRemoval(markOthers, markPrimary)`**: Handlers and public RPC gateway for staging duplicates to `Remove`.
+*   **`exportConfigJson(selectedSections)` / `importConfigJson(jsonStr, selectedSections)`**: Configuration export and import public RPC gateways.
 *   **`uiEnableWatch_() / uiDisableWatch_()`**: Toggles the watch folder feature.
 *   **`setupWatcherTrigger_()`**: Installs the time-driven trigger for automation.
 
@@ -234,8 +235,12 @@ Fixed Header Schema (Row 3=Category, Row 4=Name). Data starts Row 5.
 *   **`analyzeFlight(fixes, config)`**: Main analysis routine.
 *   **`validateFlight_(fixes, ...)`**: Checks heuristics (Short flight, Kiting, Driving).
 
-### `Scoring.gs`
-*   **`calculateXcScore(fixes)`**: Computes XC distance (Free, Triangle) using RDP simplification and consolidated `haversine_` from `Utils.gs`.
+### `Scoring.gs` (XC Optimization & League Scoring)
+*   **`calculateXcScore(fixes)`**: Evaluates optimized track geometry across Free Flight (1.0x), Out-and-Return (1.2x), Flat Triangle (1.2x), and FAI Triangle (1.4x), selecting the highest-scoring classification.
+*   **`optimizeFreeDistance_(points)`**: Baseline open/free distance heuristic across simplified track fixes.
+*   **`optimizeOutAndReturn_(points)`**: Turnaround point optimization ($P_i \to P_j \to P_k$ where $i < j < k$). Verifies closure gap $\text{dist}(P_i, P_k) \le 20\%$ of total course distance ($2 \times \text{dist}(P_i, P_j)$) and scores $(2 \times D_{\text{tp}} - \text{Gap}) \times 1.2$.
+*   **`optimizeTriangle_(points)`**: 3-legged circuit optimization ($P_i \to P_j \to P_k \to P_m$). Enforces closure gap $\text{dist}(P_i, P_m) \le 20\%$ of perimeter ($d_1 + d_2 + d_3$) and minimum leg threshold $\ge 5\%$ of perimeter to prevent degenerate out-and-return collapse. Classifies as `FAI Triangle` if shortest leg $\ge 28\%$ of perimeter (1.4x), or `Flat Triangle` (1.2x).
+*   **`simplifyTrack_(points, tolerance)`**: Ramer-Douglas-Peucker track reduction to bounded fixes for sub-second Apps Script execution.
 
 ### `Geo.gs`
 *   **`getReverseGeo(lat, lon, config)`**: Returns Town/Region/Country (Nominatim/BigDataCloud).

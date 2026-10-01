@@ -411,9 +411,9 @@ Below is the complete reference for every column in the logbook, categorized by 
 | Column Header | Group | Calculation / Algorithm | Description & Pilot Interpretation |
 | :--- | :--- | :--- | :--- |
 | **XC Distance (km)** | XC Scoring | Ramer-Douglas-Peucker (RDP) | Optimized distance across up to 3 turnpoints under international XC contest rules. |
-| **XC Multiplier** | XC Scoring | League Multipliers | Scoring factor based on geometric classification: **1.0x** (Free Flight), **1.2x** (Flat Triangle), **1.4x** (FAI Triangle). |
+| **XC Multiplier** | XC Scoring | League Multipliers | Scoring factor based on geometric classification: **1.0x** (Free Flight), **1.2x** (Out-and-Return / Flat Triangle), **1.4x** (FAI Triangle). |
 | **XC Score** | XC Scoring | `XC Distance * Multiplier` | Official contest score points awarded for the flight. |
-| **XC Flight Class** | XC Scoring | Geometric Analysis | Track classification: `Free Flight`, `Flat Triangle`, or `FAI Triangle`. |
+| **XC Flight Class** | XC Scoring | Geometric Analysis | Track classification: `Free Flight`, `Flat Triangle`, `FAI Triangle`, or `Out-and-Return`. |
 | **FAI Triangle (km)** | XC Scoring | 28% Rule Verification | Triangle distance where the shortest leg is at least 28% of the total perimeter. |
 | **Closed?** | XC Scoring | Gap Analysis | `Yes` if landing is within 20% of the total perimeter back to launch (circuit closed); `No` if open distance. |
 | **XContest** | XC Scoring | Direct API Probing | Clickable hyperlink to public XContest flight (e.g. `XC#6952654`). Displays `"Claim soon!"` if within 14-day competition window, or `"Expired"` if older. |

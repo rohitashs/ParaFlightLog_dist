@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 23:53:37
+ * Updated: 2026-10-01 01:31:18
  */
 /**
  * Paragliding Flight Log v2.0
@@ -32,10 +32,11 @@ function calculateXcScore(fixes) {
   
   // 2. Calculate Distances
   var free = optimizeFreeDistance_(simplified);
+  var outAndReturn = optimizeOutAndReturn_(simplified);
   var triangle = optimizeTriangle_(simplified);
   
   // 3. Multipliers & Best Score
-  // World: Free 1.0, Flat 1.2, FAI 1.4
+  // World: Free 1.0, Out-and-Return 1.2, Flat 1.2, FAI 1.4
   // National: Bonus if closed
   
   // Refine Triangle classification (FAI vs Flat)
@@ -54,21 +55,36 @@ function calculateXcScore(fixes) {
   
   // Scores
   var scoreFree = free.dist;
+  var scoreOR = outAndReturn.valid ? (outAndReturn.dist * 1.2) : 0;
   var scoreTri = triangle.valid ? (triangle.dist * triMult) : 0;
   
-  var best = { type: 'Free Distance', score: scoreFree, dist: free.dist, pointsWorld: scoreFree };
+  var best = { type: 'Free Flight', score: scoreFree, dist: free.dist, pointsWorld: scoreFree };
+
+  if (scoreOR > best.score) {
+    best = {
+      type: 'Out-and-Return',
+      score: scoreOR,
+      dist: outAndReturn.dist,
+      pointsWorld: scoreOR
+    };
+  }
   
-  if (scoreTri > scoreFree) {
+  if (scoreTri > best.score) {
     best = { 
       type: triType + ' Triangle', 
       score: scoreTri, 
-      dist: triangle.dist,
+      dist: triangle.dist, 
       pointsWorld: scoreTri 
     };
   }
   
   return {
     free: { dist: free.dist, points: scoreFree },
+    outAndReturn: {
+      dist: outAndReturn.dist,
+      valid: outAndReturn.valid,
+      points: scoreOR
+    },
     triangle: { 
       dist: triangle.dist, 
       type: triType, 
@@ -115,53 +131,96 @@ function optimizeFreeDistance_(points) {
   return { dist: max1TP / 1000 }; // km
 }
 
+/**
+ * Out-and-Return Flight Optimization:
+ * Track: Start (P_i) -> Turnpoint (P_j) -> Finish (P_k) where i < j < k.
+ * Closure rule: Distance between start and finish must be <= 20% of total distance (2 * D_tp).
+ * Scored distance: (2 * D_tp) - Gap.
+ */
+function optimizeOutAndReturn_(points) {
+  var maxOR = 0;
+  var bestOR = { valid: false, dist: 0 };
+  var n = points.length;
+  if (n < 3) return bestOR;
+
+  var step = Math.max(1, Math.ceil(n / 50));
+
+  for (var i = 0; i < n; i += step) {
+    for (var j = i + step; j < n; j += step) {
+      var dOut = dist_(points[i], points[j]);
+      if (dOut <= 0) continue;
+      var totalCourse = 2 * dOut;
+
+      for (var k = j + step; k < n; k += step) {
+        var gap = dist_(points[i], points[k]);
+        if (gap <= 0.2 * totalCourse) {
+          var scoredDist = totalCourse - gap;
+          if (scoredDist > maxOR) {
+            maxOR = scoredDist;
+            bestOR = {
+              valid: true,
+              dist: scoredDist / 1000, // km
+              outDist: dOut / 1000,
+              gap: gap / 1000
+            };
+          }
+        }
+      }
+    }
+  }
+
+  return bestOR;
+}
+
 function optimizeTriangle_(points) {
-  // Triangle: Start -> TP1 -> TP2 -> Start (Close gap < 20% perimeter)
-  // We iterate through all points as corners? 
-  // O(N^3) on simplified track (100 pts) = 1M ops. Keepable in 1-2 sec.
-  
-  var maxTriPerimeter = 0;
+  // Triangle: Start (P_i) -> TP1 (P_j) -> TP2 (P_k) -> Finish (P_m) where i < j < k < m
+  // 3 distinct legs: d1 = dist(i,j), d2 = dist(j,k), d3 = dist(k,m)
+  // Closing gap: dist(i,m) <= 20% of perimeter (d1 + d2 + d3)
+  // Scored distance: perimeter - gap
+  var maxTriScored = 0;
   var bestTri = { valid: false, dist: 0 };
   
   var n = points.length;
-  // Limit N to 50 for triangle scan to be safe
-  var step = Math.ceil(n / 50);
+  if (n < 4) return bestTri;
+
+  var step = Math.max(1, Math.ceil(n / 35));
   
-  for (var i=0; i<n; i+=step) {
-    for (var j=i+step; j<n; j+=step) {
-      for (var k=j+step; k<n; k+=step) {
-        // Triangle P1(i) -> P2(j) -> P3(k)
-        // Actually, Triangle is usually flown as a sequence. 
-        // Track: ... A ... B ... C ...
-        // Triangle is Dist(A,B) + Dist(B,C) + Dist(C,A).
-        // Check closure: Distance(StartOfFlight, EndOfFlight)? No.
-        // Triangle is "Closed" if distance between start point and end point is <= 20% of perimeter.
-        // But the track itself is a sequence.
-        
-        // Let's compute distance segments
-        var d1 = dist_(points[i], points[j]);
+  for (var i = 0; i < n; i += step) {
+    for (var j = i + step; j < n; j += step) {
+      var d1 = dist_(points[i], points[j]);
+      if (d1 <= 0) continue;
+
+      for (var k = j + step; k < n; k += step) {
         var d2 = dist_(points[j], points[k]);
-        var d3 = dist_(points[k], points[i]); // Closing leg
-        var perimeter = d1 + d2 + d3;
-        
-        // Gap check: Distance between the actual track start point and track end point? 
-        // No, usually "Closed" means the track *forms* a closed loop.
-        // In XContest, "Closing" is the distance between the two points defined as Start and Finish of triangle.
-        // But for a triangle score, the gap must be < 20% of perimeter.
-        
-        if (d3 < 0.2 * perimeter) {
-           // Valid Triangle
-           if (perimeter > maxTriPerimeter) {
-             maxTriPerimeter = perimeter;
-             var legs = [d1, d2, d3].sort(function(a,b){return a-b});
-             bestTri = {
-               valid: true,
-               dist: perimeter / 1000, // km
-               perimeter: perimeter,
-               shortestLeg: legs[0],
-               closed: true // Simplified
-             };
-           }
+        if (d2 <= 0) continue;
+
+        for (var m = k + step; m < n; m += step) {
+          var d3 = dist_(points[k], points[m]);
+          var gap = dist_(points[i], points[m]);
+          var perimeter = d1 + d2 + d3;
+          if (perimeter <= 0) continue;
+
+          // Closure rule: gap between finish and start <= 20% of perimeter
+          if (gap <= 0.20 * perimeter) {
+            var legs = [d1, d2, d3].sort(function(a, b) { return a - b; });
+            var shortestLeg = legs[0];
+
+            // Real triangle check: each leg must be at least 5% of perimeter
+            if (shortestLeg >= 0.05 * perimeter) {
+              var scoredDist = perimeter - gap;
+              if (scoredDist > maxTriScored) {
+                maxTriScored = scoredDist;
+                bestTri = {
+                  valid: true,
+                  dist: scoredDist / 1000, // km
+                  perimeter: perimeter / 1000,
+                  shortestLeg: shortestLeg / 1000,
+                  gap: gap / 1000,
+                  closed: (gap <= 0.05 * perimeter)
+                };
+              }
+            }
+          }
         }
       }
     }

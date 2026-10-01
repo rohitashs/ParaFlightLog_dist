@@ -1,6 +1,6 @@
 <!--
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 23:53:37
+ * Updated: 2026-10-01 01:31:18
  -->
 <!DOCTYPE html>
 <html>
@@ -132,29 +132,45 @@
         function finish(isEmpty) {
             setProgress('100%');
 
-            var statusStr = totalFiles + '/' + totalFiles + ' Files | 100% | Completed';
-            setStatus(statusStr, '100%');
+            if (!isEmpty && processedFiles > 0) {
+                var btnClose = document.getElementById('btn-close');
+                if (btnClose) btnClose.disabled = true;
 
-            if (!isEmpty) {
+                setStatus('Sorting logbook...', '95%');
                 log('------------------------------------------------');
                 log('Re-sync Complete.');
                 log('Files Restored: ' + processedFiles);
                 log('Skipped: ' + skippedFiles);
                 log('Errors: ' + errorFiles);
-                log('Sorting logbook and refreshing indexes...');
+                log('Sorting logbook chronologically and re-indexing flights...');
 
                 google.script.run
                     .withSuccessHandler(function() {
-                        log('Logbook sorted successfully.');
+                        var statusStr = totalFiles + '/' + totalFiles + ' Files | 100% | Completed';
+                        setStatus(statusStr, '100%');
+                        log('Logbook sorted chronologically.');
+                        log('=== Re-sync Complete ===');
+                        setDoneButton();
                     })
-                    .finalizeResync_();
+                    .withFailureHandler(function(err) {
+                        setStatus('Completed with Warnings', '100%');
+                        log('Finalize warning: ' + err.message, 'log-error');
+                        setDoneButton();
+                    })
+                    .finalizeResync();
+            } else {
+                var statusStr = totalFiles + '/' + totalFiles + ' Files | 100% | Completed';
+                setStatus(statusStr, '100%');
+                setDoneButton();
             }
+        }
 
-            // Button Swap: Transform close button into primary Done button
+        function setDoneButton() {
             var btnClose = document.getElementById('btn-close');
             if (btnClose) {
                 btnClose.innerText = 'Done';
                 btnClose.className = 'action';
+                btnClose.disabled = false;
                 btnClose.style.display = 'inline-block';
                 btnClose.onclick = function() { google.script.host.close(); };
             }

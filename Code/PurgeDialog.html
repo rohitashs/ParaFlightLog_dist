@@ -1,6 +1,6 @@
 <!--
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 23:53:37
+ * Updated: 2026-10-01 01:31:18
  -->
 <!--
  * Paragliding Flight Log v2.0
@@ -167,7 +167,7 @@
             log('Flights purged: ' + purgedCount);
             log('Master IGCs trashed: ' + trashedCount);
             if (errorCount > 0) log('Errors: ' + errorCount, 'log-error');
-            log('Sorting logbook and refreshing deduplication cache...');
+            log('Sorting logbook chronologically and re-indexing flights...');
 
             google.script.run
                 .withSuccessHandler(function () {
@@ -181,7 +181,7 @@
                     log('Finalize warning: ' + err.message, 'log-error');
                     setDoneButton();
                 })
-                .finalizePurge_();
+                .finalizePurge();
         }
 
         function setDoneButton() {

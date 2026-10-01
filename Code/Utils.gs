@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 23:53:37
+ * Updated: 2026-10-01 01:31:18
  * 
  * MODULE: Utilities (Math & Formatting)
  * Consolidated geospatial calculations (Haversine, Bearing, Angular Difference)
@@ -108,6 +108,20 @@ function cleanDriveId_(input) {
   return str;
 }
 
+/**
+ * Normalizes XC Flight Class to standard taxonomy:
+ * 'Free Flight', 'Flat Triangle', 'FAI Triangle', 'Out-and-Return'
+ * @param {string} cls - Raw class string
+ * @return {string} Normalized standard class
+ */
+function normalizeXcClass_(cls) {
+  if (!cls) return '';
+  var c = String(cls).trim();
+  if (c === 'Free Distance' || c === 'Open') return 'Free Flight';
+  if (c === 'Triangle') return 'Flat Triangle';
+  return c;
+}
+
 // Export to UTILS namespace
 UTILS.haversine = haversine_;
 UTILS.bearing = bearing_;
@@ -115,3 +129,4 @@ UTILS.angleDiff = angleDiff_;
 UTILS.friendlyDuration = friendlyDuration_;
 UTILS.formatTime = formatTime_;
 UTILS.cleanDriveId = cleanDriveId_;
+UTILS.normalizeXcClass = normalizeXcClass_;

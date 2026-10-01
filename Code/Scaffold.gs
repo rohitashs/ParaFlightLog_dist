@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 23:53:37
+ * Updated: 2026-10-01 01:31:18
  */
 /**
  * Paragliding Flight Log v2.0 - Scaffolding & Setup
@@ -548,7 +548,7 @@ function scaffoldConfig_(ss) {
   // Status & Types from CFG (Soft dedupe scoring only)
   var statuses = ['Valid', 'Review?', 'Dup-Primary', 'Dup-Others', 'Invalid?', 'Remove'];
   var types = ['Free Fly', 'XC', 'Soaring', 'Comp', 'SIV / Maneuvers', 'Training', 'Other'];
-  var xcClasses = ['Open', 'Triangle', 'FAI Triangle', 'Out-and-Return'];
+  var xcClasses = ['Free Flight', 'Flat Triangle', 'FAI Triangle', 'Out-and-Return'];
   var dateFormats = ['yyyy-MM-dd', 'MM/dd/yyyy', 'dd/MM/yyyy', 'MMM dd, yyyy', 'ddd, MMM dd'];
   var timeFormats = ['HH:mm', 'h:mm a'];
 
@@ -1265,8 +1265,8 @@ function scaffoldUserGuide_(ss) {
 
   // XC Scoring
   addRow('XC Scoring', 'XC Distance (km)', 'Optimal 3 Turnpoints via Ramer-Douglas-Peucker', 'Optimized cross-country distance under league scoring rules.');
-  addRow('XC Scoring', 'XC Score', 'Distance * Multiplier (1.0x Free, 1.2x Flat, 1.4x FAI)', 'Official cross-country competition score points.');
-  addRow('XC Scoring', 'XC Flight Class', 'Free Flight, Flat Triangle, or FAI Triangle', 'Geometric classification of the track.');
+  addRow('XC Scoring', 'XC Score', 'Distance * Multiplier (1.0x Free, 1.2x Out-and-Return / Flat, 1.4x FAI)', 'Official cross-country competition score points.');
+  addRow('XC Scoring', 'XC Flight Class', 'Free Flight, Flat Triangle, FAI Triangle, or Out-and-Return', 'Geometric classification of the track.');
   addRow('XC Scoring', 'FAI Triangle (km)', 'Shortest leg >= 28% of total perimeter', 'Strict FAI triangle distance. Highest multiplier (1.4x) in XC leagues.');
   addRow('XC Scoring', 'Closed?', 'Launch-Landing gap <= 20% (or national bonus)', 'Indicates whether triangle circuit was closed back to launch (Yes / No).');
   addRow('XC Scoring', 'XContest', 'Direct Flight Probing / Rule 3.1 14-day claim window', 'Hyperlink to public XContest flight (e.g. XC#6952654) if verified. Displays "Claim soon!" if within 14-day competition deadline, or "Expired" if older than 14 days.');

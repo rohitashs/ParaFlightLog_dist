@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 23:53:37
+ * Updated: 2026-10-01 01:31:18
  * 
  * MODULE: Ingestion Service
  * Handles Flight Log Parsing, Analysis/Scoring Orchestration, Geo-enrichment,
@@ -894,7 +894,7 @@ function insertFlightRow_(data, fileId, outerName, status, notes, analysis, scor
 
   setVal('XC Distance (km)', best.dist ? best.dist.toFixed(1) : (free.dist ? free.dist.toFixed(1) : ''));
   setVal('XC Score', best.score ? best.score.toFixed(1) : '');
-  setVal('XC Flight Class', best.type || '');
+  setVal('XC Flight Class', normalizeXcClass_(best.type || ''));
   setVal('FAI Triangle (km)', (tri.valid && tri.dist) ? tri.dist.toFixed(1) : '');
   setVal('Points (World)', best.pointsWorld ? best.pointsWorld.toFixed(1) : '');
   setVal('Points (National)', best.score ? best.score.toFixed(1) : '');

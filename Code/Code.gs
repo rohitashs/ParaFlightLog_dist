@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 23:53:37
+ * Updated: 2026-10-01 01:31:18
  * Test access verification: Verified GAS write access on 2026-09-25 08:26:00.
  * 
  * CORE MODULE: Orchestration Only.
@@ -156,48 +156,48 @@ function showFlightMaintenanceDialog() {
 function showPurgeDialog() {
   var html = HtmlService.createTemplateFromFile('PurgeDialog')
       .evaluate()
-      .setWidth(520)
-      .setHeight(460);
+      .setWidth(540)
+      .setHeight(500);
   SpreadsheetApp.getUi().showModalDialog(html, 'Purge Flights');
 }
 
 function showMarkDuplicatesDialog() {
   var html = HtmlService.createTemplateFromFile('MarkDuplicatesDialog')
       .evaluate()
-      .setWidth(500)
-      .setHeight(430);
+      .setWidth(520)
+      .setHeight(460);
   SpreadsheetApp.getUi().showModalDialog(html, 'Mark Duplicates for Removal');
 }
 
 function showSaveConfigDialog() {
   var html = HtmlService.createTemplateFromFile('SaveConfigDialog')
       .evaluate()
-      .setWidth(520)
-      .setHeight(500);
+      .setWidth(540)
+      .setHeight(520);
   SpreadsheetApp.getUi().showModalDialog(html, 'Save Configuration');
 }
 
 function showLoadConfigDialog() {
   var html = HtmlService.createTemplateFromFile('LoadConfigDialog')
       .evaluate()
-      .setWidth(540)
-      .setHeight(520);
+      .setWidth(550)
+      .setHeight(540);
   SpreadsheetApp.getUi().showModalDialog(html, 'Load Configuration');
 }
 
 function showScanDialog() {
   var html = HtmlService.createTemplateFromFile('ScanDialog')
       .evaluate()
-      .setWidth(500)
-      .setHeight(450);
+      .setWidth(540)
+      .setHeight(480);
   SpreadsheetApp.getUi().showModalDialog(html, 'Flight Import');
 }
 
 function showResyncDialog() {
   var html = HtmlService.createTemplateFromFile('ResyncDialog')
       .evaluate()
-      .setWidth(500)
-      .setHeight(450);
+      .setWidth(540)
+      .setHeight(500);
   SpreadsheetApp.getUi().showModalDialog(html, 'Re-sync Master Logs');
 }
 
@@ -739,7 +739,7 @@ function executeFlightMaintenanceRow(rowNum, opConfig) {
               var tri = scoring.triangle || {};
               setV('XC Distance (km)', best.dist ? best.dist.toFixed(1) : '');
               setV('XC Score', best.score ? best.score.toFixed(1) : '');
-              setV('XC Flight Class', best.type || '');
+              setV('XC Flight Class', normalizeXcClass_(best.type || ''));
               setV('FAI Triangle (km)', (tri.valid && tri.dist) ? tri.dist.toFixed(1) : '');
               setV('Points (World)', best.pointsWorld ? best.pointsWorld.toFixed(1) : '');
               setV('Points (National)', best.score ? best.score.toFixed(1) : '');
@@ -1125,6 +1125,13 @@ function finalizePurge_() {
 }
 
 /**
+ * Public RPC Gateway for PurgeDialog.html.
+ */
+function finalizePurge() {
+  return finalizePurge_();
+}
+
+/**
  * Counts duplicate flights for MarkDuplicatesDialog.html.
  */
 function getDuplicateCounts() {
@@ -1192,6 +1199,13 @@ function markDuplicatesForRemoval_(includeOthers, includePrimary) {
     updatedOthers: updatedOthers,
     updatedPrimary: updatedPrimary
   };
+}
+
+/**
+ * Public RPC Gateway for MarkDuplicatesDialog.html.
+ */
+function markDuplicatesForRemoval(includeOthers, includePrimary) {
+  return markDuplicatesForRemoval_(includeOthers, includePrimary);
 }
 
 /**
@@ -1279,6 +1293,13 @@ function exportConfigJson_(options) {
 }
 
 /**
+ * Public RPC Gateway for SaveConfigDialog.html.
+ */
+function exportConfigJson(options) {
+  return exportConfigJson_(options);
+}
+
+/**
  * Applies imported configuration to Pilot_Profile and Config sheets.
  * Used by LoadConfigDialog.html.
  */
@@ -1362,6 +1383,13 @@ function importConfigJson_(configPayload, selectedOptions) {
 
   logImport_(new Date(), '', '', 'Load Config', 'Success', 'Config applied: Profile=' + res.profileUpdated + ', Params=' + res.paramsUpdated + ', Lookups=' + res.lookupsUpdated);
   return res;
+}
+
+/**
+ * Public RPC Gateway for LoadConfigDialog.html.
+ */
+function importConfigJson(configPayload, selectedOptions) {
+  return importConfigJson_(configPayload, selectedOptions);
 }
 
 /**
@@ -1497,6 +1525,13 @@ function finalizeResync_() {
     console.warn('Post-resync sort warning:', e);
   }
   return { success: true };
+}
+
+/**
+ * Public RPC Gateway for ResyncDialog.html.
+ */
+function finalizeResync() {
+  return finalizeResync_();
 }
 
 /**

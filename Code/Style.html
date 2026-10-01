@@ -1,9 +1,13 @@
 <!--
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 23:53:37
+ * Updated: 2026-10-01 01:31:18
  -->
 <style>
     /* UI Overhaul - Feb 12 */
+    *, *:before, *:after {
+        box-sizing: border-box;
+    }
+
     body {
         padding: 0;
         margin: 0;
@@ -11,7 +15,6 @@
         flex-direction: column;
         height: 100vh;
         overflow: hidden;
-        /* Main scroll handled by content */
     }
 
     .app-title {
@@ -43,9 +46,12 @@
     }
 
     .main-content {
-        flex-grow: 1;
-        overflow-y: auto;
+        flex: 1 1 auto;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
         padding: 15px;
+        min-height: 0;
     }
 
     .footer {
@@ -90,6 +96,10 @@
         white-space: pre-wrap;
         color: #444;
         min-height: 80px;
+        max-height: 180px;
+        flex: 1 1 auto;
+        overflow-y: auto;
+        word-break: break-all;
     }
 
     /* Progress Bar (re-used but cleaner) */

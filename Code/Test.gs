@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 23:53:37
+ * Updated: 2026-10-01 01:31:18
  */
 /**
  * Paragliding Flight Log v2.0
@@ -75,17 +75,52 @@ function testAnalysis_() {
 }
 
 function testScoring_() {
-  // Mock simple track
-  var fixes = [];
-  for (var i=0; i<100; i++) {
-     fixes.push({ t:i, lat: 46 + (i*0.001), lon: 7, alt: 1000 });
+  // Test 1: Simple linear track (Free Flight)
+  var fixesLinear = [];
+  for (var i = 0; i < 100; i++) {
+    fixesLinear.push({ t: i, lat: 46 + (i * 0.001), lon: 7, alt: 1000 });
   }
-  // Dist approx 11km (0.1 deg lat)
-  
-  var score = SCORING.calculateXcScore(fixes);
-  if (!score) return { module: 'Scoring', error: 'Null result' };
-  if (score.free.dist < 5) return { module: 'Scoring', error: 'Dist too small' };
-  
+  var scoreLinear = SCORING.calculateXcScore(fixesLinear);
+  if (!scoreLinear) return { module: 'Scoring', error: 'Null result for linear track' };
+  if (scoreLinear.free.dist < 5) return { module: 'Scoring', error: 'Dist too small' };
+  if (scoreLinear.best.type !== 'Free Flight') {
+    return { module: 'Scoring', error: 'Expected Free Flight for linear track, got: ' + scoreLinear.best.type };
+  }
+
+  // Test 2: Out-and-Return track (Fly out 11km and return back to launch)
+  var fixesOR = [];
+  // Leg 1: Outbound from lat 46.0 to 46.10 (50 points)
+  for (var j = 0; j <= 50; j++) {
+    fixesOR.push({ t: j, lat: 46.0 + (j * 0.002), lon: 7.0, alt: 1000 });
+  }
+  // Leg 2: Inbound back from 46.10 to 46.002 (50 points, close to start)
+  for (var k = 1; k <= 50; k++) {
+    fixesOR.push({ t: 50 + k, lat: 46.10 - (k * 0.00196), lon: 7.0, alt: 1000 });
+  }
+
+  var scoreOR = SCORING.calculateXcScore(fixesOR);
+  if (!scoreOR) return { module: 'Scoring', error: 'Null result for OR track' };
+  if (!scoreOR.outAndReturn || !scoreOR.outAndReturn.valid) {
+    return { module: 'Scoring', error: 'Expected valid outAndReturn evaluation' };
+  }
+  if (scoreOR.best.type !== 'Out-and-Return') {
+    return { module: 'Scoring', error: 'Expected Out-and-Return best type, got: ' + scoreOR.best.type };
+  }
+  if (scoreOR.best.score <= scoreOR.free.dist) {
+    return { module: 'Scoring', error: 'Expected 1.2x Out-and-Return bonus to exceed free distance' };
+  }
+
+  // Test 3: Normalization helper check
+  if (UTILS.normalizeXcClass('Free Distance') !== 'Free Flight') {
+    return { module: 'Scoring', error: 'normalizeXcClass Free Distance mismatch' };
+  }
+  if (UTILS.normalizeXcClass('Triangle') !== 'Flat Triangle') {
+    return { module: 'Scoring', error: 'normalizeXcClass Triangle mismatch' };
+  }
+  if (UTILS.normalizeXcClass('Out-and-Return') !== 'Out-and-Return') {
+    return { module: 'Scoring', error: 'normalizeXcClass Out-and-Return mismatch' };
+  }
+
   return { module: 'Scoring', idx: true };
 }
 

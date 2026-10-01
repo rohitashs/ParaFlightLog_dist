@@ -54,9 +54,10 @@ Analyzes the track log to understand *how* you flew.
 *Maps to `RQ-SCR-001`*
 
 Applies standard XContest/FAI scoring rules to every flight.
-*   **Optimization**: Finds the optimal 3 Turnpoints to maximize distance.
-*   **Triangle Detection**: Identifies **Flat Triangles** (<20% gap) and **FAI Triangles** (strict leg geometry).
-*   **Scoring**: Calculates points with appropriate multipliers (e.g. 1.4x for FAI Triangle).
+*   **Optimization**: Finds the optimal track geometry across Free Flight, Out-and-Return, and Triangle courses.
+*   **Out-and-Return Detection**: Identifies single turnpoint out-and-back flights ($P_i \to P_j \to P_k$ where closing gap $\le 20\%$ of total course distance), awarding a 1.2x league multiplier.
+*   **Triangle Detection**: Identifies **Flat Triangles** (3 distinct legs $\ge 5\%$, gap $\le 20\%$, 1.2x) and **FAI Triangles** (strict FAI geometry with shortest leg $\ge 28\%$, 1.4x).
+*   **Harmonized Taxonomy**: Classifies best flight geometry into standard categories: `Free Flight`, `Flat Triangle`, `FAI Triangle`, or `Out-and-Return`.
 *   **XContest Flight Verification & Link Integration (`RQ-SCR-003`, `Bug-SCR-002`)**: Directly probes XContest.org via UTC flight date and candidate launch times (+/- 2 minutes) to verify if the flight is claimed. If matched, extracts the permanent internal XContest flight ID (`fl=...`) from OpenGraph metadata and formats a clickable hyperlink (e.g. `=HYPERLINK(url, "XC#6952654")`). If unmatched, automatically evaluates against XContest Rule 3.1 (14-day competition claiming deadline), marking `'Claim soon!'` for flights within 14 days and `'Expired'` for flights older than 14 days.
 
 ## 5. 📍 Geo-Spatial Enrichment
