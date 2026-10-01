@@ -1,5 +1,37 @@
 # Project Change Log
 
+## Session: Config Consolidation, Interactive Purge Stepping, Mark Duplicates for Removal & Dedupe Cleanup
+**Date**: 2026-09-30
+**Versions**: v0.8.15
+**Focus**: Config tab consolidation (`CR-CFG-005`), JSON Configuration Management (`Save Config` / `Load Config`), interactive stepping Purge dialog (`PurgeDialog.html`), Mark Duplicates for Removal dialog (`MarkDuplicatesDialog.html`), Done button on `ResyncDialog.html`, elimination of obsolete `'Duplicate'` status, and drift self-healing.
+
+*   `[Imp]` **CR-CFG-005 (Consolidated Config Tab & 7-Sheet Architecture)**:
+    *   Combined `Parameters` and `Lookups` into a single consolidated `Config` tab (`TABS.CONFIG` with Amber theme `#FF9800`, index 6).
+    *   Layout: System Parameters in Columns A:C (Key, Value, Description) growing downward; Column D blank spacer (width 25px); Reference Lookups in Columns E:N (Equipment categories, dynamic queries for Wing/Harness/Reserve/Other, Flight Status, Types, XC Classes, Date/Time Formats) growing horizontally.
+    *   Preserved backward compatibility by mapping aliases `TABS.PARAMETERS` and `TABS.LOOKUPS` directly to `TABS.CONFIG`.
+    *   Updated `scaffoldConfig_` in `Code/Scaffold.gs`, `applyFlightsValidation_`, `applyEquipmentValidation_`, and all dashboard `VLOOKUP` formulas (`VLOOKUP("...", Config!A:B, 2, FALSE)`).
+    *   Reduced total spreadsheet tabs from 8 to 7: `Dashboard`, `Flights`, `Pilot_Profile`, `Equipment`, `User Guide`, `Config`, `App_Log`.
+*   `[Imp]` **CR-CFG-005 (Configuration Management: Save & Load Config JSON)**:
+    *   Added `Flight Log > Admin > Configuration Management` submenu with `Save Config...` and `Load Config...`.
+    *   Created `SaveConfigDialog.html`: interactive modal with section checkboxes (Pilot Profile, Ingestion parameters, Integrations, Scoring parameters, UI/Display parameters, Lookups) and direct client-side JSON download (`exportConfigJson_`).
+    *   Created `LoadConfigDialog.html`: interactive modal with local `.json` file selector, automatic section detection, selectable restore options, and live execution (`importConfigJson_`).
+*   `[Imp]` **CR-CFG-005 (Interactive Purge Dialog with Client Stepping & Trashing)**:
+    *   Created `PurgeDialog.html`: client-stepping modal dialog for purging flights marked `Remove`.
+    *   Detects candidate rows live (`getPurgeCandidateFlightsStatus`), displays real-time progress bar and step-by-step console, moves master IGC files from `Master Log Folder` to `Trash Folder` (`purgeSingleCandidateFlight`), deletes sheet rows from bottom to top, refreshes in-memory dedupe hashes, auto-sorts flights descending, and displays a primary `Done` button (`finalizePurge_`).
+*   `[Imp]` **CR-CFG-005 (Mark Duplicates for Removal Dialog)**:
+    *   Added `Flight Log > Flight maintenance > Mark Duplicates for Removal...` menu item.
+    *   Created `MarkDuplicatesDialog.html`: displays real-time counts of `Dup - Others` (backup tracks) and `Dup - Primary` (primary tracks).
+    *   Allows pilots to selectively stage duplicate categories to `Remove` (`markDuplicatesForRemoval_`) without immediate row deletion.
+*   `[Imp]` **CR-CFG-005 (Eliminated Legacy 'Duplicate' Status & Master Log Drift Self-Healing)**:
+    *   Eliminated obsolete `'Duplicate'` status from status dropdown, data validation, conditional formatting, and ingestion logic.
+    *   All duplicate occurrences adhere strictly to soft dedupe quality scoring (`Dup-Primary` / `Dup-Others`).
+    *   Added drift self-healing: if an incoming IGC matches an existing file in `Master Log Folder` by filename or content but has no corresponding flight row, the system automatically restores the flight row and performs soft dedupe quality scoring against other recordings.
+*   `[Imp]` **CR-ING-007 (Done Button on Resync Dialog & Flight Updates Alignment)**:
+    *   Transformed `btn-close` on `ResyncDialog.html` into a primary `Done` button upon completion.
+    *   Aligned dialog header, button text, and completion log in `FlightMaintenanceDialog.html` to `Flight Updates`.
+*   `[Test]` **Automated Testing**:
+    *   Added `testConfigAndDedupeEnhancements_` in `Code/Test.gs` verifying `TABS.CONFIG` definition, `CFG.sheets.config = 'Config'`, exclusion of `'Duplicate'` from status lookups and validations, and presence of all new dialog launchers and backend handlers.
+
 ## Session: Smart Deduplication, Device Overlap Scoring, Row Hashes & Master Log Sync
 **Date**: 2026-09-30
 **Versions**: v0.8.13

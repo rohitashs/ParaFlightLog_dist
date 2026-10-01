@@ -33,12 +33,13 @@ Converts raw data into a structured Pilot Logbook in Google Sheets.
     *   *Heuristic Overlap*: When multiple instruments record the same flight (same date, $\pm 15$ min or interval overlap, launch distance $\le 1{,}000$ m), the system calculates a 0–100 quality score (XCTrack primary device = 40 pts, dedicated vario = 30 pts, baro sensor integrity = 30 pts, 1Hz resolution = 15 pts, duration, and metadata).
     *   *Candidate Tagging*: The superior track is marked `Dup-Primary` (gold) and the backup track is marked `Dup-Others` (orange), with cross-referencing pairing notes `[DupRef: DUP_YYYYMMDD_HHMM | Paired with <FlightID> (Score: X vs Y)]`.
 *   **Status Taxonomy & Dashboard Protection**:
-    *   Dropdown options: `Valid`, `Review?`, `Dup-Primary`, `Dup-Others`, `Invalid?`, `Remove`, `Duplicate`.
+    *   Dropdown options: `Valid`, `Review?`, `Dup-Primary`, `Dup-Others`, `Invalid?`, `Remove`. Note that legacy `'Duplicate'` status has been completely eliminated in favor of soft dedupe quality scoring and self-healing Master Log drift.
     *   All Dashboard KPI cards, 6-month currency timeline, and leaderboards strictly filter for `Status = "Valid"`, preventing unreviewed or duplicate tracks from polluting pilot statistics.
 *   **Self-Healing Maintenance Tools (`Flight Log > Flight maintenance`)**:
     *   *Flight Updates...*: Unified modal dialog to batch update weather, geo reverse lookup, XContest validation, physics/XC scoring, or sort flights.
-    *   *Purge Flights Marked 'Remove'*: Moves Master IGC files to `TRASH_FOLDER_ID`, deletes sheet rows bottom-up, and refreshes hashes.
-    *   *Re-sync Missing Flights from Master Folder*: Interactive modal dialog with live progress bar and activity log that scans `MASTER_LOG_FOLDER_ID` for orphaned IGCs and restores them to the `Flights` tab as `Review?`.
+    *   *Mark Duplicates for Removal...*: Staging dialog with `Dup - Others` and `Dup - Primary` checkboxes to stage triaged duplicate tracks to `Remove`.
+    *   *Purge Flights Marked 'Remove'...*: Interactive modal dialog (`PurgeDialog.html`) with live candidate detection, client-side stepping, real-time progress bar, Google Drive trash folder transfer, row deletion, and primary Done button.
+    *   *Re-sync Missing Flights from Master Folder...*: Interactive modal dialog (`ResyncDialog.html`) with live progress bar, activity log, and primary Done button that scans `MASTER_LOG_FOLDER_ID` for orphaned IGCs and restores them to the `Flights` tab as `Review?`.
 *   **Gear Tracking**: Auto-fills Wing, Harness, and Reserve based on the last valid flight ("Sticky Defaults") or Equipment defaults.
 
 ## 3. 📊 Flight Analysis
@@ -73,11 +74,11 @@ Adds location context to raw GPS coordinates.
 The visual layer where users interact with the data.
 *   **Flights Tab**: The main logbook view. Uses a **2-Row Header** design (Category + Field) for clarity, with Cell A2 providing a direct hyperlink to the Master Flight Log Drive folder. Columns are frozen through Column D (`Auto Summary`) for seamless horizontal scrolling across wide data groups.
 *   **Column Grouping & Streamlined Schema**: Columns are physically grouped and colored by function (*Flight Info*, *Gear*, *XC Scoring*, *Launch*, *Landing*, *Weather*, *Analytics*, *Validation*, *Meta*). Redundant columns (`Launch-Landing Dist (km)` and gear snapshot baselines `GlideRatio_LD`, `Trim_kmh`, `FullBar_kmh`) have been eliminated to keep records lean.
-*   **Dynamic Dropdowns & Validation Rules**: `Flight Type` and `XC Flight Class` dynamically bind to populated ranges in the `Lookups` tab (`Lookups!G3:G` and `Lookups!H3:H`), `Closed?` provides a clean `Yes` / `No` dropdown, and `Add manual flight` sets the default status to `Review?`.
+*   **Dynamic Dropdowns & Validation Rules**: `Flight Type` and `XC Flight Class` dynamically bind to populated ranges in the `Config` tab (`Config!K3:K` and `Config!L3:L`), `Closed?` provides a clean `Yes` / `No` dropdown, and `Add manual flight` sets the default status to `Review?`.
 *   **Download & Visualization Links**: `FlightID` links directly to SeeYou Cloud 3D visualization, while `Flight No` wraps sequential numbering with a direct download hyperlink to the master IGC file.
 *   **Header Tooltips**: Header cells on Row 4 contain cell notes (e.g. "Click to view flight" and "Click to download igc") for intuitive guidance.
 *   **Menus**: A custom "Flight Log" menu provides one-click access to common actions (Add Flight, Upload, Flight Maintenance, and Admin tools including dedicated Dashboard and User Guide tab refreshers).
-*   **Dialogs**: Custom HTML interfaces for File Uploads and "Add files from URL (folder, igc, zip)" supporting both manual URL/ID entry and native Google Drive folder exploration with optional "Delete from source" cleanup.
+*   **Dialogs**: Custom HTML interfaces for File Uploads, URL/Drive imports, interactive Purge stepping, duplicate removal staging, and configuration export/import.
 *   **Flight Inspector**: A dedicated sidebar to view, edit, and audit flight details without horizontal scrolling. Includes collapsible sections and direct SeeYou Cloud links.
 *   **Flight Maintenance & Bulk Operations (`RQ-SYS-007`)**: A unified modal dialog (`FlightMaintenanceDialog.html`) allowing pilots to select scope (Selected rows vs. All flights) and execute batch operations: backfill historical weather, backfill missing geo/site data, re-verify XContest flight claims, recompute physics and thermalling modes, recalculate XC score, and sort flights by date.
 
@@ -111,11 +112,12 @@ A high-level visual dashboard structured into a compact 6-column layout (Columns
 Tools for managing the system's lifecycle.
 *   **In-App Folder Picker**: Built-in Drive folder browser dialog allowing users to navigate "My Drive", drill down into subfolders, verify URLs/IDs, and select folders with "Replace" or "Add to List" actions.
 *   **Human-Readable Path Enrichment**: Folder parameter updates automatically write human-readable folder breadcrumb paths (`[Path: My Drive / ...]`) to the `Description` column in the `Parameters` sheet.
-*   **First Time Setup & Scaffold**: A "Scaffold" feature automatically creates all necessary sheets, headers, and validation rules if they are missing or deleted.
+*   **First Time Setup & Scaffold**: A "Scaffold" feature automatically creates all necessary sheets, headers, and validation rules if they are missing or deleted. Generates 7 core tabs (`Dashboard`, `Flights`, `Pilot_Profile`, `Equipment`, `User Guide`, `Config`, `App_Log`).
 *   **Interactive Setup Wizard & Templating (`RQ-SYS-008`)**: Streamlined onboarding workflow designed to replace manual script setup with a copyable sheet template and an interactive setup wizard guiding initial folder configuration, pilot credentials, equipment defaults, and trigger installation.
-*   **Configuration**: A simpler `Parameters` sheet allows users to change system behavior (e.g. "Min Height Gain", "Watch Folder ID") without touching code.
-*   **Maintenance**: Admin tools to "Reset System", "Reformat Sheets", and "Backup Data" (creates safety copies of `Flights`, `Pilot_Profile`, `Equipment`, `Parameters`, and `Lookups`).
-*   **Equipment Manager**: dedicated tabs for `Wings`, `Harnesses`, and `Reserves`. Rows added here immediately appear in the Flights dropdowns.
+*   **Configuration Management (`Save Config` / `Load Config`)**: Built-in JSON export and import tools under `Flight Log > Admin > Configuration Management` to backup and restore system parameters, pilot profile, and lookup settings.
+*   **Consolidated Config Tab**: A unified `Config` sheet combines system parameters (Columns A:C) and dynamic/static lookup tables (Columns E:N, separated by blank Column D) to simplify navigation.
+*   **Maintenance**: Admin tools to "Reset System", "Reformat Sheets", and "Backup Data" (creates safety copies of `Flights`, `Pilot_Profile`, `Equipment`, and `Config`).
+*   **Equipment Manager**: dedicated tab for `Equipment`. Rows added here immediately appear in the Flights dropdowns via dynamic queries on the `Config` tab.
 
 ## 9. ⚙️ System Internals
 *Maps to `RQ-ING-001`, `RQ-ANA-001`*

@@ -1,6 +1,6 @@
 <!--
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 21:59:57
+ * Updated: 2026-09-30 23:53:37
  -->
 <!DOCTYPE html>
 <html>
@@ -150,10 +150,18 @@
                     .finalizeResync_();
             }
 
-            // Button Swap: Hide Cancel, Show Done
-            document.getElementById('btn-close').style.display = 'none';
-            var btn = document.getElementById('btn-action');
-            btn.style.display = 'inline-block';
+            // Button Swap: Transform close button into primary Done button
+            var btnClose = document.getElementById('btn-close');
+            if (btnClose) {
+                btnClose.innerText = 'Done';
+                btnClose.className = 'action';
+                btnClose.style.display = 'inline-block';
+                btnClose.onclick = function() { google.script.host.close(); };
+            }
+            var btnAction = document.getElementById('btn-action');
+            if (btnAction) {
+                btnAction.style.display = 'none';
+            }
         }
 
         function setStatus(left, right) {

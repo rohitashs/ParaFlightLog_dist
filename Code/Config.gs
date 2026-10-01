@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 21:59:57
+ * Updated: 2026-09-30 23:53:37
  */
 /**
  * Paragliding Flight Log v2.0 - Configuration
@@ -18,8 +18,9 @@ var CFG = {
   sheets: {
     flights: 'Flights',
     equipment: 'Equipment',
-    parameters: 'Parameters',
-    lookups: 'Lookups',
+    config: 'Config',
+    parameters: 'Config', // Legacy alias
+    lookups: 'Config',    // Legacy alias
     appLog: 'App_Log',
     sites: 'Sites',
     dashboard: 'Dashboard',
@@ -253,28 +254,24 @@ var TABS = {
     headerRow: 1,
     frozenRows: 0
   },
-  PARAMETERS: {
-    name: CFG.sheets.parameters,
-    color: '#FFEB3B', // Yellow
+  CONFIG: {
+    name: CFG.sheets.config,
+    color: '#FF9800', // Amber
     index: 6,
     headerRow: 2,
     frozenRows: 0,
     columns: ['Parameter', 'Value', 'Description']
   },
-  LOOKUPS: {
-    name: CFG.sheets.lookups,
-    color: '#FF9800', // Orange
-    index: 7,
-    headerRow: 2,
-    frozenRows: 0,
-    columns: ['Categories', 'Wings (Auto)', 'Harnesses (Auto)', 'Reserves (Auto)', 'Other (Auto)', 'Flight Status', 'Flight Type']
-  },
   APP_LOG: {
     name: CFG.sheets.appLog,
     color: '#F44336', // Red
-    index: 8,
+    index: 7,
     headerRow: 2,
     frozenRows: 2,
     columns: ['Timestamp', 'FileID', 'FileName', 'InnerName', 'Status', 'Info']
   }
 };
+
+// Backwards compatibility aliases
+TABS.PARAMETERS = TABS.CONFIG;
+TABS.LOOKUPS = TABS.CONFIG;

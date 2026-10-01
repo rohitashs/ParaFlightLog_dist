@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 21:59:57
+ * Updated: 2026-09-30 23:53:37
  * 
  * MODULE: Ingestion Service
  * Handles Flight Log Parsing, Analysis/Scoring Orchestration, Geo-enrichment,
@@ -211,10 +211,17 @@ function processSingleIgcBlob_(blob, fileName, fileId, outerName, config) {
      if (analysis.validation.reason) noteLog.push(analysis.validation.reason);
   }
 
-  // Override status if duplicate file name (and not an exact MD5 master match)
-  if (masterRes.isDuplicate && !masterRes.isExactMasterMatch) {
-    status = 'Duplicate';
-    noteLog.push('Duplicate Filename');
+  // Check Master Folder drift: if master had a file with this name without a flight row, self-heal drift
+  if (masterRes.isDuplicate && !masterRes.isExactMasterMatch && masterRes.existingMasterFileId && sh) {
+    try {
+      var isSeen = masterRes.existingMasterHash ? isHashSeen_(masterRes.existingMasterHash, sh) : false;
+      if (!isSeen) {
+        // Restore orphaned master log so both flights exist in the logbook and can be evaluated
+        restoreSingleMasterFlight(masterRes.existingMasterFileId);
+      }
+    } catch (driftErr) {
+      console.warn('Drift self-heal check warning:', driftErr);
+    }
   }
 
   // Check Heuristic Overlap

@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 21:59:57
+ * Updated: 2026-09-30 23:53:37
  * Test access verification: Verified GAS write access on 2026-09-25 08:26:00.
  * 
  * CORE MODULE: Orchestration Only.
@@ -27,10 +27,14 @@ function onOpen(e) {
         .addItem('Flight Updates...', 'showFlightMaintenanceDialog')
         .addItem('Sort All Flights by Date', 'sortFlightsByDate')
         .addSeparator()
-        .addItem('Purge Flights Marked \'Remove\'', 'purgeRemoveFlights')
+        .addItem('Mark Duplicates for Removal...', 'showMarkDuplicatesDialog')
+        .addItem('Purge Flights Marked \'Remove\'', 'showPurgeDialog')
         .addItem('Re-sync Missing Flights from Master Folder', 'showResyncDialog'))
     .addSeparator()
     .addSubMenu(ui.createMenu('Admin')
+        .addSubMenu(ui.createMenu('Configuration Management')
+            .addItem('Save Config (Export JSON)...', 'showSaveConfigDialog')
+            .addItem('Load Config (Import JSON)...', 'showLoadConfigDialog'))
         .addSubMenu(ui.createMenu('Sheet Maintenance & Views')
             .addItem('Refresh Dashboard (KPIs & Cards)', 'uiRefreshDashboard_')
             .addItem('Refresh User Guide & Metric Dictionary', 'uiRefreshUserGuide_')
@@ -59,7 +63,7 @@ function onOpen(e) {
 
 function getParameters_() {
   var ss = SpreadsheetApp.getActive();
-  var sh = ss.getSheetByName(TABS.PARAMETERS.name);
+  var sh = ss.getSheetByName(TABS.CONFIG.name);
   var config = JSON.parse(JSON.stringify(CFG.defaults));
   
   if (sh) {
@@ -146,7 +150,39 @@ function showFlightMaintenanceDialog() {
       .evaluate()
       .setWidth(560)
       .setHeight(580);
-  SpreadsheetApp.getUi().showModalDialog(html, 'Flight Maintenance');
+  SpreadsheetApp.getUi().showModalDialog(html, 'Flight Updates');
+}
+
+function showPurgeDialog() {
+  var html = HtmlService.createTemplateFromFile('PurgeDialog')
+      .evaluate()
+      .setWidth(520)
+      .setHeight(460);
+  SpreadsheetApp.getUi().showModalDialog(html, 'Purge Flights');
+}
+
+function showMarkDuplicatesDialog() {
+  var html = HtmlService.createTemplateFromFile('MarkDuplicatesDialog')
+      .evaluate()
+      .setWidth(500)
+      .setHeight(430);
+  SpreadsheetApp.getUi().showModalDialog(html, 'Mark Duplicates for Removal');
+}
+
+function showSaveConfigDialog() {
+  var html = HtmlService.createTemplateFromFile('SaveConfigDialog')
+      .evaluate()
+      .setWidth(520)
+      .setHeight(500);
+  SpreadsheetApp.getUi().showModalDialog(html, 'Save Configuration');
+}
+
+function showLoadConfigDialog() {
+  var html = HtmlService.createTemplateFromFile('LoadConfigDialog')
+      .evaluate()
+      .setWidth(540)
+      .setHeight(520);
+  SpreadsheetApp.getUi().showModalDialog(html, 'Load Configuration');
 }
 
 function showScanDialog() {
@@ -239,7 +275,7 @@ function getInspectorData() {
     var dateFormat = 'yyyy-MM-dd'; 
     var timeFormat = 'HH:mm';
     try {
-      var paramSheet = ss.getSheetByName(TABS.PARAMETERS.name);
+      var paramSheet = ss.getSheetByName(TABS.CONFIG.name);
       var params = paramSheet.getRange(3, 1, paramSheet.getLastRow()-2, 2).getValues();
       params.forEach(function(r) {
          if (r[0] === 'DATE_FORMAT') dateFormat = r[1];
@@ -941,6 +977,394 @@ function purgeRemoveFlights() {
 }
 
 /**
+ * Scans the Flights sheet for all rows marked with Status = 'Remove'.
+ * Used by PurgeDialog.html.
+ */
+function getPurgeCandidateFlightsStatus() {
+  try {
+    var ss = SpreadsheetApp.getActive();
+    var sh = ss.getSheetByName(TABS.FLIGHTS.name);
+    if (!sh || sh.getLastRow() < 5) {
+      return { count: 0, flights: [] };
+    }
+    var map = getColumnMap_(sh);
+    var statusCol = map['Status'];
+    var idCol = map['FlightID'];
+    var dateCol = map['Date'];
+    var igcCol = map['IGC File'];
+    if (!statusCol) return { count: 0, flights: [], error: 'Status column not found' };
+
+    var numRows = sh.getLastRow() - 4;
+    var data = sh.getRange(5, 1, numRows, sh.getLastColumn()).getValues();
+    var flights = [];
+
+    // Scan from bottom to top so deletion order is clean
+    for (var i = data.length - 1; i >= 0; i--) {
+      var row = data[i];
+      var st = String(row[statusCol - 1] || '').trim();
+      if (st === 'Remove') {
+        var flightId = idCol ? String(row[idCol - 1] || '') : '';
+        flightId = flightId.replace(/=HYPERLINK\("[^"]*",\s*"([^"]+)"\)/, '$1').trim();
+        var fDate = dateCol ? formatDateToYmd_(row[dateCol - 1]) : '';
+        var igcName = igcCol ? String(row[igcCol - 1] || '') : '';
+        igcName = igcName.replace(/=HYPERLINK\("[^"]*",\s*"([^"]+)"\)/, '$1').trim();
+
+        flights.push({
+          rowNum: 5 + i,
+          flightId: flightId,
+          date: fDate,
+          name: igcName
+        });
+      }
+    }
+
+    return {
+      count: flights.length,
+      flights: flights
+    };
+  } catch (e) {
+    return { count: 0, flights: [], error: e.message };
+  }
+}
+
+/**
+ * Purges a single candidate flight (trashes Master IGC and deletes sheet row).
+ * Used by PurgeDialog.html.
+ */
+function purgeSingleCandidateFlight(flightInfo) {
+  try {
+    var ss = SpreadsheetApp.getActive();
+    var sh = ss.getSheetByName(TABS.FLIGHTS.name);
+    if (!sh || sh.getLastRow() < 5) return { success: false, error: 'Flights sheet is empty' };
+
+    var config = getParameters_();
+    var map = getColumnMap_(sh);
+    var idCol = map['FlightID'];
+    var igcCol = map['IGC File'];
+
+    // Locate target row by matching FlightID first (safest against row shifts)
+    var targetRow = flightInfo.rowNum;
+    if (idCol && flightInfo.flightId) {
+      var numRows = sh.getLastRow() - 4;
+      var idValues = sh.getRange(5, idCol, numRows, 1).getValues();
+      for (var r = 0; r < idValues.length; r++) {
+        var curId = String(idValues[r][0] || '').replace(/=HYPERLINK\("[^"]*",\s*"([^"]+)"\)/, '$1').trim();
+        if (curId === flightInfo.flightId) {
+          targetRow = 5 + r;
+          break;
+        }
+      }
+    }
+
+    if (targetRow < 5 || targetRow > sh.getLastRow()) {
+      return { success: false, error: 'Target row out of bounds' };
+    }
+
+    // Attempt to trash Master IGC file
+    var trashed = false;
+    if (igcCol) {
+      var cell = sh.getRange(targetRow, igcCol);
+      var igcVal = String(cell.getValue() || '');
+      var igcFormula = String(cell.getFormula() || '');
+      var rt = cell.getRichTextValue();
+      var linkUrl = rt ? String(rt.getLinkUrl() || '') : '';
+
+      var idMatch = igcFormula.match(/id=([a-zA-Z0-9_-]+)/) ||
+                    linkUrl.match(/id=([a-zA-Z0-9_-]+)/) ||
+                    igcVal.match(/id=([a-zA-Z0-9_-]+)/);
+
+      var fileToTrash = null;
+      if (idMatch && idMatch[1]) {
+        try { fileToTrash = DriveApp.getFileById(idMatch[1]); } catch (e) {}
+      }
+
+      if (!fileToTrash && igcVal) {
+        var cleanName = igcVal.replace(/^=HYPERLINK\("[^"]*",\s*"([^"]+)"\)$/i, '$1').trim();
+        if (cleanName && cleanName.match(/\.(igc|igx)$/i)) {
+          var mFolderId = cleanDriveId_(config.MASTER_LOG_FOLDER_ID);
+          if (mFolderId) {
+            try {
+              var mFolder = DriveApp.getFolderById(mFolderId);
+              var fIter = mFolder.getFilesByName(cleanName);
+              if (fIter.hasNext()) fileToTrash = fIter.next();
+            } catch (e) {}
+          }
+        }
+      }
+
+      if (fileToTrash) {
+        try {
+          moveToTrashFolder_(fileToTrash, fileToTrash.getName(), config);
+          trashed = true;
+        } catch (tErr) {
+          console.warn('Could not trash file for ' + flightInfo.flightId, tErr);
+        }
+      }
+    }
+
+    sh.deleteRow(targetRow);
+    return { success: true, flightId: flightInfo.flightId, trashed: trashed };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Finalizes purge action by resetting deduplication caches and sorting logbook.
+ */
+function finalizePurge_() {
+  if (typeof _cachedSheetHashes !== 'undefined') {
+    _cachedSheetHashes = null;
+  }
+  try {
+    sortFlightsByDate_();
+  } catch (e) {
+    console.warn('Post-purge sort warning:', e);
+  }
+  return { success: true };
+}
+
+/**
+ * Counts duplicate flights for MarkDuplicatesDialog.html.
+ */
+function getDuplicateCounts() {
+  var ss = SpreadsheetApp.getActive();
+  var sh = ss.getSheetByName(TABS.FLIGHTS.name);
+  if (!sh || sh.getLastRow() < 5) {
+    return { dupOthersCount: 0, dupPrimaryCount: 0 };
+  }
+  var map = getColumnMap_(sh);
+  var statusCol = map['Status'];
+  if (!statusCol) return { dupOthersCount: 0, dupPrimaryCount: 0 };
+
+  var numRows = sh.getLastRow() - 4;
+  var statuses = sh.getRange(5, statusCol, numRows, 1).getValues();
+  var others = 0;
+  var primary = 0;
+  for (var i = 0; i < statuses.length; i++) {
+    var st = String(statuses[i][0] || '').trim();
+    if (st === 'Dup-Others') others++;
+    else if (st === 'Dup-Primary') primary++;
+  }
+  return { dupOthersCount: others, dupPrimaryCount: primary };
+}
+
+/**
+ * Bulk updates selected duplicate flights to Status = 'Remove'.
+ * Used by MarkDuplicatesDialog.html.
+ */
+function markDuplicatesForRemoval_(includeOthers, includePrimary) {
+  var ss = SpreadsheetApp.getActive();
+  var sh = ss.getSheetByName(TABS.FLIGHTS.name);
+  if (!sh || sh.getLastRow() < 5) {
+    return { success: false, total: 0, error: 'Flights sheet is empty' };
+  }
+  var map = getColumnMap_(sh);
+  var statusCol = map['Status'];
+  if (!statusCol) return { success: false, total: 0, error: 'Status column not found' };
+
+  var numRows = sh.getLastRow() - 4;
+  var statusRange = sh.getRange(5, statusCol, numRows, 1);
+  var statusValues = statusRange.getValues();
+  var updatedOthers = 0;
+  var updatedPrimary = 0;
+
+  for (var i = 0; i < statusValues.length; i++) {
+    var st = String(statusValues[i][0] || '').trim();
+    if (includeOthers && st === 'Dup-Others') {
+      statusValues[i][0] = 'Remove';
+      updatedOthers++;
+    } else if (includePrimary && st === 'Dup-Primary') {
+      statusValues[i][0] = 'Remove';
+      updatedPrimary++;
+    }
+  }
+
+  var total = updatedOthers + updatedPrimary;
+  if (total > 0) {
+    statusRange.setValues(statusValues);
+    logImport_(new Date(), '', '', 'Mark Duplicates', 'Updated', 'Marked ' + total + ' flights as Remove (Others: ' + updatedOthers + ', Primary: ' + updatedPrimary + ')');
+  }
+
+  return {
+    success: true,
+    total: total,
+    updatedOthers: updatedOthers,
+    updatedPrimary: updatedPrimary
+  };
+}
+
+/**
+ * Serializes configuration from Pilot_Profile and Config into JSON string.
+ * Used by SaveConfigDialog.html.
+ */
+function exportConfigJson_(options) {
+  var ss = SpreadsheetApp.getActive();
+  var result = {
+    system: 'Paragliding Flight Log',
+    version: '2.0',
+    exportedAt: new Date().toISOString(),
+    sections: {}
+  };
+
+  // 1. Pilot Profile
+  if (options && options.pilotProfile) {
+    var shP = ss.getSheetByName(TABS.PILOT_PROFILE ? TABS.PILOT_PROFILE.name : 'Pilot_Profile');
+    if (shP && shP.getLastRow() >= 2) {
+      result.sections.pilotProfile = {};
+      var pData = shP.getRange(2, 1, shP.getLastRow() - 1, 2).getValues();
+      pData.forEach(function(row) {
+        var k = String(row[0]).trim();
+        if (k && row[1] !== '') {
+          result.sections.pilotProfile[k] = row[1];
+        }
+      });
+    }
+  }
+
+  // 2. Parameters
+  if (options && options.parameters) {
+    result.sections.parameters = {};
+    var paramGroups = (options && options.paramGroups) || {};
+    var shC = ss.getSheetByName(TABS.CONFIG.name);
+    if (shC && shC.getLastRow() >= 3) {
+      var cData = shC.getRange(3, 1, shC.getLastRow() - 2, 2).getValues();
+      var currentSection = 'General';
+      cData.forEach(function(row) {
+        var k = String(row[0]).trim();
+        var v = row[1];
+        if (k.indexOf('[') === 0) {
+          currentSection = k.replace(/[\[\]]/g, '').trim();
+        } else if (k && v !== '') {
+          var includeGroup = true;
+          if (currentSection === 'Ingestion' && paramGroups.ingestion === false) includeGroup = false;
+          if (currentSection === 'Integrations' && paramGroups.integrations === false) includeGroup = false;
+          if (currentSection === 'Scoring' && paramGroups.scoring === false) includeGroup = false;
+          if (currentSection === 'UI' && paramGroups.ui === false) includeGroup = false;
+          
+          if (includeGroup) {
+            if (!result.sections.parameters[currentSection]) result.sections.parameters[currentSection] = {};
+            result.sections.parameters[currentSection][k] = v;
+          }
+        }
+      });
+    }
+  }
+
+  // 3. Lookups
+  if (options && options.lookups) {
+    result.sections.lookups = {};
+    var shC = ss.getSheetByName(TABS.CONFIG.name);
+    if (shC && shC.getLastRow() >= 3) {
+      var lookupDefs = [
+        { key: 'Flight Status', col: 10, count: 6 },
+        { key: 'Flight Type', col: 11, count: 7 },
+        { key: 'XC Classes', col: 12, count: 4 },
+        { key: 'Date Formats', col: 13, count: 5 },
+        { key: 'Time Formats', col: 14, count: 2 }
+      ];
+      lookupDefs.forEach(function(ld) {
+        var vals = shC.getRange(3, ld.col, ld.count, 1).getValues();
+        result.sections.lookups[ld.key] = vals.map(function(r) { return r[0]; }).filter(function(v) { return v !== ''; });
+      });
+    }
+  }
+
+  var dateStamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'UTC', 'yyyyMMdd_HHmm');
+  var filename = 'flight_log_config_' + dateStamp + '.json';
+  return {
+    json: JSON.stringify(result, null, 2),
+    filename: filename
+  };
+}
+
+/**
+ * Applies imported configuration to Pilot_Profile and Config sheets.
+ * Used by LoadConfigDialog.html.
+ */
+function importConfigJson_(configPayload, selectedOptions) {
+  var ss = SpreadsheetApp.getActive();
+  var sections = configPayload.sections || configPayload;
+  var res = { success: true, profileUpdated: 0, paramsUpdated: 0, lookupsUpdated: 0 };
+
+  // 1. Apply Pilot Profile
+  if (selectedOptions && selectedOptions.pilotProfile && sections.pilotProfile) {
+    var shP = ss.getSheetByName(TABS.PILOT_PROFILE ? TABS.PILOT_PROFILE.name : 'Pilot_Profile');
+    if (shP && shP.getLastRow() >= 2) {
+      var pData = shP.getRange(2, 1, shP.getLastRow() - 1, 2).getValues();
+      for (var i = 0; i < pData.length; i++) {
+        var k = String(pData[i][0]).trim();
+        if (sections.pilotProfile[k] !== undefined) {
+          shP.getRange(i + 2, 2).setValue(sections.pilotProfile[k]);
+          res.profileUpdated++;
+        }
+      }
+    }
+  }
+
+  // 2. Apply Parameters
+  if (selectedOptions && selectedOptions.parameters && sections.parameters) {
+    var shC = ss.getSheetByName(TABS.CONFIG.name);
+    if (shC && shC.getLastRow() >= 3) {
+      var flatParams = {};
+      var pObj = sections.parameters;
+      Object.keys(pObj).forEach(function(g) {
+        if (typeof pObj[g] === 'object' && pObj[g] !== null) {
+          var canApply = true;
+          if (g === 'Ingestion' && selectedOptions.paramGroups && selectedOptions.paramGroups.ingestion === false) canApply = false;
+          if (g === 'Integrations' && selectedOptions.paramGroups && selectedOptions.paramGroups.integrations === false) canApply = false;
+          if (g === 'Scoring' && selectedOptions.paramGroups && selectedOptions.paramGroups.scoring === false) canApply = false;
+          if (g === 'UI' && selectedOptions.paramGroups && selectedOptions.paramGroups.ui === false) canApply = false;
+
+          if (canApply) {
+            Object.keys(pObj[g]).forEach(function(k) {
+              flatParams[k] = pObj[g][k];
+            });
+          }
+        } else {
+          flatParams[g] = pObj[g];
+        }
+      });
+
+      var cData = shC.getRange(3, 1, shC.getLastRow() - 2, 2).getValues();
+      for (var j = 0; j < cData.length; j++) {
+        var paramKey = String(cData[j][0]).trim();
+        if (flatParams[paramKey] !== undefined) {
+          shC.getRange(j + 3, 2).setValue(flatParams[paramKey]);
+          res.paramsUpdated++;
+        }
+      }
+    }
+  }
+
+  // 3. Apply Lookups
+  if (selectedOptions && selectedOptions.lookups && sections.lookups) {
+    var shC = ss.getSheetByName(TABS.CONFIG.name);
+    if (shC && shC.getLastRow() >= 3) {
+      var lookupColMap = {
+        'Flight Status': 10,
+        'Flight Type': 11,
+        'XC Classes': 12,
+        'Date Formats': 13,
+        'Time Formats': 14
+      };
+      Object.keys(sections.lookups).forEach(function(lKey) {
+        var col = lookupColMap[lKey];
+        if (col && Array.isArray(sections.lookups[lKey])) {
+          var list = sections.lookups[lKey];
+          var cellRange = shC.getRange(3, col, list.length, 1);
+          cellRange.setValues(list.map(function(item) { return [item]; }));
+          res.lookupsUpdated++;
+        }
+      });
+    }
+  }
+
+  logImport_(new Date(), '', '', 'Load Config', 'Success', 'Config applied: Profile=' + res.profileUpdated + ', Params=' + res.paramsUpdated + ', Lookups=' + res.lookupsUpdated);
+  return res;
+}
+
+/**
  * Scans Master Log Folder and returns status and list of missing IGC files.
  * Used by ResyncDialog.html.
  */
@@ -1315,7 +1739,7 @@ function uiDisableWatch_() {
 
 function setParameter_(key, value, description) {
   var ss = SpreadsheetApp.getActive();
-  var sh = ss.getSheetByName(TABS.PARAMETERS.name);
+  var sh = ss.getSheetByName(TABS.CONFIG.name);
   if (!sh) return;
   
   var data = sh.getDataRange().getValues();

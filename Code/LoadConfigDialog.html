@@ -1,0 +1,322 @@
+<!--
+ * Paragliding Flight Log v2.0
+ * Updated: 2026-09-30 23:53:37
+ -->
+<!--
+ * Paragliding Flight Log v2.0
+ * Load Config Modal Dialog (Admin > Load Config...)
+ -->
+<!DOCTYPE html>
+<html>
+
+<head>
+    <base target="_top">
+    <?!= HtmlService.createTemplateFromFile('Style').evaluate().getContent(); ?>
+    <style>
+        .file-upload-box {
+            background-color: #f8f9fa;
+            border: 2px dashed #cfd8dc;
+            border-radius: 6px;
+            padding: 14px;
+            text-align: center;
+            margin-bottom: 12px;
+        }
+
+        .section-box {
+            background-color: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 10px 14px;
+            margin-bottom: 10px;
+        }
+
+        .check-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            color: #333;
+        }
+
+        .check-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .check-item input {
+            margin-right: 8px;
+            width: 15px;
+            height: 15px;
+            accent-color: #2196F3;
+        }
+
+        .sub-group {
+            margin-left: 24px;
+            margin-top: 4px;
+            margin-bottom: 6px;
+            padding-left: 8px;
+            border-left: 2px solid #ddd;
+        }
+
+        .badge-count {
+            margin-left: 8px;
+            font-size: 11px;
+            background-color: #e0f2fe;
+            color: #0369a1;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header-large text-blue">Load Configuration</div>
+
+    <div class="main-content">
+        <div class="instructions">
+            Select a configuration file (<strong>.json</strong>) from your computer to inspect and apply settings.
+        </div>
+
+        <div class="file-upload-box">
+            <input type="file" id="cfg-file" accept=".json" onchange="onFileSelected(this)">
+        </div>
+
+        <!-- Section Picker (Appears after file parsed) -->
+        <div id="section-container" style="display:none;">
+            <div class="instructions" style="font-weight:bold; margin-bottom:8px;">Available Configuration Sections:</div>
+
+            <div id="card-profile" class="section-box" style="display:none;">
+                <label class="check-item">
+                    <input type="checkbox" id="chk-load-profile" checked>
+                    <span><strong>Pilot Profile</strong></span>
+                    <span id="badge-load-profile" class="badge-count">0 fields</span>
+                </label>
+            </div>
+
+            <div id="card-params" class="section-box" style="display:none;">
+                <label class="check-item">
+                    <input type="checkbox" id="chk-load-params" checked onchange="toggleLoadParamSubgroups()">
+                    <span><strong>System Parameters</strong></span>
+                    <span id="badge-load-params" class="badge-count">0 keys</span>
+                </label>
+                <div id="load-param-subgroups" class="sub-group">
+                    <label id="lbl-sub-ingestion" class="check-item" style="display:none;">
+                        <input type="checkbox" id="load-sub-ingestion" checked>
+                        <span>Ingestion & Folder IDs</span>
+                    </label>
+                    <label id="lbl-sub-integrations" class="check-item" style="display:none;">
+                        <input type="checkbox" id="load-sub-integrations" checked>
+                        <span>Integrations (Weather, XContest, APIs)</span>
+                    </label>
+                    <label id="lbl-sub-scoring" class="check-item" style="display:none;">
+                        <input type="checkbox" id="load-sub-scoring" checked>
+                        <span>Scoring & Physics</span>
+                    </label>
+                    <label id="lbl-sub-ui" class="check-item" style="display:none;">
+                        <input type="checkbox" id="load-sub-ui" checked>
+                        <span>UI & Regional</span>
+                    </label>
+                </div>
+            </div>
+
+            <div id="card-lookups" class="section-box" style="display:none;">
+                <label class="check-item">
+                    <input type="checkbox" id="chk-load-lookups" checked>
+                    <span><strong>Lookups</strong></span>
+                    <span id="badge-load-lookups" class="badge-count">0 lists</span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="control-group">
+            <button id="btn-apply" onclick="applyConfig()" class="action" style="display:none;">Apply Selected Configuration</button>
+            <button id="btn-close" onclick="google.script.host.close()" class="secondary">Cancel</button>
+        </div>
+
+        <div class="instructions" style="margin-top:15px; font-weight:bold;">Activity Log:</div>
+        <div id="log-console">Select a .json configuration file above to begin.</div>
+    </div>
+
+    <div class="footer">
+        <div class="status-line">
+            <span id="status-left">Idle</span>
+            <span id="status-right">0%</span>
+        </div>
+        <div class="progress-bar-bg">
+            <div id="progress-bar" class="progress-bar-fill"></div>
+        </div>
+    </div>
+
+    <script>
+        var parsedConfig = null;
+
+        function onFileSelected(input) {
+            var file = input.files[0];
+            if (!file) return;
+
+            log('Reading ' + file.name + ' (' + Math.round(file.size / 1024) + ' KB)...');
+            setStatus('Parsing configuration file...', '20%');
+            setProgress('20%');
+
+            var reader = new FileReader();
+            reader.onload = function (e) {
+                try {
+                    parsedConfig = JSON.parse(e.target.result);
+                    inspectConfig(parsedConfig, file.name);
+                } catch (err) {
+                    showError('Failed to parse JSON file: ' + err.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function inspectConfig(cfg, fileName) {
+            var sections = cfg.sections || cfg;
+            var hasProfile = sections.pilotProfile && Object.keys(sections.pilotProfile).length > 0;
+            var hasParams = sections.parameters && Object.keys(sections.parameters).length > 0;
+            var hasLookups = sections.lookups && Object.keys(sections.lookups).length > 0;
+
+            if (!hasProfile && !hasParams && !hasLookups) {
+                showError('File does not contain valid Paragliding Flight Log configuration sections.');
+                return;
+            }
+
+            document.getElementById('section-container').style.display = 'block';
+
+            if (hasProfile) {
+                var pCount = Object.keys(sections.pilotProfile).length;
+                document.getElementById('card-profile').style.display = 'block';
+                document.getElementById('badge-load-profile').innerText = pCount + ' fields';
+            }
+
+            if (hasParams) {
+                var paramObj = sections.parameters;
+                var totalKeys = 0;
+                var groupNames = Object.keys(paramObj);
+                groupNames.forEach(function (g) {
+                    if (typeof paramObj[g] === 'object' && paramObj[g] !== null) {
+                        totalKeys += Object.keys(paramObj[g]).length;
+                    } else {
+                        totalKeys++;
+                    }
+                });
+
+                document.getElementById('card-params').style.display = 'block';
+                document.getElementById('badge-load-params').innerText = totalKeys + ' keys';
+
+                if (paramObj.Ingestion) document.getElementById('lbl-sub-ingestion').style.display = 'flex';
+                if (paramObj.Integrations) document.getElementById('lbl-sub-integrations').style.display = 'flex';
+                if (paramObj.Scoring) document.getElementById('lbl-sub-scoring').style.display = 'flex';
+                if (paramObj.UI) document.getElementById('lbl-sub-ui').style.display = 'flex';
+            }
+
+            if (hasLookups) {
+                var lCount = Object.keys(sections.lookups).length;
+                document.getElementById('card-lookups').style.display = 'block';
+                document.getElementById('badge-load-lookups').innerText = lCount + ' lists';
+            }
+
+            setStatus('File parsed successfully', '50%');
+            setProgress('50%');
+            log('Detected configuration from ' + fileName + ':');
+            if (hasProfile) log(' - Pilot Profile: ' + Object.keys(sections.pilotProfile).length + ' fields');
+            if (hasParams) log(' - Parameters: groups available');
+            if (hasLookups) log(' - Lookups: ' + Object.keys(sections.lookups).length + ' tables');
+            log('Review your selections above and click "Apply Selected Configuration".');
+
+            document.getElementById('btn-apply').style.display = 'inline-block';
+        }
+
+        function toggleLoadParamSubgroups() {
+            var checked = document.getElementById('chk-load-params').checked;
+            document.getElementById('load-sub-ingestion').checked = checked;
+            document.getElementById('load-sub-integrations').checked = checked;
+            document.getElementById('load-sub-scoring').checked = checked;
+            document.getElementById('load-sub-ui').checked = checked;
+        }
+
+        function applyConfig() {
+            if (!parsedConfig) return;
+
+            var selectedOptions = {
+                pilotProfile: document.getElementById('chk-load-profile').checked,
+                parameters: document.getElementById('chk-load-params').checked,
+                paramGroups: {
+                    ingestion: document.getElementById('load-sub-ingestion').checked,
+                    integrations: document.getElementById('load-sub-integrations').checked,
+                    scoring: document.getElementById('load-sub-scoring').checked,
+                    ui: document.getElementById('load-sub-ui').checked
+                },
+                lookups: document.getElementById('chk-load-lookups').checked
+            };
+
+            if (!selectedOptions.pilotProfile && !selectedOptions.parameters && !selectedOptions.lookups) {
+                alert('Please select at least one configuration component to apply.');
+                return;
+            }
+
+            document.getElementById('btn-apply').disabled = true;
+            setStatus('Applying configuration to spreadsheet...', '75%');
+            setProgress('75%');
+            log('------------------------------------------------');
+            log('Writing configuration to Pilot_Profile and Config sheets...');
+
+            google.script.run
+                .withSuccessHandler(function (res) {
+                    setProgress('100%');
+                    if (res && res.success) {
+                        setStatus('Configuration Applied | 100%', '100%');
+                        log('Configuration imported successfully:', 'log-success');
+                        if (res.profileUpdated) log(' - Pilot Profile: ' + res.profileUpdated + ' fields updated', 'log-success');
+                        if (res.paramsUpdated) log(' - Parameters: ' + res.paramsUpdated + ' keys updated', 'log-success');
+                        if (res.lookupsUpdated) log(' - Lookups: ' + res.lookupsUpdated + ' lists refreshed', 'log-success');
+                        log('=== Configuration Applied ===');
+                        document.getElementById('btn-apply').style.display = 'none';
+                        setDoneButton();
+                    } else {
+                        showError(res ? res.error : 'Failed to apply configuration.');
+                    }
+                })
+                .withFailureHandler(function (err) {
+                    showError(err.message);
+                })
+                .importConfigJson_(parsedConfig, selectedOptions);
+        }
+
+        function setDoneButton() {
+            var btnClose = document.getElementById('btn-close');
+            btnClose.innerText = 'Done';
+            btnClose.className = 'action';
+            btnClose.onclick = function () { google.script.host.close(); };
+        }
+
+        function showError(msg) {
+            setStatus('Error', 'Failed');
+            log('Error: ' + msg, 'log-error');
+            document.getElementById('progress-bar').classList.add('error-fill');
+            document.getElementById('btn-apply').disabled = false;
+        }
+
+        function setStatus(left, right) {
+            document.getElementById('status-left').textContent = left;
+            document.getElementById('status-right').textContent = right;
+        }
+
+        function setProgress(pct) {
+            document.getElementById('progress-bar').style.width = pct;
+        }
+
+        function log(msg, cls) {
+            var div = document.getElementById('log-console');
+            var p = document.createElement('div');
+            p.textContent = msg;
+            if (cls) p.className = cls;
+            div.appendChild(p);
+            div.scrollTop = div.scrollHeight;
+        }
+    </script>
+</body>
+
+</html>

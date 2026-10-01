@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 21:59:57
+ * Updated: 2026-09-30 23:53:37
  */
 /**
  * Paragliding Flight Log v2.0
@@ -23,6 +23,7 @@ function runAllTests() {
   results.push(testMaintenanceFlightFilter_());
   results.push(testDashboardAndSchema_());
   results.push(testDedupeAndQualityScoring_());
+  results.push(testConfigAndDedupeEnhancements_());
   
   var failures = results.filter(function(r) { return !r.idx || r.error; });
   if (failures.length > 0) {
@@ -425,4 +426,50 @@ function testDedupeAndQualityScoring_() {
   }
 
   return { module: 'DedupeAndQuality', idx: true };
+}
+
+function testConfigAndDedupeEnhancements_() {
+  // 1. Verify TABS.CONFIG tab definition
+  if (!TABS.CONFIG || TABS.CONFIG.name !== 'Config' || TABS.CONFIG.color !== '#FF9800') {
+    return { module: 'ConfigAndDedupe', error: 'TABS.CONFIG definition missing or incorrect' };
+  }
+
+  // 2. Verify CFG.sheets.config
+  if (CFG.sheets.config !== 'Config') {
+    return { module: 'ConfigAndDedupe', error: 'CFG.sheets.config should be Config' };
+  }
+
+  // 3. Verify 'Duplicate' is NOT in scaffoldConfig_ or applyFlightsValidation_
+  var scaffoldStr = scaffoldConfig_.toString();
+  var validationStr = applyFlightsValidation_.toString();
+  if (scaffoldStr.indexOf("'Duplicate'") !== -1) {
+    return { module: 'ConfigAndDedupe', error: 'Obsolete Duplicate status still present in scaffoldConfig_' };
+  }
+  if (validationStr.indexOf("'Duplicate'") !== -1) {
+    return { module: 'ConfigAndDedupe', error: 'Obsolete Duplicate status still present in applyFlightsValidation_' };
+  }
+
+  // 4. Verify function presence for dialogs and backend operations
+  var requiredFns = [
+    'scaffoldConfig_',
+    'showPurgeDialog',
+    'showMarkDuplicatesDialog',
+    'showSaveConfigDialog',
+    'showLoadConfigDialog',
+    'getPurgeCandidateFlightsStatus',
+    'purgeSingleCandidateFlight',
+    'finalizePurge_',
+    'getDuplicateCounts',
+    'markDuplicatesForRemoval_',
+    'exportConfigJson_',
+    'importConfigJson_'
+  ];
+
+  for (var j = 0; j < requiredFns.length; j++) {
+    if (typeof globalThis[requiredFns[j]] !== 'function') {
+      return { module: 'ConfigAndDedupe', error: 'Missing required function: ' + requiredFns[j] };
+    }
+  }
+
+  return { module: 'ConfigAndDedupe', idx: true };
 }

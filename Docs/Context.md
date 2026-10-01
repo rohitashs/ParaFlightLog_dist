@@ -1,8 +1,8 @@
 # Project Context & Ways of Working (Source of Truth)
 
 ## 🧠 Agent Memory & Context
-**Status**: Active Development (v0.8.14)
-**Last Session Focus**: Interactive Re-sync modal (`ResyncDialog.html`), menu hierarchy cleanup (`Flight Log > Flight maintenance > Flight Updates...`), purge Master IGC file trashing fix, append-only `App_Log` audit trail, external `User_Guide.md` publication, and backlog alignment (`RQ-SYS-004`, `RQ-SYS-006`, `RQ-SYS-009`, `CR-LOG-003`).
+**Status**: Active Development (v0.8.15)
+**Last Session Focus**: Config tab consolidation (`CR-CFG-005`, 7-tab architecture), JSON Configuration Management (`Save Config` / `Load Config`), interactive stepping Purge modal (`PurgeDialog.html`), Mark Duplicates for Removal dialog (`MarkDuplicatesDialog.html`), Resync modal Done button, elimination of obsolete `'Duplicate'` status, and drift self-healing.
 **Next Focus**: Large Scale Ingestion discussion (`RQ-ING-001.4`), Setup Wizard & Instance Templating (`RQ-SYS-008`), Configurable RDP Tolerance (`CR-CFG-002`).
 
 This file is the **long-term memory** for the project. Read this first to understand *how* we work and *where* we are.

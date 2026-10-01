@@ -48,7 +48,7 @@ The Paragliding Flight Log is a serverless, cloud-native logbook built directly 
 
 | Component | Function | Architecture Details | Pilot Benefit |
 | :--- | :--- | :--- | :--- |
-| **Google Sheets UI** | Primary Interface | 8 organized tabs: `Dashboard`, `Flights`, `Pilot_Profile`, `Equipment`, `User Guide`, `Parameters`, `Lookups`, and `App_Log`. | Zero install required; fully accessible on desktop browsers, tablets, and Google Sheets mobile apps. |
+| **Google Sheets UI** | Primary Interface | 7 organized tabs: `Dashboard`, `Flights`, `Pilot_Profile`, `Equipment`, `User Guide`, `Config`, and `App_Log`. | Zero install required; fully accessible on desktop browsers, tablets, and Google Sheets mobile apps. |
 | **Google Apps Script** | Autonomous Engine | Modular scripts running inside Google's cloud infrastructure that parse IGC files, detect flight modes, query weather APIs, and calculate XC scores. | Free execution with zero server hosting costs, database subscription fees, or maintenance overhead. |
 | **Master Flight Archive** | Permanent Cloud Storage | Designated Google Drive folder mirroring all valid flight tracks with standardized naming (`YYYY-MM-DD_HHMM_PilotName.igc`) and public viewing links. | Direct one-click downloads and instant 3D interactive replay via SeeYou Cloud. |
 | **Automated Watchers** | Hands-Free Background Ingestion | Time-driven background triggers that poll your Google Drive watch folders every 5 minutes for newly synced flight tracks. | Drop files into Google Drive from your phone or flight instrument, and your logbook updates automatically. |
@@ -110,19 +110,18 @@ Because the spreadsheet contains custom automation to read files, query weather 
 1. Switch back to your spreadsheet tab. You should now see the custom **Flight Log** menu in the top toolbar (refresh the browser if it does not appear immediately).
 2. Click **Flight Log > Admin > System Setup & Reset (Danger Zone) > First Time Setup (Full Scaffold)**.
 3. A confirmation dialog will warn you that this builds the initial system sheets. Click **Yes**.
-4. The system will automatically generate and style all 8 core tabs:
+4. The system will automatically generate and style all 7 core tabs:
    * **`Dashboard`**: KPI cards, rolling 6-month currency timeline, and 8 leaderboard rankings.
    * **`Flights`**: Pre-scaffolded flight log table with 69 categorized telemetry columns and frozen headers.
    * **`Pilot_Profile`**: Pilot ratings, emergency contacts, medical notes, and tracking links.
    * **`Equipment`**: Fleet inventory tracking hours, wings, harnesses, and reserves.
    * **`User Guide`**: In-sheet quick reference and metric explanations.
-   * **`Parameters`**: Key-value settings table governing all algorithms.
-   * **`Lookups`**: Dropdown reference values (Flight types, XC classes, gear categories).
+   * **`Config`**: Consolidated system settings table (Columns A:C for key-value parameters) and reference dropdown lookups (Columns E:N for equipment categories, wings, harnesses, reserves, flight statuses, types, and formats, separated by blank spacer Column D).
    * **`App_Log`**: Immutable audit log of all system import attempts and background jobs.
 
 ---
 
-### Step 5: Configure Parameters (Folder Picker & Settings)
+### Step 5: Configure Config Tab (Folder Picker & Settings)
 Now link the 5 Google Drive folders you created in Step 1 to the spreadsheet:
 
 1. **Folder Configuration (Using the In-App Picker)**:
@@ -132,12 +131,12 @@ Now link the 5 Google Drive folders you created in Step 1 to the spreadsheet:
    * Click **Flight Log > Admin > Folder Configuration > Set Error Folder...** and select your `Error Folder`.
    * Click **Flight Log > Admin > Folder Configuration > Set Trash / Discard Folder...** and select your `Trash Folder`.
 2. **Review Parameter Settings**:
-   Navigate to the **`Parameters`** tab and review the configuration:
+   Navigate to the **`Config`** tab (Columns A:C) and review the configuration:
    * **`CONTACT_EMAIL`**: *[REQUIRED]* Enter your email address. This is required by open geocoding and weather APIs (Nominatim, Overpass, Open-Meteo) as a polite `User-Agent` contact header to prevent rate-limiting or HTTP 403 errors.
    * **`XCONTEST_USERNAME`**: Enter your public XContest pilot username (e.g. `rohitash`). This enables automatic flight verification, permanent flight ID linking (e.g. `XC#6952654`), and competition claim window tracking.
    * **`WEATHER_PROVIDERS`**: Defaults to `open_meteo, visual_crossing`. Open-Meteo runs automatically out of the box with zero API keys required.
    * **`VISUAL_CROSSING_API_KEY`**: *(Optional)* If you wish to use Visual Crossing as an atmospheric backup, obtain a free API key (1,000 free requests/day) from [visualcrossing.com](https://www.visualcrossing.com) and paste it here. Otherwise, leave blank.
-   * **`TIMELINE_FLIGHTS_LOW` / `MED`**: Flight count thresholds (default `2` and `5`) for orange/yellow/green pilot currency color coding on the Dashboard rolling timeline.
+   * **`TIMELINE_FLIGHTS_LOW` / `MED`**: Flight count thresholds (default `2` and `6`) for orange/yellow/green pilot currency color coding on the Dashboard rolling timeline.
    * **`TIMELINE_HOURS_LOW` / `MED`**: Flight hour thresholds (default `1.0` and `4.0` hours) for currency shading on the Dashboard.
 
 ---
@@ -300,10 +299,11 @@ All flight logbook maintenance routines are consolidated under the **`Flight Log
 ```
 Flight Log > Flight maintenance
 ├── Flight Updates...                              (Unified batch update modal)
+├── Mark Duplicates for Removal...                 (Batch mark triaged duplicates to 'Remove')
 ├── Sort All Flights by Date                      (Chronological sort & re-numbering)
 ├── ───
-├── Purge Flights Marked 'Remove'                 (Moves files to trash & deletes rows)
-└── Re-sync Missing Flights from Master Folder    (Interactive modal self-healing tool)
+├── Purge Flights Marked 'Remove'...               (Interactive stepping modal with trash transfer & row deletion)
+└── Re-sync Missing Flights from Master Folder...  (Interactive modal self-healing tool)
 ```
 
 ### Flight Updates Dialog
@@ -319,28 +319,65 @@ Click **Flight Log > Flight maintenance > Flight Updates...** to open the unifie
    * **Sort Flights by Date**: Chronologically re-indexes flights descending by date and time.
 3. Click **Run Maintenance** to monitor live client-side progress.
 
+### Mark Duplicates for Removal
+After reviewing multi-instrument recordings tagged with `Dup-Primary` or `Dup-Others`, you can quickly stage duplicate rows for deletion:
+1. Select **Flight Log > Flight maintenance > Mark Duplicates for Removal...**.
+2. A modal dialog opens showing the real-time count of flights currently matching each status:
+   * **`Dup - Others`**: Lower-scoring backup instrument tracks.
+   * **`Dup - Primary`**: Higher-scoring primary instrument tracks.
+3. Select the categories you wish to stage for removal (unselected by default for safety).
+4. Click **Mark for Removal**. The system updates the selected flights to status **`Remove`**.
+> [!TIP]
+> This action deliberately stages flights without immediately deleting them, giving you a chance to inspect the sheet before running a final purge.
+
 ### Purging Discarded Flights
-When you mark unwanted backup rows, test flights, or bad GPS recordings with status **`Remove`**:
-1. Select **Flight Log > Flight maintenance > Purge Flights Marked 'Remove'**.
-2. A confirmation prompt displays the exact count of flights marked for removal.
-3. Upon confirmation, the system:
-   * Locates the flight's original file in Google Drive and moves it to your designated `TRASH_FOLDER_ID`.
-   * Deletes the rows from the spreadsheet from bottom to top.
+When you are ready to permanently purge flights marked with status **`Remove`**:
+1. Select **Flight Log > Flight maintenance > Purge Flights Marked 'Remove'...**.
+2. An interactive dialog with a **real-time progress bar and step-by-step console** opens.
+3. The dialog automatically detects all candidate flights marked `Remove` and displays their count.
+4. Click **Start Purge** to begin client-stepping execution:
+   * Moves each flight's permanent IGC file from the `Master Log Folder` to your designated `Trash Folder`.
+   * Deletes the rows from the spreadsheet from bottom to top to preserve index integrity.
    * Cleanses the in-memory deduplication cache.
    * Chronologically re-sorts and re-indexes remaining flights.
+5. You can safely click **Cancel** at any point between steps.
+6. Upon completion, a primary **Done** button appears to close the dialog.
 
 ### Interactive Re-sync from Master Log Folder
 If rows were accidentally deleted from your spreadsheet, or if you added historical IGC files directly into your Google Drive `Master Log Folder`:
-1. Select **Flight Log > Flight maintenance > Re-sync Missing Flights from Master Folder**.
+1. Select **Flight Log > Flight maintenance > Re-sync Missing Flights from Master Folder...**.
 2. An interactive dialog with a **real-time progress bar and activity log** scans your master folder.
 3. It compares all Drive file IDs and cryptographic MD5 hashes against your spreadsheet.
 4. Any missing flights are reconstructed, analyzed, and appended to the `Flights` tab with status set to `'Review?'`—without generating duplicate files.
+5. When complete, click the prominent **Done** button to close the dialog.
 
 ### Chronological Sorting & Flight Re-numbering
 Selecting **Flight Log > Flight maintenance > Sort All Flights by Date**:
 * Sorts all flight rows chronologically descending (newest flights at the top, oldest at the bottom).
 * Uses Date as the primary sort key and Takeoff Time as the secondary sort key.
 * Dynamically re-indexes sequential `Flight No` formulas from Flight #1 at the bottom to your latest flight at the top.
+
+---
+
+### Configuration Management (Save & Load Config)
+All system parameters and lookup configurations can be exported and imported as portable JSON files under **`Flight Log > Admin > Configuration Management`**:
+
+```
+Flight Log > Admin > Configuration Management
+├── Save Config...     (Export settings & lookups as JSON file)
+└── Load Config...     (Import and restore settings from JSON file)
+```
+
+1. **`Save Config...`**:
+   * Opens an interactive modal where you can select which components to export:
+     * **Pilot Profile** (`Pilot_Profile` sheet)
+     * **System Parameters** (Ingestion, Integrations, Scoring, UI & Display)
+     * **Dropdown Lookups** (Flight statuses, types, XC classes, and date/time formats)
+   * Generates a versioned, typed JSON file directly in your browser (`flightlog_config_YYYYMMDD_HHMM.json`).
+2. **`Load Config...`**:
+   * Select a previously exported `.json` configuration file.
+   * The dialog inspects the file, detects which sections are present, and displays checkboxes.
+   * Click **Apply Configuration** to safely write the restored settings directly into the `Config` and `Pilot_Profile` tabs.
 
 ---
 
@@ -351,7 +388,7 @@ Below is the complete reference for every column in the logbook, categorized by 
 ### Flight Information & Status
 | Column Header | Group | Calculation / Formula | Description & Pilot Interpretation |
 | :--- | :--- | :--- | :--- |
-| **Status** | Flight Info | Dropdown List | Validation state: `Valid` (counted in KPIs), `Review?` (needs pilot check), `Dup-Primary` (gold overlap winner), `Dup-Others` (orange backup), `Invalid?` (failed checks), `Remove` (queued to purge). |
+| **Status** | Flight Info | Dropdown List | Validation state: `Valid` (counted in KPIs), `Review?` (needs pilot check), `Dup-Primary` (gold overlap winner), `Dup-Others` (orange backup), `Invalid?` (failed checks), `Remove` (queued to purge). Note: Legacy `'Duplicate'` status is eliminated. |
 | **FlightID** | Flight Info | `F{YYYYMMDD}_{DailySeq}` | Unique flight identifier formatted with direct hyperlink to 3D SeeYou Cloud interactive track replay. |
 | **Flight No** | Flight Info | Dynamic Formula | Sequential flight counter from your first career flight (#1) to present. Automatically recalculates on sort. |
 | **Auto Summary** | Flight Info | System Concatenation | Concise summary string (e.g., *"2h 15m XC at Bir Billing 3100m"*). |

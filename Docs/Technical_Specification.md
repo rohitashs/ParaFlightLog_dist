@@ -15,7 +15,9 @@ This document defines the **Code Organization**, **Algorithms**, and **Data Sche
 1.  **Orchestrator (`Code.gs`)**: Entry point. Maps Triggers/Menus to Controllers.
 2.  **Config (`Config.gs`)**: Static Definitions (`TABS`, `CFG`).
     *   *Rule*: Never hardcode column indices. Use `Config` maps.
+    *   Defines `TABS.CONFIG` (Amber `#FF9800`, index 6) combining Parameters and Lookups into a single sheet. Backwards compatibility aliases `TABS.PARAMETERS` and `TABS.LOOKUPS` map directly to `TABS.CONFIG`.
 3.  **Scaffold (`Scaffold.gs`)**: View Controller. Creates Sheets/Validations.
+    *   `scaffoldConfig_`: Unifies Parameters (Cols A:C) and Lookups (Cols E:N, spacer Col D) into 7 core tabs.
     *   *Map*: `RQ-SYS-002`.
 4.  **File Handling Service (`FileHandling.gs`)**: Drive I/O, Watch Folder scanning, Staged Uploads, ZIP extractions, File cleanup, and Master Log copying.
 5.  **Ingestion Service (`Ingestion.gs`)**: Pipeline Controller. Parse/Score orchestration, deduplication, and row mapping.
@@ -70,14 +72,17 @@ Fixed Header Schema (Row 3=Category, Row 4=Name). Data starts Row 5.
     *   **Barometric Pressure Integrity (Max 30 pts)**: Authentic pressure sensor altitude readings differing from GPS altitude (30 pts), baro present (20 pts), GPS altitude only (5 pts).
     *   **Temporal Resolution & Duration (Max 20 pts)**: High-frequency recording $\le 1.2$s / 1Hz (15 pts), 2.5s (10 pts), 5.5s (5 pts). Flight duration $> 30$ min (5 pts), $> 10$ min (3 pts), $> 2$ min (1 pt).
     *   **Metadata Richness (Max 10 pts)**: Populated glider type (+3), pilot name (+3), glider ID (+2), hardware/firmware headers (+2).
-6.  **Duplicate Triage Statuses & Pairing Notes**:
+6.  **Duplicate Triage Statuses & Pairing Notes (Eliminated Legacy 'Duplicate')**:
     *   Higher-scoring candidate is assigned `Dup-Primary`; backup candidate is assigned `Dup-Others`.
+    *   All duplicate cases (including filename collisions and pre-existing Master Folder tracks) adhere to soft dedupe quality scoring.
+    *   **Master Folder Drift Self-Healing**: If an IGC file in Master Log has no corresponding sheet row, the system restores the flight row and executes soft dedupe scoring against other recordings.
     *   Injects standardized pairing note into `Notes`: `[DupRef: DUP_YYYYMMDD_HHMM | Paired with <FlightID> (Score: X vs Y)]`.
     *   **Dashboard Protection**: All KPI banners, timeline currency, and leaderboard cards strictly filter for `Status = "Valid"`, preventing unreviewed duplicates from polluting statistics.
 7.  **Flight Maintenance Actions (`Flight Log > Flight maintenance`)**:
-    *   `Flight Updates...`: Unified configurable modal dialog to batch process weather, geo lookup, XContest verification, or scoring.
-    *   `Purge Flights Marked 'Remove'`: Prompts with count, moves Master IGC files to `TRASH_FOLDER_ID`, deletes sheet rows from bottom to top, refreshes hashes, and sorts.
-    *   `Re-sync Missing Flights from Master Folder`: Opens `ResyncDialog.html` (interactive modal with live progress bar and status), scanning `MASTER_LOG_FOLDER_ID` for orphaned IGCs missing from the `Flights` tab and restoring them with status `Review?`.
+    *   `Flight Updates...`: Unified configurable modal dialog (`FlightMaintenanceDialog.html`) to batch process weather, geo lookup, XContest verification, or scoring.
+    *   `Mark Duplicates for Removal...`: Modal dialog (`MarkDuplicatesDialog.html`) with `Dup - Others` and `Dup - Primary` checkboxes to batch stage duplicate rows to `Remove` without immediate deletion.
+    *   `Purge Flights Marked 'Remove'...`: Interactive modal dialog (`PurgeDialog.html`) with real-time client-side stepping, progress bar, cancelability, moving master IGCs to `TRASH_FOLDER_ID`, deleting sheet rows bottom-up, refreshing hashes, and sorting.
+    *   `Re-sync Missing Flights from Master Folder...`: Opens `ResyncDialog.html` (interactive modal with live progress bar, activity log, and primary Done button), scanning `MASTER_LOG_FOLDER_ID` for orphaned IGCs missing from the `Flights` tab and restoring them with status `Review?`.
 
 ### B. Flight Mode Detection (`RQ-ANA-001`)
 *   **Window**: 10s sliding window.
@@ -112,12 +117,18 @@ Fixed Header Schema (Row 3=Category, Row 4=Name). Data starts Row 5.
 
 ## 5. Configuration & Provisioning Strategy (`RQ-SYS-001`, `RQ-SYS-008`)
 1.  **`Config.gs`**: Defines structural constants (Sheet names, Colors, `colNotes`, `TABS`).
-2.  **`Parameters` Sheet**: Defines User runtime values (Thresholds, API Keys, Folder IDs).
+2.  **`Config` Sheet**: Consolidates User runtime values and reference lookups:
+    *   *Columns A:C*: System Parameters (Key, Value, Description) growing downward.
+    *   *Column D*: Blank visual separator column (25px width).
+    *   *Columns E:N*: Reference lookups (Equipment categories, dynamic Wing/Harness/Reserve/Other queries, Flight Statuses, Types, XC Classes, Date/Time formats) growing horizontally.
     *   *Priority*: User Sheet Values > Default Config constants.
-3.  **Template-Based Provisioning (`RQ-SYS-008.1`)**: Evaluation of distribution models to replace manual script copying:
+3.  **Configuration Management (`Save Config` / `Load Config`)**:
+    *   `exportConfigJson_(selectedSections)`: Serializes selected sections (Pilot Profile, Parameters by group, Lookups) into versioned JSON format (`Paragliding Flight Log v2.0`).
+    *   `importConfigJson_(jsonStr, selectedSections)`: Parses uploaded JSON and selectively applies settings to `Config` and `Pilot_Profile` sheets with real-time UI confirmation.
+4.  **Template-Based Provisioning (`RQ-SYS-008.1`)**: Evaluation of distribution models to replace manual script copying:
     *   *Option A (Recommended)*: Copyable master template sheet with pre-bound Apps Script project attached, paired with an interactive First Time Setup Wizard.
     *   *Option B*: Google Workspace Add-on or Clasp CLI provisioning script.
-4.  **Interactive Setup Wizard (`RQ-SYS-008.2`)**: Modal dialog triggered upon copying or via `Admin > First Time Setup Wizard` that steps users through folder selection (Watch, Upload, Master, Error), pilot credentials, default glider/harness selection, and time-driven watcher trigger initialization.
+5.  **Interactive Setup Wizard (`RQ-SYS-008.2`)**: Modal dialog triggered upon copying or via `Admin > First Time Setup Wizard` that steps users through folder selection (Watch, Upload, Master, Error), pilot credentials, default glider/harness selection, and time-driven watcher trigger initialization.
 
 ## 6. API Integrations (`RQ-SCR-002`)
 *   **Geocoding**: Chain of Responsibility (`BigDataCloud` -> `Nominatim` -> Fail).
@@ -150,7 +161,12 @@ Fixed Header Schema (Row 3=Category, Row 4=Name). Data starts Row 5.
 *   **`getFolderPath_(folder)` / `getMultiFolderPath_(folderIds)`**: Computes human-readable breadcrumb paths (e.g. `My Drive / Paragliding / Logs`).
 *   **`saveFolderParam_(paramKey, folderId, mode)`**: Saves folder IDs to the `Parameters` sheet (supports 'replace' or 'append' for multi-folders) and writes breadcrumbs to `Description`.
 *   **`uiUpdateWatchFolder_() / uiUpdateUploadFolder_() / uiUpdateMasterLogFolder_() / uiUpdateErrorFolder_() / uiUpdateTrashFolder_()`**: Menu actions triggering the in-app folder picker.
-*   **`purgeRemoveFlights()`**: Admin tool that prompts confirmation, moves Master IGC files to `TRASH_FOLDER_ID`, deletes sheet rows bottom-up, refreshes deduplication hashes, and re-sorts flights.
+*   **`showPurgeDialog()`**: Opens `PurgeDialog.html` for interactive client-stepping flight removal.
+*   **`showMarkDuplicatesDialog()`**: Opens `MarkDuplicatesDialog.html` to batch-stage `Dup-Primary` and/or `Dup-Others` flights to `Remove`.
+*   **`showSaveConfigDialog()` / `showLoadConfigDialog()`**: Opens Configuration Management export and import modal dialogs.
+*   **`getPurgeCandidateFlightsStatus()` / `purgeSingleCandidateFlight(target)` / `finalizePurge_()`**: Stepping backend handlers for interactive purge.
+*   **`getDuplicateCounts()` / `markDuplicatesForRemoval_(markOthers, markPrimary)`**: Handlers for staging duplicates to `Remove`.
+*   **`exportConfigJson_(selectedSections)` / `importConfigJson_(jsonStr, selectedSections)`**: Configuration export and import logic.
 *   **`uiEnableWatch_() / uiDisableWatch_()`**: Toggles the watch folder feature.
 *   **`setupWatcherTrigger_()`**: Installs the time-driven trigger for automation.
 
@@ -158,7 +174,7 @@ Fixed Header Schema (Row 3=Category, Row 4=Name). Data starts Row 5.
 *   **`scaffoldAll_()`**: Master function to create/repair all sheets (`Dashboard`, `Flights`, `Parameters`, `Equipment`, `Lookups`, `App_Log`, `User Guide`, `Pilot_Profile`).
 *   **`scaffoldDashboard_(ss)` (`RQ-SYS-005`, `CR-SYS-001`, `CR-SYS-002`)**: Builds the compact 6-column Dashboard (`A` to `F`), featuring two 3-KPI summary banners (All-Time and Year-to-Date with `[h]:mm "hrs"` duration), a dynamic 6-month activity timeline with pure numeric values (`0 "flts"`, `[h]:mm "hrs"`, `#,##0 "km"`) and pilot currency color shading (Orange / Yellow / Green based on `TIMELINE_FLIGHTS_LOW/MED` and `TIMELINE_HOURS_LOW/MED`), a 4 x 2 leaderboard grid with 8 cards (Top 5 Duration, Top 5 Distance, Top 5 Max Alt, Top 5 Alt Gain, Top 5 Thermal Flights, Top 5 Soaring Flights, Top 5 XC Score, Top 5 Max Speed), and a dedicated complete lists section (20-row pre-scaffolded Launch Sites and Countries Flown ordered by flight count). All cells have word wrapping enabled and use resilient `INDIRECT("Flights!..." & startRow & ":...")` formulas immune to row insertions and deletions.
 *   **`scaffoldFlights_(ss)`**: Builds 2-row category headers, sets Master Flight Log folder hyperlink in Cell `A2`, freezes 4 columns (`A:D`), ensures minimum 2,000 rows and 69 columns capacity via `ensureDimensions_`, and applies column header notes/tooltips to Row 4 (`colNotes`).
-*   **`scaffoldParameters_(ss)`**: Populates parameters with human-readable path enrichment in Column C (`Description`), strict Plain Text (`@`) formatting for format keys, `[h]:mm "hrs"` formatting for `TIMELINE_HOURS_LOW/MED` day fractions, `0 "flts"` for `TIMELINE_FLIGHTS_LOW/MED`, and exact validation ranges (`I3:I7` for `DATE_FORMAT`, `J3:J4` for `TIME_FORMAT`) to eliminate trailing blank dropdown options.
+*   **`scaffoldConfig_(ss)`**: Unifies parameter settings (Cols A:C) and lookup reference tables (Cols E:N, spacer Col D) into the `Config` tab. Populates parameters with human-readable path enrichment in Column C (`Description`), strict Plain Text (`@`) formatting for format keys, `[h]:mm "hrs"` formatting for `TIMELINE_HOURS_LOW/MED` day fractions, `0 "flts"` for `TIMELINE_FLIGHTS_LOW/MED`, dynamic queries for equipment (`F3:I3`), and exact validation ranges.
 *   **`scaffoldUserGuide_(ss)` (`RQ-SYS-006.1`)**: Builds or refreshes the in-app `User Guide` sheet tab with structured sections: System Overview, Setup & Configuration (including `XCONTEST_USERNAME`), Normal Logging Usage, System Maintenance (weather, geo, XContest verification, physics, sort), and Comprehensive Metric Dictionary (defining all calculated fields including XContest hyperlinking).
 *   **`uiRefreshUserGuide_()`**: Interactive menu action under `Flight Log > Admin > Admin: Refresh User Guide Tab` to safely re-scaffold the `User Guide` tab without touching flight data.
 *   **`uiRefreshDashboard_()`**: Interactive menu action under `Flight Log > Admin > Admin: Refresh Dashboard` to re-scaffold the 6-column resilient Dashboard without touching flight data.
@@ -241,7 +257,12 @@ Fixed Header Schema (Row 3=Category, Row 4=Name). Data starts Row 5.
 
 ### HTML Dialog Templates (User Interface)
 *   **`FlightMaintenanceDialog.html`**: Unified batch maintenance modal interface supporting scope selection (Selected rows vs All flights), operation checkboxes, real-time client-side stepping, and live progress bar.
-*   **`FolderPickerDialog.html`**: In-app Google Drive folder picker dialog featuring live search, folder tree navigation, breadcrumbs, and single/multi-folder assignment to `Parameters`.
+*   **`PurgeDialog.html`**: Interactive stepping purge modal with live candidate detection, real-time progress bar, Google Drive trash transfer, row deletion, and primary Done button.
+*   **`MarkDuplicatesDialog.html`**: Duplicate staging modal with `Dup - Others` and `Dup - Primary` checkboxes and live match counts.
+*   **`SaveConfigDialog.html`**: Configuration export modal with section checkboxes and direct client-side JSON file download.
+*   **`LoadConfigDialog.html`**: Configuration import modal with local JSON file selector, section detection, and live restore execution.
+*   **`ResyncDialog.html`**: Interactive Master Log folder re-sync modal with progress bar, activity console, and primary Done button.
+*   **`FolderPickerDialog.html`**: In-app Google Drive folder picker dialog featuring live search, folder tree navigation, breadcrumbs, and single/multi-folder assignment to `Config`.
 *   **`URLDialog.html`**: Modal dialog for importing flights from external URLs or Drive folder links, featuring live progress bar, file staging, processing logs, and archive cleanup.
 *   **`UploadDialog.html`**: Direct browser file upload modal supporting drag-and-drop of `.igc`, `.zip`, and `.gz` archives into Google Drive staging.
 *   **`ScanDialog.html`**: Watch folder scanning modal displaying real-time batch detection, extraction progress, and completion reporting.

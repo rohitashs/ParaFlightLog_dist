@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 21:59:57
+ * Updated: 2026-09-30 23:53:37
  */
 /**
  * Paragliding Flight Log v2.0 - Scaffolding & Setup
@@ -25,19 +25,26 @@ function scaffoldAll_() {
   ensureSheet_(ss, TABS.PILOT_PROFILE.name);
   ensureSheet_(ss, TABS.EQUIPMENT.name);
   ensureSheet_(ss, TABS.USER_GUIDE.name);
-  ensureSheet_(ss, TABS.PARAMETERS.name);
-  ensureSheet_(ss, TABS.LOOKUPS.name);
+  ensureSheet_(ss, TABS.CONFIG.name);
   ensureSheet_(ss, TABS.APP_LOG.name);
   
+  // Clean up legacy tabs if present
+  var oldParamSheet = ss.getSheetByName('Parameters');
+  var oldLookSheet = ss.getSheetByName('Lookups');
+  if (oldParamSheet && !ss.getSheetByName(TABS.CONFIG.name)) {
+    oldParamSheet.setName(TABS.CONFIG.name);
+  }
+  if (oldLookSheet && oldLookSheet.getName() !== TABS.CONFIG.name) {
+    try { ss.deleteSheet(oldLookSheet); } catch (e) {}
+  }
+
   // 2. Scaffolding Content
   scaffoldDashboard_(ss);
-  scaffoldLookups_(ss); // Must run before Flights & Parameters to populate validation lists
+  scaffoldConfig_(ss); // Populates parameters on left and lookups on right
   scaffoldFlights_(ss);
   scaffoldPilotProfile_(ss);
   scaffoldEquipment_(ss);
   scaffoldUserGuide_(ss);
-
-  scaffoldParameters_(ss);
   scaffoldAppLog_(ss);
   
   // 3. Reorder Tabs
@@ -47,8 +54,7 @@ function scaffoldAll_() {
     TABS.PILOT_PROFILE.name,
     TABS.EQUIPMENT.name, 
     TABS.USER_GUIDE.name,
-    TABS.PARAMETERS.name, 
-    TABS.LOOKUPS.name, 
+    TABS.CONFIG.name, 
     TABS.APP_LOG.name
   ];
   
@@ -123,7 +129,7 @@ function scaffoldDashboard_(ss) {
   sh.setRowHeight(1, 40);
   
   // 1b. Master Folder Link (Row 2, Cols A:F)
-  var masterLinkFormula = '=IF(ISBLANK(VLOOKUP("MASTER_LOG_FOLDER_ID", ' + TABS.PARAMETERS.name + '!A:B, 2, FALSE)), "Master Flight Logs folder (Not Configured)", HYPERLINK("https://drive.google.com/drive/folders/" & VLOOKUP("MASTER_LOG_FOLDER_ID", ' + TABS.PARAMETERS.name + '!A:B, 2, FALSE), "📁 Master Flight Logs folder"))';
+  var masterLinkFormula = '=IF(ISBLANK(VLOOKUP("MASTER_LOG_FOLDER_ID", ' + TABS.CONFIG.name + '!A:B, 2, FALSE)), "Master Flight Logs folder (Not Configured)", HYPERLINK("https://drive.google.com/drive/folders/" & VLOOKUP("MASTER_LOG_FOLDER_ID", ' + TABS.CONFIG.name + '!A:B, 2, FALSE), "📁 Master Flight Logs folder"))';
   sh.getRange('A2:F2').merge().setFormula(masterLinkFormula).setFontSize(10).setFontStyle('italic').setHorizontalAlignment('center');
   sh.setRowHeight(2, 22);
 
@@ -224,7 +230,7 @@ function scaffoldDashboard_(ss) {
   // Timeline Pilot Currency Shading (Conditional Formatting)
   var rangeFlights = sh.getRange('A14:F14');
   var rangeHours = sh.getRange('A15:F15');
-  var pSheet = TABS.PARAMETERS.name;
+  var pSheet = TABS.CONFIG.name;
 
   var ruleFlightsGreen = SpreadsheetApp.newConditionalFormatRule()
     .whenFormulaSatisfied('=A14 >= VLOOKUP("TIMELINE_FLIGHTS_MED", INDIRECT("' + pSheet + '!A:B"), 2, FALSE)')
@@ -388,8 +394,13 @@ function scaffoldDashboard_(ss) {
   sh.setHiddenGridlines(true);
 }
 
-function scaffoldParameters_(ss) {
-  var sh = ss.getSheetByName(TABS.PARAMETERS.name);
+function scaffoldConfig_(ss) {
+  var sh = ss.getSheetByName(TABS.CONFIG.name);
+  if (!sh) {
+    sh = ss.insertSheet(TABS.CONFIG.name, TABS.CONFIG.index);
+  }
+  sh.showSheet();
+  sh.setTabColor(TABS.CONFIG.color);
   var existingMap = {};
   
   // Preserve existing user values if present
@@ -427,15 +438,41 @@ function scaffoldParameters_(ss) {
   }
   
   sh.clear();
+  ensureDimensions_(sh, 60, 14);
 
-  // Row 1: Header
-  sh.getRange('A1').setValue(TABS.PARAMETERS.name).setFontWeight('bold').setFontSize(12);
-  sh.getRange('A1:C1').setBackground(TABS.PARAMETERS.color).setHorizontalAlignment('center');
+  // Row 1: Header Blocks
+  // Left: System Parameters (A1:C1)
+  sh.getRange('A1').setValue('Config - System Parameters & Settings').setFontWeight('bold').setFontSize(12);
+  sh.getRange('A1:C1').setBackground(TABS.CONFIG.color).setHorizontalAlignment('center');
+
+  // Col D: blank spacer column
+  sh.setColumnWidth(4, 25);
+
+  // Right: Controlled Vocabularies & Lookups (E1:N1)
+  sh.getRange('E1').setValue('Lookups & Controlled Vocabularies').setFontWeight('bold').setFontSize(12);
+  sh.getRange('E1:N1').setBackground('#795548').setFontColor('white').setHorizontalAlignment('center');
 
   // Row 2: Columns
-  sh.getRange(2, 1, 1, 3).setValues([TABS.PARAMETERS.columns]);
+  // Left side (A2:C2)
+  sh.getRange(2, 1, 1, 3).setValues([TABS.CONFIG.columns]);
   sh.getRange(2, 1, 1, 3).setFontWeight('bold').setBackground('#616161').setFontColor('white');
-  
+
+  // Right side (E2:N2)
+  var lookupCols = [
+    'Categories',
+    'Wings (Auto)',
+    'Harnesses (Auto)',
+    'Reserves (Auto)',
+    'Other (Auto)',
+    'Flight Status',
+    'Flight Type',
+    'XC Classes',
+    'Date Formats',
+    'Time Formats'
+  ];
+  sh.getRange(2, 5, 1, lookupCols.length).setValues([lookupCols]);
+  sh.getRange(2, 5, 1, lookupCols.length).setFontWeight('bold').setBackground('#EEEEEE');
+
   var rows = [];
   var lastSection = '';
   
@@ -465,20 +502,20 @@ function scaffoldParameters_(ss) {
         }
       }
       var desc = p.desc;
-      var isFolder = (p.key === 'WATCH_FOLDER_ID' || p.key === 'UPLOAD_FOLDER_ID' || p.key === 'MASTER_LOG_FOLDER_ID' || p.key === 'ERROR_FOLDER_ID');
+      var isFolder = (p.key === 'WATCH_FOLDER_ID' || p.key === 'UPLOAD_FOLDER_ID' || p.key === 'MASTER_LOG_FOLDER_ID' || p.key === 'ERROR_FOLDER_ID' || p.key === 'TRASH_FOLDER_ID');
       if (isFolder && val) {
         var pStr = (p.key === 'WATCH_FOLDER_ID') ? getMultiFolderPath_(val) : getFolderPath_(val);
         if (pStr) desc += '\n[Path: ' + pStr + ']';
       }
-      rows.push([p.key, val, desc, p.input]); // p.input is meta, removed before write
+      rows.push([p.key, val, desc, p.input]);
   });
 
-  // Write Data
+  // Write Parameters Data
   var writeRows = rows.map(function(r) { return [r[0], r[1], r[2]]; });
-  ensureDimensions_(sh, writeRows.length + 5, 3);
+  ensureDimensions_(sh, writeRows.length + 5, 14);
   sh.getRange(3, 1, writeRows.length, 3).setValues(writeRows);
   
-  // Formatting
+  // Formatting Parameters
   for (var i=0; i<rows.length; i++) {
      var rowNum = i + 3;
      if (rows[i][0].indexOf('[') === 0) {
@@ -496,30 +533,52 @@ function scaffoldParameters_(ss) {
         sh.getRange(rowNum, 2).setNumberFormat('0 "flts"');
      }
   }
-  sh.autoResizeColumns(1, 3);
-  
-  // Validation for Date/Time Formats
-  var shLook = ss.getSheetByName(TABS.LOOKUPS.name);
-  if (shLook) {
-      // Use Range instead of List for dynamic updates
-      var dateRange = shLook.getRange('I3:I7');
-      var timeRange = shLook.getRange('J3:J4');
-      
-      var dateRule = SpreadsheetApp.newDataValidation().requireValueInRange(dateRange, true).build();
-      var timeRule = SpreadsheetApp.newDataValidation().requireValueInRange(timeRange, true).build();
-      
-      // Find rows for DATE_FORMAT and TIME_FORMAT
-      for (var i=0; i<rows.length; i++) {
-         if (rows[i][0] === 'DATE_FORMAT') sh.getRange(i+3, 2).setNumberFormat('@').setDataValidation(dateRule);
-         if (rows[i][0] === 'TIME_FORMAT') sh.getRange(i+3, 2).setNumberFormat('@').setDataValidation(timeRule);
-         
-         // Boolean Dropdowns
-         if (['ENABLE_WATCH_FOLDER', 'MOVE_FROM_WATCH_FOLDER'].indexOf(rows[i][0]) > -1) {
-            var boolRule = SpreadsheetApp.newDataValidation().requireValueInList(['TRUE', 'FALSE'], true).build();
-            sh.getRange(i+3, 2).setDataValidation(boolRule);
-         }
-      }
+
+  // Populate Lookups on Right (Row 3+)
+  // E3:E6: Static Categories
+  sh.getRange('E3:E6').setValues([['Wing'], ['Harness'], ['Reserve'], ['Other']]);
+
+  // F3:I3: Dynamic Queries from Equipment
+  var eqName = TABS.EQUIPMENT.name;
+  sh.getRange('F3').setFormula('=IFERROR(QUERY(' + eqName + '!A:M, "select B where A=\'Wing\' and H=FALSE order by B asc label B \'\'", 0), "")');
+  sh.getRange('G3').setFormula('=IFERROR(QUERY(' + eqName + '!A:M, "select B where A=\'Harness\' and H=FALSE order by B asc label B \'\'", 0), "")');
+  sh.getRange('H3').setFormula('=IFERROR(QUERY(' + eqName + '!A:M, "select B where A=\'Reserve\' and H=FALSE order by B asc label B \'\'", 0), "")');
+  sh.getRange('I3').setFormula('=IFERROR(QUERY(' + eqName + '!A:M, "select B where A=\'Other\' and H=FALSE order by B asc label B \'\'", 0), "")');
+
+  // Status & Types from CFG (Soft dedupe scoring only)
+  var statuses = ['Valid', 'Review?', 'Dup-Primary', 'Dup-Others', 'Invalid?', 'Remove'];
+  var types = ['Free Fly', 'XC', 'Soaring', 'Comp', 'SIV / Maneuvers', 'Training', 'Other'];
+  var xcClasses = ['Open', 'Triangle', 'FAI Triangle', 'Out-and-Return'];
+  var dateFormats = ['yyyy-MM-dd', 'MM/dd/yyyy', 'dd/MM/yyyy', 'MMM dd, yyyy', 'ddd, MMM dd'];
+  var timeFormats = ['HH:mm', 'h:mm a'];
+
+  if (statuses.length > 0) sh.getRange(3, 10, statuses.length, 1).setValues(statuses.map(function(s) { return [s]; }));
+  if (types.length > 0) sh.getRange(3, 11, types.length, 1).setValues(types.map(function(t) { return [t]; }));
+  if (xcClasses.length > 0) sh.getRange(3, 12, xcClasses.length, 1).setValues(xcClasses.map(function(t) { return [t]; }));
+  if (dateFormats.length > 0) sh.getRange(3, 13, dateFormats.length, 1).setNumberFormat('@').setValues(dateFormats.map(function(t) { return [t]; }));
+  if (timeFormats.length > 0) sh.getRange(3, 14, timeFormats.length, 1).setNumberFormat('@').setValues(timeFormats.map(function(t) { return [t]; }));
+
+  // Validation for Date/Time Formats & Booleans in Parameters
+  var dateRange = sh.getRange('M3:M7');
+  var timeRange = sh.getRange('N3:N4');
+  var dateRule = SpreadsheetApp.newDataValidation().requireValueInRange(dateRange, true).build();
+  var timeRule = SpreadsheetApp.newDataValidation().requireValueInRange(timeRange, true).build();
+
+  for (var i = 0; i < rows.length; i++) {
+    if (rows[i][0] === 'DATE_FORMAT') sh.getRange(i + 3, 2).setNumberFormat('@').setDataValidation(dateRule);
+    if (rows[i][0] === 'TIME_FORMAT') sh.getRange(i + 3, 2).setNumberFormat('@').setDataValidation(timeRule);
+    if (['ENABLE_WATCH_FOLDER', 'MOVE_FROM_WATCH_FOLDER'].indexOf(rows[i][0]) > -1) {
+      var boolRule = SpreadsheetApp.newDataValidation().requireValueInList(['TRUE', 'FALSE'], true).build();
+      sh.getRange(i + 3, 2).setDataValidation(boolRule);
+    }
   }
+
+  sh.autoResizeColumns(1, 3);
+  sh.autoResizeColumns(5, 10);
+}
+
+function scaffoldParameters_(ss) {
+  scaffoldConfig_(ss);
 }
 
 function scaffoldEquipment_(ss) {
@@ -550,44 +609,7 @@ function scaffoldEquipment_(ss) {
 }
 
 function scaffoldLookups_(ss) {
-  var sh = ss.getSheetByName(TABS.LOOKUPS.name);
-  sh.showSheet();
-  sh.clear();
-  ensureDimensions_(sh, 50, 10);
-  
-  // Row 1
-  sh.getRange('A1').setValue(TABS.LOOKUPS.name).setFontWeight('bold').setFontSize(12);
-  sh.getRange('A1:G1').setBackground(TABS.LOOKUPS.color);
-  
-  // Row 2
-  // Row 2
-  sh.getRange('A2:J2').setValues([TABS.LOOKUPS.columns.concat(['XC Classes', 'Date Formats', 'Time Formats'])]);
-  sh.getRange('A2:J2').setFontWeight('bold').setBackground('#EEEEEE');
-  
-  // Static Categories
-  sh.getRange('A3:A6').setValues([['Wing'], ['Harness'], ['Reserve'], ['Other']]);
-  
-  // Queries
-  var eqName = TABS.EQUIPMENT.name;
-  sh.getRange('B3').setFormula('=IFERROR(QUERY(' + eqName + '!A:M, "select B where A=\'Wing\' and H=FALSE order by B asc label B \'\'", 0), "")');
-  sh.getRange('C3').setFormula('=IFERROR(QUERY(' + eqName + '!A:M, "select B where A=\'Harness\' and H=FALSE order by B asc label B \'\'", 0), "")');
-  sh.getRange('D3').setFormula('=IFERROR(QUERY(' + eqName + '!A:M, "select B where A=\'Reserve\' and H=FALSE order by B asc label B \'\'", 0), "")');
-  sh.getRange('E3').setFormula('=IFERROR(QUERY(' + eqName + '!A:M, "select B where A=\'Other\' and H=FALSE order by B asc label B \'\'", 0), "")');
-
-  // Status & Types from CFG
-  var statuses = ['Valid', 'Review?', 'Dup-Primary', 'Dup-Others', 'Invalid?', 'Remove', 'Duplicate'];
-  var types = ['Free Fly', 'XC', 'Soaring', 'Comp', 'SIV / Maneuvers', 'Training', 'Other'];
-  var xcClasses = ['Open', 'Triangle', 'FAI Triangle', 'Out-and-Return'];
-  var dateFormats = ['yyyy-MM-dd', 'MM/dd/yyyy', 'dd/MM/yyyy', 'MMM dd, yyyy', 'ddd, MMM dd'];
-  var timeFormats = ['HH:mm', 'h:mm a'];
-  
-  if (statuses.length > 0) sh.getRange(3, 6, statuses.length, 1).setValues(statuses.map(function(s) { return [s]; }));
-  if (types.length > 0) sh.getRange(3, 7, types.length, 1).setValues(types.map(function(t) { return [t]; }));
-  if (xcClasses.length > 0) sh.getRange(3, 8, xcClasses.length, 1).setValues(xcClasses.map(function(t) { return [t]; }));
-  if (dateFormats.length > 0) sh.getRange(3, 9, dateFormats.length, 1).setNumberFormat('@').setValues(dateFormats.map(function(t) { return [t]; }));
-  if (timeFormats.length > 0) sh.getRange(3, 10, timeFormats.length, 1).setNumberFormat('@').setValues(timeFormats.map(function(t) { return [t]; }));
-  
-  sh.autoResizeColumns(1, 10);
+  scaffoldConfig_(ss);
 }
 
 function scaffoldAppLog_(ss) {
@@ -612,7 +634,7 @@ function scaffoldFlights_(ss) {
   sh.getRange('A1:Z1').setBackground(TABS.FLIGHTS.color).setFontColor('white');
   
   // Row 2: Link to Master Flight Log Folder (Cell A2)
-  var masterLinkFormula = '=IF(ISBLANK(VLOOKUP("MASTER_LOG_FOLDER_ID", ' + TABS.PARAMETERS.name + '!A:B, 2, FALSE)), "Master Flight Logs folder (Not Configured)", HYPERLINK("https://drive.google.com/drive/folders/" & VLOOKUP("MASTER_LOG_FOLDER_ID", ' + TABS.PARAMETERS.name + '!A:B, 2, FALSE), "📁 Master Flight Logs folder"))';
+  var masterLinkFormula = '=IF(ISBLANK(VLOOKUP("MASTER_LOG_FOLDER_ID", ' + TABS.CONFIG.name + '!A:B, 2, FALSE)), "Master Flight Logs folder (Not Configured)", HYPERLINK("https://drive.google.com/drive/folders/" & VLOOKUP("MASTER_LOG_FOLDER_ID", ' + TABS.CONFIG.name + '!A:B, 2, FALSE), "📁 Master Flight Logs folder"))';
   sh.getRange('A2').setFormula(masterLinkFormula).setFontSize(10).setFontStyle('italic');
   
   // Flatten Headers
@@ -751,9 +773,9 @@ function applyFlightsValidation_(sh) {
   var valRows = endRow - startRow + 1;
   if (valRows < 1) return;
 
-  // Status
+  // Status (Soft dedupe scoring only)
   if (map['Status']) {
-    var rule = SpreadsheetApp.newDataValidation().requireValueInList(['Valid', 'Review?', 'Dup-Primary', 'Dup-Others', 'Invalid?', 'Remove', 'Duplicate'], true).setAllowInvalid(true).build();
+    var rule = SpreadsheetApp.newDataValidation().requireValueInList(['Valid', 'Review?', 'Dup-Primary', 'Dup-Others', 'Invalid?', 'Remove'], true).setAllowInvalid(true).build();
     sh.getRange(startRow, map['Status'], valRows, 1).setDataValidation(rule);
     
     // Conditional Formatting
@@ -766,35 +788,36 @@ function applyFlightsValidation_(sh) {
     rules.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('Dup-Others').setBackground('#FFCC80').setRanges([range]).build());
     rules.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('Invalid?').setBackground('#FFCDD2').setRanges([range]).build());
     rules.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('Remove').setBackground('#E0E0E0').setRanges([range]).build());
-    rules.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('Duplicate').setBackground('#FFCC80').setRanges([range]).build()); // Legacy compatibility
     sh.setConditionalFormatRules(rules);
   }
 
-  // Flight Type
+  // Flight Type (Config Col K)
   if (map['Flight Type']) {
-      var shLook = ss.getSheetByName(TABS.LOOKUPS.name);
-
-      var rule = SpreadsheetApp.newDataValidation().requireValueInRange(shLook.getRange('G3:G'), true).build();
-      sh.getRange(startRow, map['Flight Type'], valRows, 1).setDataValidation(rule);
+      var shConfig = ss.getSheetByName(TABS.CONFIG.name);
+      if (shConfig) {
+        var rule = SpreadsheetApp.newDataValidation().requireValueInRange(shConfig.getRange('K3:K'), true).build();
+        sh.getRange(startRow, map['Flight Type'], valRows, 1).setDataValidation(rule);
+      }
   }
 
-  // Equipment
-  var shLook = ss.getSheetByName(TABS.LOOKUPS.name);
-  var apply = function(colName, rngA1) {
-     if (map[colName]) {
-       var rule = SpreadsheetApp.newDataValidation().requireValueInRange(shLook.getRange(rngA1), true).build();
-       sh.getRange(startRow, map[colName], valRows, 1).setDataValidation(rule);
-     }
-  };
-  apply('Wing', 'B3:B');
-  apply('Harness', 'C3:C');
-  apply('Reserve 1', 'D3:D');
-  apply('Reserve 2', 'D3:D');
+  // Equipment (Config Cols F, G, H)
+  var shConfig = ss.getSheetByName(TABS.CONFIG.name);
+  if (shConfig) {
+    var apply = function(colName, rngA1) {
+       if (map[colName]) {
+         var rule = SpreadsheetApp.newDataValidation().requireValueInRange(shConfig.getRange(rngA1), true).build();
+         sh.getRange(startRow, map[colName], valRows, 1).setDataValidation(rule);
+       }
+    };
+    apply('Wing', 'F3:F');
+    apply('Harness', 'G3:G');
+    apply('Reserve 1', 'H3:H');
+    apply('Reserve 2', 'H3:H');
+  }
   
-  // XC Flight Class (New)
-  if (map['XC Flight Class']) {
-      var shLook = ss.getSheetByName(TABS.LOOKUPS.name);
-      var rule = SpreadsheetApp.newDataValidation().requireValueInRange(shLook.getRange('H3:H'), true).build();
+  // XC Flight Class (Config Col L)
+  if (map['XC Flight Class'] && shConfig) {
+      var rule = SpreadsheetApp.newDataValidation().requireValueInRange(shConfig.getRange('L3:L'), true).build();
       sh.getRange(startRow, map['XC Flight Class'], valRows, 1).setDataValidation(rule);
   }
   
@@ -812,16 +835,16 @@ function applyFlightsValidation_(sh) {
 
 function applyEquipmentValidation_(sh) {
   var ss = SpreadsheetApp.getActive();
-  var shLook = ss.getSheetByName(TABS.LOOKUPS.name);
-  if (shLook) {
+  var shConfig = ss.getSheetByName(TABS.CONFIG.name);
+  if (shConfig) {
       var dataStart = TABS.EQUIPMENT.dataStartRow;
       var dataEnd = TABS.EQUIPMENT.dataEndRow;
       var numRows = dataEnd - dataStart + 1; // 50 - 3 + 1 = 48 rows.
       
       if (numRows < 1) return;
 
-      // Category Range (A3:A)
-      var range = shLook.getRange('A3:A');
+      // Category Range (Config Col E: Categories)
+      var range = shConfig.getRange('E3:E');
       var rule = SpreadsheetApp.newDataValidation().requireValueInRange(range, true).setAllowInvalid(true).build();
       
       // Apply to limited range
@@ -948,20 +971,20 @@ function reapplyFormatting_() {
      shE.getRange(2, 1, 1, TABS.EQUIPMENT.columns.length).setBackground('#E0F7FA').setFontWeight('bold');
   }
   
-  // 3. Parameters
-  var shP = ss.getSheetByName(TABS.PARAMETERS.name);
+  // 3. Config
+  var shP = ss.getSheetByName(TABS.CONFIG.name);
   if (shP) {
-      shP.setTabColor(TABS.PARAMETERS.color);
-      shP.getRange('A1:C1').setBackground(TABS.PARAMETERS.color);
+      shP.setTabColor(TABS.CONFIG.color);
+      shP.getRange('A1:C1').setBackground(TABS.CONFIG.color);
       shP.getRange(2, 1, 1, 3).setBackground('#616161').setFontColor('white');
       // Re-run scaffold to fix row colors
-      scaffoldParameters_(ss);
+      scaffoldConfig_(ss);
   }
 
   // 4. Dashboard
   scaffoldDashboard_(ss);
 
-  ss.toast('Formatting Re-applied: Obsolete columns eliminated, Parameters updated, Dashboard refreshed, Flights frozen.');
+  ss.toast('Formatting Re-applied: Obsolete columns eliminated, Config updated, Dashboard refreshed, Flights frozen.');
 }
 
 function backupSystemSheets_() {
@@ -981,8 +1004,7 @@ function backupSystemSheets_() {
     TABS.FLIGHTS.name,
     TABS.PILOT_PROFILE ? TABS.PILOT_PROFILE.name : 'Pilot_Profile',
     TABS.EQUIPMENT.name,
-    TABS.PARAMETERS.name,
-    TABS.LOOKUPS.name
+    TABS.CONFIG.name
   ];
   
   var backedUp = [];
@@ -1004,8 +1026,7 @@ function deleteSystemSheets_() {
     var targets = [
       TABS.FLIGHTS.name, 
       TABS.EQUIPMENT.name, 
-      TABS.PARAMETERS.name, 
-      TABS.LOOKUPS.name, 
+      TABS.CONFIG.name, 
       TABS.APP_LOG.name, 
       TABS.DASHBOARD.name,
       TABS.PILOT_PROFILE ? TABS.PILOT_PROFILE.name : 'Pilot_Profile',
@@ -1178,7 +1199,7 @@ function scaffoldUserGuide_(ss) {
   // Section 1: Overview
   addSection('1. System Overview & Architecture', '#37474F');
   addRow('Component', 'Function', 'Details', 'Pilot Benefit', true);
-  addRow('Google Sheets View', 'Primary User Interface', 'Organized logbook tabs: Dashboard, Flights, Pilot Profile, Equipment, User Guide, Parameters, Lookups, App_Log.', 'Familiar, accessible on desktop & mobile.');
+  addRow('Google Sheets View', 'Primary User Interface', 'Organized logbook tabs: Dashboard, Flights, Pilot Profile, Equipment, User Guide, Config, App_Log.', 'Familiar, accessible on desktop & mobile.');
   addRow('Google Apps Script', 'Automated Processing Engine', 'Orchestrates file parsing, physics & thermal analysis, XC scoring, geo-enrichment, and weather queries.', 'Zero server hosting costs, runs completely inside Google Cloud.');
   addRow('Master Flight Log', 'Permanent Cloud Archive', 'Automatically mirrors processed IGCs into MASTER_LOG_FOLDER_ID with standardized names and public links.', 'Direct 1-click downloads and 3D SeeYou Cloud visualization.');
   addRow('Watcher Triggers', 'Background Automation', 'Runs automated scans of designated Google Drive folders every 5 to 15 minutes to ingest new flights automatically.', 'Drop files into Drive and your logbook updates hands-free.');
@@ -1195,7 +1216,7 @@ function scaffoldUserGuide_(ss) {
   addRow('Weather Providers', 'WEATHER_PROVIDERS', 'Comma-separated order of weather services: "open_meteo, visual_crossing". Open-Meteo runs with zero API keys required.', 'open_meteo, visual_crossing');
   addRow('Visual Crossing Key', 'VISUAL_CROSSING_API_KEY', 'Optional API key for Visual Crossing backup (1,000 free calls/day). Sign up at visualcrossing.com.', 'Leave blank to use free Open-Meteo exclusively.');
   addRow('Contact Email', 'CONTACT_EMAIL', 'Your email address used in User-Agent headers for open Nominatim / Open-Meteo / Overpass API requests.', 'Required to prevent HTTP 403 API blocking.');
-  addRow('XContest Username', 'XCONTEST_USERNAME', 'Your public XContest pilot username (e.g. "rohitash"). Required for automated XContest flight verification, permanent ID linking, and claim window alerts.', 'Set your username in Parameters');
+  addRow('XContest Username', 'XCONTEST_USERNAME', 'Your public XContest pilot username (e.g. "rohitash"). Required for automated XContest flight verification, permanent ID linking, and claim window alerts.', 'Set your username in Config');
 
   rIdx++;
 
@@ -1215,12 +1236,13 @@ function scaffoldUserGuide_(ss) {
   addSection('4. Flight Maintenance & Admin Operations', '#D84315');
   addRow('Operation', 'Tool / Menu', 'Behavior & Execution Details', 'When to Use', true);
   addRow('Flight Updates', 'Flight Log > Flight maintenance > Flight Updates...', 'Configurable modal dialog: choose between Selected Rows vs All Flights, and check operations to batch process.', 'Periodic log maintenance, bulk backfilling, or score recalculation.');
-  addRow('Purge Flights Marked \'Remove\'', 'Flight Log > Flight maintenance > Purge Flights Marked \'Remove\'', 'Prompts for confirmation, moves Master IGC files to TRASH_FOLDER_ID, deletes sheet rows bottom-up, refreshes deduplication hashes, and re-sorts flights.', 'Permanently discarding unwanted duplicates or test entries.');
+  addRow('Mark Duplicates for Removal', 'Flight Log > Flight maintenance > Mark Duplicates for Removal...', 'Interactive dialog with Dup-Primary and Dup-Others checkboxes to bulk-tag duplicate flights as Remove for pre-purge review.', 'Safely preparing detected duplicate flights for culling.');
+  addRow('Purge Flights Marked \'Remove\'', 'Flight Log > Flight maintenance > Purge Flights Marked \'Remove\'', 'Interactive progress dialog with live stepping, moves Master IGC files to TRASH_FOLDER_ID, deletes sheet rows bottom-up, refreshes deduplication hashes, and re-sorts flights.', 'Permanently discarding unwanted duplicates or test entries.');
   addRow('Re-sync Missing Flights', 'Flight Log > Flight maintenance > Re-sync Missing Flights from Master Folder', 'Interactive dialog with live progress bar and activity log that scans MASTER_LOG_FOLDER_ID for any orphaned files and restores their flight rows as \'Review?\'.', 'Restoring accidentally deleted flight rows without duplicate files.');
-  addRow('Weather Backfill', 'Maintenance Dialog Checkbox', 'Fetches historical launch/landing wind, cloudbase, cloud %, temperature, and conditions via Open-Meteo & Visual Crossing.', 'Enriching older flights or flights imported while offline.');
-  addRow('Geo & Site Backfill', 'Maintenance Dialog Checkbox', 'Reverse geocodes Lat/Lon coordinates into Town, Region, Country and matches nearest takeoff/landing site names.', 'Populating missing location names.');
-  addRow('XContest Verification', 'Maintenance Dialog Checkbox', 'Directly probes XContest.org via UTC date/time (+/- 2 min) to verify if flight is published, links flight with permanent ID (e.g. XC#6952654), or flags claim deadline (Claim soon! if <= 14 days, Expired if > 14 days).', 'Updating XContest league claim status.');
-  addRow('Physics & XC Recompute', 'Maintenance Dialog Checkbox', 'Reads master IGC from Drive; re-runs thermal circling, soaring efficiency, glide L/D, and optimal FAI triangle scoring.', 'When scoring rules or thermal detection thresholds are updated.');
+  addRow('Weather Backfill', 'Flight Updates Dialog Checkbox', 'Fetches historical launch/landing wind, cloudbase, cloud %, temperature, and conditions via Open-Meteo & Visual Crossing.', 'Enriching older flights or flights imported while offline.');
+  addRow('Geo & Site Backfill', 'Flight Updates Dialog Checkbox', 'Reverse geocodes Lat/Lon coordinates into Town, Region, Country and matches nearest takeoff/landing site names.', 'Populating missing location names.');
+  addRow('XContest Verification', 'Flight Updates Dialog Checkbox', 'Directly probes XContest.org via UTC date/time (+/- 2 min) to verify if flight is published, links flight with permanent ID (e.g. XC#6952654), or flags claim deadline (Claim soon! if <= 14 days, Expired if > 14 days).', 'Updating XContest league claim status.');
+  addRow('Physics & XC Recompute', 'Flight Updates Dialog Checkbox', 'Reads master IGC from Drive; re-runs thermal circling, soaring efficiency, glide L/D, and optimal FAI triangle scoring.', 'When scoring rules or thermal detection thresholds are updated.');
   addRow('Date Sorting', 'Flight Log > Flight maintenance > Sort All Flights by Date', 'Chronologically sorts logbook descending (newest on top) and re-indexes sequential Flight Numbers.', 'After importing out-of-order historical flights.');
 
   rIdx++;
@@ -1230,7 +1252,7 @@ function scaffoldUserGuide_(ss) {
   addRow('Category', 'Metric / Column', 'Calculation / Formula', 'Description & Interpretation', true);
   
   // Flight Info
-  addRow('Flight Info', 'Status', 'Valid, Review?, Dup-Primary, Dup-Others, Invalid?, Remove, Duplicate', 'Flight validation state. Dashboard KPIs strictly count "Valid" flights. New files default to "Review?". Overlap winners are "Dup-Primary" (gold) and backups "Dup-Others" (orange). Mark unwanted flights as "Remove" to purge.');
+  addRow('Flight Info', 'Status', 'Valid, Review?, Dup-Primary, Dup-Others, Invalid?, Remove', 'Flight validation state. Dashboard KPIs strictly count "Valid" flights. New files default to "Review?". Overlap winners are "Dup-Primary" (gold) and backups "Dup-Others" (orange). Mark unwanted flights as "Remove" to purge.');
   addRow('Flight Info', 'FlightID', 'F{YYYYMMDD}_{DailySeq}', 'Unique flight identifier linking directly to 3D SeeYou Cloud track visualization.');
   addRow('Flight Info', 'Flight No', '=IFERROR(MAX(INDIRECT("C" & (ROW()+1) & ":C")), 0) + 1', 'Sequential flight counter from first flight to present. Automatically adjusts on sort.');
   addRow('Flight Info', 'Auto Summary', 'Duration + Flight Type + Site + Max Alt', 'Concise human-readable flight summary (e.g. "2h 15m XC at Bir Billing 3100m").');

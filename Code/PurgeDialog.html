@@ -1,0 +1,227 @@
+<!--
+ * Paragliding Flight Log v2.0
+ * Updated: 2026-09-30 23:53:37
+ -->
+<!--
+ * Paragliding Flight Log v2.0
+ * Interactive Purge Flights Modal Dialog
+ -->
+<!DOCTYPE html>
+<html>
+
+<head>
+    <base target="_top">
+    <?!= HtmlService.createTemplateFromFile('Style').evaluate().getContent(); ?>
+    <style>
+        .danger-action {
+            background-color: #d32f2f;
+            color: white;
+            padding: 6px 14px;
+            font-size: 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            font-weight: 600;
+        }
+
+        .danger-action:hover {
+            background-color: #b71c1c;
+        }
+
+        .danger-action:disabled {
+            background-color: #ef9a9a;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Header -->
+    <div class="header-large text-blue">Purge Flights Marked 'Remove'</div>
+
+    <div class="main-content">
+        <div id="instructions" class="instructions">
+            Scanning logbook for flights marked for removal...<br>
+            Please wait while flight candidates are detected.
+        </div>
+
+        <!-- Buttons -->
+        <div class="control-group">
+            <button id="btn-purge" onclick="startPurge()" class="danger-action" style="display:none;">Purge Flights</button>
+            <button id="btn-close" onclick="google.script.host.close()" class="secondary">Cancel</button>
+        </div>
+
+        <div class="instructions" style="margin-top:15px; font-weight:bold;">Activity Log:</div>
+        <div id="log-console"></div>
+    </div>
+
+    <div class="footer">
+        <div class="status-line">
+            <span id="status-left">Initializing...</span>
+            <span id="status-right">0%</span>
+        </div>
+        <div class="progress-bar-bg">
+            <div id="progress-bar" class="progress-bar-fill"></div>
+        </div>
+    </div>
+
+    <script>
+        var candidateList = [];
+        var totalCandidates = 0;
+        var purgedCount = 0;
+        var trashedCount = 0;
+        var errorCount = 0;
+        var isPurging = false;
+
+        window.onload = function () {
+            setStatus('Scanning for flights marked "Remove"...', '0%');
+            log('Scanning Flights sheet for rows with Status = "Remove"...');
+
+            google.script.run
+                .withSuccessHandler(onCandidatesLoaded)
+                .withFailureHandler(showFatalError)
+                .getPurgeCandidateFlightsStatus();
+        };
+
+        function onCandidatesLoaded(result) {
+            if (result.error) {
+                showFatalError(result.error);
+                return;
+            }
+
+            candidateList = result.flights || [];
+            totalCandidates = candidateList.length;
+
+            if (totalCandidates === 0) {
+                setStatus('No flights marked "Remove"', '100%');
+                setProgress('100%');
+                log('No flights with Status = "Remove" were found in the logbook.');
+                document.getElementById('instructions').innerHTML = 'No flights marked for removal.<br>Use the Flights tab or "Mark Duplicates for Removal" to tag flights as Remove.';
+                setDoneButton();
+            } else {
+                setStatus('Found ' + totalCandidates + ' flight(s) marked for removal', '0%');
+                log('Found ' + totalCandidates + ' flight(s) with Status = "Remove".');
+                log('CAUTION: Purging will permanently move Master IGC files to the Trash folder and delete the flight rows.');
+                
+                document.getElementById('instructions').innerHTML = '<strong>' + totalCandidates + ' flight(s)</strong> are marked for removal.<br>Click "Purge Flights" below to proceed with file trashing and row deletion.';
+                
+                var btnPurge = document.getElementById('btn-purge');
+                btnPurge.innerText = 'Purge ' + totalCandidates + ' Flight(s)';
+                btnPurge.style.display = 'inline-block';
+            }
+        }
+
+        function startPurge() {
+            if (isPurging || totalCandidates === 0) return;
+            isPurging = true;
+
+            document.getElementById('btn-purge').style.display = 'none';
+            var btnClose = document.getElementById('btn-close');
+            btnClose.disabled = true;
+            btnClose.style.opacity = '0.6';
+
+            log('------------------------------------------------');
+            log('Starting purge of ' + totalCandidates + ' flight(s)...');
+            processNext(0);
+        }
+
+        function processNext(index) {
+            if (index >= totalCandidates) {
+                finishPurge();
+                return;
+            }
+
+            var flight = candidateList[index];
+            var pct = Math.round((index / totalCandidates) * 100) + '%';
+            var statusStr = (index + 1) + '/' + totalCandidates + ' | ' + (flight.flightId || ('Row ' + flight.rowNum));
+            setStatus(statusStr, pct);
+            setProgress(pct);
+
+            google.script.run
+                .withSuccessHandler(function (res) {
+                    if (res && res.success) {
+                        purgedCount++;
+                        if (res.trashed) trashedCount++;
+                        var msg = (flight.flightId || 'Flight') + ' (' + (flight.date || '') + '): Deleted row' + (res.trashed ? ' & trashed Drive file' : '');
+                        log(msg, 'log-success');
+                    } else {
+                        errorCount++;
+                        var errMsg = (flight.flightId || 'Flight') + ': ' + (res.error || 'Failed to purge');
+                        log(errMsg, 'log-error');
+                    }
+                    processNext(index + 1);
+                })
+                .withFailureHandler(function (err) {
+                    errorCount++;
+                    log((flight.flightId || 'Flight') + ': Fatal error - ' + err.message, 'log-error');
+                    processNext(index + 1);
+                })
+                .purgeSingleCandidateFlight(flight);
+        }
+
+        function finishPurge() {
+            setProgress('100%');
+            setStatus('Finalizing purge & sorting...', '95%');
+            log('------------------------------------------------');
+            log('Flights purged: ' + purgedCount);
+            log('Master IGCs trashed: ' + trashedCount);
+            if (errorCount > 0) log('Errors: ' + errorCount, 'log-error');
+            log('Sorting logbook and refreshing deduplication cache...');
+
+            google.script.run
+                .withSuccessHandler(function () {
+                    setStatus('Purge Completed | 100%', '100%');
+                    log('Logbook sorted chronologically and indexes refreshed successfully.');
+                    log('=== Purge Complete ===');
+                    setDoneButton();
+                })
+                .withFailureHandler(function (err) {
+                    setStatus('Purge Finished with Warnings', '100%');
+                    log('Finalize warning: ' + err.message, 'log-error');
+                    setDoneButton();
+                })
+                .finalizePurge_();
+        }
+
+        function setDoneButton() {
+            var btnClose = document.getElementById('btn-close');
+            btnClose.innerText = 'Done';
+            btnClose.className = 'action';
+            btnClose.disabled = false;
+            btnClose.style.opacity = '1';
+            btnClose.onclick = function () { google.script.host.close(); };
+        }
+
+        function showFatalError(msg) {
+            setStatus('Error', 'Failed');
+            log('Fatal Error: ' + msg, 'log-error');
+            document.getElementById('progress-bar').classList.add('error-fill');
+            var btnClose = document.getElementById('btn-close');
+            btnClose.innerText = 'Close';
+            btnClose.className = 'secondary';
+            btnClose.disabled = false;
+            btnClose.style.opacity = '1';
+        }
+
+        function setStatus(left, right) {
+            document.getElementById('status-left').textContent = left;
+            document.getElementById('status-right').textContent = right;
+        }
+
+        function setProgress(pct) {
+            document.getElementById('progress-bar').style.width = pct;
+        }
+
+        function log(msg, cls) {
+            var div = document.getElementById('log-console');
+            var p = document.createElement('div');
+            p.textContent = msg;
+            if (cls) p.className = cls;
+            div.appendChild(p);
+            div.scrollTop = div.scrollHeight;
+        }
+    </script>
+</body>
+
+</html>

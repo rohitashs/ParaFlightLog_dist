@@ -1,0 +1,229 @@
+<!--
+ * Paragliding Flight Log v2.0
+ * Updated: 2026-09-30 23:53:37
+ -->
+<!--
+ * Paragliding Flight Log v2.0
+ * Mark Duplicates for Removal Modal Dialog
+ -->
+<!DOCTYPE html>
+<html>
+
+<head>
+    <base target="_top">
+    <?!= HtmlService.createTemplateFromFile('Style').evaluate().getContent(); ?>
+    <style>
+        .options-card {
+            background-color: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 12px 14px;
+            margin-bottom: 12px;
+        }
+
+        .check-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            color: #333;
+        }
+
+        .check-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .check-item input {
+            margin-right: 10px;
+            width: 16px;
+            height: 16px;
+            accent-color: #2196F3;
+        }
+
+        .count-badge {
+            margin-left: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 6px;
+            border-radius: 10px;
+        }
+
+        .badge-orange {
+            background-color: #ffe0b2;
+            color: #e65100;
+        }
+
+        .badge-gold {
+            background-color: #fff9c4;
+            color: #f57f17;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header-large text-blue">Mark Duplicates for Removal</div>
+
+    <div class="main-content">
+        <div id="instructions" class="instructions">
+            Select which duplicate flight categories to mark as <strong>'Remove'</strong>.<br>
+            This action only updates the Status column for review, allowing you to verify rows before purging.
+        </div>
+
+        <div class="options-card">
+            <label class="check-item">
+                <input type="checkbox" id="chk-others" onchange="onSelectionChanged()">
+                <span>Mark <strong>"Dup - Others"</strong> as 'Remove'</span>
+                <span id="badge-others" class="count-badge badge-orange">0 flights</span>
+            </label>
+            <label class="check-item">
+                <input type="checkbox" id="chk-primary" onchange="onSelectionChanged()">
+                <span>Mark <strong>"Dup - Primary"</strong> as 'Remove'</span>
+                <span id="badge-primary" class="count-badge badge-gold">0 flights</span>
+            </label>
+        </div>
+
+        <!-- Buttons -->
+        <div class="control-group">
+            <button id="btn-mark" onclick="applyMarking()" class="action" disabled>Mark Selected for Removal</button>
+            <button id="btn-close" onclick="google.script.host.close()" class="secondary">Cancel</button>
+        </div>
+
+        <div class="instructions" style="margin-top:15px; font-weight:bold;">Activity Log:</div>
+        <div id="log-console"></div>
+    </div>
+
+    <div class="footer">
+        <div class="status-line">
+            <span id="status-left">Ready</span>
+            <span id="status-right">0%</span>
+        </div>
+        <div class="progress-bar-bg">
+            <div id="progress-bar" class="progress-bar-fill"></div>
+        </div>
+    </div>
+
+    <script>
+        var counts = { dupOthersCount: 0, dupPrimaryCount: 0 };
+        var isApplying = false;
+
+        window.onload = function () {
+            setStatus('Scanning for duplicates...', '0%');
+            log('Querying Flights sheet for duplicate flight statuses...');
+
+            google.script.run
+                .withSuccessHandler(onCountsLoaded)
+                .withFailureHandler(showError)
+                .getDuplicateCounts();
+        };
+
+        function onCountsLoaded(res) {
+            counts = res || { dupOthersCount: 0, dupPrimaryCount: 0 };
+            document.getElementById('badge-others').innerText = counts.dupOthersCount + ' flight(s)';
+            document.getElementById('badge-primary').innerText = counts.dupPrimaryCount + ' flight(s)';
+
+            var totalDups = counts.dupOthersCount + counts.dupPrimaryCount;
+            if (totalDups === 0) {
+                setStatus('No duplicates found', '100%');
+                setProgress('100%');
+                log('No flights with status "Dup - Others" or "Dup - Primary" were found in the Flights sheet.');
+                document.getElementById('btn-mark').disabled = true;
+                setDoneButton();
+            } else {
+                setStatus('Found ' + totalDups + ' duplicate flight(s)', '0%');
+                log('Found ' + counts.dupOthersCount + ' "Dup - Others" and ' + counts.dupPrimaryCount + ' "Dup - Primary" flight(s).');
+                log('Select one or both categories above, then click "Mark Selected for Removal".');
+            }
+        }
+
+        function onSelectionChanged() {
+            var chkOthers = document.getElementById('chk-others').checked;
+            var chkPrimary = document.getElementById('chk-primary').checked;
+            var btnMark = document.getElementById('btn-mark');
+
+            var validCount = 0;
+            if (chkOthers) validCount += counts.dupOthersCount;
+            if (chkPrimary) validCount += counts.dupPrimaryCount;
+
+            btnMark.disabled = (validCount === 0);
+            if (validCount > 0) {
+                btnMark.innerText = 'Mark ' + validCount + ' Flight(s) as "Remove"';
+            } else {
+                btnMark.innerText = 'Mark Selected for Removal';
+            }
+        }
+
+        function applyMarking() {
+            if (isApplying) return;
+            var chkOthers = document.getElementById('chk-others').checked;
+            var chkPrimary = document.getElementById('chk-primary').checked;
+            if (!chkOthers && !chkPrimary) return;
+
+            isApplying = true;
+            document.getElementById('btn-mark').disabled = true;
+            document.getElementById('chk-others').disabled = true;
+            document.getElementById('chk-primary').disabled = true;
+
+            setStatus('Updating flight statuses...', '50%');
+            setProgress('50%');
+            log('------------------------------------------------');
+            log('Updating selected duplicate flight rows to Status = "Remove"...');
+
+            google.script.run
+                .withSuccessHandler(function (res) {
+                    setProgress('100%');
+                    setStatus('Completed | 100%', '100%');
+                    if (res && res.success) {
+                        log('Successfully marked ' + res.total + ' flight(s) as "Remove":', 'log-success');
+                        if (res.updatedOthers > 0) log(' - ' + res.updatedOthers + ' "Dup - Others" flight(s) marked "Remove"', 'log-success');
+                        if (res.updatedPrimary > 0) log(' - ' + res.updatedPrimary + ' "Dup - Primary" flight(s) marked "Remove"', 'log-success');
+                        log('------------------------------------------------');
+                        log('Next Step: Review your flights in the sheet, then run "Purge Flights Marked Remove" when ready.');
+                        document.getElementById('instructions').innerHTML = '<strong>' + res.total + ' flight(s)</strong> have been marked as "Remove".<br>Review the Flights tab or run Purge when ready.';
+                    } else {
+                        log('Warning: No rows were updated.', 'log-info');
+                    }
+                    document.getElementById('btn-mark').style.display = 'none';
+                    setDoneButton();
+                })
+                .withFailureHandler(function (err) {
+                    showError(err.message);
+                })
+                .markDuplicatesForRemoval_(chkOthers, chkPrimary);
+        }
+
+        function setDoneButton() {
+            var btnClose = document.getElementById('btn-close');
+            btnClose.innerText = 'Done';
+            btnClose.className = 'action';
+            btnClose.onclick = function () { google.script.host.close(); };
+        }
+
+        function showError(msg) {
+            setStatus('Error', 'Failed');
+            log('Error: ' + msg, 'log-error');
+            document.getElementById('progress-bar').classList.add('error-fill');
+            setDoneButton();
+        }
+
+        function setStatus(left, right) {
+            document.getElementById('status-left').textContent = left;
+            document.getElementById('status-right').textContent = right;
+        }
+
+        function setProgress(pct) {
+            document.getElementById('progress-bar').style.width = pct;
+        }
+
+        function log(msg, cls) {
+            var div = document.getElementById('log-console');
+            var p = document.createElement('div');
+            p.textContent = msg;
+            if (cls) p.className = cls;
+            div.appendChild(p);
+            div.scrollTop = div.scrollHeight;
+        }
+    </script>
+</body>
+
+</html>

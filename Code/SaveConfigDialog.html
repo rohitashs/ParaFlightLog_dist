@@ -1,0 +1,229 @@
+<!--
+ * Paragliding Flight Log v2.0
+ * Updated: 2026-09-30 23:53:37
+ -->
+<!--
+ * Paragliding Flight Log v2.0
+ * Save Config Modal Dialog (Admin > Save Config...)
+ -->
+<!DOCTYPE html>
+<html>
+
+<head>
+    <base target="_top">
+    <?!= HtmlService.createTemplateFromFile('Style').evaluate().getContent(); ?>
+    <style>
+        .section-box {
+            background-color: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 10px 14px;
+            margin-bottom: 10px;
+        }
+
+        .check-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            color: #333;
+        }
+
+        .check-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .check-item input {
+            margin-right: 8px;
+            width: 15px;
+            height: 15px;
+            accent-color: #2196F3;
+        }
+
+        .sub-group {
+            margin-left: 24px;
+            margin-top: 4px;
+            margin-bottom: 6px;
+            padding-left: 8px;
+            border-left: 2px solid #ddd;
+        }
+
+        .sub-group .check-item {
+            font-size: 12px;
+            color: #555;
+            margin-bottom: 4px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header-large text-blue">Save Configuration</div>
+
+    <div class="main-content">
+        <div class="instructions">
+            Select which configuration components to export.<br>
+            The configuration will be downloaded as a portable <strong>.json</strong> file.
+        </div>
+
+        <div class="section-box">
+            <label class="check-item">
+                <input type="checkbox" id="chk-profile" checked>
+                <span><strong>Pilot Profile</strong> (Name, CIVL ID, contact, default equipment)</span>
+            </label>
+        </div>
+
+        <div class="section-box">
+            <label class="check-item">
+                <input type="checkbox" id="chk-params" checked onchange="toggleParamSubgroups()">
+                <span><strong>System Parameters</strong> (Folder IDs, integrations, scoring, UI)</span>
+            </label>
+            <div id="param-subgroups" class="sub-group">
+                <label class="check-item">
+                    <input type="checkbox" id="sub-ingestion" checked>
+                    <span>Folder IDs & Ingestion Automation</span>
+                </label>
+                <label class="check-item">
+                    <input type="checkbox" id="sub-integrations" checked>
+                    <span>Integrations (Weather, XContest Username, API Keys)</span>
+                </label>
+                <label class="check-item">
+                    <input type="checkbox" id="sub-scoring" checked>
+                    <span>Flight Scoring & Physics Detection Heuristics</span>
+                </label>
+                <label class="check-item">
+                    <input type="checkbox" id="sub-ui" checked>
+                    <span>UI, Regional Dates & Timeline Thresholds</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="section-box">
+            <label class="check-item">
+                <input type="checkbox" id="chk-lookups" checked>
+                <span><strong>Lookups</strong> (Flight types, XC classes, date/time formats)</span>
+            </label>
+        </div>
+
+        <!-- Buttons -->
+        <div class="control-group">
+            <button id="btn-export" onclick="exportConfig()" class="action">Download Config File</button>
+            <button id="btn-close" onclick="google.script.host.close()" class="secondary">Cancel</button>
+        </div>
+
+        <div class="instructions" style="margin-top:15px; font-weight:bold;">Activity Log:</div>
+        <div id="log-console">Ready to export. Select components above.</div>
+    </div>
+
+    <div class="footer">
+        <div class="status-line">
+            <span id="status-left">Ready</span>
+            <span id="status-right">0%</span>
+        </div>
+        <div class="progress-bar-bg">
+            <div id="progress-bar" class="progress-bar-fill"></div>
+        </div>
+    </div>
+
+    <script>
+        function toggleParamSubgroups() {
+            var checked = document.getElementById('chk-params').checked;
+            document.getElementById('sub-ingestion').checked = checked;
+            document.getElementById('sub-integrations').checked = checked;
+            document.getElementById('sub-scoring').checked = checked;
+            document.getElementById('sub-ui').checked = checked;
+        }
+
+        function exportConfig() {
+            var options = {
+                pilotProfile: document.getElementById('chk-profile').checked,
+                parameters: document.getElementById('chk-params').checked,
+                paramGroups: {
+                    ingestion: document.getElementById('sub-ingestion').checked,
+                    integrations: document.getElementById('sub-integrations').checked,
+                    scoring: document.getElementById('sub-scoring').checked,
+                    ui: document.getElementById('sub-ui').checked
+                },
+                lookups: document.getElementById('chk-lookups').checked
+            };
+
+            if (!options.pilotProfile && !options.parameters && !options.lookups) {
+                alert('Please select at least one component to save.');
+                return;
+            }
+
+            document.getElementById('btn-export').disabled = true;
+            setStatus('Generating configuration export...', '40%');
+            setProgress('40%');
+            log('Extracting configuration values from spreadsheet...');
+
+            google.script.run
+                .withSuccessHandler(function (payload) {
+                    if (payload && payload.json) {
+                        setStatus('Downloading...', '80%');
+                        setProgress('80%');
+                        log('Configuration serialized successfully.');
+                        downloadJsonFile(payload.json, payload.filename || 'flight_log_config.json');
+                        setStatus('Export Complete | 100%', '100%');
+                        setProgress('100%');
+                        log('Downloaded: ' + (payload.filename || 'flight_log_config.json'), 'log-success');
+                        log('=== Export Complete ===');
+                        document.getElementById('btn-export').style.display = 'none';
+                        setDoneButton();
+                    } else {
+                        showError('Failed to generate export payload.');
+                    }
+                })
+                .withFailureHandler(function (err) {
+                    showError(err.message);
+                })
+                .exportConfigJson_(options);
+        }
+
+        function downloadJsonFile(jsonString, filename) {
+            var blob = new Blob([jsonString], { type: 'application/json' });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function setDoneButton() {
+            var btnClose = document.getElementById('btn-close');
+            btnClose.innerText = 'Done';
+            btnClose.className = 'action';
+            btnClose.onclick = function () { google.script.host.close(); };
+        }
+
+        function showError(msg) {
+            setStatus('Error', 'Failed');
+            log('Error: ' + msg, 'log-error');
+            document.getElementById('progress-bar').classList.add('error-fill');
+            document.getElementById('btn-export').disabled = false;
+        }
+
+        function setStatus(left, right) {
+            document.getElementById('status-left').textContent = left;
+            document.getElementById('status-right').textContent = right;
+        }
+
+        function setProgress(pct) {
+            document.getElementById('progress-bar').style.width = pct;
+        }
+
+        function log(msg, cls) {
+            var div = document.getElementById('log-console');
+            var p = document.createElement('div');
+            p.textContent = msg;
+            if (cls) p.className = cls;
+            div.appendChild(p);
+            div.scrollTop = div.scrollHeight;
+        }
+    </script>
+</body>
+
+</html>

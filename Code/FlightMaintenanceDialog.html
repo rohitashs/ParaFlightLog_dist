@@ -1,6 +1,6 @@
 <!--
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 21:59:57
+ * Updated: 2026-09-30 23:53:37
  * Unified Flight Maintenance Dialog (RQ-SYS-007)
  -->
 <!DOCTYPE html>
@@ -105,7 +105,7 @@
 </head>
 
 <body>
-    <div class="header-large text-blue">Flight Maintenance</div>
+    <div class="header-large text-blue">Flight Updates</div>
 
     <div class="main-content">
         <div class="section-label">1. Target Scope</div>
@@ -140,7 +140,7 @@
                 <span><strong>Re-verify XContest</strong> (Check flight upload status)</span>
             </label>
             <label class="check-item">
-                <input type="checkbox" id="op-physics">
+                <input type="checkbox" id="op-physics" checked>
                 <span><strong>Recompute Physics</strong> (Thermals, Soar, Glide from IGC)</span>
             </label>
             <label class="check-item">
@@ -154,12 +154,12 @@
         </div>
 
         <div class="control-row">
-            <button id="btn-run" class="action" onclick="startMaintenance()">Run Maintenance</button>
+            <button id="btn-run" class="action" onclick="startMaintenance()">Apply Updates</button>
             <button id="btn-cancel" class="secondary" onclick="google.script.host.close()">Close</button>
         </div>
 
         <div class="section-label">Activity Log</div>
-        <div id="log-console">Ready to begin maintenance. Select scope and operations above.</div>
+        <div id="log-console">Ready to apply updates. Select scope and operations above.</div>
     </div>
 
     <div class="footer">
@@ -361,7 +361,7 @@
             var btnClose = document.getElementById('btn-cancel');
             btnClose.innerText = 'Done';
             btnClose.className = 'action';
-            log('=== Maintenance Run Complete ===');
+            log('=== Updates Complete ===');
         }
     </script>
 </body>
