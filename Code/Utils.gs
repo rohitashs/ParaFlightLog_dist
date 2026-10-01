@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 18:33:37
+ * Updated: 2026-09-30 20:55:36
  * 
  * MODULE: Utilities (Math & Formatting)
  * Consolidated geospatial calculations (Haversine, Bearing, Angular Difference)

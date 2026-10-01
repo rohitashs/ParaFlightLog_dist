@@ -51,10 +51,32 @@ Fixed Header Schema (Row 3=Category, Row 4=Name). Data starts Row 5.
 
 ## 4. Algorithms & Logic
 
-### A. Deduplication Strategy (`RQ-ING-002`)
-1.  **Hard Dedupe**: MD5 Hash of file content.
-2.  **Soft Dedupe (Overlap)**: `New.Start < Existing.End` AND `New.End > Existing.Start`.
-3.  **Soft Dedupe (Proximity)**: `StartTime` within 15min AND `Dist` < 500m.
+### A. Deduplication & Device Overlap Strategy (`RQ-ING-002`, `CR-ING-006`)
+1.  **Row-Based MD5 Hashes (Zero Black Box)**:
+    *   MD5 digests are computed for all incoming flight files and stored directly on the flight row in Column 70 (`IGC Hash` in the `Meta` group).
+    *   Row deletions automatically remove the corresponding hash from tracking without requiring full cache purges. An in-memory cache (`_cachedSheetHashes`) prevents redundant sheet reads during batch imports.
+2.  **Dedicated Trash vs. Error Folder Separation**:
+    *   `TRASH_FOLDER_ID`: Intentionally discarded/duplicate files (hard duplicates skipped during ingest, backup files from duplicate triage, purged flights, source archives). Can be emptied by the user anytime.
+    *   `ERROR_FOLDER_ID`: Reserved strictly for corrupt files, unparseable IGCs, and fatal processing exceptions requiring pilot investigation.
+3.  **Smart Master Log Re-linking**:
+    *   If an incoming file matches an existing file in `MASTER_LOG_FOLDER_ID` by MD5 content but no corresponding flight row exists in `Flights` (e.g. from prior row deletions), the system re-links directly to the existing Master IGC without generating `_copy.igc` duplicates, restores the flight row, and moves the source file to Trash.
+4.  **Multi-Criteria Heuristic Overlap Detection**:
+    *   Triggered when an incoming flight and an existing flight match:
+        *   **Date**: Same flight date (`YYYY-MM-DD`).
+        *   **Launch Time**: Within $\pm 15$ minutes (or overlapping flight duration intervals with $\Delta t \le 35$ min).
+        *   **Launch Location**: Proximity $\le 1{,}000$ meters (Haversine formula).
+5.  **Data Quality Scoring (0–100 Points)**:
+    *   **Device / Software Source (Max 40 pts)**: XCTrack (40 pts - pilot's primary BLE-connected instrument), Dedicated Flight Vario / Instrument (30 pts - UltraBliP, XC Tracer, Flymaster, Skytraxx, Oudie, Syride), Generic flight app (20 pts - XCSoar, SeeYou, FlyMe), Unknown/Generic (10 pts).
+    *   **Barometric Pressure Integrity (Max 30 pts)**: Authentic pressure sensor altitude readings differing from GPS altitude (30 pts), baro present (20 pts), GPS altitude only (5 pts).
+    *   **Temporal Resolution & Duration (Max 20 pts)**: High-frequency recording $\le 1.2$s / 1Hz (15 pts), 2.5s (10 pts), 5.5s (5 pts). Flight duration $> 30$ min (5 pts), $> 10$ min (3 pts), $> 2$ min (1 pt).
+    *   **Metadata Richness (Max 10 pts)**: Populated glider type (+3), pilot name (+3), glider ID (+2), hardware/firmware headers (+2).
+6.  **Duplicate Triage Statuses & Pairing Notes**:
+    *   Higher-scoring candidate is assigned `Dup-Primary`; backup candidate is assigned `Dup-Others`.
+    *   Injects standardized pairing note into `Notes`: `[DupRef: DUP_YYYYMMDD_HHMM | Paired with <FlightID> (Score: X vs Y)]`.
+    *   **Dashboard Protection**: All KPI banners, timeline currency, and leaderboard cards strictly filter for `Status = "Valid"`, preventing unreviewed duplicates from polluting statistics.
+7.  **Admin Maintenance Actions**:
+    *   `Purge Flights Marked 'Remove'`: Prompts with count, moves Master IGC files to `TRASH_FOLDER_ID`, deletes sheet rows from bottom to top, refreshes hashes, and sorts.
+    *   `Re-sync Missing Flights from Master Folder`: Scans `MASTER_LOG_FOLDER_ID` for orphaned IGCs missing from the `Flights` tab and restores them with status `Review?`.
 
 ### B. Flight Mode Detection (`RQ-ANA-001`)
 *   **Window**: 10s sliding window.

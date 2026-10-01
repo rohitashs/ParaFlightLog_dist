@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 18:33:37
+ * Updated: 2026-09-30 20:55:36
  * Test access verification: Verified GAS write access on 2026-09-25 08:26:00.
  * 
  * CORE MODULE: Orchestration Only.
@@ -32,12 +32,16 @@ function onOpen(e) {
             .addItem('Refresh Dashboard (KPIs & Cards)', 'uiRefreshDashboard_')
             .addItem('Refresh User Guide & Metric Dictionary', 'uiRefreshUserGuide_')
             .addItem('Update Dropdowns, Parameters & Notes', 'updateValidationOnly_')
-            .addItem('Repair Sheet Schema & Formatting (Safe)', 'reapplyFormatting_'))
+            .addItem('Repair Sheet Schema & Formatting (Safe)', 'reapplyFormatting_')
+            .addSeparator()
+            .addItem('Purge Flights Marked \'Remove\'', 'purgeRemoveFlights')
+            .addItem('Re-sync Missing Flights from Master Folder', 'syncMasterLogsToSheet_'))
         .addSubMenu(ui.createMenu('Folder Configuration')
             .addItem('Set Watch Folder(s)...', 'uiUpdateWatchFolder_')
             .addItem('Set Upload Folder...', 'uiUpdateUploadFolder_')
             .addItem('Set Master Log Folder...', 'uiUpdateMasterLogFolder_')
-            .addItem('Set Error Folder...', 'uiUpdateErrorFolder_'))
+            .addItem('Set Error Folder...', 'uiUpdateErrorFolder_')
+            .addItem('Set Trash / Discard Folder...', 'uiUpdateTrashFolder_'))
         .addSubMenu(ui.createMenu('Data Backup')
             .addItem('Backup System Sheets', 'backupSystemSheets_'))
         .addSubMenu(ui.createMenu('Automation & Services')
@@ -102,7 +106,7 @@ function getParameters_() {
   }
   
   // Clean folder parameter IDs so URLs/whitespace don't break DriveApp calls
-  var singleFolderKeys = ['MASTER_LOG_FOLDER_ID', 'UPLOAD_FOLDER_ID', 'ERROR_FOLDER_ID'];
+  var singleFolderKeys = ['MASTER_LOG_FOLDER_ID', 'UPLOAD_FOLDER_ID', 'ERROR_FOLDER_ID', 'TRASH_FOLDER_ID'];
   singleFolderKeys.forEach(function(k) {
     if (config[k]) {
       config[k] = cleanDriveId_(config[k]);
@@ -785,7 +789,234 @@ function debugClearDedupe_() {
   var keys = props.getKeys();
   var toDel = keys.filter(function(k) { return k.indexOf('HASH_') === 0; });
   toDel.forEach(function(k) { props.deleteProperty(k); });
-  SpreadsheetApp.getActive().toast('Cleared ' + toDel.length + ' dedupe hashes.');
+  if (typeof _cachedSheetHashes !== 'undefined') {
+    _cachedSheetHashes = null;
+  }
+  SpreadsheetApp.getActive().toast('Cleared ' + toDel.length + ' dedupe hashes & in-memory cache.');
+}
+
+/**
+ * Admin action: Purges all flights marked 'Remove'.
+ * Confirmation dialog prompts the user with the exact count.
+ * For each purged flight:
+ * - Moves its Master IGC file to TRASH_FOLDER_ID (if accessible)
+ * - Deletes the row from Flights sheet (bottom-up)
+ * Clears cached hashes and re-sorts flights.
+ */
+function purgeRemoveFlights() {
+  var ss = SpreadsheetApp.getActive();
+  var sh = ss.getSheetByName(TABS.FLIGHTS.name);
+  if (!sh) return;
+
+  var lastRow = sh.getLastRow();
+  if (lastRow < 5) {
+    ss.toast('No flight rows found to purge.', 'Flight Log');
+    return;
+  }
+
+  var map = getColumnMap_(sh);
+  var statusCol = map['Status'];
+  var igcCol = map['IGC File'];
+  if (!statusCol) {
+    SpreadsheetApp.getUi().alert('Status column not found in Flights sheet.');
+    return;
+  }
+
+  var numRows = lastRow - 4;
+  var statusVals = sh.getRange(5, statusCol, numRows, 1).getValues();
+  var rowsToRemove = [];
+
+  for (var i = 0; i < statusVals.length; i++) {
+    var val = String(statusVals[i][0] || '').trim();
+    if (val === 'Remove') {
+      rowsToRemove.push(5 + i);
+    }
+  }
+
+  if (rowsToRemove.length === 0) {
+    SpreadsheetApp.getUi().alert('No flights marked \'Remove\' were found.\n\nTo mark flights for deletion, select \'Remove\' in the Status column dropdown.');
+    return;
+  }
+
+  var ui = SpreadsheetApp.getUi();
+  var resp = ui.alert(
+    'Confirm Purge Flights',
+    'Found ' + rowsToRemove.length + ' flight(s) marked \'Remove\'.\n\n' +
+    'This will:\n' +
+    '1. Move their Master IGC file(s) to the Trash / Discard folder\n' +
+    '2. Delete their row(s) from the Flights sheet\n' +
+    '3. Remove their hashes from deduplication tracking\n\n' +
+    'Do you want to proceed?',
+    ui.ButtonSet.YES_NO
+  );
+
+  if (resp !== ui.Button.YES) {
+    ss.toast('Purge cancelled by user.', 'Flight Log');
+    return;
+  }
+
+  var config = getParameters_();
+  var trashedFilesCount = 0;
+  var deletedRowsCount = 0;
+
+  // Process rows from bottom to top so row indices don't shift!
+  rowsToRemove.sort(function(a, b) { return b - a; });
+
+  for (var j = 0; j < rowsToRemove.length; j++) {
+    var rNum = rowsToRemove[j];
+    try {
+      // Find IGC file link / ID
+      if (igcCol) {
+        var igcVal = String(sh.getRange(rNum, igcCol).getValue() || '');
+        var idMatch = igcVal.match(/id=([a-zA-Z0-9_-]+)/);
+        if (idMatch && idMatch[1]) {
+          try {
+            var f = DriveApp.getFileById(idMatch[1]);
+            if (f) {
+              moveToTrashFolder_(f, f.getName(), config);
+              trashedFilesCount++;
+            }
+          } catch (fErr) {
+            console.warn('Could not move Master IGC file for row ' + rNum + ': ' + fErr.message);
+          }
+        }
+      }
+
+      sh.deleteRow(rNum);
+      deletedRowsCount++;
+    } catch (rErr) {
+      console.error('Error purging row ' + rNum + ':', rErr);
+    }
+  }
+
+  // Invalidate in-memory cache
+  if (typeof _cachedSheetHashes !== 'undefined') {
+    _cachedSheetHashes = null;
+  }
+
+  // Re-sort flights
+  try {
+    sortFlightsByDate_();
+  } catch (sortErr) {
+    console.warn('Post-purge sort warning:', sortErr);
+  }
+
+  ui.alert(
+    'Purge Completed',
+    'Successfully purged ' + deletedRowsCount + ' flight(s).\n' +
+    (trashedFilesCount > 0 ? (trashedFilesCount + ' Master IGC file(s) moved to Trash folder.\n') : '') +
+    'The logbook has been re-sorted and deduplication hashes refreshed.',
+    ui.ButtonSet.OK
+  );
+}
+
+/**
+ * Admin action: Scans the Master Log Folder and restores any orphaned IGC files
+ * that are missing from the Flights tab.
+ * Helps self-heal the sheet if flight rows were accidentally deleted.
+ */
+function syncMasterLogsToSheet_() {
+  var ss = SpreadsheetApp.getActive();
+  var sh = ss.getSheetByName(TABS.FLIGHTS.name);
+  if (!sh) return;
+
+  var config = getParameters_();
+  var folderId = cleanDriveId_(config.MASTER_LOG_FOLDER_ID);
+  if (!folderId) {
+    SpreadsheetApp.getUi().alert('Master Log Folder is not configured in Parameters.');
+    return;
+  }
+
+  var folder = null;
+  try {
+    folder = DriveApp.getFolderById(folderId);
+  } catch (e) {
+    SpreadsheetApp.getUi().alert('Master Log Folder is inaccessible: ' + e.message);
+    return;
+  }
+
+  // Collect all known hashes and file IDs from Flights sheet
+  var knownHashes = (typeof getExistingSheetHashes_ === 'function') ? getExistingSheetHashes_(sh) : {};
+  var knownFileIds = {};
+  var map = getColumnMap_(sh);
+  var igcCol = map['IGC File'];
+  
+  if (igcCol && sh.getLastRow() >= 5) {
+    var numRows = sh.getLastRow() - 4;
+    var igcVals = sh.getRange(5, igcCol, numRows, 1).getValues();
+    for (var k = 0; k < igcVals.length; k++) {
+      var val = String(igcVals[k][0] || '');
+      var m = val.match(/id=([a-zA-Z0-9_-]+)/);
+      if (m && m[1]) {
+        knownFileIds[m[1]] = true;
+      }
+    }
+  }
+
+  // Scan Master Log folder
+  var files = folder.getFiles();
+  var missingFiles = [];
+  while (files.hasNext()) {
+    var f = files.next();
+    var fName = f.getName();
+    if (fName.match(/\.(igc|igx)$/i)) {
+      var fId = f.getId();
+      if (!knownFileIds[fId]) {
+        // Check hash
+        try {
+          var blob = f.getBlob();
+          var digest = Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, blob.getDataAsString());
+          var hashStr = digest.map(function(b) { return ('0' + (b & 0xFF).toString(16)).slice(-2); }).join('');
+          if (!knownHashes[hashStr]) {
+            missingFiles.push({ file: f, hashStr: hashStr, blob: blob });
+          }
+        } catch (eHash) {
+          console.warn('Error reading Master file ' + fName, eHash);
+        }
+      }
+    }
+  }
+
+  if (missingFiles.length === 0) {
+    SpreadsheetApp.getUi().alert('All flights in the Master Log folder are already present in the Flights sheet. No missing flights found.');
+    return;
+  }
+
+  var ui = SpreadsheetApp.getUi();
+  var confirm = ui.alert(
+    'Sync Master Log Folder',
+    'Found ' + missingFiles.length + ' flight file(s) in Master Log folder that are missing from the Flights tab.\n\n' +
+    'Would you like to restore them to the Flights tab as \'Review?\'?',
+    ui.ButtonSet.YES_NO
+  );
+
+  if (confirm !== ui.Button.YES) return;
+
+  var restoredCount = 0;
+  for (var m = 0; m < missingFiles.length; m++) {
+    var item = missingFiles[m];
+    try {
+      var success = processSingleIgcBlob_(item.blob, item.file.getName(), item.file.getId(), item.file.getName(), config);
+      if (success) {
+        restoredCount++;
+      }
+    } catch (rErr) {
+      console.error('Error restoring Master flight ' + item.file.getName(), rErr);
+    }
+  }
+
+  if (restoredCount > 0) {
+    try {
+      sortFlightsByDate_();
+    } catch (eSort) {}
+  }
+
+  ui.alert(
+    'Sync Complete',
+    'Successfully restored ' + restoredCount + ' flight(s) from Master Log folder to the Flights tab.\n' +
+    'They have been added with status \'Review?\' and the logbook has been re-sorted.',
+    ui.ButtonSet.OK
+  );
 }
 
 /* ==========================================================================================
@@ -797,6 +1028,7 @@ function uiUpdateWatchFolder_() { openFolderPicker_('WATCH_FOLDER_ID', 'Watch Fo
 function uiUpdateUploadFolder_() { openFolderPicker_('UPLOAD_FOLDER_ID', 'Upload Folder'); }
 function uiUpdateMasterLogFolder_() { openFolderPicker_('MASTER_LOG_FOLDER_ID', 'Master Log Folder'); }
 function uiUpdateErrorFolder_() { openFolderPicker_('ERROR_FOLDER_ID', 'Error Folder'); }
+function uiUpdateTrashFolder_() { openFolderPicker_('TRASH_FOLDER_ID', 'Trash / Discard Folder'); }
 
 function openFolderPicker_(key, name) {
   var config = getParameters_();
@@ -989,7 +1221,7 @@ function setParameter_(key, value, description) {
       sh.getRange(i + 1, 2).setValue(value);
       
       // Update Description with human-readable path if it's a folder parameter
-      var isFolderParam = (key === 'WATCH_FOLDER_ID' || key === 'UPLOAD_FOLDER_ID' || key === 'MASTER_LOG_FOLDER_ID' || key === 'ERROR_FOLDER_ID');
+      var isFolderParam = (key === 'WATCH_FOLDER_ID' || key === 'UPLOAD_FOLDER_ID' || key === 'MASTER_LOG_FOLDER_ID' || key === 'ERROR_FOLDER_ID' || key === 'TRASH_FOLDER_ID');
       if (description) {
         sh.getRange(i + 1, 3).setValue(description);
       } else if (isFolderParam) {

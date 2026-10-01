@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 18:33:37
+ * Updated: 2026-09-30 20:55:36
  */
 /**
  * Paragliding Flight Log v2.0 - Configuration
@@ -33,6 +33,7 @@ var CFG = {
     { section: 'Ingestion', key: 'MASTER_LOG_FOLDER_ID', val: '', desc: 'Google Drive ID for Master Log (Public)', input: true },
     { section: 'Ingestion', key: 'UPLOAD_FOLDER_ID', val: '', desc: 'Google Drive Folder ID for manual uploads', input: true },
     { section: 'Ingestion', key: 'ERROR_FOLDER_ID', val: '', desc: 'Google Drive Folder ID for failed imports', input: true },
+    { section: 'Ingestion', key: 'TRASH_FOLDER_ID', val: '', desc: 'Google Drive Trash/Discard folder for purged and duplicate files', input: true },
     { section: 'Ingestion', key: 'ENABLE_WATCH_FOLDER', val: 'FALSE', desc: 'Enable automated scanning? (TRUE/FALSE)' },
     { section: 'Ingestion', key: 'MOVE_FROM_WATCH_FOLDER', val: 'TRUE', desc: 'Move files from Watch Folder after success? (TRUE/FALSE)' },
     { section: 'Ingestion', key: 'WATCH_PERIOD_MIN', val: 15, desc: 'How often (mins) the trigger runs' },
@@ -222,7 +223,7 @@ var TABS = {
         visibleCols: 1, 
         collapsedRows: 1,
         color: '#CFD8DC', 
-        cols: ['Import File', 'Import ID', 'Timestamp', 'Parser Ver'],
+        cols: ['Import File', 'Import ID', 'IGC Hash', 'Timestamp', 'Parser Ver'],
         editable: []
       }
     ]

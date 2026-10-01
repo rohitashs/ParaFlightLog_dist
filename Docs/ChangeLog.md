@@ -1,5 +1,39 @@
 # Project Change Log
 
+## Session: Smart Deduplication, Device Overlap Scoring, Row Hashes & Master Log Sync
+**Date**: 2026-09-30
+**Versions**: v0.8.13
+**Focus**: Smart Deduplication architecture (`CR-ING-006`), Row-based MD5 hashes (`IGC Hash` column), Heuristic Quality Scoring (`scoreFlightQuality_`), Overlap Detection (`findHeuristicOverlap_`), Dedicated `TRASH_FOLDER_ID` vs. `ERROR_FOLDER_ID`, Dashboard Protection (`Status = "Valid"` filter), Master Log Re-linking, Purge Discarded Flights (`purgeRemoveFlights`), and Master Folder Re-sync (`syncMasterLogsToSheet_`).
+
+*   `[Imp]` **CR-ING-006 (Row-Based Hashes & Zero Black Box Deduplication)**:
+    *   Added `IGC Hash` as Column 70 in `TABS.FLIGHTS.groups.Meta` (`Code/Config.gs`).
+    *   Row-based storage ensures that deleting a flight row automatically removes its hash, allowing re-import without blanket cache flushes.
+    *   Implemented `getExistingSheetHashes_` and in-memory cache `_cachedSheetHashes` in `Code/Ingestion.gs` to prevent repeated sheet reads during bulk imports.
+*   `[Imp]` **CR-ING-006 (Dedicated Trash Folder & Folder Purpose Partitioning)**:
+    *   Added `TRASH_FOLDER_ID` parameter in `Code/Config.gs` and implemented `moveToTrashFolder_` in `Code/FileHandling.gs`.
+    *   Strictly partitioned folder roles:
+        *   `TRASH_FOLDER_ID`: Intentionally discarded/duplicate files (hard duplicates skipped during ingest, backup files from duplicate triage, purged flights, source archives). Can be safely emptied anytime.
+        *   `ERROR_FOLDER_ID`: Reserved strictly for corrupt files, unparseable IGCs, and fatal processing exceptions requiring investigation.
+    *   Updated `handleFileCleanup_` and `trashSourceFiles` to route duplicates and discarded sources directly to `TRASH_FOLDER_ID`.
+    *   Added `uiUpdateTrashFolder_` and folder picker integration in `Code/Code.gs`.
+*   `[Imp]` **CR-ING-006 (Smart Master Log Re-linking)**:
+    *   Updated `copyToMasterLog_` in `Code/FileHandling.gs` to check existing file content using MD5 digest.
+    *   If an incoming file matches an existing file in `MASTER_LOG_FOLDER_ID` by MD5 content but no flight row exists in the `Flights` tab, re-links to the existing Master IGC without creating duplicate `_copy.igc` files, inserts the flight row with status `'Review?'`, and trashes the source file.
+*   `[Imp]` **CR-ING-006 (Heuristic Overlap Detection & Flight Quality Scoring)**:
+    *   Implemented `findHeuristicOverlap_` in `Code/Ingestion.gs` to detect duplicate flights across different instruments based on Date match, Launch Time match ($\pm 15$ min or interval overlap with $\Delta t \le 35$ min), and Launch Location proximity ($\le 1{,}000$ meters via Haversine).
+    *   Implemented `scoreFlightQuality_` (0–100 pts) favoring XCTrack primary instruments over backup varios, authentic baro pressure sensor integrity, 1Hz recording resolution, longer recorded duration, and metadata richness.
+    *   Assigns winner status `Dup-Primary` (gold #FFE082) and backup status `Dup-Others` (orange #FFCC80).
+    *   Appends cross-referencing note `[DupRef: DUP_YYYYMMDD_HHMM | Paired with <FlightID> (Score: X vs Y)]` to both flights, and dynamically updates the existing paired row using `updatePairedFlightRow_`.
+*   `[Imp]` **CR-ING-006 (Dashboard Metric Protection)**:
+    *   Updated all Dashboard KPI formulas in `Code/Scaffold.gs` (All-Time Banners, Year-to-Date Banners, 6-Month Activity Timeline, all 8 Leaderboard Cards, and Complete Lists) to strictly filter for `Status = "Valid"`.
+    *   Prevents unreviewed incoming flights (`Review?`) and duplicate flights (`Dup-Primary`, `Dup-Others`) from polluting pilot statistics until explicitly reviewed.
+*   `[Imp]` **CR-ING-006 (Admin Purge & Master Log Self-Healing Actions)**:
+    *   Added `purgeRemoveFlights()` in `Code/Code.gs` under *Sheet Maintenance & Views*: prompts for confirmation, moves Master IGC files to `TRASH_FOLDER_ID`, deletes rows bottom-up, clears cached hashes, and re-sorts flights chronologically.
+    *   Added `syncMasterLogsToSheet_()` in `Code/Code.gs` under *Sheet Maintenance & Views*: scans `MASTER_LOG_FOLDER_ID` for orphaned IGCs missing from the `Flights` tab and restores them with status `'Review?'` and `[Restored from Master Log Folder]` note.
+    *   Wired `sortFlightsByDate` into `ScanDialog.html` upon batch completion.
+*   `[Test]` **Automated Testing**:
+    *   Added `testDedupeAndQualityScoring_` in `Code/Test.gs` verifying `TRASH_FOLDER_ID` configuration, `IGC Hash` column schema, quality scoring logic, and existence of purge, sync, and trash functions.
+
 ## Session: Dashboard Resiliency, Frozen Columns, Dynamic Lookups & Schema Streamlining
 **Date**: 2026-09-30
 **Versions**: v0.8.12

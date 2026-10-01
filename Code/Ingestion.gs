@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 18:33:37
+ * Updated: 2026-09-30 20:55:36
  * 
  * MODULE: Ingestion Service
  * Handles Flight Log Parsing, Analysis/Scoring Orchestration, Geo-enrichment,
@@ -111,13 +111,15 @@ function processBlob_(blob, fileName, fileId, config) {
  */
 function processSingleIgcBlob_(blob, fileName, fileId, outerName, config) {
   var text = blob.getDataAsString();
+  var ss = SpreadsheetApp.getActive();
+  var sh = ss ? ss.getSheetByName(TABS.FLIGHTS.name) : null;
   
-  // A. Dedupe Check (MD5)
+  // A. Dedupe Check (MD5 against active sheet)
   var hash = Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, text);
   var hashStr = hash.map(function(b) { return ('0' + (b & 0xFF).toString(16)).slice(-2); }).join('');
   
-  if (isHashSeen_(hashStr)) {
-    logImport_(new Date(), fileId, outerName, fileName, 'Duplicate (MD5)', 'Skipped');
+  if (isHashSeen_(hashStr, sh)) {
+    logImport_(new Date(), fileId, outerName, fileName, 'Duplicate (MD5)', 'Skipped (Already in Flights)');
     return false;
   }
   
@@ -167,9 +169,12 @@ function processSingleIgcBlob_(blob, fileName, fileId, outerName, config) {
   if (!timeZone) noteLog.push('Geo/Timezone: Lookup failed, using UTC');
   timeZone = timeZone || 'UTC';
   
-  var masterRes = copyToMasterLog_(blob, fileName, config);
+  // E. Master Log copy / smart re-link
+  var masterRes = copyToMasterLog_(blob, fileName, config, hashStr);
   if (masterRes.error) {
      noteLog.push('Master Log Error: ' + masterRes.error);
+  } else if (masterRes.isExactMasterMatch) {
+     noteLog.push('Re-linked to existing Master IGC');
   }
 
   // F. XContest Verification
@@ -194,7 +199,7 @@ function processSingleIgcBlob_(blob, fileName, fileId, outerName, config) {
      noteLog.push('XC: Skipped (No XCONTEST_USERNAME in Parameters)');
   }
 
-  // G. Validation Check
+  // G. Status Determination & Heuristic Overlap
   var status = 'Review?';
   if (scoring.error) {
      status = 'Invalid?';
@@ -206,10 +211,22 @@ function processSingleIgcBlob_(blob, fileName, fileId, outerName, config) {
      if (analysis.validation.reason) noteLog.push(analysis.validation.reason);
   }
 
-  // Override status if duplicate file name
-  if (masterRes.isDuplicate) {
+  // Override status if duplicate file name (and not an exact MD5 master match)
+  if (masterRes.isDuplicate && !masterRes.isExactMasterMatch) {
     status = 'Duplicate';
     noteLog.push('Duplicate Filename');
+  }
+
+  // Check Heuristic Overlap
+  var overlapInfo = null;
+  if (status !== 'Invalid?') {
+    overlapInfo = findHeuristicOverlap_(parsed, launchFix, text, fileName, timeZone, sh, config);
+    if (overlapInfo && overlapInfo.matched) {
+      status = overlapInfo.incomingStatus;
+      if (overlapInfo.incomingNote) {
+        noteLog.push(overlapInfo.incomingNote);
+      }
+    }
   }
   
   // H. Weather Enrichment (RQ-SCR-004)
@@ -228,14 +245,19 @@ function processSingleIgcBlob_(blob, fileName, fileId, outerName, config) {
   var finalNotes = noteLog.length > 0 ? noteLog.join(' | ') : '';
   
   // I. Insert Flight Row
-  insertFlightRow_(parsed, fileId, outerName, status, finalNotes, analysis, scoring, masterRes.finalName, masterRes.fileId, {
+  var inserted = insertFlightRow_(parsed, fileId, outerName, status, finalNotes, analysis, scoring, masterRes.finalName, masterRes.fileId, {
     l: geoLaunch, ls: siteLaunch,
     d: geoLand, ds: siteLand,
     tz: timeZone
-  }, xcStatus, weatherData);
+  }, xcStatus, weatherData, hashStr);
   
-  // I. Mark Hash as Seen & Log
-  markHashSeen_(hashStr);
+  // If overlap detected, update the paired existing row now that we have incoming flightId
+  if (overlapInfo && overlapInfo.matched && inserted && inserted.flightId && sh) {
+    updatePairedFlightRow_(sh, overlapInfo, inserted.flightId);
+  }
+
+  // J. Mark Hash as Seen & Log
+  markHashSeen_(hashStr, 5);
   logImport_(new Date(), fileId, outerName, fileName, 'Success', finalNotes || 'OK');
   
   return true;
@@ -245,14 +267,428 @@ function processSingleIgcBlob_(blob, fileName, fileId, outerName, config) {
    DEDUPLICATION & AUDIT LOGGING
    ========================================================================================== */
 
-function isHashSeen_(hashStr) {
-  var p = PropertiesService.getDocumentProperties();
-  return p.getProperty('HASH_' + hashStr) === '1';
+var _cachedSheetHashes = null;
+
+/**
+ * Reads existing MD5 hashes from the 'IGC Hash' column in the Flights sheet.
+ * Returns an object mapping hash -> row number.
+ * @param {GoogleAppsScript.Spreadsheet.Sheet} [sh]
+ * @return {Object<string, number>}
+ */
+function getExistingSheetHashes_(sh) {
+  var ss = SpreadsheetApp.getActive();
+  sh = sh || (ss ? ss.getSheetByName(TABS.FLIGHTS.name) : null);
+  var hashes = {};
+  if (!sh || sh.getLastRow() < 5) return hashes;
+
+  var map = getColumnMap_(sh);
+  var hashCol = map['IGC Hash'];
+  if (!hashCol) return hashes;
+
+  var numRows = sh.getLastRow() - 4;
+  var values = sh.getRange(5, hashCol, numRows, 1).getValues();
+  for (var i = 0; i < values.length; i++) {
+    var h = String(values[i][0] || '').trim().toLowerCase();
+    if (h) {
+      hashes[h] = 5 + i;
+    }
+  }
+  return hashes;
 }
 
-function markHashSeen_(hashStr) {
-  var p = PropertiesService.getDocumentProperties();
-  p.setProperty('HASH_' + hashStr, '1');
+/**
+ * Gets cached sheet hashes or loads from sheet if not yet cached or forceRefresh is true.
+ * @param {GoogleAppsScript.Spreadsheet.Sheet} [sh]
+ * @param {boolean} [forceRefresh]
+ * @return {Object<string, number>}
+ */
+function getCachedSheetHashes_(sh, forceRefresh) {
+  if (_cachedSheetHashes === null || forceRefresh) {
+    _cachedSheetHashes = getExistingSheetHashes_(sh);
+  }
+  return _cachedSheetHashes;
+}
+
+/**
+ * Checks if a hash is present in the sheet's IGC Hash column (via memory cache).
+ * @param {string} hashStr
+ * @param {GoogleAppsScript.Spreadsheet.Sheet} [sh]
+ * @return {boolean}
+ */
+function isHashSeen_(hashStr, sh) {
+  if (!hashStr) return false;
+  hashStr = String(hashStr).trim().toLowerCase();
+  var cached = getCachedSheetHashes_(sh);
+  if (cached && cached[hashStr]) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Marks a hash as seen in the memory cache and DocumentProperties.
+ * @param {string} hashStr
+ * @param {number} [rowNum]
+ */
+function markHashSeen_(hashStr, rowNum) {
+  if (!hashStr) return;
+  hashStr = String(hashStr).trim().toLowerCase();
+  if (_cachedSheetHashes === null) {
+    _cachedSheetHashes = {};
+  }
+  _cachedSheetHashes[hashStr] = rowNum || true;
+  try {
+    PropertiesService.getDocumentProperties().setProperty('HASH_' + hashStr, '1');
+  } catch (e) {}
+}
+
+/* ==========================================================================================
+   HEURISTIC FLIGHT QUALITY SCORING & OVERLAP DETECTION
+   ========================================================================================== */
+
+/**
+ * Scores the data quality of a flight on a 0-100 scale.
+ * Preference:
+ * 1. Device/Software: XCTrack (40 pts), Vario/Instrument (30 pts), Generic/App (20 pts), Other (10 pts)
+ * 2. Barometric Altitude: Fixes have genuine baro altitude (up to 30 pts)
+ * 3. Temporal Resolution & Duration: Fix interval <= 1s (15 pts), flight duration (up to 5 pts)
+ * 4. Metadata Richness: Glider, pilot, logger info populated (10 pts)
+ * 
+ * @param {Object} parsed - Result of PARSER.parseIgc
+ * @param {string} rawText - Raw IGC content
+ * @param {string} fileName - File name
+ * @return {number} Score from 0 to 100
+ */
+function scoreFlightQuality_(parsed, rawText, fileName) {
+  var score = 0;
+  if (!parsed || !parsed.fixes || parsed.fixes.length === 0) return 0;
+  
+  var textUpper = (rawText || '').toUpperCase();
+  var nameUpper = (fileName || '').toUpperCase();
+  var meta = parsed.meta || {};
+  
+  // 1. Device / Software Source (Max 40 pts)
+  var isXCTrack = (nameUpper.indexOf('XCTRACK') !== -1) ||
+                  (textUpper.indexOf('XCTRACK') !== -1) ||
+                  (meta.gliderType && meta.gliderType.toUpperCase().indexOf('XCTRACK') !== -1);
+  var isVario = (textUpper.indexOf('ULTRABLIP') !== -1 || nameUpper.indexOf('ULTRABLIP') !== -1 ||
+                 textUpper.indexOf('XCTRACER') !== -1 || nameUpper.indexOf('XCTRACER') !== -1 ||
+                 textUpper.indexOf('FLYMASTER') !== -1 || nameUpper.indexOf('FLYMASTER') !== -1 ||
+                 textUpper.indexOf('SKYTRAXX') !== -1 || nameUpper.indexOf('SKYTRAXX') !== -1 ||
+                 textUpper.indexOf('OUDIE') !== -1 || nameUpper.indexOf('OUDIE') !== -1 ||
+                 textUpper.indexOf('SYRIDE') !== -1 || nameUpper.indexOf('SYRIDE') !== -1);
+  var isOtherApp = (textUpper.indexOf('XCSOAR') !== -1 || textUpper.indexOf('SEEYOU') !== -1 || textUpper.indexOf('FLYME') !== -1);
+  
+  if (isXCTrack) {
+    score += 40; // Primary source of truth
+  } else if (isVario) {
+    score += 30; // Dedicated vario backup
+  } else if (isOtherApp) {
+    score += 20;
+  } else {
+    score += 10;
+  }
+  
+  // 2. Barometric Altitude Integrity (Max 30 pts)
+  var fixes = parsed.fixes;
+  var hasBaro = false;
+  var diffCount = 0;
+  var sampleStep = Math.max(1, Math.floor(fixes.length / 50));
+  for (var i = 0; i < fixes.length; i += sampleStep) {
+    var f = fixes[i];
+    if (typeof f.altBaro === 'number' && f.altBaro > 0) {
+      hasBaro = true;
+      if (typeof f.alt === 'number' && Math.abs(f.altBaro - f.alt) > 1) {
+        diffCount++;
+      }
+    }
+  }
+  if (hasBaro && diffCount > 5) {
+    score += 30; // Genuine baro sensor
+  } else if (hasBaro) {
+    score += 20;
+  } else {
+    score += 5; // GPS only
+  }
+  
+  // 3. Temporal Resolution (15 pts) & Duration (5 pts) (Max 20 pts)
+  if (fixes.length >= 2) {
+    var sampleCount = Math.min(fixes.length - 1, 30);
+    var totalDt = 0;
+    for (var j = 0; j < sampleCount; j++) {
+      var dt = fixes[j + 1].time - fixes[j].time;
+      if (dt > 0 && dt < 60) totalDt += dt;
+    }
+    var avgInterval = totalDt / sampleCount;
+    if (avgInterval <= 1.2) {
+      score += 15; // 1Hz recording
+    } else if (avgInterval <= 2.5) {
+      score += 10;
+    } else if (avgInterval <= 5.5) {
+      score += 5;
+    }
+  }
+  
+  var durSec = (parsed.stats && parsed.stats.durationSec) || 0;
+  if (durSec > 1800) {
+    score += 5;
+  } else if (durSec > 600) {
+    score += 3;
+  } else if (durSec > 120) {
+    score += 1;
+  }
+  
+  // 4. Metadata Richness (Max 10 pts)
+  var metaCount = 0;
+  if (meta.gliderType && meta.gliderType.trim().length > 1) metaCount += 3;
+  if (meta.pilot && meta.pilot.trim().length > 1) metaCount += 3;
+  if (meta.gliderId && meta.gliderId.trim().length > 1) metaCount += 2;
+  if (textUpper.indexOf('HFFTY') !== -1 || textUpper.indexOf('HFRFW') !== -1 || textUpper.indexOf('HFGPS') !== -1) metaCount += 2;
+  score += Math.min(10, metaCount);
+  
+  return score;
+}
+
+/**
+ * Searches the Flights sheet for an existing flight that overlaps in date,
+ * launch time (+-15 min or interval overlap), and launch location (<= 1000m).
+ * @param {Object} parsed
+ * @param {Object} launchFix
+ * @param {string} rawText
+ * @param {string} fileName
+ * @param {string} timeZone
+ * @param {GoogleAppsScript.Spreadsheet.Sheet} sh
+ * @param {Object} config
+ * @return {Object} Overlap result
+ */
+function findHeuristicOverlap_(parsed, launchFix, rawText, fileName, timeZone, sh, config) {
+  var result = { matched: false };
+  if (!sh || sh.getLastRow() < 5) return result;
+  
+  var incomingDate = parsed.meta.dateIso || '';
+  if (!incomingDate) return result;
+
+  var incomingScore = scoreFlightQuality_(parsed, rawText, fileName);
+  
+  // Incoming launch time formatted in local time zone
+  var timeFmt = (config && config.TIME_FORMAT) || 'HH:mm';
+  var incomingLaunchTimeStr = GEO.formatInTimezone(new Date(parsed.stats.startTime * 1000), timeZone, timeFmt);
+  var incomingLaunchMin = parseTimeToMinutes_(incomingLaunchTimeStr);
+  if (incomingLaunchMin === null) return result;
+
+  var map = getColumnMap_(sh);
+  var dateCol = map['Date'];
+  var timeCol = map['Launch Time'];
+  var latCol = map['Launch Lat'];
+  var lonCol = map['Launch Lon'];
+  var idCol = map['FlightID'];
+  var statusCol = map['Status'];
+  var igcCol = map['IGC File'];
+  var durCol = map['Flight Duration'];
+  
+  if (!dateCol || !timeCol || !latCol || !lonCol || !idCol) return result;
+
+  var numRows = sh.getLastRow() - 4;
+  var lastCol = sh.getLastColumn();
+  var data = sh.getRange(5, 1, numRows, lastCol).getValues();
+
+  for (var i = 0; i < data.length; i++) {
+    var row = data[i];
+    var rowNum = 5 + i;
+    
+    // 1. Date match
+    var rowDateVal = row[dateCol - 1];
+    var rowDateStr = formatDateToYmd_(rowDateVal);
+    if (rowDateStr !== incomingDate) continue;
+
+    // 2. Launch Lat/Lon proximity (<= 1000 meters)
+    var rowLat = parseFloat(row[latCol - 1]);
+    var rowLon = parseFloat(row[lonCol - 1]);
+    if (isNaN(rowLat) || isNaN(rowLon)) continue;
+
+    var dist = haversine_(launchFix.lat, launchFix.lon, rowLat, rowLon);
+    if (dist > 1000) continue;
+
+    // 3. Time overlap (within 15 minutes)
+    var rowTimeVal = row[timeCol - 1];
+    var rowLaunchMin = parseTimeToMinutes_(rowTimeVal);
+    if (rowLaunchMin === null) continue;
+
+    var diffMin = Math.abs(incomingLaunchMin - rowLaunchMin);
+    if (diffMin > 720) diffMin = 1440 - diffMin;
+
+    var isTimeOverlap = (diffMin <= 15);
+    
+    // Also check interval overlap if durations are available
+    if (!isTimeOverlap && diffMin <= 35) {
+      var rowDurVal = row[durCol - 1];
+      var rowDurMin = parseTimeToMinutes_(rowDurVal) || 0;
+      var inDurMin = Math.round((parsed.stats.durationSec || 0) / 60);
+      if (rowDurMin > 10 && inDurMin > 10) {
+        isTimeOverlap = true;
+      }
+    }
+
+    if (!isTimeOverlap) continue;
+
+    // Overlap Found!
+    var rowFlightId = String(row[idCol - 1] || '');
+    rowFlightId = rowFlightId.replace(/=HYPERLINK\("[^"]*",\s*"([^"]+)"\)/, '$1').trim();
+    var rowStatus = String(row[statusCol - 1] || '').trim();
+    var rowIgcVal = String(row[igcCol - 1] || '');
+
+    // Score the existing flight
+    var existingScore = scoreExistingFlight_(rowIgcVal, row, map);
+
+    var dateCompact = incomingDate.replace(/-/g, '');
+    var hourStr = ('0' + Math.floor(incomingLaunchMin / 60)).slice(-2);
+    var minStr = ('0' + (incomingLaunchMin % 60)).slice(-2);
+    var dupTag = 'DUP_' + dateCompact + '_' + hourStr + minStr;
+
+    var incomingStatus, existingStatus;
+    if (incomingScore > existingScore) {
+      incomingStatus = 'Dup-Primary';
+      existingStatus = 'Dup-Others';
+    } else {
+      incomingStatus = 'Dup-Others';
+      existingStatus = (rowStatus === 'Valid') ? 'Valid' : 'Dup-Primary';
+    }
+
+    var incomingNote = '[DupRef: ' + dupTag + ' | Paired with ' + rowFlightId + ' (Score: ' + incomingScore + ' vs ' + existingScore + ')]';
+
+    return {
+      matched: true,
+      matchedRow: rowNum,
+      flightId: rowFlightId,
+      incomingScore: incomingScore,
+      existingScore: existingScore,
+      incomingStatus: incomingStatus,
+      existingStatus: existingStatus,
+      dupTag: dupTag,
+      incomingNote: incomingNote
+    };
+  }
+
+  return result;
+}
+
+/**
+ * Scores an existing flight row from its linked Master IGC file or row heuristics.
+ */
+function scoreExistingFlight_(igcVal, rowData, map) {
+  var score = 20; // Default base
+  try {
+    var idMatch = igcVal.match(/id=([a-zA-Z0-9_-]+)/);
+    if (idMatch && idMatch[1]) {
+      var file = DriveApp.getFileById(idMatch[1]);
+      var text = file.getBlob().getDataAsString();
+      var parsed = PARSER.parseIgc(text, file.getName());
+      if (parsed) {
+        return scoreFlightQuality_(parsed, text, file.getName());
+      }
+    }
+  } catch (e) {
+    // If Drive fetch fails, use row heuristics
+  }
+
+  // Row Heuristics
+  var igcUpper = igcVal.toUpperCase();
+  if (igcUpper.indexOf('XCTRACK') !== -1) {
+    score += 30;
+  } else if (igcUpper.indexOf('ULTRABLIP') !== -1 || igcUpper.indexOf('XCTRACER') !== -1 || igcUpper.indexOf('FLYMASTER') !== -1) {
+    score += 20;
+  }
+  
+  if (map['Flight Duration'] && rowData[map['Flight Duration'] - 1]) {
+    score += 10;
+  }
+  if (map['Max Alt (m)'] && rowData[map['Max Alt (m)'] - 1]) {
+    score += 10;
+  }
+  return score;
+}
+
+/**
+ * Updates an existing flight row that was paired as a duplicate.
+ * Adjusts for row shift caused by inserting row at Row 5.
+ */
+function updatePairedFlightRow_(sh, overlapInfo, incomingFlightId) {
+  try {
+    var map = getColumnMap_(sh);
+    var statusCol = map['Status'];
+    var notesCol = map['Notes'];
+    var idCol = map['FlightID'];
+    
+    // Row 5 was just inserted, so the matched row shifted down by 1
+    var targetRow = overlapInfo.matchedRow + 1;
+    
+    // Safety check: confirm Flight ID matches
+    if (idCol) {
+      var actualId = String(sh.getRange(targetRow, idCol).getValue() || '');
+      actualId = actualId.replace(/=HYPERLINK\("[^"]*",\s*"([^"]+)"\)/, '$1').trim();
+      if (actualId !== overlapInfo.flightId) {
+        // Search adjacent rows (+- 2) if row indices shifted differently
+        for (var offset = -2; offset <= 2; offset++) {
+          var checkRow = targetRow + offset;
+          if (checkRow >= 5 && checkRow <= sh.getLastRow()) {
+            var checkId = String(sh.getRange(checkRow, idCol).getValue() || '');
+            checkId = checkId.replace(/=HYPERLINK\("[^"]*",\s*"([^"]+)"\)/, '$1').trim();
+            if (checkId === overlapInfo.flightId) {
+              targetRow = checkRow;
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    if (statusCol) {
+      sh.getRange(targetRow, statusCol).setValue(overlapInfo.existingStatus);
+    }
+    if (notesCol) {
+      var currentNote = String(sh.getRange(targetRow, notesCol).getValue() || '');
+      var pairedNote = '[DupRef: ' + overlapInfo.dupTag + ' | Paired with ' + incomingFlightId +
+                       ' (Score: ' + overlapInfo.existingScore + ' vs ' + overlapInfo.incomingScore + ')]';
+      if (currentNote.indexOf(overlapInfo.dupTag) === -1) {
+        var updatedNote = currentNote ? (currentNote + ' | ' + pairedNote) : pairedNote;
+        sh.getRange(targetRow, notesCol).setValue(updatedNote);
+      }
+    }
+  } catch (e) {
+    console.warn('Error updating paired flight row ' + overlapInfo.matchedRow, e);
+  }
+}
+
+/**
+ * Converts HH:mm or Date to minutes from midnight.
+ */
+function parseTimeToMinutes_(timeVal) {
+  if (!timeVal) return null;
+  if (timeVal instanceof Date) {
+    return timeVal.getHours() * 60 + timeVal.getMinutes();
+  }
+  var str = String(timeVal).trim();
+  var match = str.match(/(\d{1,2}):(\d{2})/);
+  if (match) {
+    return parseInt(match[1], 10) * 60 + parseInt(match[2], 10);
+  }
+  return null;
+}
+
+/**
+ * Converts Date or string to yyyy-MM-dd format.
+ */
+function formatDateToYmd_(dateVal) {
+  if (!dateVal) return '';
+  if (dateVal instanceof Date) {
+    return Utilities.formatDate(dateVal, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  }
+  var str = String(dateVal).trim();
+  var match = str.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+  if (match) {
+    return match[1] + '-' + ('0' + match[2]).slice(-2) + '-' + ('0' + match[3]).slice(-2);
+  }
+  return str;
 }
 
 function logImport_(date, fileId, outer, inner, status, notes) {
@@ -349,10 +785,7 @@ function uiAddManualFlight_() {
   SpreadsheetApp.flush();
 }
 
-/**
- * Inserts the parsed, enriched flight data row into 'Flights' Sheet.
- */
-function insertFlightRow_(data, fileId, outerName, status, notes, analysis, scoring, igcFileName, masterFileId, geo, xcStatus, weather) {
+function insertFlightRow_(data, fileId, outerName, status, notes, analysis, scoring, igcFileName, masterFileId, geo, xcStatus, weather, hashStr) {
   var ss = SpreadsheetApp.getActive();
   var sh = ss.getSheetByName(TABS.FLIGHTS.name);
   if (!sh) return;
@@ -545,10 +978,12 @@ function insertFlightRow_(data, fileId, outerName, status, notes, analysis, scor
   setVal('Import ID', fileId);
   setVal('Timestamp', new Date());
   setVal('Parser Ver', 'v2.0');
+  setVal('IGC Hash', hashStr || '');
 
   // Insert
   sh.insertRowBefore(5);
   sh.getRange(5, 1, 1, row.length).setValues([row]);
+  return { flightId: flightId, rowNum: 5 };
 }
 
 /**
@@ -673,3 +1108,7 @@ INGESTION.processBlob = processBlob_;
 INGESTION.processSingleIgcBlob = processSingleIgcBlob_;
 INGESTION.insertFlightRow = insertFlightRow_;
 INGESTION.uiAddManualFlight = uiAddManualFlight_;
+INGESTION.scoreFlightQuality = scoreFlightQuality_;
+INGESTION.findHeuristicOverlap = findHeuristicOverlap_;
+INGESTION.getExistingSheetHashes = getExistingSheetHashes_;
+INGESTION.getCachedSheetHashes = getCachedSheetHashes_;

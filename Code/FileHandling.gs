@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 18:33:37
+ * Updated: 2026-09-30 20:55:36
  * 
  * MODULE: File Handling Service
  * Handles Google Drive I/O, Watch Folder scanning, File Uploads, URL Fetching,
@@ -428,11 +428,12 @@ function stageUrlOrDriveImport(input) {
 function trashSourceFiles(fileIds) {
   if (!fileIds || !fileIds.length) return { success: true, count: 0 };
   var trashedCount = 0;
+  var config = getParameters_();
   for (var i = 0; i < fileIds.length; i++) {
     try {
       var f = DriveApp.getFileById(fileIds[i]);
       if (f && !f.isTrashed()) {
-        f.setTrashed(true);
+        moveToTrashFolder_(f, f.getName(), config);
         trashedCount++;
       }
     } catch (e) {
@@ -498,6 +499,67 @@ function stageBlob_(blob, fileName, config) {
 }
 
 /**
+ * Moves or copies a discarded or duplicate flight file to the Trash / Discard Folder.
+ * Strictly uses TRASH_FOLDER_ID from Parameters.
+ * Falls back to Drive soft-delete (setTrashed) if TRASH_FOLDER_ID is not configured.
+ * @param {GoogleAppsScript.Drive.File|GoogleAppsScript.Base.Blob} fileOrBlob
+ * @param {string} [fileName]
+ * @param {Object} [config]
+ * @return {{ success: boolean, fileId: string|null, error: string|null }}
+ */
+function moveToTrashFolder_(fileOrBlob, fileName, config) {
+  var result = { success: false, fileId: null, error: null };
+  config = config || getParameters_();
+  var folderId = cleanDriveId_(config.TRASH_FOLDER_ID);
+
+  if (!folderId) {
+    try {
+      if (fileOrBlob && typeof fileOrBlob.setTrashed === 'function') {
+        fileOrBlob.setTrashed(true);
+        result.success = true;
+      }
+    } catch (e) {
+      result.error = e.message;
+    }
+    return result;
+  }
+
+  var trashFolder = null;
+  try {
+    trashFolder = DriveApp.getFolderById(folderId);
+  } catch (e) {
+    result.error = 'Trash folder inaccessible: ' + e.message;
+    return result;
+  }
+
+  if (!trashFolder) {
+    result.error = 'Trash folder not found with ID: ' + folderId;
+    return result;
+  }
+
+  try {
+    if (fileOrBlob && typeof fileOrBlob.moveTo === 'function') {
+      fileOrBlob.moveTo(trashFolder);
+      result.success = true;
+      result.fileId = fileOrBlob.getId();
+    } else if (fileOrBlob && typeof fileOrBlob.makeCopy === 'function') {
+      var copy = fileOrBlob.makeCopy(fileName || fileOrBlob.getName(), trashFolder);
+      result.success = true;
+      result.fileId = copy.getId();
+    } else {
+      var blob = (fileOrBlob && typeof fileOrBlob.getBlob === 'function') ? fileOrBlob.getBlob() : fileOrBlob;
+      var newF = trashFolder.createFile(blob).setName(fileName || 'discarded.igc');
+      result.success = true;
+      result.fileId = newF.getId();
+    }
+  } catch (e) {
+    console.error('Error moving to trash folder:', e);
+    result.error = e.message;
+  }
+  return result;
+}
+
+/**
  * Cleanup Helper: Move/Copy/Delete based on status and config
  */
 function handleFileCleanup_(file, status, config) {
@@ -506,13 +568,13 @@ function handleFileCleanup_(file, status, config) {
     // Default shouldMove to true unless explicitly configured as FALSE
     var shouldMove = (rawMove !== false && String(rawMove).toUpperCase() !== 'FALSE');
     
-    // 1. Success or Duplicate (already imported)
+    // 1. Success or Duplicate -> Route to TRASH folder!
     if (status === 'SUCCESS' || status === 'DUPLICATE') {
       if (shouldMove) {
-        file.setTrashed(true);
+        moveToTrashFolder_(file, file.getName(), config);
       }
     }
-    // 2. Error / Partial
+    // 2. Error / Partial / Unparseable -> Route to ERROR folder!
     else if (status === 'ERROR') {
       copyToErrorFolder_(file, file.getName(), config);
       if (shouldMove) {
@@ -539,7 +601,8 @@ function validateRequiredFolders_(requiredKeys, config) {
     MASTER_LOG_FOLDER_ID: { name: 'Master Log Folder', menu: 'Update Master Log Folder...' },
     ERROR_FOLDER_ID: { name: 'Error Folder', menu: 'Update Error Folder...' },
     UPLOAD_FOLDER_ID: { name: 'Upload Folder', menu: 'Update Upload Folder...' },
-    WATCH_FOLDER_ID: { name: 'Watch Folder', menu: 'Update Watch Folder...' }
+    WATCH_FOLDER_ID: { name: 'Watch Folder', menu: 'Update Watch Folder...' },
+    TRASH_FOLDER_ID: { name: 'Trash / Discard Folder', menu: 'Set Trash / Discard Folder...' }
   };
 
   for (var i = 0; i < requiredKeys.length; i++) {
@@ -656,8 +719,8 @@ function copyToErrorFolder_(fileOrBlob, fileName, config) {
  * Handles duplicates by renaming (append _copy) and flagging.
  * Returns { finalName: string, isDuplicate: boolean, error: string, fileId: string }
  */
-function copyToMasterLog_(blob, fileName, config) {
-  var result = { finalName: fileName, isDuplicate: false, error: null, fileId: null };
+function copyToMasterLog_(blob, fileName, config, hashStr) {
+  var result = { finalName: fileName, isDuplicate: false, isExactMasterMatch: false, error: null, fileId: null };
   config = config || getParameters_();
   
   var folderId = cleanDriveId_(config.MASTER_LOG_FOLDER_ID);
@@ -685,6 +748,22 @@ function copyToMasterLog_(blob, fileName, config) {
     // Check for existing file with same name
     var existing = folder.getFilesByName(fileName);
     if (existing.hasNext()) {
+       var existingFile = existing.next();
+       try {
+         var existingDigest = Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, existingFile.getBlob().getDataAsString());
+         var existingHashStr = existingDigest.map(function(b) { return ('0' + (b & 0xFF).toString(16)).slice(-2); }).join('');
+         if (hashStr && existingHashStr === hashStr) {
+           // Exact MD5 match already in Master Log!
+           result.finalName = existingFile.getName();
+           result.fileId = existingFile.getId();
+           result.isDuplicate = false;
+           result.isExactMasterMatch = true;
+           return result;
+         }
+       } catch (eHash) {
+         console.warn('Could not compute existing master file hash:', eHash);
+       }
+
        result.isDuplicate = true;
        // Append suffix
        var parts = fileName.split('.');
@@ -775,6 +854,7 @@ FILE_HANDLING.stageUpload = stageUpload;
 FILE_HANDLING.processFileById = processFileById;
 FILE_HANDLING.stageUrlOrDriveImport = stageUrlOrDriveImport;
 FILE_HANDLING.trashSourceFiles = trashSourceFiles;
+FILE_HANDLING.moveToTrashFolder = moveToTrashFolder_;
 FILE_HANDLING.copyToMasterLog = copyToMasterLog_;
 FILE_HANDLING.copyToErrorFolder = copyToErrorFolder_;
 FILE_HANDLING.validateRequiredFolders = validateRequiredFolders_;

@@ -1,8 +1,8 @@
 # Project Context & Ways of Working (Source of Truth)
 
 ## 🧠 Agent Memory & Context
-**Status**: Active Development (v0.8.12)
-**Last Session Focus**: Dashboard currency shading, [h]:mm duration formatting, 8 leaderboard cards, and full site/country lists (`CR-SYS-002`), frozen columns (`CR-UI-017`), dynamic Lookups validation (`Bug-UI-006`), Closed? validation (`Bug-UI-007`), manual flight status default (`Bug-UI-005`), schema streamlining (`CR-SCH-001`), and User Guide / Dashboard admin refresh menu actions (`CR-UI-018`).
+**Status**: Active Development (v0.8.13)
+**Last Session Focus**: Smart Deduplication architecture (`CR-ING-006`), Row-based MD5 hashes (`IGC Hash` column 70), Heuristic Device Quality Scoring (`scoreFlightQuality_`), Overlap Detection (`findHeuristicOverlap_`), Dedicated `TRASH_FOLDER_ID` vs. `ERROR_FOLDER_ID`, Dashboard Protection (`Status = "Valid"` filter), Master Log Re-linking, Purge Discarded Flights (`purgeRemoveFlights`), and Master Folder Re-sync (`syncMasterLogsToSheet_`).
 **Next Focus**: Setup Wizard & Instance Templating (`RQ-SYS-008`), Dashboard & Inspector Pilot Profile Integration (`RQ-SYS-009.2`), Flight Inspector Enhancements (`RQ-SYS-004`).
 
 This file is the **long-term memory** for the project. Read this first to understand *how* we work and *where* we are.

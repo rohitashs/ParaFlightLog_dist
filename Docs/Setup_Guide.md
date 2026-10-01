@@ -51,7 +51,8 @@ This guide walks you through setting up the Paragliding Flight Log System from s
     *   **WATCH_FOLDER_ID**: *[REQUIRED]* Google Drive folder ID(s) to scan for `.igc` files (comma-separated for multiple folders, or set via **Admin** > **Update Watch Folder...**).
     *   **MASTER_LOG_FOLDER_ID**: *[REQUIRED]* Drive folder ID for permanent flight log file mirrors.
     *   **UPLOAD_FOLDER_ID**: Drive folder ID for staging manual uploads.
-    *   **ERROR_FOLDER_ID**: Drive folder ID for files that fail parsing or validation.
+    *   **ERROR_FOLDER_ID**: Drive folder ID for files that fail parsing or have fatal errors (requires investigation).
+    *   **TRASH_FOLDER_ID**: Drive folder ID for discarded, duplicate, and purged flight files (safe to empty anytime).
     *   **WEATHER_PROVIDERS**: `open_meteo, visual_crossing` (order of weather services. Open-Meteo works out of the box with zero API keys).
     *   **VISUAL_CROSSING_API_KEY**: Optional API key for Visual Crossing backup (free 1,000 requests/day at visualcrossing.com).
     *   **CONTACT_EMAIL**: *[REQUIRED]* Your contact email (required for User-Agent in OSM/Nominatim/Open-Meteo requests).
@@ -92,5 +93,8 @@ To have the sheet automatically check for new flights dropped into your Watch Fo
 *   **File Upload**: Click **Flight Log** > **Add Flight** > **Add flight from Upload (Local File)...** to upload directly from your computer.
 *   **Manual Entry**: Click **Flight Log** > **Add Flight** > **Add manual flight (blank row)** to log a non-tracked flight.
 *   **Inspect & Edit**: Highlight a flight and click **Flight Log** > **Flight Inspector** to view telemetry analysis, track log links, or edit notes.
+*   **Duplicate Triage & Status Review**: When duplicate or overlapping flights are detected, they are flagged as `Dup-Primary` (gold) and `Dup-Others` (orange) with pairing reference notes. The Dashboard strictly counts flights with `Status = "Valid"`, preventing stats pollution until you review and confirm them.
+*   **Purge Discarded Flights**: Mark unwanted backup or test rows as `Remove` in the Status column, then select **Flight Log** > **Admin** > **Sheet Maintenance & Views** > **Purge Flights Marked 'Remove'** to automatically delete the rows, move their Master IGC files to the Trash folder, and refresh deduplication hashes.
+*   **Re-sync from Master Folder**: If rows were accidentally deleted, run **Flight Log** > **Admin** > **Sheet Maintenance & Views** > **Re-sync Missing Flights from Master Folder** to scan your Master Log folder and restore missing flights.
 *   **Flight Maintenance**: Click **Flight Log** > **Flight maintenance** > **Flight Maintenance...** to open the unified dialog for batch weather backfill, geo resolution, XContest reverification, physics/scoring recalculation, and date sorting.
 

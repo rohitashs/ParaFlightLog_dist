@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-09-30 18:33:37
+ * Updated: 2026-09-30 20:55:36
  */
 /**
  * Paragliding Flight Log v2.0
@@ -22,6 +22,7 @@ function runAllTests() {
   results.push(testDateTimeFormats_());
   results.push(testMaintenanceFlightFilter_());
   results.push(testDashboardAndSchema_());
+  results.push(testDedupeAndQualityScoring_());
   
   var failures = results.filter(function(r) { return !r.idx || r.error; });
   if (failures.length > 0) {
@@ -353,4 +354,66 @@ function testDashboardAndSchema_() {
   }
 
   return { module: 'DashboardAndSchema', idx: true };
+}
+
+function testDedupeAndQualityScoring_() {
+  // 1. Verify TRASH_FOLDER_ID in parameters
+  var hasTrashParam = (CFG.parameters || []).some(function(p) { return p.key === 'TRASH_FOLDER_ID'; });
+  if (!hasTrashParam) {
+    return { module: 'DedupeAndQuality', error: 'TRASH_FOLDER_ID parameter missing from CFG.parameters' };
+  }
+
+  // 2. Verify IGC Hash in Flights Meta group
+  var metaGroup = (TABS.FLIGHTS.groups || []).filter(function(g) { return g.name === 'Meta'; })[0];
+  if (!metaGroup || metaGroup.cols.indexOf('IGC Hash') === -1) {
+    return { module: 'DedupeAndQuality', error: 'IGC Hash column missing from Meta group' };
+  }
+
+  // 3. Verify function existence
+  if (typeof scoreFlightQuality_ !== 'function') {
+    return { module: 'DedupeAndQuality', error: 'scoreFlightQuality_ function missing' };
+  }
+  if (typeof purgeRemoveFlights !== 'function') {
+    return { module: 'DedupeAndQuality', error: 'purgeRemoveFlights function missing' };
+  }
+  if (typeof syncMasterLogsToSheet_ !== 'function') {
+    return { module: 'DedupeAndQuality', error: 'syncMasterLogsToSheet_ function missing' };
+  }
+  if (typeof uiUpdateTrashFolder_ !== 'function') {
+    return { module: 'DedupeAndQuality', error: 'uiUpdateTrashFolder_ function missing' };
+  }
+  if (typeof moveToTrashFolder_ !== 'function') {
+    return { module: 'DedupeAndQuality', error: 'moveToTrashFolder_ function missing' };
+  }
+
+  // 4. Verify quality scoring logic
+  var mockParsedXCTrack = {
+    meta: { pilot: 'Pilot A', gliderType: 'Ozone Photon' },
+    stats: { durationSec: 1900, startTime: 43200 },
+    fixes: [
+      { time: 100, lat: 46.1, lon: 7.1, alt: 1000, altBaro: 990 },
+      { time: 101, lat: 46.1001, lon: 7.1001, alt: 1002, altBaro: 992 }
+    ]
+  };
+  var scoreXCTrack = scoreFlightQuality_(mockParsedXCTrack, 'HFFTYXCTRACK PRO\nB1200004610000N...', '2026-05-10-XCTrack.igc');
+
+  var mockParsedGeneric = {
+    meta: {},
+    stats: { durationSec: 300, startTime: 43200 },
+    fixes: [
+      { time: 100, lat: 46.1, lon: 7.1, alt: 1000 },
+      { time: 105, lat: 46.1001, lon: 7.1001, alt: 1002 }
+    ]
+  };
+  var scoreGeneric = scoreFlightQuality_(mockParsedGeneric, 'B1200004610000N...', 'flight.igc');
+
+  if (scoreXCTrack <= scoreGeneric) {
+    return { module: 'DedupeAndQuality', error: 'XCTrack score (' + scoreXCTrack + ') should be strictly higher than generic (' + scoreGeneric + ')' };
+  }
+
+  if (scoreXCTrack < 60) {
+    return { module: 'DedupeAndQuality', error: 'XCTrack rich flight score (' + scoreXCTrack + ') should be >= 60' };
+  }
+
+  return { module: 'DedupeAndQuality', idx: true };
 }
