@@ -20,6 +20,7 @@ The project follows a strict folder hierarchy. `Docs/Context.md` is the source o
     *   **`User_Guide.md`**: Complete Pilot Handbook, Setup Walkthrough & Metric Dictionary.
     *   **`Features.md`**: Functional capabilities (Admin, UI, System).
     *   **`Technical_Specification.md`**: detailed Tech Specs & Code Reference.
+    *   **`Design/`**: Formal Architectural & Detailed Design Specifications (`DSGN-*.md`), Template (`Design_template.md`), and Index (`README.md`).
     *   **`Backlog.md`**: Requirements, CRs, Bugs.
     *   **`ChangeLog.md`**: Historical record.
 
@@ -108,13 +109,19 @@ The backlog has 5 strict sections:
     6.  **Stale References & Dead Links**: Obsolete names or broken links.
     7.  **Proposed Remediation Plan**: File-by-file update plan.
 
-### 8. Code Standards
+### 8. Architectural Design Specifications (`Docs/Design/` & `/update_design`)
+*   **Standards**: All significant subsystems, engines, and features maintain formal design specifications following [`Docs/Design/Design_template.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Design/Design_template.md).
+*   **Hierarchical Linking**: Header metadata explicitly establishes `Parent Design` and `Child Designs` links for bidirectional architectural navigation.
+*   **Revision Synchronization**: Every umbrella code file in `Code/` maintains matching `@design` and `@revision` JSDoc header tags. When a design's revision increments, the corresponding code header is stamped to prevent design-code drift.
+*   **Workflow (`/update_design`)**: Supports three operational modes: (1) New Design from template, (2) Sync / Delta Update from recent decisions or code edits, and (3) Reverse-Engineering designs from active working code.
+
+### 9. Code Standards
 *   **Naming**: `Service.gs` for modules. `privateFunction_` (trailing underscore) for non-exported helpers.
 *   **Config**: Separation of Concerns. `Code.gs` = Logic, `Config.gs` = Constants, `Parameters Sheet` = Runtime Values.
 *   **Validation**: Validate early. Fail gracefully with logs.
 *   **Timestamps**: Always update file header timestamps before pushing. Use `.\update_headers.ps1` to automate this.
 
-### 9. Multi-Device Workflow (`Docs/Workflows/Multi_Device_Setup.md`)
+### 10. Multi-Device Workflow (`Docs/Workflows/Multi_Device_Setup.md`)
 *   **Critical**: Never work on two computers at once.
 *   **Protocol**: Always wait for Google Drive sync **before** opening VS Code. Acknowledge the risk of Git inside Drive.
 *   **Hand-off**: Commit & Push on A -> Wait for Sync -> Pull on B.
