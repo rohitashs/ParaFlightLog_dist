@@ -140,7 +140,7 @@ graph TD
 
 ## 6. Execution Freedom: The Tri-Mode Engine
 
-Long-running flight imports and historical backfills should never lock up your computer. ParaFlightLog introduces the **Tri-Mode Execution Subsystem** ([DSGN-UI-001](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Design/DSGN-UI-001_Tri_Mode_Execution_and_Universal_Sidebar.md)):
+Long-running flight imports and historical backfills should never lock up your computer. ParaFlightLog introduces the **Tri-Mode Execution Subsystem** (`DSGN-UI-001`):
 
 ```
 [ 🚀 Run Here ]          [ 📌 Run in Sidebar ]         [ ⚙️ Run in Background ]
@@ -193,8 +193,8 @@ timeline
 ```
 
 ### Roadmap Highlights:
-* **Horizon 2 (v2.0)**: Extends our live Tri-Mode Execution engine into a full **Table-Driven Automation Engine** ([DSGN-AUT-001](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Design/DSGN-AUT-001_Table_Driven_Automation_Engine.md)), allowing pilots to configure recurring automation triggers and pipelines from a simple spreadsheet tab.
-* **Horizon 3 (v2.5)**: Introduces a **Non-Destructive Multi-Instance Updater** ([RQ-SYS-010](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Backlog.md#rq-sys-010-multi-instance-distribution-and-remote-updater-engine)) to deploy code and schema updates across distributed pilot sheets without touching flight data, paired with automated AI test suites ([CR-DEV-004](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Backlog.md#cr-dev-004-automated-and-ai-driven-backend-and-frontend-test-harness)) and strict PII scrubbers ([CR-SEC-001](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Backlog.md#cr-sec-001-open-source-readiness-pii-scrubbing-and-security-audit)).
+* **Horizon 2 (v2.0)**: Extends our live Tri-Mode Execution engine into a full **Table-Driven Automation Engine** (`DSGN-AUT-001`), allowing pilots to configure recurring automation triggers and pipelines from a simple spreadsheet tab.
+* **Horizon 3 (v2.5)**: Introduces a **Non-Destructive Multi-Instance Updater** (`RQ-SYS-010`) to deploy code and schema updates across distributed pilot sheets without touching flight data, paired with automated AI test suites (`CR-DEV-004`) and strict PII scrubbers (`CR-SEC-001`).
 * **Horizon 4 (v3.0)**: **Public Open-Source Launch** on GitHub under the MIT License, featuring a one-click **Golden Starter Sheet** that allows any pilot in the world to launch their own sovereign logbook in under 3 minutes.
 * **Horizon 5 (v3.5+)**: Full expansion into **Equipment Airworthiness Management**, **Pilot Education & Progression**, and **Flying Site Intelligence**.
 
@@ -220,11 +220,5 @@ Getting started requires no software installation, no command line, and no serve
 4. **Enjoy Sovereign Analytics**: Watch your personal dashboard populate with rich aeronautical data, weather, and leaderboards!
 
 ---
-
-### 🌐 Documentation Hub
-* **Systems Architecture & Global Schemas**: [Docs/Architecture.md](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Architecture.md)
-* **Strategic Roadmap (5 Horizons)**: [Docs/Roadmap.md](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Roadmap.md)
-* **User Guide & Metric Dictionary**: [Docs/User_Guide.md](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/User_Guide.md)
-* **License**: Open Source under the MIT License.
 
 *Fly far, fly safe, and own your sky.* 🪂✨
