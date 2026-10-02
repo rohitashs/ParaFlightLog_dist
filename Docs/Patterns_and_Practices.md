@@ -1,0 +1,191 @@
+# Engineering Patterns & Architectural Best Practices (Source of Truth)
+
+## 1. Overview & Architectural Philosophy
+The **ParaFlightLogProject** is built on a hybrid architecture: **Google Sheets** functions as a rich, reactive visual user interface and database, while **Google Apps Script (GAS)** functions as a serverless backend engine.
+
+Developing on this hybrid stack presents unique constraints and capabilities:
+* **The Spreadsheet is Mutable**: Unlike traditional relational databases where schemas are locked behind migration scripts, spreadsheet users can freely drag columns, insert rows, edit headers, paste values, and rename tabs directly in the UI.
+* **Apps Script has Strict Execution Timeouts**: Google enforces a hard 6-minute execution cutoff on script triggers.
+* **Network & Drive Calls are Expensive**: Google Workspace API calls (DriveApp, SpreadsheetApp) incur synchronous HTTP round-trip latency.
+* **Google Sheets has Powerful Native Primitives**: Google Sheets provides built-in dependency graphs, Named Ranges, array formulas, soft range protections, and open-ended ranges that natively auto-track structural changes without script execution.
+
+> [!IMPORTANT]
+> **Core Engineering Rule**: Always prefer **Native Google Sheets Mechanisms** (Named Ranges, Open-Ended Validations, `LET/XMATCH` formulas, `sheetId`) over brute-force script overrides. Scripts should orchestrate and configure, but let Google Sheets natively maintain internal references and dependencies.
+
+---
+
+## 2. Schema & Grid Resilience Patterns
+
+### Pattern 1: Dynamic Name-Based Column Resolution
+* **Problem**: Hardcoding column indices (e.g. `row[1]`, `colIndex = 12`) or column letter strings (`"L"`, `"M"`) causes catastrophic data misalignment or formula `#REF!` when a user drags or inserts columns.
+* **Pattern**: Never hardcode column positions in logic or formula generators.
+  * In code: Read headers dynamically using `getColumnMap_(sh)` and access columns via `map['Header Name']`.
+  * In formula generators: Resolve letters dynamically using `getColLetter_(map, colName)` and `columnToLetter_(colIdx)`.
+* **Example**:
+  ```javascript
+  // Anti-Pattern:
+  sh.getRange(r, 3).setFormula('=IFERROR(MAX(INDIRECT("C" & (ROW()+1) & ":C")), 0) + 1');
+
+  // Best Practice Pattern:
+  var fNoCol = map['Flight No'] || 3;
+  var fNoLetter = columnToLetter_(fNoCol);
+  sh.getRange(r, fNoCol).setFormula('=IFERROR(MAX(INDIRECT("' + fNoLetter + '" & (ROW()+1) & ":' + fNoLetter + '")), 0) + 1');
+  ```
+
+### Pattern 2: Google Sheets Native Named Ranges for Lookup Lists & Control Cells
+* **Problem**: Referencing lookup ranges with raw cell coordinates (e.g. `shConfig.getRange('G3:G')` or Dashboard `$B$2`) breaks when columns or rows are inserted on the source sheet.
+* **Pattern**: Register native Google Sheets **Named Ranges** (`Data > Named ranges`) for all lookup lists, parameter cells, and UI toggles.
+  * `LOOKUP_FLIGHT_TYPES = Config!$G$3:$G`
+  * `LOOKUP_ACTIVE_WINGS = Config!$K$3:$K`
+  * `LOOKUP_ACTIVE_HARNESSES = Config!$L$3:$L`
+  * `LOOKUP_ACTIVE_RESERVES = Config!$M$3:$M`
+  * `LOOKUP_EQUIPMENT_CATS = Config!$E$3:$E`
+  * `DASHBOARD_REVIEW_FILTER = Dashboard!$B$2`
+* **Why this works**: When a user moves, cuts & pastes, or inserts columns in Google Sheets, **Sheets automatically updates the Named Range target under the hood**. Data validations and formulas referencing the Named Range never point to the wrong cell.
+
+### Pattern 3: Modern Native Formula Array Engineering (Eliminating `INDIRECT`)
+* **Problem**: `INDIRECT("Flights!B5:B")` is a volatile formula that forces recalculation on every edit and breaks when columns are moved.
+* **Pattern**: Use modern Google Sheets array formulas (`LET`, `XMATCH`, `INDEX`, `FILTER`) to seek columns by header name dynamically at runtime:
+  ```excel
+  =LET(
+    headers, Flights!$4:$4,
+    statusCol, INDEX(Flights!$A:$ZZ, 0, XMATCH("Status", headers)),
+    validFlights, FILTER(statusCol, ROW(statusCol) >= 5, statusCol = "Valid"),
+    COUNTA(validFlights)
+  )
+  ```
+* **Benefits**:
+  1. Immune to column reordering: `XMATCH("Status", Flights!$4:$4)` finds the column wherever it is.
+  2. Immune to row insertion: `Flights!$A:$ZZ` and `Flights!$4:$4` are whole-sheet/whole-row references that never shift when rows are added.
+  3. Non-volatile: Recalculates only when underlying data changes, vastly improving workbook performance.
+
+### Pattern 4: Whole-Column Data Validation Scope (`$B$5:$B`)
+* **Problem**: Applying validation rules to a fixed row slice (e.g. Rows 5 to 100) causes flights appended at the bottom (via bulk ingestion or manual entry) to lack dropdowns, text wrap, and conditional formatting.
+* **Pattern**: Apply data validations to open-ended column ranges starting at the first data row:
+  ```javascript
+  // Best Practice Pattern:
+  sh.getRange(5, colIdx, sh.getMaxRows() - 4, 1).setDataValidation(rule);
+  ```
+* **Why this works**: Google Sheets attaches open-ended validation rules to the column metadata. Any row appended at the bottom automatically inherits dropdowns, formatting, and validation rules without requiring script execution.
+
+### Pattern 5: Warning-Only Range Protection as "Soft Guardrails"
+* **Problem**: Users accidentally paste values over auto-calculated formulas (`Flight No`) or modify header names in Row 4. Strict cell locking causes permission headaches for multi-user or non-domain setups.
+* **Pattern**: Apply native Google Sheets Range Protection with `setWarningOnly(true)`:
+  ```javascript
+  // Protect Row 1-4 Headers
+  var headerProt = sh.getRange('A1:ZZ4').protect();
+  headerProt.setDescription('Logbook Header & Column Schema');
+  headerProt.setWarningOnly(true);
+
+  // Protect Flight No Formula Column
+  var fNoProt = sh.getRange(5, flightNoCol, sh.getMaxRows() - 4, 1).protect();
+  fNoProt.setDescription('Sequential Flight Counter (Auto-calculated)');
+  fNoProt.setWarningOnly(true);
+  ```
+* **User Experience**: The user is never locked out. If they accidentally edit a header or paste over `Flight No`, Sheets displays a gentle native warning: *"Heads up! You're trying to edit part of this sheet that shouldn't be changed accidentally. Do you want to edit anyway?"*
+
+### Pattern 6: Permanent Tab Identification via Sheet ID (`sheetId` / `gid`)
+* **Problem**: `ss.getSheetByName("Flights")` returns `null` and crashes with fatal errors if a pilot renames the tab to `"Flight Log"` or `"Logbook"`.
+* **Pattern**: Track tabs by their permanent integer `sheetId` (the `#gid=...` in the URL), which never changes:
+  ```javascript
+  function getSheetByPurpose_(purpose, defaultName) {
+    var ss = SpreadsheetApp.getActive();
+    var storedId = PropertiesService.getDocumentProperties().getProperty('SHEET_ID_' + purpose);
+    if (storedId) {
+      var sheets = ss.getSheets();
+      for (var i = 0; i < sheets.length; i++) {
+        if (String(sheets[i].getSheetId()) === String(storedId)) return sheets[i];
+      }
+    }
+    var sh = ss.getSheetByName(defaultName);
+    if (sh) {
+      PropertiesService.getDocumentProperties().setProperty('SHEET_ID_' + purpose, String(sh.getSheetId()));
+    }
+    return sh;
+  }
+  ```
+
+### Pattern 7: Non-Destructive Scaffolding (Read Before Write)
+* **Problem**: Maintenance scripts like `reapplyFormatting_` that blindly overwrite Row 4 with default `TABS.FLIGHTS.groups` will erase the pilot's custom column order.
+* **Pattern**: Before modifying layout, inspect the active sheet's Row 4 headers. Preserve existing column positions, and only re-apply formatting, validation rules, notes, and Row 3 category merges to columns where they currently sit.
+
+---
+
+## 3. Data Typing & Ingestion Defensive Patterns
+
+### Pattern 8: `getDisplayValues()` to Prevent Timezone/Epoch Drift
+* **Problem**: `getValues()` converts date and time cells into JavaScript `Date` objects based on the Apps Script project's script timezone. For midnight flights or Western hemisphere timezones, this shifts flight dates by $\pm 1$ day and alters launch hours.
+* **Pattern**: When reading date, time, or identifier cells for matching, deduplication, or display, use `getDisplayValues()` to read the exact text string as rendered in the spreadsheet cell:
+  ```javascript
+  // Best Practice Pattern for Date/Time Matching:
+  var dateStr = sh.getRange(row, map['Date']).getDisplayValue(); // "2024-05-12"
+  ```
+
+### Pattern 9: In-Memory Row Quality Scoring vs. Drive Round-Trips
+* **Problem**: Calling `DriveApp.getFileById()` inside a deduplication loop to check file sizes creates an $O(N \times M)$ HTTP round-trip bottleneck that exhausts execution time on batches $>15$ files.
+* **Pattern**: Score flight quality in memory from sheet telemetry (duration, fix count, track length, XC score, weather enrichment) without making external Drive calls (`scoreFlightQualityFromRow_`).
+
+### Pattern 10: Single Source of Truth for Folder Authority
+* **Problem**: Creating folders on the fly in the user's Drive root when IDs are missing leads to folder clutter.
+* **Pattern**: The `Config` sheet is the sole authority for folder configuration (`MASTER_LOG_FOLDER_ID`, `ERROR_FOLDER_ID`, `UPLOAD_FOLDER_ID`, `WATCH_FOLDER_ID`). Missing folders must trigger an immediate user-facing error dialog (`validateRequiredFolders_`), never silent creation in root.
+
+---
+
+## 4. Runtime Execution & Long-Running Job Patterns
+
+### Pattern 11: The 4.5-Minute Safety Threshold & Continuation Daemon
+* **Problem**: Apps Script triggers terminate unconditionally at 6 minutes, causing data corruption if a large batch is aborted mid-write.
+* **Pattern**: Enforce a strict 4.5-minute safety threshold using `TimeBudgetService`:
+  ```javascript
+  var budget = TimeBudgetService.create(4.5 * 60 * 1000);
+  while (hasItems && budget.hasTimeRemaining()) {
+    processNextItem();
+  }
+  if (hasRemainingItems) {
+    QueueService.checkpointJob(jobId, cursor);
+    QueueService.ensureContinuationTrigger(); // Self-perpetuating daemon
+  }
+  ```
+
+### Pattern 12: Persistent State in `Automation_Queue` Tab
+* **Problem**: `PropertiesService` has a strict 9KB value limit, making it unsuitable for storing large queues of 200+ files.
+* **Pattern**: Store persistent queue state as tabular rows on a dedicated, hidden `Automation_Queue` sheet (`QueueService.gs`).
+
+### Pattern 13: Tri-Mode Execution Contract
+* **Pattern**: All batch operations (Ingestion, Resync, Maintenance, Status Change, Duplicates) must implement the Tri-Mode execution contract:
+  1. **Modal Dialog Mode**: Synchronous execution with embedded progress bar and log stream for small batches ($\le 15$ items).
+  2. **Universal Sidebar Mode**: Docked `ExecutionSidebar.html` allowing the pilot to continue interacting with the spreadsheet while monitoring batch progress.
+  3. **Headless Background Queue Mode**: Chunked execution via `QueueService` with automatic 4.5-minute time budget checkpointing and self-continuation triggers for massive datasets.
+
+---
+
+## 5. Client-Server Communication Patterns (GAS $\leftrightarrow$ HTML)
+
+### Pattern 14: Public Gateway Functions for Client RPCs (No Trailing Underscores)
+* **Problem**: Apps Script strictly forbids client-side JavaScript (`google.script.run`) from invoking any server function that ends with an underscore (`_`). Calling `google.script.run.myPrivateFunction_()` fails silently or throws an error.
+* **Pattern**: All functions called from HTML dialogs must be public gateway functions without trailing underscores:
+  ```javascript
+  // Server-side (Code.gs):
+  function runStatusChangeBatch(rows, newStatus) {
+    return runStatusChangeBatch_(rows, newStatus); // Delegates to private engine
+  }
+  ```
+
+### Pattern 15: Sanitized JSON Serialization across the RPC Boundary
+* **Problem**: Passing complex objects with circular references, DOM nodes, or functions across `google.script.run` causes silent serialization failures.
+* **Pattern**: Return plain, sanitized JSON-serializable objects (`{ success: true, count: 5, items: [...] }`).
+
+---
+
+## 6. Forbidden Code Smells & Anti-Patterns Checklist
+
+| Anti-Pattern | Why It Is Dangerous | Prescribed Replacement |
+| :--- | :--- | :--- |
+| **Hardcoding Column Letters (`"B"`, `"L"`)** | Breaks on user column move or insertion. | Use `getColLetter_(map, name)` or Named Ranges. |
+| **Hardcoding Column Indices (`row[11]`)** | Data written to wrong column on schema shift. | Use `map['Header Name'] - 1`. |
+| **Volatile `INDIRECT()` Formulas** | Slows sheet to a crawl; breaks on column move. | Use `LET + XMATCH` or Named Ranges. |
+| **Fixed Row Bounds in Validation (`A5:A100`)** | Appended rows lack dropdowns and formatting. | Use open-ended column ranges (`$B$5:$B`). |
+| **Blind Scaffolding Overwrite** | Destroys custom pilot column arrangements. | Read active headers before writing Row 3/4. |
+| **Trailing Underscore on RPC Handlers** | Breaks `google.script.run` from HTML dialogs. | Provide public wrapper without underscore. |
+| **`DriveApp` calls inside tight row loops** | Hits Apps Script rate limits and timeout. | Score quality from sheet telemetry in memory. |
+| **`getValues()` for Date/Time comparison** | Causes timezone rollover and date drift. | Use `getDisplayValues()` for text fidelity. |

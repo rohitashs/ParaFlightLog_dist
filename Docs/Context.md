@@ -22,7 +22,7 @@ The project follows a strict folder hierarchy. `Docs/Context.md` is the source o
 | **Tier 1: Strategic Vision** | Long-term intent, 5 Evolution Horizons, Open-Source roadmap & non-negotiable architectural tenets. *(Stakeholders, Community, AI)* | [`Roadmap.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Roadmap.md) |
 | **Tier 2: Public Manifesto** | High-level platform whitepaper, value proposition, Gemini AI advantage & "Why Sheets + Apps Script". *(World, Pilots, Clubs)* | [`Brochure.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Brochure.md) |
 | **Tier 3: Product & Operations** | Comprehensive functional capabilities catalog and complete pilot operational handbook. *(End-User Pilots, Flight Instructors)* | [`Features.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Features.md)<br>[`User_Guide.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/User_Guide.md) |
-| **Tier 4: Systems Architecture** | C4 serverless topology, global ERD model, 8-sheet unified data dictionary, math algorithms, and RFC design specs. *(Architects, Devs, AI)* | [`Architecture.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Architecture.md)<br>[`Technical_Specification.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Technical_Specification.md)<br>[`Design/`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Design/README.md) (`DSGN-*.md`) |
+| **Tier 4: Systems Architecture** | C4 serverless topology, global ERD model, 8-sheet unified data dictionary, math algorithms, and RFC design specs. *(Architects, Devs, AI)* | [`Architecture.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Architecture.md)<br>[`Technical_Specification.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Technical_Specification.md)<br>[`Patterns_and_Practices.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Patterns_and_Practices.md)<br>[`Design/`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Design/README.md) (`DSGN-*.md`) |
 | **Tier 5: Execution & Memory** | Tracked work units (`RQ`, `CR`, `Bug`), release history, and engineering memory / ways of working. *(Developers, AI Pair Programmers)* | [`Backlog.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Backlog.md)<br>[`ChangeLog.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/ChangeLog.md)<br>[`Context.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Context.md) |
 
 *   **File Inventory**:
@@ -33,6 +33,7 @@ The project follows a strict folder hierarchy. `Docs/Context.md` is the source o
     *   **`User_Guide.md`**: Complete Pilot Handbook, Setup Walkthrough & Metric Dictionary.
     *   **`Features.md`**: Functional capabilities (Admin, UI, System).
     *   **`Technical_Specification.md`**: Detailed Tech Specs, Math Algorithms & Code Reference.
+    *   **`Patterns_and_Practices.md`**: Engineering Patterns & Architectural Best Practices (Dynamic Column Resolution, Native Named Ranges, Modern Array Formulas, TimeBudget Daemons, Anti-Patterns).
     *   **`Design/`**: Formal Architectural & Detailed Design Specifications (`DSGN-*.md`), Template (`Design_template.md`), and Index (`README.md`).
     *   **`Backlog.md`**: Requirements, CRs, Bugs.
     *   **`ChangeLog.md`**: Historical record.
@@ -46,6 +47,7 @@ The project follows a strict folder hierarchy. `Docs/Context.md` is the source o
     *   **`SessionSummary/`**: Session Summary Reports (`YYYY-MM-DD_SessionSummary.md`).
     *   **`CodeCheckReports/`**: Code Review Reports (`YYYY-MM-DD_CodeCheck.md`).
     *   **`DocCheckReports/`**: Documentation Audit Reports (`YYYY-MM-DD_DocCheck.md`).
+    *   **`AuditReports/`**: Architectural and Subsystem Audit Reports (`YYYY-MM-DD_<Topic>_Audit.md`), structured using [`Audit_Template.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Plans/AuditReports/Audit_Template.md).
 
 ### 3. `Code/` (Implementation)
 *   **Status**: **Git Tracked**.
@@ -125,19 +127,33 @@ The backlog has 5 strict sections:
     6.  **Stale References & Dead Links**: Obsolete names or broken links.
     7.  **Proposed Remediation Plan**: File-by-file update plan.
 
-### 8. Architectural Design Specifications (`Docs/Design/` & `/update_design`)
+### 8. Architectural & Subsystem Audit Reports (`Plans/AuditReports/`)
+*   **Naming**: `YYYY-MM-DD_<Topic>_Audit.md` (e.g. `2026-10-02_Dynamic_Formula_Resilience_Audit.md`).
+*   **Purpose**: Formal capture of in-depth architectural audits, schema inspections, UI resiliency scans, performance benchmarks, and subsystem investigations so findings are permanently preserved.
+*   **Standard Template**: [`Plans/AuditReports/Audit_Template.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Plans/AuditReports/Audit_Template.md).
+*   **Standard Structure**:
+    1.  **Metadata**: Audit ID (`AUD-*`), Date, Auditor, Scope, Status.
+    2.  **Executive Summary**: High-level problem statement and verdict.
+    3.  **Audit Scope & Methodology**: Inspected files, boundaries, and techniques.
+    4.  **Findings & Risk Analysis Matrix**: Categorized findings with Severity, Location, Root Cause, and Impact.
+    5.  **Detailed Findings & Root Cause Analysis**: Technical deep dive into failure modes.
+    6.  **Options Analysis & Trade-Offs**: Evaluated alternatives (e.g., Script workarounds vs. Native Google Sheets mechanisms).
+    7.  **Remediation Plan & Recommendations**: Concrete, prioritized action steps and Backlog (`CR-*` / `Bug-*`) links.
+    8.  **Test Strategy & Verification Criteria**: How fixes are validated offline and in-app.
+
+### 9. Architectural Design Specifications (`Docs/Design/` & `/update_design`)
 *   **Standards**: All significant subsystems, engines, and features maintain formal design specifications following [`Docs/Design/Design_template.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Design/Design_template.md).
 *   **Hierarchical Linking**: Header metadata explicitly establishes `Parent Design` and `Child Designs` links for bidirectional architectural navigation.
 *   **Revision Synchronization**: Every umbrella code file in `Code/` maintains matching `@design` and `@revision` JSDoc header tags. When a design's revision increments, the corresponding code header is stamped to prevent design-code drift.
 *   **Workflow (`/update_design`)**: Supports three operational modes: (1) New Design from template, (2) Sync / Delta Update from recent decisions or code edits, and (3) Reverse-Engineering designs from active working code.
 
-### 9. Code Standards
+### 10. Code Standards
 *   **Naming**: `Service.gs` for modules. `privateFunction_` (trailing underscore) for non-exported helpers.
 *   **Config**: Separation of Concerns. `Code.gs` = Logic, `Config.gs` = Constants, `Parameters Sheet` = Runtime Values.
 *   **Validation**: Validate early. Fail gracefully with logs.
 *   **Timestamps**: Always update file header timestamps before pushing. Use `.\update_headers.ps1` to automate this.
 
-### 10. Multi-Device Workflow (`Docs/Workflows/Multi_Device_Setup.md`)
+### 11. Multi-Device Workflow (`Docs/Workflows/Multi_Device_Setup.md`)
 *   **Critical**: Never work on two computers at once.
 *   **Protocol**: Always wait for Google Drive sync **before** opening VS Code. Acknowledge the risk of Git inside Drive.
 *   **Hand-off**: Commit & Push on A -> Wait for Sync -> Pull on B.

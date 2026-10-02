@@ -12,6 +12,8 @@ This document defines the low-level **Code Organization**, **Algorithms**, and *
 ## 2. System Architecture
 **Stack**: Google Apps Script (GAS) bound to Google Sheets.
 **Patterns**: Service-Oriented (Modules), MVC-lite (Sheet as View).
+*   **Engineering Patterns & Architectural Best Practices**: See [`Patterns_and_Practices.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Patterns_and_Practices.md) for dynamic schema resolution, native Google Sheets Named Ranges, modern array formulas, timeout prevention daemons, and forbidden anti-patterns.
+
 
 ### Modules (`Code/`)
 1.  **Orchestrator (`Code.gs`)**: Entry point. Maps Triggers/Menus to Controllers.
