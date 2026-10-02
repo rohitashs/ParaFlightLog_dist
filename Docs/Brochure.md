@@ -3,15 +3,6 @@
 
 ---
 
-```
-  ____                 _____ _ _       _     _                 
- |  _ \ __ _ _ __ __ _|  ___| (_) __ _| |__ | |_   ___   __ _  
- | |_) / _` | '__/ _` | |_  | | |/ _` | '_ \| __| / _ \ / _` | 
- |  __/ (_| | | | (_| |  _| | | | (_| | | | | |_ | (_) | (_| | 
- |_|   \__,_|_|  \__,_|_|   |_|_|\__, |_| |_|\__| \___/ \__, | 
-                                 |___/                  |___/  
-```
-
 > **"Your Flight Data. Sovereign. Intelligent. Infinitely Extensible."**
 > 
 > *A high-performance, private, zero-cost personal flight operations center that runs entirely within your personal Google Workspace. No monthly subscriptions. No proprietary clouds. No vendor lock-in.*
@@ -115,13 +106,19 @@ Gemini acts as your personal aerodynamicist and flight coach, transforming passi
 ParaFlightLog is engineered not merely as a historical diary, but as a **comprehensive paragliding operations center**:
 
 ```mermaid
-graph LR
-    PFL((ParaFlightLog<br>Core Engine))
-    
-    PFL --> Gear["🪂 Gear Lifecycle & Airworthiness<br>• Automated Hour Tracking<br>• Line Trim Reminders<br>• Reserve Repack Deadlines"]
-    PFL --> Edu["🎓 Pilot Education & Progression<br>• P1-P5 / IPPI Certification<br>• SIV Maneuver Logs<br>• Clinic & Endorsement Records"]
-    PFL --> Sites["🏔️ Site Intelligence & Weather<br>• Wind-Rose Site Matrix<br>• Live Forecast Matching<br>• Airspace & Hazard Warnings"]
-    PFL --> Trips["🧭 Expedition & Trip Planning<br>• Multi-Pilot Waypoints<br>• Retrieve Crew Tracking<br>• Emergency SAR Coordinates"]
+graph TD
+    classDef core fill:#1A237E,stroke:#3F51B5,stroke-width:2px,color:#fff;
+    classDef domain fill:#E0F2F1,stroke:#00897B,stroke-width:2px,color:#004D40;
+    classDef ai fill:#F3E5F5,stroke:#8E24AA,stroke-width:2px,color:#4A148C;
+
+    Core(["🪂 ParaFlightLog Core Engine<br><i>Reactive Relational Tabular Store</i>"]):::core
+
+    Core --> Gear["🪂 Gear Lifecycle & Airworthiness<br>• Automated Hour & Flight Tracking<br>• Line Trim Reminders (100h)<br>• Porosity & Annual Inspection Logs<br>• Reserve Repack Deadlines (180/360d)"]:::domain
+    Core --> Edu["🎓 Pilot Education & Progression<br>• P1–P5 / IPPI Certification Tracker<br>• SIV Maneuver & Incident Journal<br>• XC Clinic & Endorsement Records<br>• Annual Currency Self-Auditing"]:::domain
+    Core --> Sites["🏔️ Site Intelligence & Weather<br>• Wind-Rose Site Compatibility Matrix<br>• Live Forecast-to-History Matching<br>• Airspace Ceilings & Frequency Notes<br>• Launch Hazards & LZ Waypoints"]:::domain
+    Core --> Trips["🧭 Expedition & Trip Planning<br>• Multi-Pilot Safari Coordination<br>• Retrieve Crew Tracking Links<br>• Waypoint & Turnpoint Packs<br>• Emergency SAR Coordinates & Frequencies"]:::domain
+
+    Core -.-> Gemini["🤖 Native Gemini AI Analytics<br>• Multi-glider polar comparison<br>• Thermal efficiency queries<br>• Natural language coaching"]:::ai
 ```
 
 ### 🪂 1. Intelligent Equipment Lifecycle & Airworthiness
@@ -143,7 +140,7 @@ graph LR
 
 ## 6. Execution Freedom: The Tri-Mode Engine
 
-Long-running flight imports and historical backfills should never lock up your computer. ParaFlightLog introduces the **Tri-Mode Execution Subsystem**:
+Long-running flight imports and historical backfills should never lock up your computer. ParaFlightLog introduces the **Tri-Mode Execution Subsystem** ([DSGN-UI-001](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Design/DSGN-UI-001_Tri_Mode_Execution_and_Universal_Sidebar.md)):
 
 ```
 [ 🚀 Run Here ]          [ 📌 Run in Sidebar ]         [ ⚙️ Run in Background ]
@@ -152,12 +149,58 @@ with instant feedback.    to the side while you work.   with auto-continuation.
 ```
 
 1. **Run Here (Modal)**: Traditional high-context dialog for quick, single-flight tasks.
-2. **Run in Sidebar (Modeless)**: Docks execution to a compact side panel. Continue browsing your logbook, filtering flights, or checking gear while progress bars update in real time.
+2. **Run in Sidebar (Modeless)**: Docks execution to a compact 300px side panel. Continue browsing your logbook, filtering flights, or checking gear while progress bars update in real time.
 3. **Run in Background (Headless)**: Closes the interface immediately and delegates the workload to an automated queue. Bounded by an intelligent **4.5-minute time budget**, large batch jobs automatically save progress and self-schedule continuation triggers without hitting Google Apps Script timeouts.
 
 ---
 
-## 7. Open Source, Community & Extensibility
+## 7. Where We Stand Today: Current Operational Capabilities
+
+ParaFlightLog is currently in **active production deployment (v1.x / v2.0 Ready)**, powering daily personal flight operations with rock-solid reliability:
+
+| Capability Area | Current Operational Status | Key Subsystems & Highlights |
+| :--- | :---: | :--- |
+| **Multi-Source Ingestion** | ✅ **Live & Operational** | Drag-and-drop web uploader, Drive folder/URL import, `.zip`/`.gz` extraction, continuous Watch Folder scanning, and high-speed bulk batching. |
+| **Aero Physics Engine** | ✅ **Live & Operational** | Sliding-window thermalling, ridge soaring, and glide detection; climb/sink rate integration; $L/D$ aerodynamic efficiency. |
+| **FAI Cross-Country Scoring** | ✅ **Live & Operational** | RDP trajectory optimization, 3-turnpoint brute-force solver, Free Flight, Out-and-Return, Flat Triangle, and FAI Triangle scoring. |
+| **Meteorological Backfill** | ✅ **Live & Operational** | Open-Meteo historical archive API with 7-day forecast fallback; surface winds, gusts, temps, cloud cover, and Lawrence cloudbase spread. |
+| **Geographic Site Resolution** | ✅ **Live & Operational** | OpenStreetMap Nominatim reverse geocoding & Overpass API site detection; 6-hour caching in `CacheService`. |
+| **Contest League Probing** | ✅ **Live & Operational** | Direct XContest flight probing with Cloudflare bypass, UTC date shifting, permanent flight ID linking, and 14-day claim deadline countdown. |
+| **Cockpit Dashboard** | ✅ **Live & Operational** | Resilient 6-column layout with career/YTD KPI banners, 6-month pilot currency alerts (Green/Yellow/Orange), and 8 dynamic leaderboards. |
+| **Tri-Mode Execution** | ✅ **Live & Operational** | Foreground Modal (`Run Here`), Modeless Sidebar (`Run in Sidebar`), and Headless Background Queue with 4.5-minute time budgeting. |
+| **Data Integrity & Dedupe** | ✅ **Live & Operational** | Row-based MD5 hashing on `Flights` (Col 70), multi-criteria heuristic overlap detection, 0–100 pt sensor quality scoring, and duplicate pairing. |
+| **Configuration Management**| ✅ **Live & Operational** | 49 parameters across 9 sections, 10 lookups, and granular 5-group JSON export/import with dynamic UI protection. |
+
+---
+
+## 8. Strategic Roadmap: The 5 Horizons of Evolution
+
+ParaFlightLog is evolving systematically from a private flight operations engine into a globally accessible, community-governed open-source platform:
+
+```mermaid
+timeline
+    title ParaFlightLog Strategic Evolution
+    section Horizon 1 : Current State
+      Single-Pilot Core Engine : Aeronautical Physics : Weather & Geo Backfill : Zero Black-Box Dedupe : Cockpit Dashboard
+    section Horizon 2 : v2.0 Active
+      Tri-Mode Execution : Universal Execution Sidebar : Persistent Automation_Queue : Table-Driven Automation Engine
+    section Horizon 3 : v2.5 Pre-OSS
+      Multi-Instance Distribution & Updater : Guided Task Wizards : Pre-OSS Quality & Security Audit : Automated AI Testing Harness
+    section Horizon 4 : v3.0 Public Launch
+      Public Open-Source Release : Golden Starter Sheet : Community Governance & RFCs : Plugin Architecture
+    section Horizon 5 : v3.5+ Global Ecosystem
+      Equipment Airworthiness Engine : Pilot Progression & SIV Matrix : Site Intelligence & Weather Matrix : Expedition Planning
+```
+
+### Roadmap Highlights:
+* **Horizon 2 (v2.0)**: Extends our live Tri-Mode Execution engine into a full **Table-Driven Automation Engine** ([DSGN-AUT-001](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Design/DSGN-AUT-001_Table_Driven_Automation_Engine.md)), allowing pilots to configure recurring automation triggers and pipelines from a simple spreadsheet tab.
+* **Horizon 3 (v2.5)**: Introduces a **Non-Destructive Multi-Instance Updater** ([RQ-SYS-010](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Backlog.md#rq-sys-010-multi-instance-distribution-and-remote-updater-engine)) to deploy code and schema updates across distributed pilot sheets without touching flight data, paired with automated AI test suites ([CR-DEV-004](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Backlog.md#cr-dev-004-automated-and-ai-driven-backend-and-frontend-test-harness)) and strict PII scrubbers ([CR-SEC-001](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Backlog.md#cr-sec-001-open-source-readiness-pii-scrubbing-and-security-audit)).
+* **Horizon 4 (v3.0)**: **Public Open-Source Launch** on GitHub under the MIT License, featuring a one-click **Golden Starter Sheet** that allows any pilot in the world to launch their own sovereign logbook in under 3 minutes.
+* **Horizon 5 (v3.5+)**: Full expansion into **Equipment Airworthiness Management**, **Pilot Education & Progression**, and **Flying Site Intelligence**.
+
+---
+
+## 9. Open Source, Community & Extensibility
 
 ParaFlightLog is **100% open source** released under the permissive **MIT License**.
 
@@ -167,7 +210,7 @@ ParaFlightLog is **100% open source** released under the permissive **MIT Licens
 
 ---
 
-## 8. Take Flight in 3 Minutes
+## 10. Take Flight in 3 Minutes
 
 Getting started requires no software installation, no command line, and no server configuration:
 
@@ -178,9 +221,10 @@ Getting started requires no software installation, no command line, and no serve
 
 ---
 
-### 🌐 Join the Movement
-* **GitHub Repository**: `https://github.com/rohitashs/ParaFlightLogProject`
-* **Documentation Hub**: [System Architecture](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Architecture.md) | [Strategic Roadmap](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Roadmap.md) | [User Guide](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/User_Guide.md)
+### 🌐 Documentation Hub
+* **Systems Architecture & Global Schemas**: [Docs/Architecture.md](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Architecture.md)
+* **Strategic Roadmap (5 Horizons)**: [Docs/Roadmap.md](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Roadmap.md)
+* **User Guide & Metric Dictionary**: [Docs/User_Guide.md](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/User_Guide.md)
 * **License**: Open Source under the MIT License.
 
 *Fly far, fly safe, and own your sky.* 🪂✨
