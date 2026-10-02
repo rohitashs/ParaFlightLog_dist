@@ -21,7 +21,7 @@ var CFG = {
     config: 'Config',
     parameters: 'Config', // Legacy alias
     lookups: 'Config',    // Legacy alias
-    appLog: 'App_Log',
+    appLog: 'Activity Logs',
     sites: 'Sites',
     dashboard: 'Dashboard',
     pilotProfile: 'Pilot_Profile',
@@ -94,7 +94,14 @@ var CFG = {
     { section: 'Dashboard & Currency', key: 'TIMELINE_FLIGHTS_LOW', val: 2, desc: 'Monthly flights low threshold (Orange < X)' },
     { section: 'Dashboard & Currency', key: 'TIMELINE_FLIGHTS_MED', val: 6, desc: 'Monthly flights med threshold (Yellow X..Y, Green >= Y)' },
     { section: 'Dashboard & Currency', key: 'TIMELINE_HOURS_LOW', val: 1 / 24, desc: 'Monthly duration low threshold (Orange < X, [h]:mm "hrs")' },
-    { section: 'Dashboard & Currency', key: 'TIMELINE_HOURS_MED', val: 4 / 24, desc: 'Monthly duration med threshold (Yellow X..Y, Green >= Y, [h]:mm "hrs")' }
+    { section: 'Dashboard & Currency', key: 'TIMELINE_HOURS_MED', val: 4 / 24, desc: 'Monthly duration med threshold (Yellow X..Y, Green >= Y, [h]:mm "hrs")' },
+
+    // Logging & Admin
+    { section: 'Logging & Admin', key: 'LOG_LEVEL', val: 'Normal', desc: 'Spreadsheet log verbosity (Brief, Normal, Debug)' },
+    { section: 'Logging & Admin', key: 'LOG_AUTO_CLEAN', val: 'Yes', desc: 'Automatically prune historical activity logs (Yes/No)' },
+    { section: 'Logging & Admin', key: 'LOG_CLEAN_FREQUENCY_DAYS', val: 3, desc: 'Days between automated log cleanup checks' },
+    { section: 'Logging & Admin', key: 'LOG_ROWS_TO_KEEP', val: 2000, desc: 'Minimum activity log rows to retain before pruning' },
+    { section: 'Logging & Admin', key: 'LOG_TIME_TO_KEEP_DAYS', val: 90, desc: 'Minimum age (days) of logs to retain before pruning' }
   ],
   
   // Helper to get defaults map
@@ -262,14 +269,43 @@ var TABS = {
   },
   APP_LOG: {
     name: CFG.sheets.appLog,
-    color: '#F44336', // Red
+    color: '#D32F2F', // Dark Red
     index: 7,
     headerRow: 2,
     frozenRows: 2,
-    columns: ['Timestamp', 'FileID', 'FileName', 'InnerName', 'Status', 'Info']
+    columns: ['Process', 'Timestamp', 'Activity / Event', 'Additional Info']
   }
 };
 
 // Backwards compatibility aliases
 TABS.PARAMETERS = TABS.CONFIG;
 TABS.LOOKUPS = TABS.CONFIG;
+TABS.ACTIVITY = TABS.APP_LOG;
+
+// Extensible Process and Message Registries
+CFG.LOG_PROCESSES = {
+  WATCH_FOLDER:   'Watch Folder',
+  BULK_INGEST:    'Bulk Ingestion',
+  URL_IMPORT:     'URL / Drive Import',
+  FILE_UPLOAD:    'File Upload',
+  MANUAL_ENTRY:   'Manual Flight Entry',
+  MAINTENANCE:    'Flight Maintenance',
+  DUPE_TRIAGE:    'Duplicate Triage',
+  PURGE_FLIGHTS:  'Purge Flights',
+  MASTER_RESYNC:  'Master Re-sync',
+  SAVE_CONFIG:    'Save Config',
+  LOAD_CONFIG:    'Load Config',
+  SYSTEM_SETUP:   'System Setup',
+  LOG_CLEAN:      'Log Maintenance'
+};
+
+CFG.LOG_PREFIXES = {
+  START:    '[START]',
+  INFO:     '[INFO]',
+  OK:       '[OK]',
+  DUPE:     '[DUPE]',
+  WARN:     '[WARN]',
+  ERR:      '[ERR]',
+  COMPLETE: '[COMPLETE]'
+};
+

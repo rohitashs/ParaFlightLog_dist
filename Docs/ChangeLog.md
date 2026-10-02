@@ -1,5 +1,21 @@
 # Project Change Log
 
+## Session: Activity Logging System Overhaul (DSGN-LOG-001)
+**Date**: 2026-10-01
+**Versions**: v0.8.19
+**Focus**: Activity Logging System redesign and implementation (`CR-LOG-004` / `DSGN-LOG-001`), sheet tab rename `App_Log` -> `Activity Logs` with 4-column schema, centralized `Logger.gs` engine with tiered log levels (`Brief`, `Normal`, `Debug`), conservative dual-threshold pruning (`LOG_ROWS_TO_KEEP: 2000`, `LOG_TIME_TO_KEEP_DAYS: 90`), automated in-place migration, manual Admin menu cleanup, and 📋 Copy Log buttons across all 5 modal consoles.
+
+*   `[Imp]` **CR-LOG-004 / DSGN-LOG-001 (Activity Logging System Overhaul)**:
+    *   Renamed sheet tab `App_Log` to `Activity Logs` (Dark Red `#D32F2F`, frozen rows = 2) with automatic in-place migration for existing sheets.
+    *   Overhauled schema to 4 columns: `Process` (Col A, 175px), `Timestamp` (Col B, 165px, `yyyy-mm-dd hh:mm:ss`), `Activity / Event` (Col C, 530px, text wrap), and `Additional Info` (Col D, 380px, text wrap, 9pt).
+    *   Added `CFG.LOG_PROCESSES` (13 standardized process keys) and `CFG.LOG_PREFIXES` (`[START]`, `[INFO]`, `[OK]`, `[DUPE]`, `[WARN]`, `[ERR]`, `[COMPLETE]`) in `Code/Config.gs`.
+    *   Added 5 configuration parameters under `[ Logging & Admin ]` in `Code/Config.gs` with data validation dropdowns in `Code/Scaffold.gs`: `LOG_LEVEL` (`Brief`, `Normal`, `Debug`), `LOG_AUTO_CLEAN` (`Yes`, `No`), `LOG_CLEAN_FREQUENCY_DAYS` (3), `LOG_ROWS_TO_KEEP` (2000), `LOG_TIME_TO_KEEP_DAYS` (90).
+    *   Created centralized logging engine in `Code/Logger.gs` (`LOG.resolveProcess`, `LOG.getLogLevel`, `LOG.shouldLog`, `LOG.write`, `LOG.writeBatch`, `LOG.createSession`, `LOG.cleanLogs`, `autoCleanLogsIfDue_`, and legacy backward-compatibility bridges).
+    *   Implemented conservative dual-threshold pruning: rows are only pruned if total rows exceed `LOG_ROWS_TO_KEEP` AND are older than `LOG_TIME_TO_KEEP_DAYS`.
+    *   Added `📋 Copy Log` button and `copyConsoleLog()` clipboard handler across all 5 modal dialog consoles (`BulkIngestDialog.html`, `ResyncDialog.html`, `PurgeDialog.html`, `URLDialog.html`, `ScanDialog.html`).
+    *   Integrated centralized logging calls across `Code/Ingestion.gs`, `Code/FileHandling.gs`, and `Code/Code.gs`, and added `Clean Activity Logs Now...` to `Flight Log > Admin > Sheet Maintenance & Views`.
+    *   Added unit test suite covering process resolution, log level filtering, and dual-threshold pruning math in `Code/Test.gs`.
+
 ## Session: Bulk Flight Ingestion, Pilot Profile Subheaders, Config Reorganization, & Config Backup Granularity
 **Date**: 2026-10-01
 **Versions**: v0.8.18

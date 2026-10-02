@@ -241,5 +241,5 @@ git status
 
 ## 📌 Guiding Principles
 *   **Config Authority**: The `Parameters` sheet is the runtime source of truth. `Config.gs` defines the default schema and constants.
-*   **Graceful Validation**: Detailed errors and partial failures should be recorded in `App_Log` or `Notes` (pipe-separated) rather than failing silently.
+*   **Graceful Validation**: Detailed errors and partial failures should be recorded in `Activity Logs` (via centralized `LOG.write`) or `Notes` (pipe-separated) rather than failing silently.
 *   **Document-First Integrity**: Always sync `Docs/` whenever features, parameters, or architecture change.

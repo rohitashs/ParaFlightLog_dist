@@ -41,7 +41,8 @@ function onOpen(e) {
             .addItem('Refresh Dashboard (KPIs & Cards)', 'uiRefreshDashboard')
             .addItem('Refresh User Guide & Metric Dictionary', 'uiRefreshUserGuide')
             .addItem('Update Dropdowns, Parameters & Notes', 'updateValidationOnly')
-            .addItem('Repair Sheet Schema & Formatting (Safe)', 'reapplyFormatting'))
+            .addItem('Repair Sheet Schema & Formatting (Safe)', 'reapplyFormatting')
+            .addItem('Clean Activity Logs Now...', 'cleanActivityLogs'))
         .addSubMenu(ui.createMenu('Folder Configuration')
             .addItem('Set Watch Folder(s)...', 'uiUpdateWatchFolder')
             .addItem('Set Upload Folder...', 'uiUpdateUploadFolder')
@@ -1113,6 +1114,7 @@ function purgeSingleCandidateFlight(flightInfo) {
     }
 
     sh.deleteRow(targetRow);
+    LOG.write('PURGE_FLIGHTS', '[OK] Purged flight ' + (flightInfo.flightId || ('Row ' + targetRow)), 'Trashed IGC: ' + trashed);
     return { success: true, flightId: flightInfo.flightId, trashed: trashed };
   } catch (err) {
     return { success: false, error: err.message };
@@ -1131,6 +1133,7 @@ function finalizePurge_() {
   } catch (e) {
     console.warn('Post-purge sort warning:', e);
   }
+  LOG.write('PURGE_FLIGHTS', '[COMPLETE] Purge session completed');
   return { success: true };
 }
 
@@ -1200,7 +1203,7 @@ function markDuplicatesForRemoval_(includeOthers, includePrimary) {
   var total = updatedOthers + updatedPrimary;
   if (total > 0) {
     statusRange.setValues(statusValues);
-    logImport_(new Date(), '', '', 'Mark Duplicates', 'Updated', 'Marked ' + total + ' flights as Remove (Others: ' + updatedOthers + ', Primary: ' + updatedPrimary + ')');
+    LOG.write('DUPE_TRIAGE', '[OK] Marked ' + total + ' flights as Remove', 'Others: ' + updatedOthers + ', Primary: ' + updatedPrimary);
   }
 
   return {
@@ -1324,6 +1327,7 @@ function exportConfigJson_(options) {
 
   var dateStamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'UTC', 'yyyyMMdd_HHmm');
   var filename = 'flight_log_config_' + dateStamp + '.json';
+  LOG.write('SAVE_CONFIG', '[OK] Exported configuration backup', filename);
   return {
     json: JSON.stringify(result, null, 2),
     filename: filename
@@ -1455,7 +1459,7 @@ function importConfigJson_(configPayload, selectedOptions) {
     }
   }
 
-  logImport_(new Date(), '', '', 'Load Config', 'Success', 'Config applied: Profile=' + res.profileUpdated + ', Params=' + res.paramsUpdated + ', Lookups=' + res.lookupsUpdated);
+  LOG.write('LOAD_CONFIG', '[OK] Applied configuration from JSON', 'Profile=' + res.profileUpdated + ', Params=' + res.paramsUpdated + ', Lookups=' + res.lookupsUpdated);
   return res;
 }
 
@@ -1577,8 +1581,10 @@ function restoreSingleMasterFlight(fileId) {
 
     var success = processSingleIgcBlob_(blob, fName, file.getId(), fName, config);
     if (success) {
+      LOG.write('MASTER_RESYNC', '[OK] ' + fName, 'FileID: ' + file.getId() + ' | Restored to Flights sheet');
       return { success: true, name: fName, msg: 'Restored to Flights sheet' };
     } else {
+      LOG.write('MASTER_RESYNC', '[DUPE] ' + fName, 'FileID: ' + file.getId() + ' | Skipped or duplicate');
       return { success: false, name: fName, error: 'Skipped (Duplicate or already present)' };
     }
   } catch (e) {
@@ -1598,6 +1604,7 @@ function finalizeResync_() {
   } catch (e) {
     console.warn('Post-resync sort warning:', e);
   }
+  LOG.write('MASTER_RESYNC', '[COMPLETE] Master Re-sync session completed');
   return { success: true };
 }
 

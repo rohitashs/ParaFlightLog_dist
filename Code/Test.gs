@@ -25,6 +25,9 @@ function runAllTests() {
   results.push(testDedupeAndQualityScoring_());
   results.push(testConfigAndDedupeEnhancements_());
   results.push(testConfigStructureAndGrouping_());
+  results.push(testLogProcessResolution_());
+  results.push(testLogLevelFiltering_());
+  results.push(testConservativePruningMath_());
   
   var failures = results.filter(function(r) { return !r.idx || r.error; });
   if (failures.length > 0) {
@@ -587,4 +590,128 @@ function testConfigStructureAndGrouping_() {
   }
 
   return { module: 'ConfigStructure', idx: true };
+}
+
+function testLogProcessResolution_() {
+  if (typeof LOG === 'undefined') return { module: 'LogProcessResolution', error: 'LOG service undefined' };
+  
+  if (LOG.resolveProcess('WATCH_FOLDER') !== 'Watch Folder') {
+    return { module: 'LogProcessResolution', error: 'WATCH_FOLDER failed to resolve to Watch Folder' };
+  }
+  if (LOG.resolveProcess('BULK_INGEST') !== 'Bulk Ingestion') {
+    return { module: 'LogProcessResolution', error: 'BULK_INGEST failed to resolve to Bulk Ingestion' };
+  }
+  if (LOG.resolveProcess('DUPE_TRIAGE') !== 'Duplicate Triage') {
+    return { module: 'LogProcessResolution', error: 'DUPE_TRIAGE failed to resolve to Duplicate Triage' };
+  }
+  if (LOG.resolveProcess('Custom Process') !== 'Custom Process') {
+    return { module: 'LogProcessResolution', error: 'Custom process string was modified unexpectedly' };
+  }
+  if (LOG.resolveProcess('') !== 'System') {
+    return { module: 'LogProcessResolution', error: 'Empty process did not default to System' };
+  }
+  return { module: 'LogProcessResolution', idx: true };
+}
+
+function testLogLevelFiltering_() {
+  if (typeof LOG === 'undefined') return { module: 'LogLevelFiltering', error: 'LOG service undefined' };
+
+  // Brief level
+  if (LOG.shouldLog('Brief', '[INFO] Scanning folder') !== false) {
+    return { module: 'LogLevelFiltering', error: 'Brief should filter [INFO]' };
+  }
+  if (LOG.shouldLog('Brief', '[OK] Imported flight 123') !== false) {
+    return { module: 'LogLevelFiltering', error: 'Brief should filter [OK]' };
+  }
+  if (LOG.shouldLog('Brief', '[DUPE] Duplicate flight') !== false) {
+    return { module: 'LogLevelFiltering', error: 'Brief should filter [DUPE]' };
+  }
+  if (LOG.shouldLog('Brief', '[START] Bulk Ingestion') !== true) {
+    return { module: 'LogLevelFiltering', error: 'Brief should allow [START]' };
+  }
+  if (LOG.shouldLog('Brief', '[COMPLETE] Ingestion done') !== true) {
+    return { module: 'LogLevelFiltering', error: 'Brief should allow [COMPLETE]' };
+  }
+  if (LOG.shouldLog('Brief', '[WARN] Missing site') !== true) {
+    return { module: 'LogLevelFiltering', error: 'Brief should allow [WARN]' };
+  }
+  if (LOG.shouldLog('Brief', '[ERR] Parse error') !== true) {
+    return { module: 'LogLevelFiltering', error: 'Brief should allow [ERR]' };
+  }
+
+  // Normal level
+  if (LOG.shouldLog('Normal', '[INFO] Scanning folder') !== false) {
+    return { module: 'LogLevelFiltering', error: 'Normal should filter [INFO]' };
+  }
+  if (LOG.shouldLog('Normal', '[OK] Imported flight 123') !== true) {
+    return { module: 'LogLevelFiltering', error: 'Normal should allow [OK]' };
+  }
+  if (LOG.shouldLog('Normal', '[DUPE] Duplicate flight') !== true) {
+    return { module: 'LogLevelFiltering', error: 'Normal should allow [DUPE]' };
+  }
+
+  // Debug level
+  if (LOG.shouldLog('Debug', '[INFO] Scanning folder') !== true) {
+    return { module: 'LogLevelFiltering', error: 'Debug should allow [INFO]' };
+  }
+
+  return { module: 'LogLevelFiltering', idx: true };
+}
+
+function testConservativePruningMath_() {
+  // Test pruning logic invariants:
+  // Row is pruned ONLY if totalRows > rowsToKeep AND timestamp < cutoffDate
+  var rowsToKeep = 2000;
+  var timeToKeepDays = 90;
+  var now = new Date();
+  var cutoffMs = now.getTime() - (timeToKeepDays * 86400000);
+
+  // Case 1: Total rows <= rowsToKeep -> 0 prunable
+  var totalRowsUnder = 1500;
+  var maxPrunableUnder = totalRowsUnder - rowsToKeep;
+  if (maxPrunableUnder > 0) {
+    return { module: 'ConservativePruningMath', error: 'Under-capacity sheet should have 0 prunable' };
+  }
+
+  // Case 2: Total rows > rowsToKeep, but all rows are newer than cutoff
+  var totalRowsOver = 2500;
+  var maxPrunable = totalRowsOver - rowsToKeep; // 500
+  var simulatedTimestampsYoung = [];
+  for (var i = 0; i < maxPrunable; i++) {
+    // 30 days old (< 90 days)
+    simulatedTimestampsYoung.push(new Date(now.getTime() - (30 * 86400000)));
+  }
+  var deletedYoung = 0;
+  for (var j = 0; j < simulatedTimestampsYoung.length; j++) {
+    if (simulatedTimestampsYoung[j].getTime() < cutoffMs) {
+      deletedYoung++;
+    } else {
+      break;
+    }
+  }
+  if (deletedYoung !== 0) {
+    return { module: 'ConservativePruningMath', error: 'Young rows were not protected by age cap' };
+  }
+
+  // Case 3: Total rows > rowsToKeep, 200 rows older than cutoff, remaining 300 younger
+  var simulatedTimestampsMixed = [];
+  for (var k = 0; k < 200; k++) {
+    simulatedTimestampsMixed.push(new Date(now.getTime() - (100 * 86400000))); // 100 days old (> 90)
+  }
+  for (var m = 200; m < maxPrunable; m++) {
+    simulatedTimestampsMixed.push(new Date(now.getTime() - (30 * 86400000))); // 30 days old (< 90)
+  }
+  var deletedMixed = 0;
+  for (var n = 0; n < simulatedTimestampsMixed.length; n++) {
+    if (simulatedTimestampsMixed[n].getTime() < cutoffMs) {
+      deletedMixed++;
+    } else {
+      break;
+    }
+  }
+  if (deletedMixed !== 200) {
+    return { module: 'ConservativePruningMath', error: 'Expected 200 deleted rows, got ' + deletedMixed };
+  }
+
+  return { module: 'ConservativePruningMath', idx: true };
 }

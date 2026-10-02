@@ -83,7 +83,7 @@ function scanWatchFolderNow_() {
             handleFileCleanup_(file, 'ERROR', config);
           }
         } catch (e) {
-          logImport_(new Date(), fId, fName, fName, 'Scan Error', e.message);
+          LOG.write('WATCH_FOLDER', '[ERR] ' + fName, 'FileID: ' + fId + ' | ' + e.message);
           console.error('Error processing ' + fName, e);
           stats.errors++;
           stats.log.push('Error (' + fName + '): ' + e.message);
@@ -104,6 +104,10 @@ function scanWatchFolderNow_() {
     } catch (sortErr) {
       console.warn('Watch scan auto-sort warning:', sortErr);
     }
+  }
+
+  if (stats.processed > 0 || stats.errors > 0) {
+    LOG.write('WATCH_FOLDER', '[COMPLETE] Scan finished: ' + stats.processed + ' processed, ' + stats.skipped + ' skipped, ' + stats.errors + ' errors', stats.flights + ' flight(s) added');
   }
 
   return stats;

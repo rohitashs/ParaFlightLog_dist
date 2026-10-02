@@ -341,6 +341,10 @@
                 <span class="metric-pill pill-error">❌ Errors: <span id="pill-errors-val">0</span></span>
             </div>
 
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                <span style="font-size:11px; font-weight:600; color:#555;">Activity Log</span>
+                <button type="button" id="btn-copy-log" class="secondary" style="padding:2px 8px; font-size:11px;" onclick="copyConsoleLog()">📋 Copy Log</button>
+            </div>
             <div id="log-console" style="flex:1 1 auto; height:240px; border:1px solid #ddd; border-radius:4px; background:#FAFAFA; padding:8px; overflow-y:auto; font-family:monospace; font-size:11px;"></div>
 
             <div class="control-group" style="margin-top:10px;">
@@ -757,6 +761,27 @@
                 .replace(/>/g, "&gt;")
                 .replace(/"/g, "&quot;")
                 .replace(/'/g, "&#039;");
+        }
+
+        function copyConsoleLog() {
+            var consoleEl = document.getElementById("log-console");
+            if (!consoleEl) return;
+            var text = consoleEl.innerText || consoleEl.textContent;
+            navigator.clipboard.writeText(text).then(function() {
+                var btn = document.getElementById("btn-copy-log");
+                if (!btn) return;
+                var origText = btn.innerText;
+                btn.innerText = "✓ Copied!";
+                btn.style.backgroundColor = "#2E7D32";
+                btn.style.color = "#FFFFFF";
+                setTimeout(function() {
+                    btn.innerText = origText;
+                    btn.style.backgroundColor = "";
+                    btn.style.color = "";
+                }, 2000);
+            }).catch(function(err) {
+                alert("Failed to copy log: " + err);
+            });
         }
     </script>
 </body>

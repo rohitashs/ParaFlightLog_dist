@@ -119,14 +119,14 @@ function processSingleIgcBlob_(blob, fileName, fileId, outerName, config) {
   var hashStr = hash.map(function(b) { return ('0' + (b & 0xFF).toString(16)).slice(-2); }).join('');
   
   if (isHashSeen_(hashStr, sh)) {
-    logImport_(new Date(), fileId, outerName, fileName, 'Duplicate (MD5)', 'Skipped (Already in Flights)');
+    LOG.write('FILE_UPLOAD', '[DUPE] ' + fileName, (fileId ? 'FileID: ' + fileId + ' | ' : '') + 'Skipped (Already in Flights)');
     return false;
   }
   
   // B. Parse
   var parsed = PARSER.parseIgc(text, fileName);
   if (!parsed) {
-     logImport_(new Date(), fileId, outerName, fileName, 'Parse Fail', 'Invalid IGC structure');
+     LOG.write('FILE_UPLOAD', '[ERR] ' + fileName, (fileId ? 'FileID: ' + fileId + ' | ' : '') + 'Invalid IGC structure');
      copyToErrorFolder_(blob, fileName, config);
      return false;
   }
@@ -265,7 +265,7 @@ function processSingleIgcBlob_(blob, fileName, fileId, outerName, config) {
 
   // J. Mark Hash as Seen & Log
   markHashSeen_(hashStr, 5);
-  logImport_(new Date(), fileId, outerName, fileName, 'Success', finalNotes || 'OK');
+  LOG.write('FILE_UPLOAD', '[OK] ' + fileName, (fileId ? 'FileID: ' + fileId + ' | ' : '') + (finalNotes || 'OK'));
   
   return true;
 }
@@ -695,13 +695,7 @@ function formatDateToYmd_(dateVal) {
   return str;
 }
 
-function logImport_(date, fileId, outer, inner, status, notes) {
-  var ss = SpreadsheetApp.getActive();
-  var sh = ss ? ss.getSheetByName(TABS.APP_LOG.name) : null;
-  if (sh) {
-    sh.appendRow([date, fileId, outer, inner, status, notes]);
-  }
-}
+
 
 /* ==========================================================================================
    SPREADSHEET ROW INSERTION & LOOKUPS
@@ -1034,7 +1028,7 @@ function processBulkBatch(batchFiles, options) {
       }
 
       if (innerBlobs.length === 0) {
-        batchLogs.push([new Date(), item.id, outerName, fileName, 'Error', 'No supported flight files found in archive']);
+        batchLogs.push(['Bulk Ingestion', new Date(), '[ERR] ' + fileName, 'No supported flight files found in archive']);
         errorCount++;
         results.push({ name: fileName, success: false, msg: 'No flight files in archive' });
         continue;
@@ -1049,7 +1043,7 @@ function processBulkBatch(batchFiles, options) {
         var hash = Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, text);
         var hashStr = hash.map(function(b) { return ('0' + (b & 0xFF).toString(16)).slice(-2); }).join('');
         if (sheetHashes[hashStr]) {
-          batchLogs.push([new Date(), item.id, outerName, currentName, 'Duplicate (MD5)', 'Skipped (Already in Flights)']);
+          batchLogs.push(['Bulk Ingestion', new Date(), '[DUPE] ' + currentName, (item.id ? 'FileID: ' + item.id + ' | ' : '') + 'Skipped (Already in Flights)']);
           dupeCount++;
           results.push({ name: currentName, success: true, isDuplicate: true, msg: 'Duplicate (MD5)' });
           continue;
@@ -1059,7 +1053,7 @@ function processBulkBatch(batchFiles, options) {
         var parsed = PARSER.parseIgc(text, currentName);
         if (!parsed || !parsed.fixes || parsed.fixes.length < 2) {
           copyToErrorFolder_(currentBlob, currentName, config);
-          batchLogs.push([new Date(), item.id, outerName, currentName, 'Parse Fail', 'Invalid IGC structure or < 2 fixes']);
+          batchLogs.push(['Bulk Ingestion', new Date(), '[ERR] ' + currentName, 'Invalid IGC structure or < 2 fixes']);
           errorCount++;
           results.push({ name: currentName, success: false, msg: 'Parse Fail (< 2 fixes)' });
           continue;
@@ -1196,7 +1190,7 @@ function processBulkBatch(batchFiles, options) {
           rowNum: null
         });
 
-        batchLogs.push([new Date(), item.id, outerName, currentName, 'Success', finalNotes || 'OK']);
+        batchLogs.push(['Bulk Ingestion', new Date(), '[OK] ' + currentName, (item.id ? 'FileID: ' + item.id + ' | ' : '') + (finalNotes || 'OK')]);
         processedCount++;
         results.push({ name: currentName, success: true, processed: true, status: status, flightId: flightId });
       }
@@ -1210,7 +1204,7 @@ function processBulkBatch(batchFiles, options) {
       var itemName = (item && item.name) ? item.name : (item && item.id ? item.id : 'Unknown');
       console.error('Error processing bulk file ' + itemName + ':', err);
       errorCount++;
-      batchLogs.push([new Date(), (item && item.id) ? item.id : '', itemName, itemName, 'Error', err.message]);
+      batchLogs.push(['Bulk Ingestion', new Date(), '[ERR] ' + itemName, err.message]);
       results.push({ name: itemName, success: false, msg: err.message });
     }
   }
@@ -1223,7 +1217,7 @@ function processBulkBatch(batchFiles, options) {
 
   // 12. Batch Write Activity Logs
   if (batchLogs.length > 0) {
-    logImportBatch_(batchLogs);
+    LOG.writeBatch(batchLogs);
   }
 
   return {
@@ -1405,22 +1399,7 @@ function createLightweightScoring_(parsed) {
   };
 }
 
-/**
- * Appends an array of audit log entries to the Activity sheet in one batch call.
- */
-function logImportBatch_(logs) {
-  if (!logs || logs.length === 0) return;
-  try {
-    var ss = SpreadsheetApp.getActive();
-    var logSheetName = (typeof TABS !== 'undefined' && TABS.APP_LOG) ? TABS.APP_LOG.name : 'App_Log';
-    var sh = ss ? ss.getSheetByName(logSheetName) : null;
-    if (!sh) return;
-    var lastRow = Math.max(1, sh.getLastRow());
-    sh.getRange(lastRow + 1, 1, logs.length, logs[0].length).setValues(logs);
-  } catch (e) {
-    console.warn('logImportBatch_ error: ' + e.message);
-  }
-}
+
 
 /**
  * Ensures the Flights sheet maintains at least minBuffer empty rows at the bottom.

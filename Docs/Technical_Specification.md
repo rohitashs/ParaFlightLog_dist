@@ -206,7 +206,7 @@ Fixed Header Schema (Row 3=Category, Row 4=Name). Data starts Row 5.
 *   **`scanWatchFolderTrigger()`**: Public trigger handler for scheduled background watch folder scans.
 
 ### `Scaffold.gs` (Setup & Validation)
-*   **`scaffoldAll_()`**: Master function to create/repair all sheets (`Dashboard`, `Flights`, `Parameters`, `Equipment`, `Lookups`, `App_Log`, `User Guide`, `Pilot_Profile`).
+*   **`scaffoldAll_()`**: Master function to create/repair all sheets (`Dashboard`, `Flights`, `Pilot_Profile`, `Equipment`, `User Guide`, `Config`, `Activity Logs`).
 *   **`scaffoldDashboard_(ss)` (`RQ-SYS-005`, `CR-SYS-001`, `CR-SYS-002`)**: Builds the compact 6-column Dashboard (`A` to `F`), featuring two 3-KPI summary banners (All-Time and Year-to-Date with `[h]:mm "hrs"` duration), a dynamic 6-month activity timeline with pure numeric values (`0 "flts"`, `[h]:mm "hrs"`, `#,##0 "km"`) and pilot currency color shading (Orange / Yellow / Green based on `TIMELINE_FLIGHTS_LOW/MED` and `TIMELINE_HOURS_LOW/MED`), a 4 x 2 leaderboard grid with 8 cards (Top 5 Duration, Top 5 Distance, Top 5 Max Alt, Top 5 Alt Gain, Top 5 Thermal Flights, Top 5 Soaring Flights, Top 5 XC Score, Top 5 Max Speed), and a dedicated complete lists section (20-row pre-scaffolded Launch Sites and Countries Flown ordered by flight count). All cells have word wrapping enabled and use resilient `INDIRECT("Flights!..." & startRow & ":...")` formulas immune to row insertions and deletions.
 *   **`scaffoldFlights_(ss)`**: Builds 2-row category headers, sets Master Flight Log folder hyperlink in Cell `A2`, freezes 4 columns (`A:D`), ensures minimum 2,000 rows and 69 columns capacity via `ensureDimensions_`, and applies column header notes/tooltips to Row 4 (`colNotes`).
 *   **`scaffoldConfig_(ss)`**: Unifies parameter settings (Cols A:C) and lookup reference tables (Cols E:N, spacer Col D) into the `Config` tab. Populates parameters with human-readable path enrichment in Column C (`Description`), strict Plain Text (`@`) formatting for format keys, `[h]:mm "hrs"` formatting for `TIMELINE_HOURS_LOW/MED` day fractions, `0 "flts"` for `TIMELINE_FLIGHTS_LOW/MED`, dynamic queries for equipment (`F3:I3`), and exact validation ranges.
@@ -252,7 +252,7 @@ Fixed Header Schema (Row 3=Category, Row 4=Name). Data starts Row 5.
 *   **`findHeuristicOverlap_(flightData, existingFlights)`**: Detects multi-device overlaps on the same day (+/- 15 min or interval overlap, launch distance <= 1000m).
 *   **`findHeuristicOverlapInMemory_(parsed, ...)`**: In-memory overlap detection for bulk batches, preventing redundant sheet grid reads.
 *   **`syncMasterLogsToSheet_()`**: Scans `MASTER_LOG_FOLDER_ID` for orphaned IGCs missing from `Flights` and restores them with status `Review?`.
-*   **`logImport_(...)` / `logImportBatch_(logs)`**: Appends single or batch audit records to `App_Log`.
+*   **`Code/Logger.gs` (`DSGN-LOG-001`, `CR-LOG-004`)**: Centralized Activity Logging engine (`LOG.write`, `LOG.writeBatch`, `LOG.createSession`, `LOG.cleanLogs`, `logClientActivity`, `cleanActivityLogs`). Records all operations to the 4-column `Activity Logs` sheet (`Process`, `Timestamp`, `Activity / Event`, `Additional Info`) with tiered verbosity (`Brief`, `Normal`, `Debug`) and conservative dual-threshold pruning (`LOG_ROWS_TO_KEEP: 2000`, `LOG_TIME_TO_KEEP_DAYS: 90`).
 
 ### `Utils.gs` (Math & Formatting)
 *   **`haversine_(lat1, lon1, lat2, lon2)`**: Consolidated great-circle distance in meters.

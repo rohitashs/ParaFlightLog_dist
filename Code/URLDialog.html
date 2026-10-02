@@ -194,7 +194,10 @@
 
         <!-- Activity Log Panel (Shown when processing) -->
         <div id="log-panel" style="display:none; margin-top:6px;">
-            <div style="font-weight:bold; font-size:12px; margin-bottom:4px;">Activity Log:</div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                <div style="font-weight:bold; font-size:12px;">Activity Log:</div>
+                <button type="button" id="btn-copy-log" class="secondary" style="padding:2px 8px; font-size:11px;" onclick="copyConsoleLog()">📋 Copy Log</button>
+            </div>
             <div id="log-console"></div>
         </div>
 
@@ -596,6 +599,27 @@
             var div = document.createElement("div");
             div.innerText = text || "";
             return div.innerHTML;
+        }
+
+        function copyConsoleLog() {
+            var consoleEl = document.getElementById("log-console");
+            if (!consoleEl) return;
+            var text = consoleEl.innerText || consoleEl.textContent;
+            navigator.clipboard.writeText(text).then(function() {
+                var btn = document.getElementById("btn-copy-log");
+                if (!btn) return;
+                var origText = btn.innerText;
+                btn.innerText = "✓ Copied!";
+                btn.style.backgroundColor = "#2E7D32";
+                btn.style.color = "#FFFFFF";
+                setTimeout(function() {
+                    btn.innerText = origText;
+                    btn.style.backgroundColor = "";
+                    btn.style.color = "";
+                }, 2000);
+            }).catch(function(err) {
+                alert("Failed to copy log: " + err);
+            });
         }
     </script>
 </body>

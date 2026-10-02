@@ -31,11 +31,15 @@ function scaffoldAll_() {
   // Clean up legacy tabs if present
   var oldParamSheet = ss.getSheetByName('Parameters');
   var oldLookSheet = ss.getSheetByName('Lookups');
+  var oldAppLog = ss.getSheetByName('App_Log');
   if (oldParamSheet && !ss.getSheetByName(TABS.CONFIG.name)) {
     oldParamSheet.setName(TABS.CONFIG.name);
   }
   if (oldLookSheet && oldLookSheet.getName() !== TABS.CONFIG.name) {
     try { ss.deleteSheet(oldLookSheet); } catch (e) {}
+  }
+  if (oldAppLog && !ss.getSheetByName(TABS.APP_LOG.name)) {
+    oldAppLog.setName(TABS.APP_LOG.name);
   }
 
   // 2. Scaffolding Content
@@ -564,9 +568,14 @@ function scaffoldConfig_(ss) {
   var dateRule = SpreadsheetApp.newDataValidation().requireValueInRange(dateRange, true).build();
   var timeRule = SpreadsheetApp.newDataValidation().requireValueInRange(timeRange, true).build();
 
+  var logLevelRule = SpreadsheetApp.newDataValidation().requireValueInList(['Brief', 'Normal', 'Debug'], true).build();
+  var yesNoRule = SpreadsheetApp.newDataValidation().requireValueInList(['Yes', 'No'], true).build();
+
   for (var i = 0; i < rows.length; i++) {
     if (rows[i][0] === 'DATE_FORMAT') sh.getRange(i + 3, 2).setNumberFormat('@').setDataValidation(dateRule);
     if (rows[i][0] === 'TIME_FORMAT') sh.getRange(i + 3, 2).setNumberFormat('@').setDataValidation(timeRule);
+    if (rows[i][0] === 'LOG_LEVEL') sh.getRange(i + 3, 2).setDataValidation(logLevelRule);
+    if (rows[i][0] === 'LOG_AUTO_CLEAN') sh.getRange(i + 3, 2).setDataValidation(yesNoRule);
     if (['ENABLE_WATCH_FOLDER', 'MOVE_FROM_WATCH_FOLDER'].indexOf(rows[i][0]) > -1) {
       var boolRule = SpreadsheetApp.newDataValidation().requireValueInList(['TRUE', 'FALSE'], true).build();
       sh.getRange(i + 3, 2).setDataValidation(boolRule);
@@ -614,16 +623,36 @@ function scaffoldLookups_(ss) {
 
 function scaffoldAppLog_(ss) {
   var sh = ss.getSheetByName(TABS.APP_LOG.name);
-  if (!sh) return;
-  ensureDimensions_(sh, 50, 6);
-  if (sh.getLastRow() === 0) {
-    sh.getRange('A1').setValue(TABS.APP_LOG.name).setFontWeight('bold').setFontSize(12);
-    sh.getRange('A1:F1').setBackground(TABS.APP_LOG.color).setFontColor('white');
-    
-    sh.getRange(2, 1, 1, 6).setValues([TABS.APP_LOG.columns]);
-    sh.getRange(2, 1, 1, 6).setFontWeight('bold').setBackground('#F5F5F5');
-    sh.setFrozenRows(2);
+  if (!sh) {
+    var oldSh = ss.getSheetByName('App_Log');
+    if (oldSh) {
+      oldSh.setName(TABS.APP_LOG.name);
+      sh = oldSh;
+    } else {
+      sh = ss.insertSheet(TABS.APP_LOG.name, TABS.APP_LOG.index);
+    }
   }
+  if (!sh) return;
+  sh.setTabColor(TABS.APP_LOG.color);
+  ensureDimensions_(sh, 50, 4);
+
+  // Set / refresh headers
+  sh.getRange('A1').setValue(TABS.APP_LOG.name).setFontWeight('bold').setFontSize(12);
+  sh.getRange('A1:D1').setBackground(TABS.APP_LOG.color).setFontColor('white');
+  
+  sh.getRange(2, 1, 1, 4).setValues([TABS.APP_LOG.columns]);
+  sh.getRange(2, 1, 1, 4).setFontWeight('bold').setBackground('#F5F5F5').setFontColor('#333333');
+  sh.setFrozenRows(2);
+
+  // Set explicit column widths per design spec
+  sh.setColumnWidth(1, 175); // Process
+  sh.setColumnWidth(2, 165); // Timestamp
+  sh.setColumnWidth(3, 530); // Activity / Event
+  sh.setColumnWidth(4, 380); // Additional Info
+
+  // Text wrap on Activity and Info columns
+  sh.getRange('C:D').setWrap(true);
+  sh.getRange('B3:B').setNumberFormat('yyyy-mm-dd hh:mm:ss');
 }
 
 function scaffoldFlights_(ss) {
@@ -1031,6 +1060,7 @@ function deleteSystemSheets_() {
       TABS.EQUIPMENT.name, 
       TABS.CONFIG.name, 
       TABS.APP_LOG.name, 
+      'App_Log',
       TABS.DASHBOARD.name,
       TABS.PILOT_PROFILE ? TABS.PILOT_PROFILE.name : 'Pilot_Profile',
       TABS.USER_GUIDE ? TABS.USER_GUIDE.name : 'User Guide',

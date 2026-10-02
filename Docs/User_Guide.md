@@ -48,7 +48,7 @@ The Paragliding Flight Log is a serverless, cloud-native logbook built directly 
 
 | Component | Function | Architecture Details | Pilot Benefit |
 | :--- | :--- | :--- | :--- |
-| **Google Sheets UI** | Primary Interface | 7 organized tabs: `Dashboard`, `Flights`, `Pilot_Profile`, `Equipment`, `User Guide`, `Config`, and `App_Log`. | Zero install required; fully accessible on desktop browsers, tablets, and Google Sheets mobile apps. |
+| **Google Sheets UI** | Primary Interface | 7 organized tabs: `Dashboard`, `Flights`, `Pilot_Profile`, `Equipment`, `User Guide`, `Config`, and `Activity Logs`. | Zero install required; fully accessible on desktop browsers, tablets, and Google Sheets mobile apps. |
 | **Google Apps Script** | Autonomous Engine | Modular scripts running inside Google's cloud infrastructure that parse IGC files, detect flight modes, query weather APIs, and calculate XC scores. | Free execution with zero server hosting costs, database subscription fees, or maintenance overhead. |
 | **Master Flight Archive** | Permanent Cloud Storage | Designated Google Drive folder mirroring all valid flight tracks with standardized naming (`YYYY-MM-DD_HHMM_PilotName.igc`) and public viewing links. | Direct one-click downloads and instant 3D interactive replay via SeeYou Cloud. |
 | **Automated Watchers** | Hands-Free Background Ingestion | Time-driven background triggers that poll your Google Drive watch folders every 5 minutes for newly synced flight tracks. | Drop files into Google Drive from your phone or flight instrument, and your logbook updates automatically. |
@@ -116,8 +116,8 @@ Because the spreadsheet contains custom automation to read files, query weather 
    * **`Pilot_Profile`**: Pilot ratings, emergency contacts, medical notes, and tracking links.
    * **`Equipment`**: Fleet inventory tracking hours, wings, harnesses, and reserves.
    * **`User Guide`**: In-sheet quick reference and metric explanations.
-   * **`Config`**: Consolidated system settings table (Columns A:C for key-value parameters) and reference dropdown lookups (Columns E:N for equipment categories, wings, harnesses, reserves, flight statuses, types, and formats, separated by blank spacer Column D).
-   * **`App_Log`**: Immutable audit log of all system import attempts and background jobs.
+   * **`Config`**: Consolidated system settings table (Columns A:C for key-value parameters including `[ Logging & Admin ]` controls) and reference dropdown lookups (Columns E:N for equipment categories, wings, harnesses, reserves, flight statuses, types, and formats, separated by blank spacer Column D).
+   * **`Activity Logs`**: Standardized 4-column audit log (`Process`, `Timestamp`, `Activity / Event`, `Additional Info`) recording all system operations, background jobs, and diagnostic traces with tiered log levels (`Brief`, `Normal`, `Debug`) and conservative retention pruning.
 
 ---
 
@@ -194,7 +194,7 @@ To have your logbook automatically ingest new flight tracks in the background:
    * Takeoff and landing locations, thermal percentages, glide ratio, and weather conditions are populated.
    * The **`FlightID`** links directly to SeeYou Cloud 3D replay.
    * The **`IGC File`** column contains a direct download link pointing to your `Master Log Folder`.
-   * The **`App_Log`** tab shows a timestamped `Success` audit record.
+   * The **`Activity Logs`** tab shows a timestamped `[OK]` audit record.
 
 ---
 
@@ -519,7 +519,7 @@ Below is the complete reference for every column in the logbook, categorized by 
   1. Corrupt or truncated files that terminated unexpectedly before landing.
   2. Non-IGC file types or zero-byte text files.
   3. Empty `.zip` archives or archives containing unsupported formats.
-* Check the **`App_Log`** tab to see the exact error reason (e.g. *"Parse Fail: Invalid IGC structure"*).
+* Check the **`Activity Logs`** tab to see the exact error reason (e.g. *"[ERR] Parse Fail: Invalid IGC structure"*), or use the **📋 Copy Log** button in modal dialog consoles to copy the full diagnostic stream to your clipboard.
 
 ### Q: Why are my newly imported flights showing status 'Review?' instead of 'Valid'?
 * **A**: This is intentional. To ensure that your **Dashboard KPIs** reflect accurate, clean pilot statistics, all incoming flights default to `'Review?'` until you confirm them. Review the flight in the sheet or via the **Flight Inspector**, then change the status dropdown to **`Valid`**.
