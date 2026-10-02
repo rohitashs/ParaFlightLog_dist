@@ -84,6 +84,7 @@ var CFG = {
     { section: 'Analysis - Adv', key: 'MODE_HYSTERESIS_SEC', val: 6, desc: 'Mode switch delay (sec)' },
 
     // Scoring
+    { section: 'Scoring', key: 'RDP_TOLERANCE', val: 0.0005, desc: 'Ramer-Douglas-Peucker track simplification tolerance in degrees (default 0.0005, approx 50m)' },
     { section: 'Scoring', key: 'NATIONAL_BONUS_MULTIPLIER', val: 1.2, desc: 'Triangle Multiplier' },
     { section: 'Scoring', key: 'NATIONAL_BONUS_WITHIN_PCT', val: 5, desc: 'Triangle gap tolerance %' },
     

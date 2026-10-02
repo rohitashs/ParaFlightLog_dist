@@ -1,10 +1,15 @@
 # Project Change Log
 
-## Session: Dedupe Engine Overhaul, In-Memory Row Scoring & Logbook Duplicate Scanner (CR-ING-009)
+## Session: Dedupe Engine Overhaul, In-Memory Row Scoring, Logbook Duplicate Scanner (CR-ING-009) & Configurable RDP Tolerance (CR-CFG-002)
 **Date**: 2026-10-02
 **Versions**: v0.8.21
-**Focus**: Dedupe Engine Overhaul (`CR-ING-009`), In-Memory Row Quality Scoring (`scoreFlightQualityFromRow_`), Elimination of Compounding Drive Round-Trips (`Bug-ING-007`), Automation Queue Checkpoint Progress Preservation (`Bug-AUT-001`), Timezone-Immune String Extraction (`Bug-ING-008`), Short Throwaway Tags (`D01`, `D02`, ...) & Reciprocal Notes, Intra-Batch Duplicate Pairing (`Bug-ING-009`), Folder Crawl Discovery Metrics, End-of-Run Summary Formatting, and Logbook Duplicate Scanner (`Flight maintenance > Scan & Flag Duplicates in Logbook...`).
+**Focus**: Dedupe Engine Overhaul (`CR-ING-009`), In-Memory Row Quality Scoring (`scoreFlightQualityFromRow_`), Elimination of Compounding Drive Round-Trips (`Bug-ING-007`), Automation Queue Checkpoint Progress Preservation (`Bug-AUT-001`), Timezone-Immune String Extraction (`Bug-ING-008`), Short Throwaway Tags (`D01`, `D02`, ...) & Reciprocal Notes, Intra-Batch Duplicate Pairing (`Bug-ING-009`), Folder Crawl Discovery Metrics, End-of-Run Summary Formatting, Logbook Duplicate Scanner (`Flight maintenance > Scan & Flag Duplicates in Logbook...`), and Configurable RDP Simplification Tolerance (`CR-CFG-002`).
 
+*   `[Imp]` **CR-CFG-002 (Configurable RDP Simplification Tolerance)**:
+    *   **Dynamic RDP Tolerance (`RDP_TOLERANCE`)**: Exposed Ramer-Douglas-Peucker simplification tolerance as a user-configurable parameter in `Code/Config.gs` under `[ Flight Scoring, Physics and Analysis ]` with a default of `0.0005` (degrees, approx 50m).
+    *   **Scoring Engine Integration**: Updated `SCORING.calculateXcScore(fixes, configOrTol)` in `Code/Scoring.gs` to dynamically resolve tolerance from the passed configuration object or numeric value, falling back gracefully to `CFG.defaults.RDP_TOLERANCE` or `0.0005`.
+    *   **Pipeline & Maintenance Integration**: Threaded active sheet configuration through `processSingleIgcBlob_` and `processBulkBatch` in `Code/Ingestion.gs` and `executeFlightMaintenanceRow_` in `Code/Code.gs`.
+    *   **UI & Scaffold Synchronization**: Updated parameter badges in `Code/SaveConfigDialog.html` (50 total keys, 20 scoring keys) and updated validation and unit test assertions in `Code/Test.gs`.
 *   `[Imp]` **CR-ING-009 (Dedupe Engine Enhancement, Row Quality Scoring, Discovery Metrics & Logbook Duplicate Scanner)**:
     *   **In-Memory Row-Based Quality Scoring (`scoreFlightQualityFromRow_`)**: Eliminated severe bulk ingestion bottleneck where every candidate comparison previously called `DriveApp.getFileById()` to parse raw IGCs from Google Drive (`Bug-ING-007`). Evaluates device/source (XCTrack = 35, dedicated vario = 25, generic app = 15), barometric altitude integrity (maxAlt !== minAlt = 30), duration (>30m = 15, >10m = 10), and equipment (+10) directly from row data in memory.
     *   **Timezone-Immune Precision & Wider Overlap Window**: Switched from `getValues()` to `getDisplayValues()` across flight summaries and dedupe matching (`Bug-ING-008`), preventing script timezone date translation (midnight rollbacks) and 1899 epoch time offsets. Expanded time tolerance to +/- 20 minutes (or 45 minutes with interval overlap) and spatial proximity to <= 1000m.
@@ -15,7 +20,8 @@
     *   **End-of-Run Aggregate Summary**: Formatted detailed summary reporting total files processed, added to logbook, duplicates discarded, and errors in `finalizeBulkImport` and background queue logging.
     *   **Logbook Duplicate Scanner Utility**: Added `Flight Log > Flight maintenance > Scan & Flag Duplicates in Logbook...` (`uiScanAndFlagLogbookDuplicates`, `scanAndFlagLogbookDuplicates_`) allowing pilots to audit and flag existing logbook duplicates into `Dup-Primary` and `Dup-Others` with reciprocal notes without demoting user-validated flights (`Valid`).
 *   `[Test]` **Unit Test Suite Expansion (`Code/Test.gs`)**:
-    *   Added `testDedupeEngineEnhancements_()` to automated test suite: verifies in-memory row quality scoring invariants, short `DupRef` tags and reciprocal notes formatting, tag replacement idempotency, and public RPC/menu function availability (11/11 tests pass).
+    *   Added `testDedupeEngineEnhancements_()` to automated test suite: verifies in-memory row quality scoring invariants, short `DupRef` tags and reciprocal notes formatting, tag replacement idempotency, and public RPC/menu function availability.
+    *   Updated `testConfigStructureAndGrouping_()` and `testScoring_()` in `Code/Test.gs` to validate 20 scoring parameters and dynamic `RDP_TOLERANCE` simplification handling. All 11/11 test suites pass.
 
 ## Session: Tri-Mode Execution Subsystem, Dialog Harmonization & Brochure Publication (DSGN-UI-001)
 **Date**: 2026-10-02

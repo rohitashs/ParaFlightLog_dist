@@ -136,7 +136,7 @@ function processSingleIgcBlob_(blob, fileName, fileId, outerName, config, proces
   
   // C. Analysis & Scoring
   var analysis = ANALYSIS.analyzeFlight(parsed.fixes, config);
-  var scoring = SCORING.calculateXcScore(parsed.fixes);
+  var scoring = SCORING.calculateXcScore(parsed.fixes, config);
   
   var noteLog = []; // Accumulate notes here
   
@@ -1159,7 +1159,7 @@ function processBulkBatch(batchFiles, options) {
           : createLightweightAnalysis_(parsed);
         
         var scoring = (options.xcScoring !== false)
-          ? SCORING.calculateXcScore(parsed.fixes)
+          ? SCORING.calculateXcScore(parsed.fixes, config)
           : createLightweightScoring_(parsed);
 
         // 4. Geo, Sites, Timezone

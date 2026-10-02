@@ -18,15 +18,30 @@ var SCORING = {};
 /**
  * Main Scoring Entry Point
  * @param {Array} fixes - Array of {lat, lon, alt}
+ * @param {Object|number} [configOrTol] - Optional configuration object or numeric tolerance
  * @return {Object} - { free: {}, flat: {}, fai: {}, best: {} }
  */
-function calculateXcScore(fixes) {
+function calculateXcScore(fixes, configOrTol) {
   if (!fixes || fixes.length < 50) return null; // Too short to score meaningfully
+  
+  // Resolve tolerance
+  var tolerance = 0.0005; // Default ~50m in degrees (0.0001 deg is ~11m)
+  if (typeof configOrTol === 'number' && !isNaN(configOrTol) && configOrTol > 0) {
+    tolerance = configOrTol;
+  } else if (configOrTol && typeof configOrTol === 'object') {
+    if (configOrTol.RDP_TOLERANCE !== undefined && !isNaN(parseFloat(configOrTol.RDP_TOLERANCE))) {
+      var parsedTol = parseFloat(configOrTol.RDP_TOLERANCE);
+      if (parsedTol > 0) tolerance = parsedTol;
+    }
+  } else if (typeof CFG !== 'undefined' && CFG.defaults && CFG.defaults.RDP_TOLERANCE !== undefined) {
+    var defaultTol = parseFloat(CFG.defaults.RDP_TOLERANCE);
+    if (!isNaN(defaultTol) && defaultTol > 0) tolerance = defaultTol;
+  }
   
   // 1. Simplify Track (Validation against limits)
   // Reduce to ~100-200 points for geometry calc using Ramer-Douglas-Peucker
   // This is critical for Apps Script performance.
-  var simplified = simplifyTrack_(fixes, 0.0005); // Tolerance ~50m? degrees. 0.0001 deg is ~11m. 0.0005 ~50m.
+  var simplified = simplifyTrack_(fixes, tolerance);
   
   if (simplified.length < 2) return null;
   

@@ -745,7 +745,7 @@ function executeFlightMaintenanceRow(rowNum, opConfig) {
             }
           }
           if (opConfig.scoring) {
-            var scoring = SCORING.calculateXcScore(parsed.fixes);
+            var scoring = SCORING.calculateXcScore(parsed.fixes, config);
             if (scoring && scoring.best) {
               var best = scoring.best;
               var tri = scoring.triangle || {};

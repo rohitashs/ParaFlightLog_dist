@@ -126,6 +126,12 @@ function testScoring_() {
     return { module: 'Scoring', error: 'normalizeXcClass Out-and-Return mismatch' };
   }
 
+  // Test 4: Configurable RDP tolerance check
+  var scoreWithCustomRdp = SCORING.calculateXcScore(fixesLinear, { RDP_TOLERANCE: 0.002 });
+  if (!scoreWithCustomRdp || !scoreWithCustomRdp.best) {
+    return { module: 'Scoring', error: 'Null result with custom RDP tolerance' };
+  }
+
   return { module: 'Scoring', idx: true };
 }
 
@@ -547,8 +553,8 @@ function testConfigStructureAndGrouping_() {
   if (counts['Integrations'] !== 16) {
     return { module: 'ConfigStructure', error: 'Integrations expected 16 keys, got ' + counts['Integrations'] };
   }
-  if (counts['Flight Scoring, Physics and Analysis'] !== 19) {
-    return { module: 'ConfigStructure', error: 'Flight Scoring expected 19 keys, got ' + counts['Flight Scoring, Physics and Analysis'] };
+  if (counts['Flight Scoring, Physics and Analysis'] !== 20) {
+    return { module: 'ConfigStructure', error: 'Flight Scoring expected 20 keys, got ' + counts['Flight Scoring, Physics and Analysis'] };
   }
   if (counts['Formats and Units'] !== 2) {
     return { module: 'ConfigStructure', error: 'Formats and Units expected 2 keys, got ' + counts['Formats and Units'] };

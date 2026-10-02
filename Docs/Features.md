@@ -64,10 +64,11 @@ Analyzes the track log to understand *how* you flew.
 *   **Safety Checks**: Flags abnormally high sink rates or ground proximity events.
 
 ## 4. 🏆 XC Scoring (League Rules)
-*Maps to `RQ-SCR-001`*
+*Maps to `RQ-SCR-001`, `CR-CFG-002`*
 
 Applies standard XContest/FAI scoring rules to every flight.
 *   **Optimization**: Finds the optimal track geometry across Free Flight, Out-and-Return, and Triangle courses.
+*   **Configurable Track Simplification (RDP Tolerance - `CR-CFG-002`)**: Ramer-Douglas-Peucker simplification tolerance is configurable via `RDP_TOLERANCE` in the `Config` tab under `[ Flight Scoring, Physics and Analysis ]` (default `0.0005` degrees, $\sim 50$ m), balancing algorithmic execution speed in Google Apps Script with turnpoint fidelity.
 *   **Out-and-Return Detection**: Identifies single turnpoint out-and-back flights ($P_i \to P_j \to P_k$ where closing gap $\le 20\%$ of total course distance), awarding a 1.2x league multiplier.
 *   **Triangle Detection**: Identifies **Flat Triangles** (3 distinct legs $\ge 5\%$, gap $\le 20\%$, 1.2x) and **FAI Triangles** (strict FAI geometry with shortest leg $\ge 28\%$, 1.4x).
 *   **Harmonized Taxonomy**: Classifies best flight geometry into standard categories: `Free Flight`, `Flat Triangle`, `FAI Triangle`, or `Out-and-Return`.

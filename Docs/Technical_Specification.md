@@ -138,8 +138,8 @@ Fixed Header Schema (Row 3=Category, Row 4=Name). Data starts Row 5.
 *   **Soaring**: `Vario > -0.2m/s` AND `HeadingChange > 90deg` (S-Turns).
 *   **Glide**: `TurnRate < 5deg/s` AND `Vario < 0.2m/s`.
 
-### C. XC Scoring (`RQ-SCR-001`)
-1.  **Simplification**: Ramer-Douglas-Peucker (RDP) epsilon=0.001.
+### C. XC Scoring (`RQ-SCR-001`, `CR-CFG-002`)
+1.  **Simplification**: Ramer-Douglas-Peucker (RDP) track reduction configurable via `RDP_TOLERANCE` in the `Config` tab (default `0.0005` degrees, $\sim 50$ m). Dynamically simplifies multi-thousand raw GPS fixes to $\sim 100\text{--}200$ key turnpoint candidates for rapid geometric calculation within Google Apps Script time budgets.
 2.  **Optimization**: Brute-force 3 TP max distance.
 3.  **Triangle Rules**:
     *   **Flat**: Gap < 20%.

@@ -10,7 +10,8 @@
 - [x] **[ING-013]** Folder Crawl Discovery Metrics: enhanced `getFilesRecursive_` and `stageUrlOrDriveImport` to track `totalScanned`, `subfolders`, `archives`, `unsupported`, writing immediate `[DISCOVERY]` events.
 - [x] **[ING-014]** End-of-Run Summary Clarification: formatted comprehensive outcome summaries detailing total processed, added to logbook, duplicates discarded, and errors.
 - [x] **[MNT-003]** Logbook Duplicate Scanner: added `Flight Log > Flight maintenance > Scan & Flag Duplicates in Logbook...` (`uiScanAndFlagLogbookDuplicates`, `scanAndFlagLogbookDuplicates_`) to audit and flag existing logbook duplicates without demoting user-validated flights.
-- [x] **[TEST-002]** Offline Unit Test Suite Expansion: added `testDedupeEngineEnhancements_()` to `Code/Test.gs` and offline runner (11/11 tests pass).
+- [x] **[CFG-002]** Configurable RDP Simplification Tolerance (`CR-CFG-002`): added `RDP_TOLERANCE` to `Code/Config.gs`, dynamic scoring resolution in `Code/Scoring.gs`, pipeline thread in `Code/Ingestion.gs` and `Code/Code.gs`, updated `SaveConfigDialog.html` badges (50 keys total, 20 scoring).
+- [x] **[TEST-002]** Offline Unit Test Suite Expansion: added `testDedupeEngineEnhancements_()`, updated scoring tolerance assertions and config grouping tests in `Code/Test.gs` (11/11 tests pass).
 
 ## Completed in Recent Sessions (2026-10-02) - Tri-Mode Execution, Dialog Harmonization, Brochure & Audits (v0.8.20)
 - [x] **[UI-019]** Tri-Mode Execution Subsystem extension across all batch dialogs (`BulkIngestDialog`, `FlightMaintenanceDialog`, `PurgeDialog`, `ScanDialog`, `ResyncDialog`, `URLDialog`, `UploadDialog`) with `[ Run Here ]`, `[ Run in Sidebar ]`, `[ Run in Background ]`.
@@ -41,7 +42,6 @@
 ## Future / Next Up
 - [ ] **CR-UI-020 / RQ-SYS-008**: Guided Multi-Step Task Wizards (Initial Onboarding, Season Rollover, Equipment Migration, API Setup).
 - [ ] **RQ-SYS-010**: Distributed Multi-Instance Update & Lifecycle Manager (Push/pull checks, non-destructive schema migrations).
-- [ ] **CR-CFG-002**: Configurable RDP Tolerance (Runtime parameter in `Config`).
 - [ ] **CR-DEV-004**: AI-Driven & Automated End-to-End Testing Harness (Playwright / subagents, synthetic flight suite).
 - [ ] **RQ-SYS-011**: Open Source Release Packaging, Governance & Community Strategy.
 - [ ] **CR-SEC-001**: Pilot PII Privacy, Sensitive Data Scrubbing & Secrets Guardrail.
