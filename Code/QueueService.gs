@@ -187,10 +187,17 @@ var QueueService = {
     sh.getRange(row, 6).setValue(new Date());
 
     if (payload) {
-      if (stats) payload.stats = stats;
+      payload.stats = payload.stats || {};
+      if (stats) {
+        if (typeof stats.importedCount === 'number') payload.stats.imported = stats.importedCount;
+        if (typeof stats.duplicateCount === 'number') payload.stats.duplicates = stats.duplicateCount;
+        if (typeof stats.errorCount === 'number') payload.stats.errors = stats.errorCount;
+        if (typeof stats.processedCount === 'number') payload.stats.processedCount = stats.processedCount;
+      }
       payload.stats.processed = processedCount;
       sh.getRange(row, 7).setValue(JSON.stringify(payload));
     }
+    SpreadsheetApp.flush();
 
     return true;
   },
@@ -209,7 +216,7 @@ var QueueService = {
 
     payload.cursorIndex = cursorIndex;
     var total = payload.totalItems || 0;
-    var processed = payload.stats ? payload.stats.processed : cursorIndex;
+    var processed = Math.max(cursorIndex, (payload.stats && typeof payload.stats.processed === 'number') ? payload.stats.processed : 0);
     var pct = (total > 0) ? Math.round((processed / total) * 100) : 0;
     var progressStr = processed + ' / ' + total + ' (' + pct + '%)';
 

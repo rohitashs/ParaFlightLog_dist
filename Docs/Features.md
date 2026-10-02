@@ -27,20 +27,29 @@ The system automates the import of flight logs (IGC) to reduce manual entry.
     *   *File Upload*: Staged temporary uploads are mirrored to Master, skipped duplicates move to Trash, errors copy to Error folder, and temporary uploads are trashed from `UPLOAD_FOLDER_ID`.
 
 ## 2. ✈️ Automated Flight Logging & Smart Deduplication
-*Maps to `RQ-ING-002`, `CR-ING-006`*
+*Maps to `RQ-ING-002`, `CR-ING-006`, `CR-ING-009`*
 
 Converts raw data into a structured Pilot Logbook in Google Sheets.
 *   **Auto-Summary**: Generates human-readable summaries (e.g. "2h 10m XC at Bir Billing 3100m").
 *   **Row-Based Hashes (Zero Black Box)**: MD5 file hashes are stored directly on the flight row in Column 70 (`IGC Hash`). Deleting a flight row automatically removes its hash, allowing clean re-import without blanket cache wipes.
-*   **Smart Deduplication & Device Overlap Triage**:
+*   **Smart Deduplication & Device Overlap Triage (`CR-ING-009`)**:
     *   *Hard Dedupe*: Identical file content (MD5 match) is recognized immediately. Re-links to existing Master IGC files if rows were deleted without generating `_copy.igc` duplicates, and moves source files to the Trash folder.
-    *   *Heuristic Overlap*: When multiple instruments record the same flight (same date, $\pm 15$ min or interval overlap, launch distance $\le 1{,}000$ m), the system calculates a 0–100 quality score (XCTrack primary device = 40 pts, dedicated vario = 30 pts, baro sensor integrity = 30 pts, 1Hz resolution = 15 pts, duration, and metadata).
-    *   *Candidate Tagging*: The superior track is marked `Dup-Primary` (gold) and the backup track is marked `Dup-Others` (orange), with cross-referencing pairing notes `[DupRef: DUP_YYYYMMDD_HHMM | Paired with <FlightID> (Score: X vs Y)]`.
+    *   *Heuristic Overlap & In-Memory Quality Scoring*: When multiple instruments record the same flight (same date, $\pm 20$ min or interval overlap with $\Delta t \le 45$ min, launch distance $\le 1{,}000$ m), the system calculates a 0–100 quality score entirely in memory (`scoreFlightQualityFromRow_`) without slow Drive IGC re-fetching:
+        *   **Device / Software Source (Max 40 pts)**: XCTrack (35 pts), Dedicated Flight Vario / Instrument (25 pts - UltraBliP, XC Tracer, Flymaster, Skytraxx, Oudie, Syride), Generic flight app (15 pts - XCSoar, SeeYou, FlyMe), Unknown (10 pts base).
+        *   **Barometric Pressure Integrity (Max 30 pts)**: Authentic baro altitude profile with non-zero climb (30 pts), single max altitude (15 pts).
+        *   **Duration & Distance (Max 20 pts)**: Flight duration $> 30$ min (15 pts), $> 10$ min (10 pts).
+        *   **Equipment Richness (Max 10 pts)**: Populated wing model (+10 pts).
+    *   *Timezone-Immune Precision*: Reads sheet dates and times via `getDisplayValues()` rather than native Date objects, completely preventing script timezone conversion errors and midnight day shifts.
+    *   *Candidate Tagging & Reciprocal Notes*: The superior track is marked `Dup-Primary` (gold) and backup tracks are marked `Dup-Others` (orange). Pairing notes use concise throwaway cluster tags (`D01`, `D02`, ...) and reciprocal cross-referencing:
+        *   Primary Flight Note: `[DupRef: D01 | Others: F20260510-02, F20260510-03]`
+        *   Backup Flight Note: `[DupRef: D01 | Primary: F20260510-01]`
+    *   *Intra-Batch Duplicate Pairing*: Resolves duplicate clusters appearing within the same 5-file ingestion batch directly in memory before writing to the sheet.
 *   **Status Taxonomy & Dashboard Protection**:
     *   Dropdown options: `Valid`, `Review?`, `Dup-Primary`, `Dup-Others`, `Invalid?`, `Remove`. Note that legacy `'Duplicate'` status has been completely eliminated in favor of soft dedupe quality scoring and self-healing Master Log drift.
     *   All Dashboard KPI cards, 6-month currency timeline, and leaderboards strictly filter for `Status = "Valid"`, preventing unreviewed or duplicate tracks from polluting pilot statistics.
 *   **Self-Healing Maintenance Tools (`Flight Log > Flight maintenance`)**:
     *   *Flight Updates...*: Unified modal dialog to batch update weather, geo reverse lookup, XContest validation, physics/XC scoring, or sort flights.
+    *   *Scan & Flag Duplicates in Logbook... (`CR-ING-009`)*: Diagnostic utility (`scanAndFlagLogbookDuplicates_`) that scans the entire logbook, groups flights by date, clusters tracks by launch proximity ($\le 1{,}000$ m) and time overlap ($\le 20$ min or interval overlap), evaluates quality scores, preserves pilot-validated flights (`Valid`), and flags `Dup-Primary` and `Dup-Others` with reciprocal notes.
     *   *Mark Duplicates for Removal...*: Staging dialog with `Dup - Others` and `Dup - Primary` checkboxes to stage triaged duplicate tracks to `Remove`.
     *   *Purge Flights Marked 'Remove'...*: Interactive modal dialog (`PurgeDialog.html`) with live candidate detection, client-side stepping, real-time progress bar, Google Drive trash folder transfer, row deletion, and primary Done button.
     *   *Re-sync Missing Flights from Master Folder...*: Interactive modal dialog (`ResyncDialog.html`) with live progress bar, activity log, and primary Done button that scans `MASTER_LOG_FOLDER_ID` for orphaned IGCs and restores them to the `Flights` tab as `Review?`.

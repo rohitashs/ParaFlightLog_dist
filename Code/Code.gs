@@ -27,6 +27,7 @@ function onOpen(e) {
         .addItem('Flight Updates...', 'showFlightMaintenanceDialog')
         .addItem('Sort All Flights by Date', 'sortFlightsByDate')
         .addSeparator()
+        .addItem('Scan & Flag Duplicates in Logbook...', 'uiScanAndFlagLogbookDuplicates')
         .addItem('Mark Duplicates for Removal...', 'showMarkDuplicatesDialog')
         .addItem('Purge Flights Marked \'Remove\'', 'showPurgeDialog')
         .addItem('Re-sync Missing Flights from Master Folder', 'showResyncDialog'))
@@ -1938,7 +1939,11 @@ function finalizeBulkImport(stats) {
   var summaryMsg = '[COMPLETE] Bulk Ingestion session completed';
   var details = '';
   if (stats) {
-    summaryMsg = '[COMPLETE] Bulk Ingestion complete: ' + (stats.imported || 0) + ' imported, ' + (stats.duplicates || 0) + ' duplicates, ' + (stats.errors || 0) + ' errors';
+    var tot = stats.totalStaged || (stats.processed || 0) || ((stats.imported || 0) + (stats.duplicates || 0) + (stats.errors || 0));
+    summaryMsg = '[COMPLETE] Bulk Ingestion complete: ' + tot + ' file(s) processed (' + 
+                 (stats.imported || 0) + ' added to logbook, ' + 
+                 (stats.duplicates || 0) + ' duplicates discarded, ' + 
+                 (stats.errors || 0) + ' errors)';
     details = 'Imported: ' + (stats.imported || 0) + ' | Duplicates: ' + (stats.duplicates || 0) + ' | Errors: ' + (stats.errors || 0);
   }
   LOG.write('BULK_INGEST', summaryMsg, details);
@@ -2170,7 +2175,7 @@ function executeWorkerBatch(jobType, currentBatch, options, stepIndex, jobId) {
     try {
       var job = QueueService.getJob(jobId);
       if (job && job.payload) {
-        var processed = (job.payload.stats ? job.payload.stats.processed : 0) + (result.importedCount || currentBatch.length);
+        var processed = stepIndex + currentBatch.length;
         QueueService.updateProgress(jobId, processed, job.payload.totalItems, result, job.payload);
       }
     } catch (e) {
@@ -2187,10 +2192,10 @@ function executeWorkerBatch(jobType, currentBatch, options, stepIndex, jobId) {
  * @param {string} [jobId]
  * @return {Object}
  */
-function finalizeWorkerJob(jobType, jobId) {
+function finalizeWorkerJob(jobType, jobId, stats) {
   switch (jobType) {
     case 'BULK_INGEST':
-      finalizeBulkImport();
+      finalizeBulkImport(stats);
       break;
     case 'PURGE':
       finalizePurge_();
@@ -2283,6 +2288,13 @@ function processBackgroundQueue() {
   var options = (job.payload && job.payload.options) ? job.payload.options : {};
   var totalItems = job.payload.totalItems || queue.length;
 
+  var accumulatedStats = (job.payload && job.payload.stats) ? job.payload.stats : {
+    processed: 0,
+    imported: 0,
+    duplicates: 0,
+    errors: 0
+  };
+
   var currentIndex = startIndex;
   var isExhausted = false;
 
@@ -2303,15 +2315,32 @@ function processBackgroundQueue() {
     var batch = queue.slice(currentIndex, currentIndex + batchSize);
     try {
       var res = executeWorkerBatch(job.jobType, batch, options, currentIndex, jobId);
+      if (res) {
+        if (typeof res.processedCount === 'number') {
+          accumulatedStats.imported = (accumulatedStats.imported || 0) + (res.processedCount - (res.duplicateCount || 0) - (res.errorCount || 0));
+        } else if (typeof res.importedCount === 'number') {
+          accumulatedStats.imported = (accumulatedStats.imported || 0) + res.importedCount;
+        }
+        if (typeof res.duplicateCount === 'number') {
+          accumulatedStats.duplicates = (accumulatedStats.duplicates || 0) + res.duplicateCount;
+        }
+        if (typeof res.errorCount === 'number') {
+          accumulatedStats.errors = (accumulatedStats.errors || 0) + res.errorCount;
+        }
+      }
       currentIndex += batch.length;
+      accumulatedStats.processed = currentIndex;
     } catch (bErr) {
       LOG.write('BACKGROUND_QUEUE', '[ERR] Batch failure at index ' + currentIndex + ': ' + bErr.message);
       currentIndex += batch.length; // skip failed batch and continue
+      accumulatedStats.processed = currentIndex;
+      accumulatedStats.errors = (accumulatedStats.errors || 0) + batch.length;
     }
   }
 
   if (isExhausted && currentIndex < queue.length) {
     // Checkpoint state and schedule continuation in 30 seconds
+    job.payload.stats = accumulatedStats;
     QueueService.checkpoint(jobId, currentIndex, job.payload);
     LOG.write('BACKGROUND_QUEUE', '[INFO] Time budget (4.5m) reached. Checkpointed at ' + currentIndex + '/' + totalItems + '. Scheduling continuation trigger.');
 
@@ -2321,8 +2350,10 @@ function processBackgroundQueue() {
       .create();
   } else {
     // Completed all items
-    finalizeWorkerJob(job.jobType, jobId);
-    LOG.write('BACKGROUND_QUEUE', '[COMPLETE] Background job finished: ' + jobId, 'Total items: ' + totalItems);
+    job.payload.stats = accumulatedStats;
+    accumulatedStats.totalStaged = totalItems;
+    finalizeWorkerJob(job.jobType, jobId, accumulatedStats);
+    LOG.write('BACKGROUND_QUEUE', '[COMPLETE] Background job finished: ' + jobId, 'Total items: ' + totalItems + ' | Added: ' + (accumulatedStats.imported || 0) + ' | Duplicates: ' + (accumulatedStats.duplicates || 0) + ' | Errors: ' + (accumulatedStats.errors || 0));
     SpreadsheetApp.getActive().toast('Background task complete: ' + job.payload.title, 'Done', 5);
   }
 }
@@ -2363,4 +2394,43 @@ function uiUpdateUploadFolder() { return uiUpdateUploadFolder_(); }
 function uiUpdateMasterLogFolder() { return uiUpdateMasterLogFolder_(); }
 function uiUpdateErrorFolder() { return uiUpdateErrorFolder_(); }
 function uiUpdateTrashFolder() { return uiUpdateTrashFolder_(); }
+function uiScanAndFlagLogbookDuplicates() { return uiScanAndFlagLogbookDuplicates_(); }
+
+/**
+ * Menu callback to trigger logbook duplicate detection and cross-reference flagging.
+ */
+function uiScanAndFlagLogbookDuplicates_() {
+  var ui = SpreadsheetApp.getUi();
+  var response = ui.alert(
+    'Scan Logbook for Duplicates',
+    'This will scan all flights in your logbook for duplicate recordings (matching date, launch proximity <= 1,000m, and time overlap).\n\n' +
+    'Duplicate clusters will be scored and flagged as "Dup-Primary" and "Dup-Others" with reciprocal notes. Flights already marked "Valid" will be preserved.\n\n' +
+    'Do you want to proceed?',
+    ui.ButtonSet.YES_NO
+  );
+  if (response !== ui.Button.YES) {
+    return;
+  }
+
+  var res = INGESTION.scanAndFlagLogbookDuplicates();
+  if (!res || !res.success) {
+    ui.alert('Duplicate Scan Error', (res && res.error) ? res.error : 'Unknown error scanning duplicates.', ui.ButtonSet.OK);
+    return;
+  }
+
+  if (res.duplicateCount === 0) {
+    ui.alert('Scan Complete', 'Scanned ' + res.totalFlights + ' flight(s). No duplicate flights found in logbook.', ui.ButtonSet.OK);
+  } else {
+    ui.alert(
+      'Duplicates Flagged',
+      'Scanned ' + res.totalFlights + ' flights:\n' +
+      '• Found ' + res.clusterCount + ' duplicate cluster(s)\n' +
+      '• Flagged ' + res.duplicateCount + ' flight(s) as "Dup-Others"\n' +
+      '• Identified ' + res.clusterCount + ' flight(s) as "Dup-Primary"\n\n' +
+      'To review and remove these duplicates, use:\n' +
+      'Flight Log > Flight maintenance > Mark Duplicates for Removal...',
+      ui.ButtonSet.OK
+    );
+  }
+}
 

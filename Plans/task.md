@@ -1,7 +1,34 @@
 # Project Tasks & Status
 *This file tracks the active tasks for the Paragliding Flight Log Project.*
 
-## Completed in Latest Session (2026-10-01) - Bulk Ingestion, Profile Schema, Config Reorg & Granular Backup (v0.8.18)
+## Completed in Latest Session (2026-10-02) - Dedupe Engine Overhaul, In-Memory Scoring & Logbook Scanner (v0.8.21)
+- [x] **[ING-009]** Dedupe Engine Overhaul & Heuristic Quality Scoring (`CR-ING-009`): in-memory row quality scoring (`scoreFlightQualityFromRow_`) eliminating compounding Drive fetch loop (`Bug-ING-007`).
+- [x] **[ING-010]** Timezone-Immune String Extraction (`getDisplayValues()` in `findHeuristicOverlap_` and `getFlightSummariesForOverlap_`), eliminating timezone translation shift and midnight epoch drift (`Bug-ING-008`).
+- [x] **[ING-011]** Concise Throwaway Tags & Reciprocal Notes (`D01`, `D02`, ...) with `Others: ...` on Primary and `Primary: ...` on Duplicates; full support for N-way clusters.
+- [x] **[ING-012]** Intra-Batch Duplicate Pairing: resolved duplicate clusters within the same 5-file ingestion batch in memory prior to grid insertion (`Bug-ING-009`).
+- [x] **[AUT-003]** Automation Queue Checkpoint Progress Preservation: fixed progress reset bug at 4.5m pause boundary by passing accumulated stats and cursor tracking correctly (`Bug-AUT-001`).
+- [x] **[ING-013]** Folder Crawl Discovery Metrics: enhanced `getFilesRecursive_` and `stageUrlOrDriveImport` to track `totalScanned`, `subfolders`, `archives`, `unsupported`, writing immediate `[DISCOVERY]` events.
+- [x] **[ING-014]** End-of-Run Summary Clarification: formatted comprehensive outcome summaries detailing total processed, added to logbook, duplicates discarded, and errors.
+- [x] **[MNT-003]** Logbook Duplicate Scanner: added `Flight Log > Flight maintenance > Scan & Flag Duplicates in Logbook...` (`uiScanAndFlagLogbookDuplicates`, `scanAndFlagLogbookDuplicates_`) to audit and flag existing logbook duplicates without demoting user-validated flights.
+- [x] **[TEST-002]** Offline Unit Test Suite Expansion: added `testDedupeEngineEnhancements_()` to `Code/Test.gs` and offline runner (11/11 tests pass).
+
+## Completed in Recent Sessions (2026-10-02) - Tri-Mode Execution, Dialog Harmonization, Brochure & Audits (v0.8.20)
+- [x] **[UI-019]** Tri-Mode Execution Subsystem extension across all batch dialogs (`BulkIngestDialog`, `FlightMaintenanceDialog`, `PurgeDialog`, `ScanDialog`, `ResyncDialog`, `URLDialog`, `UploadDialog`) with `[ Run Here ]`, `[ Run in Sidebar ]`, `[ Run in Background ]`.
+- [x] **[UI-020]** Universal Modeless Execution Sidebar (`ExecutionSidebar.html`: 300px width, live progress pills, scrollable activity console, `📋 Copy Log`, grid remains 100% interactive).
+- [x] **[AUT-001]** Persistent Cloud Task Queue (`QueueService.gs` operating on `Automation_Queue` tab, zero black-box state, eliminates 9 KB `PropertiesService` limit).
+- [x] **[AUT-002]** Bounded 4.5-minute Time Budget Engine (`TimeBudget.gs` enforcing 270s safety threshold, state checkpointing, automatic self-continuation triggers).
+- [x] **[UI-021]** Universal Dialog Visual Harmonization (removed duplicate `header-large` title bars, standardized button bar docking above progress footers, PurgeDialog button placement above activity console, standardized `📋 Copy Log` buttons).
+- [x] **[PUB-001]** Platform Brochure Overhaul & Professional 5-Page PDF Publication (`External/ParaFlightLog_Brochure_v2.pdf`, `External/ParaFlightMgmt_brochure v1.html`, `Docs/Brochure.md`).
+- [x] **[AUD-002]** Comprehensive code review (`/code_check`): verified 114 public / 133 private functions, 72 client RPC endpoints, 26 menu wrappers, and 10 offline unit test suites (`Plans/CodeCheckReports/2026-10-02_CodeCheck.md` - Status: PASS).
+- [x] **[AUD-003]** Comprehensive documentation audit and synchronization (`/doc_check`): synchronized 6 core documentation files with active codebase (`Plans/DocCheckReports/2026-10-02_DocCheck.md` - Status: PASS, git commit `9979190`).
+
+## Completed in Recent Sessions (2026-10-01) - Activity Logging System Overhaul (v0.8.19)
+- [x] **[LOG-004]** Activity Logging System redesign (`CR-LOG-004` / `DSGN-LOG-001`): renamed `App_Log` -> `Activity Logs` (Dark Red `#D32F2F`) with 4-column schema (`Process`, `Timestamp`, `Activity / Event`, `Additional Info`).
+- [x] **[LOG-005]** Centralized logging engine in `Code/Logger.gs` (`LOG.write`, `LOG.writeBatch`, `LOG.createSession`, `LOG.cleanLogs`, `autoCleanLogsIfDue_`).
+- [x] **[LOG-006]** Tiered logging verbosity (`Brief`, `Normal`, `Debug`) and conservative dual-threshold pruning (`LOG_ROWS_TO_KEEP: 2000`, `LOG_TIME_TO_KEEP_DAYS: 90`).
+- [x] **[LOG-007]** Added `📋 Copy Log` button across modal dialog consoles with clipboard copy handler.
+
+## Completed Earlier (2026-10-01) - Bulk Ingestion, Profile Schema, Config Reorg & Granular Backup (v0.8.18)
 - [x] **[ING-008]** High-Speed Bulk Flight Ingestion & Large Scale Ingestion (`CR-ING-008`, `RQ-ING-001.4`, `BulkIngestDialog.html`, `processBulkBatch`, `finalizeBulkImport`).
 - [x] **[PRF-001]** Pilot Profile 3-column sub-header overhaul (`CR-SYS-004`: 34 fields, section dividers, 6 "Other Info" fields, 3 emergency contacts, pure key-value sync).
 - [x] **[CFG-006]** Config tab parameters and lookups structural reorganization (`[ Format and Units ]`, `CONTACT_EMAIL` in `[ Geo & Time ]`, manual lookups in Cols 5-10, auto queries in Cols 11-14).
@@ -10,36 +37,11 @@
 - [x] **[BUG-005]** Fixed fatal error in batch audit logging (`Bug-ING-005`, `TABS.ACTIVITY` fixed to `TABS.APP_LOG.name` with `try/catch`).
 - [x] **[BUG-006]** Enforced `Review?` status dropdown validation in bulk flight ingestion (`Bug-ING-006`).
 - [x] **[BUG-009]** Fixed missing Apply button and file chooser overlap in Load Config dialog (`Bug-UI-009`).
-- [x] **[AUD-001]** Comprehensive code check (`/code_check`) and documentation audit (`/doc_check`) with 100% synchronization and reports in `Plans/`.
-
-## Completed in Recent Sessions (2026-09-30 Part 2) - Smart Deduplication, Overlap Scoring & Trash Folder
-- [x] **[DED-001]** Row-Based MD5 Hashes (`IGC Hash` Column 70 in Meta group) to eliminate black-box cache de-sync.
-- [x] **[DED-002]** Dedicated `TRASH_FOLDER_ID` parameter, folder picker action, and clean routing of duplicates and purged flights.
-- [x] **[DED-003]** Smart Master Log re-linking (reuse existing Master IGCs without `_copy.igc` duplicates).
-- [x] **[DED-004]** Multi-criteria heuristic overlap detection ($\pm 15$ min, $\le 1000$ m) and 0–100 data quality scoring model (`scoreFlightQuality_`).
-- [x] **[DED-005]** Candidate status tagging (`Dup-Primary` in gold, `Dup-Others` in orange) with paired `[DupRef: ...]` audit notes.
-- [x] **[DED-006]** Dashboard protection: strictly filter all Dashboard KPI cards, currency timelines, and leaderboards for `Status = "Valid"`.
-- [x] **[DED-007]** Admin actions: `Purge Flights Marked 'Remove'` and `Re-sync Missing Flights from Master Folder`.
-- [x] **[DED-008]** Unit test suite in `Code/Test.gs` (`testDedupeAndQualityScoring_`) with 100% pass rate.
-- [x] **[DOC-001]** Update In-App `User Guide` sheet tab in `Code/Scaffold.gs` (`scaffoldUserGuide_`).
-- [x] **[DOC-002]** Update `Docs/Setup_Guide.md` with dedicated multi-device deduplication & triage section.
-- [x] **[DOC-003]** Update `Docs/Features.md`, `Docs/Technical_Specification.md`, `Docs/Backlog.md`, `Docs/ChangeLog.md`, and `Docs/Context.md`.
-- [x] **[DEP-001]** Deploy via `clasp push` and commit cleanly to git (`origin/master`).
-
-## Completed Earlier (2026-09-30 Part 1) - Weather, Maintenance, User Guide, Profile & Dashboard
-- [x] **[WEA-001]** Implement `Code/Weather.gs` with Open-Meteo (archive + 7-day forecast) and Visual Crossing backup.
-- [x] **[CFG-001]** Add `WEATHER_PROVIDERS` and `VISUAL_CROSSING_API_KEY` to `Code/Config.gs`.
-- [x] **[CFG-002]** Register `User Guide` and `Pilot_Profile` tabs in `CFG.sheets` and `TABS` in `Code/Config.gs`.
-- [x] **[ING-001]** Integrate weather enrichment into `Code/Ingestion.gs` (`processSingleIgcBlob_` and `insertFlightRow_`).
-- [x] **[MNT-001]** Create `Code/FlightMaintenanceDialog.html` (Scope selector, operations checkboxes, progress bar).
-- [x] **[MNT-002]** Implement backend batch maintenance runner and date sorting in `Code/Code.gs` and update menu actions.
-- [x] **[SCA-001]** Implement `scaffoldUserGuide_` in `Code/Scaffold.gs` with Metric Dictionary.
-- [x] **[SCA-002]** Implement `scaffoldPilotProfile_` in `Code/Scaffold.gs`.
-- [x] **[DSH-001]** Update `scaffoldDashboard_` with dynamic formulas for KPIs, Top 5, and Recent Activity (`CR-SYS-001`).
-- [x] **[SCA-003]** Update `scaffoldAll_` in `Code/Scaffold.gs` for sheet creation, reordering, and tab colors.
 
 ## Future / Next Up
-- [ ] **RQ-SYS-008**: Template Distribution Model & First-Time Setup Wizard.
-- [ ] **RQ-SYS-009.2**: Dashboard & Inspector Pilot Profile Integration.
-- [ ] **RQ-SYS-004**: Flight Inspector Enhancements.
-- [ ] **RQ-ANA-002.2**: Polar Curve Estimation.
+- [ ] **CR-UI-020 / RQ-SYS-008**: Guided Multi-Step Task Wizards (Initial Onboarding, Season Rollover, Equipment Migration, API Setup).
+- [ ] **RQ-SYS-010**: Distributed Multi-Instance Update & Lifecycle Manager (Push/pull checks, non-destructive schema migrations).
+- [ ] **CR-CFG-002**: Configurable RDP Tolerance (Runtime parameter in `Config`).
+- [ ] **CR-DEV-004**: AI-Driven & Automated End-to-End Testing Harness (Playwright / subagents, synthetic flight suite).
+- [ ] **RQ-SYS-011**: Open Source Release Packaging, Governance & Community Strategy.
+- [ ] **CR-SEC-001**: Pilot PII Privacy, Sensitive Data Scrubbing & Secrets Guardrail.

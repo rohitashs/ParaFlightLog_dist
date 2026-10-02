@@ -103,24 +103,31 @@ Fixed Header Schema (Row 3=Category, Row 4=Name). Data starts Row 5.
     *   `ERROR_FOLDER_ID`: Reserved strictly for corrupt files, unparseable IGCs, and fatal processing exceptions requiring pilot investigation.
 3.  **Smart Master Log Re-linking**:
     *   If an incoming file matches an existing file in `MASTER_LOG_FOLDER_ID` by MD5 content but no corresponding flight row exists in `Flights` (e.g. from prior row deletions), the system re-links directly to the existing Master IGC without generating `_copy.igc` duplicates, restores the flight row, and moves the source file to Trash.
-4.  **Multi-Criteria Heuristic Overlap Detection**:
+4.  **Multi-Criteria Heuristic Overlap Detection (`CR-ING-009`)**:
     *   Triggered when an incoming flight and an existing flight match:
-        *   **Date**: Same flight date (`YYYY-MM-DD`).
-        *   **Launch Time**: Within $\pm 15$ minutes (or overlapping flight duration intervals with $\Delta t \le 35$ min).
+        *   **Date**: Same flight date (`YYYY-MM-DD`). Reads display string via `getDisplayValues()` to eliminate Date object timezone shifts.
+        *   **Launch Time**: Within $\pm 20$ minutes (or overlapping flight duration intervals with $\Delta t \le 45$ min).
         *   **Launch Location**: Proximity $\le 1{,}000$ meters (Haversine formula).
 5.  **Data Quality Scoring (0–100 Points)**:
-    *   **Device / Software Source (Max 40 pts)**: XCTrack (40 pts - pilot's primary BLE-connected instrument), Dedicated Flight Vario / Instrument (30 pts - UltraBliP, XC Tracer, Flymaster, Skytraxx, Oudie, Syride), Generic flight app (20 pts - XCSoar, SeeYou, FlyMe), Unknown/Generic (10 pts).
-    *   **Barometric Pressure Integrity (Max 30 pts)**: Authentic pressure sensor altitude readings differing from GPS altitude (30 pts), baro present (20 pts), GPS altitude only (5 pts).
-    *   **Temporal Resolution & Duration (Max 20 pts)**: High-frequency recording $\le 1.2$s / 1Hz (15 pts), 2.5s (10 pts), 5.5s (5 pts). Flight duration $> 30$ min (5 pts), $> 10$ min (3 pts), $> 2$ min (1 pt).
-    *   **Metadata Richness (Max 10 pts)**: Populated glider type (+3), pilot name (+3), glider ID (+2), hardware/firmware headers (+2).
-6.  **Duplicate Triage Statuses & Pairing Notes (Eliminated Legacy 'Duplicate')**:
+    *   **In-Memory Row Evaluation (`scoreFlightQualityFromRow_`)**: Designed for high-speed deduplication during bulk ingestion and full-logbook scans without making expensive Google Drive API round-trips:
+        *   **Device / Software Source (Max 40 pts)**: XCTrack (35 pts), Dedicated Flight Vario / Instrument (25 pts - UltraBliP, XC Tracer, Flymaster, Skytraxx, Oudie, Syride), Generic flight app (15 pts - XCSoar, SeeYou, FlyMe), Unknown/Generic (10 pts base).
+        *   **Barometric Pressure Integrity (Max 30 pts)**: Authentic pressure sensor altitude readings differing from launch/min altitude with positive climb (30 pts), single positive max altitude (15 pts).
+        *   **Duration & Distance (Max 20 pts)**: Flight duration $> 30$ min (15 pts), $> 10$ min (10 pts).
+        *   **Equipment Richness (Max 10 pts)**: Populated wing model (+10 pts).
+    *   **Deep File Evaluation (`scoreFlightQuality_`)**: Used during single-file intake when full raw IGC text is available: evaluates 1Hz G-record density (+15 pts), hardware headers (+2 pts), and pilot/glider metadata (+6 pts).
+6.  **Duplicate Triage Statuses, Short Tags & Reciprocal Notes (`CR-ING-009`)**:
     *   Higher-scoring candidate is assigned `Dup-Primary`; backup candidate is assigned `Dup-Others`.
-    *   All duplicate cases (including filename collisions and pre-existing Master Folder tracks) adhere to soft dedupe quality scoring.
+    *   If a candidate is already marked `Valid` by the pilot, it retains its primary role and is never demoted.
+    *   **Concise Throwaway Tags**: Replaced verbose timestamp tags with clean cluster identifiers (`D01`, `D02`, ...).
+    *   **Reciprocal Notes**: Injects clean, cross-referencing audit notes:
+        *   Primary Flight: `[DupRef: D01 | Others: F20260510-02, F20260510-03]`
+        *   Duplicate Flight: `[DupRef: D01 | Primary: F20260510-01]`
+    *   **Intra-Batch Duplicate Pairing**: If two matching duplicate tracks appear within the same 5-file ingestion batch, the earlier row in `batchRows` is updated directly in memory prior to grid insertion.
     *   **Master Folder Drift Self-Healing**: If an IGC file in Master Log has no corresponding sheet row, the system restores the flight row and executes soft dedupe scoring against other recordings.
-    *   Injects standardized pairing note into `Notes`: `[DupRef: DUP_YYYYMMDD_HHMM | Paired with <FlightID> (Score: X vs Y)]`.
     *   **Dashboard Protection**: All KPI banners, timeline currency, and leaderboard cards strictly filter for `Status = "Valid"`, preventing unreviewed duplicates from polluting statistics.
 7.  **Flight Maintenance Actions (`Flight Log > Flight maintenance`)**:
     *   `Flight Updates...`: Unified configurable modal dialog (`FlightMaintenanceDialog.html`) to batch process weather, geo lookup, XContest verification, or scoring.
+    *   `Scan & Flag Duplicates in Logbook... (`CR-ING-009`)`: Automated logbook scan (`scanAndFlagLogbookDuplicates_`) that groups all rows by flight date, detects spatial/temporal clusters ($\le 1{,}000$ m, $\le 20$ min overlap), evaluates row quality scores, preserves pilot-validated flights (`Valid`), and assigns `Dup-Primary` and `Dup-Others` with reciprocal notes.
     *   `Mark Duplicates for Removal...`: Modal dialog (`MarkDuplicatesDialog.html`) with `Dup - Others` and `Dup - Primary` checkboxes to batch stage duplicate rows to `Remove` without immediate deletion.
     *   `Purge Flights Marked 'Remove'...`: Interactive modal dialog (`PurgeDialog.html`) with real-time client-side stepping, progress bar, cancelability, moving master IGCs to `TRASH_FOLDER_ID`, deleting sheet rows bottom-up, refreshing hashes, and sorting.
     *   `Re-sync Missing Flights from Master Folder...`: Opens `ResyncDialog.html` (interactive modal with live progress bar, activity log, and primary Done button), scanning `MASTER_LOG_FOLDER_ID` for orphaned IGCs missing from the `Flights` tab and restoring them with status `Review?`.

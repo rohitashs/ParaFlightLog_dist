@@ -28,6 +28,7 @@ function runAllTests() {
   results.push(testLogProcessResolution_());
   results.push(testLogLevelFiltering_());
   results.push(testConservativePruningMath_());
+  results.push(testDedupeEngineEnhancements_());
   
   var failures = results.filter(function(r) { return !r.idx || r.error; });
   if (failures.length > 0) {
@@ -742,3 +743,89 @@ function testConservativePruningMath_() {
 
   return { module: 'ConservativePruningMath', idx: true };
 }
+
+function testDedupeEngineEnhancements_() {
+  // 1. Verify existence of required functions
+  if (typeof scoreFlightQualityFromRow_ !== 'function') {
+    return { module: 'DedupeEngineEnhancements', error: 'scoreFlightQualityFromRow_ missing' };
+  }
+  if (typeof formatOrAppendDupNote_ !== 'function') {
+    return { module: 'DedupeEngineEnhancements', error: 'formatOrAppendDupNote_ missing' };
+  }
+  if (typeof scanAndFlagLogbookDuplicates_ !== 'function') {
+    return { module: 'DedupeEngineEnhancements', error: 'scanAndFlagLogbookDuplicates_ missing' };
+  }
+  if (typeof uiScanAndFlagLogbookDuplicates !== 'function') {
+    return { module: 'DedupeEngineEnhancements', error: 'uiScanAndFlagLogbookDuplicates missing' };
+  }
+  if (typeof uiScanAndFlagLogbookDuplicates_ !== 'function') {
+    return { module: 'DedupeEngineEnhancements', error: 'uiScanAndFlagLogbookDuplicates_ missing' };
+  }
+  if (typeof INGESTION.scoreFlightQualityFromRow !== 'function') {
+    return { module: 'DedupeEngineEnhancements', error: 'INGESTION.scoreFlightQualityFromRow export missing' };
+  }
+  if (typeof INGESTION.scanAndFlagLogbookDuplicates !== 'function') {
+    return { module: 'DedupeEngineEnhancements', error: 'INGESTION.scanAndFlagLogbookDuplicates export missing' };
+  }
+
+  // 2. Test formatOrAppendDupNote_
+  var primNote = formatOrAppendDupNote_('Original note', 'D01', true, 'F20261001-02, F20261001-03');
+  if (primNote.indexOf('[DupRef: D01 | Others:') === -1) {
+    return { module: 'DedupeEngineEnhancements', error: 'Primary note missing [DupRef: D01 | Others:]: ' + primNote };
+  }
+  if (primNote.indexOf('Others: F20261001-02, F20261001-03') === -1) {
+    return { module: 'DedupeEngineEnhancements', error: 'Primary note missing Others reference: ' + primNote };
+  }
+  if (primNote.indexOf('Original note') === -1) {
+    return { module: 'DedupeEngineEnhancements', error: 'Primary note lost original note: ' + primNote };
+  }
+
+  var dupeNote = formatOrAppendDupNote_('', 'D01', false, 'F20261001-01');
+  if (dupeNote.indexOf('[DupRef: D01 | Primary:') === -1) {
+    return { module: 'DedupeEngineEnhancements', error: 'Duplicate note missing [DupRef: D01 | Primary:]: ' + dupeNote };
+  }
+  if (dupeNote.indexOf('Primary: F20261001-01') === -1) {
+    return { module: 'DedupeEngineEnhancements', error: 'Duplicate note missing Primary reference: ' + dupeNote };
+  }
+
+  // Test tag replacement / idempotency
+  var updatedNote = formatOrAppendDupNote_(primNote, 'D01', true, 'F20261001-04');
+  var matches = updatedNote.match(/\[DupRef:/g);
+  if (matches && matches.length > 1) {
+    return { module: 'DedupeEngineEnhancements', error: 'Duplicate DupRef tags found: ' + updatedNote };
+  }
+  if (updatedNote.indexOf('F20261001-04') === -1) {
+    return { module: 'DedupeEngineEnhancements', error: 'Others list not updated in re-tagged note: ' + updatedNote };
+  }
+
+  // 3. Test scoreFlightQualityFromRow_
+  var mockMap = {
+    'IGC File': 1,
+    'Notes': 2,
+    'Max Alt (m)': 3,
+    'Min Alt (m)': 4,
+    'Flight Duration': 5,
+    'Wing': 6
+  };
+
+  // High quality row (dedicated instrument, valid baro climb, 90 min duration, specific wing)
+  var highRow = ['2026-05-10-Syride-SYSNav.igc', 'Flight notes', 2450, 1100, '01:30:00', 'Ozone Photon'];
+  var highScore = scoreFlightQualityFromRow_(highRow, mockMap);
+
+  // Low quality row (generic phone or missing device, 0 baro alt, 5 min duration, generic wing)
+  var lowRow = ['flight.igc', '', 0, 0, '00:05:00', ''];
+  var lowScore = scoreFlightQualityFromRow_(lowRow, mockMap);
+
+  if (highScore <= lowScore) {
+    return { module: 'DedupeEngineEnhancements', error: 'High quality flight score (' + highScore + ') should exceed low quality (' + lowScore + ')' };
+  }
+  if (highScore < 60) {
+    return { module: 'DedupeEngineEnhancements', error: 'High quality flight score should be >= 60, got ' + highScore };
+  }
+  if (lowScore > 35) {
+    return { module: 'DedupeEngineEnhancements', error: 'Low quality flight score should be <= 35, got ' + lowScore };
+  }
+
+  return { module: 'DedupeEngineEnhancements', idx: true };
+}
+

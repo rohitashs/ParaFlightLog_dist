@@ -334,7 +334,8 @@ function stageUrlOrDriveImport(input) {
     try {
       var folder = DriveApp.getFolderById(driveId);
       if (folder) {
-        var foundFiles = getFilesRecursive_(folder, 10, 0);
+        var stats = {};
+        var foundFiles = getFilesRecursive_(folder, 10, 0, stats);
         if (foundFiles.length === 0) {
           return { error: 'No supported flight files (.igc, .zip, etc.) found in folder: ' + folder.getName() };
         }
@@ -358,12 +359,29 @@ function stageUrlOrDriveImport(input) {
             });
           }
         }
+
+        // Log Discovery Event in Activity Logs (Recorded regardless of execution mode: Modal, Sidebar, Background)
+        var totalScanned = stats.totalScanned || foundFiles.length;
+        var subCount = stats.subfolderCount || 0;
+        var archCount = stats.archiveCount || 0;
+        var unsuppCount = stats.unsupportedCount || 0;
+        var discMsg = '[DISCOVERY] Found ' + totalScanned + ' file(s) across ' + subCount + ' subfolder(s) and ' + archCount + ' archive(s)';
+        var discDetails = 'Staged ' + filesList.length + ' flight file(s) for ingestion' + (unsuppCount > 0 ? ' (' + unsuppCount + ' non-flight files ignored)' : '');
+        LOG.write('BULK_INGEST', discMsg, discDetails);
+
         return {
           success: true,
           type: 'FOLDER',
           folderName: folder.getName(),
           files: filesList,
-          sourceArchiveIds: sourceArchiveIds
+          sourceArchiveIds: sourceArchiveIds,
+          discoveryStats: {
+            totalScanned: totalScanned,
+            subfolders: subCount,
+            archives: archCount,
+            flightFiles: filesList.length,
+            unsupported: unsuppCount
+          }
         };
       }
     } catch (eNotFolder) {
@@ -815,10 +833,18 @@ function copyToMasterLog_(blob, fileName, config, hashStr) {
  * @param {number} [currentDepth=0]
  * @return {Array<GoogleAppsScript.Drive.File>}
  */
-function getFilesRecursive_(folder, maxDepth, currentDepth) {
+function getFilesRecursive_(folder, maxDepth, currentDepth, stats) {
   if (currentDepth === undefined) currentDepth = 0;
   if (maxDepth === undefined) maxDepth = 10;
   if (currentDepth > maxDepth) return [];
+  if (stats && currentDepth === 0 && !stats.initialized) {
+    stats.totalScanned = 0;
+    stats.subfolderCount = 0;
+    stats.archiveCount = 0;
+    stats.flightFileCount = 0;
+    stats.unsupportedCount = 0;
+    stats.initialized = true;
+  }
   
   var result = [];
   try {
@@ -826,15 +852,23 @@ function getFilesRecursive_(folder, maxDepth, currentDepth) {
     while (files.hasNext()) {
       var f = files.next();
       var fName = f.getName();
-      if (fName.match(/\.(igc|igx|zip|gz)$/i)) {
+      if (stats) stats.totalScanned++;
+      if (fName.match(/\.(igc|igx)$/i)) {
         result.push(f);
+        if (stats) stats.flightFileCount++;
+      } else if (fName.match(/\.(zip|gz)$/i)) {
+        result.push(f);
+        if (stats) stats.archiveCount++;
+      } else {
+        if (stats) stats.unsupportedCount++;
       }
     }
     
     var subfolders = folder.getFolders();
     while (subfolders.hasNext()) {
       var sub = subfolders.next();
-      var subFiles = getFilesRecursive_(sub, maxDepth, currentDepth + 1);
+      if (stats) stats.subfolderCount++;
+      var subFiles = getFilesRecursive_(sub, maxDepth, currentDepth + 1, stats);
       result = result.concat(subFiles);
     }
   } catch (e) {

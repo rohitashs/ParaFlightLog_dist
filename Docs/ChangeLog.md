@@ -1,5 +1,22 @@
 # Project Change Log
 
+## Session: Dedupe Engine Overhaul, In-Memory Row Scoring & Logbook Duplicate Scanner (CR-ING-009)
+**Date**: 2026-10-02
+**Versions**: v0.8.21
+**Focus**: Dedupe Engine Overhaul (`CR-ING-009`), In-Memory Row Quality Scoring (`scoreFlightQualityFromRow_`), Elimination of Compounding Drive Round-Trips (`Bug-ING-007`), Automation Queue Checkpoint Progress Preservation (`Bug-AUT-001`), Timezone-Immune String Extraction (`Bug-ING-008`), Short Throwaway Tags (`D01`, `D02`, ...) & Reciprocal Notes, Intra-Batch Duplicate Pairing (`Bug-ING-009`), Folder Crawl Discovery Metrics, End-of-Run Summary Formatting, and Logbook Duplicate Scanner (`Flight maintenance > Scan & Flag Duplicates in Logbook...`).
+
+*   `[Imp]` **CR-ING-009 (Dedupe Engine Enhancement, Row Quality Scoring, Discovery Metrics & Logbook Duplicate Scanner)**:
+    *   **In-Memory Row-Based Quality Scoring (`scoreFlightQualityFromRow_`)**: Eliminated severe bulk ingestion bottleneck where every candidate comparison previously called `DriveApp.getFileById()` to parse raw IGCs from Google Drive (`Bug-ING-007`). Evaluates device/source (XCTrack = 35, dedicated vario = 25, generic app = 15), barometric altitude integrity (maxAlt !== minAlt = 30), duration (>30m = 15, >10m = 10), and equipment (+10) directly from row data in memory.
+    *   **Timezone-Immune Precision & Wider Overlap Window**: Switched from `getValues()` to `getDisplayValues()` across flight summaries and dedupe matching (`Bug-ING-008`), preventing script timezone date translation (midnight rollbacks) and 1899 epoch time offsets. Expanded time tolerance to +/- 20 minutes (or 45 minutes with interval overlap) and spatial proximity to <= 1000m.
+    *   **Concise Throwaway Tags & Reciprocal Notes**: Replaced long timestamp tags (`DUP_YYYYMMDD_HHMM`) with clean cluster tags (`D01`, `D02`, ...) and reciprocal notes (`[DupRef: D01 | Others: F20260510-02, F20260510-03]` on Primary, `[DupRef: D01 | Primary: F20260510-01]` on Duplicates). Supports multi-file clusters (N-way pairing).
+    *   **Intra-Batch Duplicate Pairing**: Handled duplicates appearing within the same 5-file ingestion batch (`Bug-ING-009`) by updating `batchRows` in memory prior to grid insertion.
+    *   **Queue Checkpoint Progress Preservation**: Fixed progress reset bug where `Automation_Queue` reset from `20/273 (7%)` to `0/273 (0%)` at the 4.5-minute pause boundary by passing accumulated stats and cursor tracking correctly (`Bug-AUT-001`).
+    *   **Folder Crawl Discovery Metrics**: Enhanced folder crawler (`getFilesRecursive_` and `stageUrlOrDriveImport`) to count and log total scanned files, subfolders, archives, and unsupported files, writing immediate `[DISCOVERY]` events to `Activity Logs`.
+    *   **End-of-Run Aggregate Summary**: Formatted detailed summary reporting total files processed, added to logbook, duplicates discarded, and errors in `finalizeBulkImport` and background queue logging.
+    *   **Logbook Duplicate Scanner Utility**: Added `Flight Log > Flight maintenance > Scan & Flag Duplicates in Logbook...` (`uiScanAndFlagLogbookDuplicates`, `scanAndFlagLogbookDuplicates_`) allowing pilots to audit and flag existing logbook duplicates into `Dup-Primary` and `Dup-Others` with reciprocal notes without demoting user-validated flights (`Valid`).
+*   `[Test]` **Unit Test Suite Expansion (`Code/Test.gs`)**:
+    *   Added `testDedupeEngineEnhancements_()` to automated test suite: verifies in-memory row quality scoring invariants, short `DupRef` tags and reciprocal notes formatting, tag replacement idempotency, and public RPC/menu function availability (11/11 tests pass).
+
 ## Session: Tri-Mode Execution Subsystem, Dialog Harmonization & Brochure Publication (DSGN-UI-001)
 **Date**: 2026-10-02
 **Versions**: v0.8.20

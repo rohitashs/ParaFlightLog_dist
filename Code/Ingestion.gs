@@ -490,17 +490,18 @@ function findHeuristicOverlap_(parsed, launchFix, rawText, fileName, timeZone, s
   var lonCol = map['Launch Lon'];
   var idCol = map['FlightID'];
   var statusCol = map['Status'];
-  var igcCol = map['IGC File'];
+  var notesCol = map['Notes'];
   var durCol = map['Flight Duration'];
   
   if (!dateCol || !timeCol || !latCol || !lonCol || !idCol) return result;
 
   var numRows = sh.getLastRow() - 4;
   var lastCol = sh.getLastColumn();
-  var data = sh.getRange(5, 1, numRows, lastCol).getValues();
+  // Use getDisplayValues to avoid Date/Time object timezone shift bugs
+  var displayData = sh.getRange(5, 1, numRows, lastCol).getDisplayValues();
 
-  for (var i = 0; i < data.length; i++) {
-    var row = data[i];
+  for (var i = 0; i < displayData.length; i++) {
+    var row = displayData[i];
     var rowNum = 5 + i;
     
     // 1. Date match
@@ -516,7 +517,7 @@ function findHeuristicOverlap_(parsed, launchFix, rawText, fileName, timeZone, s
     var dist = haversine_(launchFix.lat, launchFix.lon, rowLat, rowLon);
     if (dist > 1000) continue;
 
-    // 3. Time overlap (within 15 minutes)
+    // 3. Time overlap (within 20 minutes or duration overlap)
     var rowTimeVal = row[timeCol - 1];
     var rowLaunchMin = parseTimeToMinutes_(rowTimeVal);
     if (rowLaunchMin === null) continue;
@@ -524,10 +525,10 @@ function findHeuristicOverlap_(parsed, launchFix, rawText, fileName, timeZone, s
     var diffMin = Math.abs(incomingLaunchMin - rowLaunchMin);
     if (diffMin > 720) diffMin = 1440 - diffMin;
 
-    var isTimeOverlap = (diffMin <= 15);
+    var isTimeOverlap = (diffMin <= 20);
     
     // Also check interval overlap if durations are available
-    if (!isTimeOverlap && diffMin <= 35) {
+    if (!isTimeOverlap && diffMin <= 45) {
       var rowDurVal = row[durCol - 1];
       var rowDurMin = parseTimeToMinutes_(rowDurVal) || 0;
       var inDurMin = Math.round((parsed.stats.durationSec || 0) / 60);
@@ -542,26 +543,23 @@ function findHeuristicOverlap_(parsed, launchFix, rawText, fileName, timeZone, s
     var rowFlightId = String(row[idCol - 1] || '');
     rowFlightId = rowFlightId.replace(/=HYPERLINK\("[^"]*",\s*"([^"]+)"\)/, '$1').trim();
     var rowStatus = String(row[statusCol - 1] || '').trim();
-    var rowIgcVal = String(row[igcCol - 1] || '');
+    var rowNotes = notesCol ? String(row[notesCol - 1] || '') : '';
 
-    // Score the existing flight
-    var existingScore = scoreExistingFlight_(rowIgcVal, row, map);
+    // Fast in-memory quality scoring without Drive fetches
+    var existingScore = scoreFlightQualityFromRow_(row, map);
 
-    var dateCompact = incomingDate.replace(/-/g, '');
-    var hourStr = ('0' + Math.floor(incomingLaunchMin / 60)).slice(-2);
-    var minStr = ('0' + (incomingLaunchMin % 60)).slice(-2);
-    var dupTag = 'DUP_' + dateCompact + '_' + hourStr + minStr;
+    // Reuse existing short dupTag if already on the flight note, otherwise get next short tag
+    var mTag = rowNotes.match(/\[DupRef:\s*(D\d+)/i);
+    var dupTag = mTag ? mTag[1].toUpperCase() : getNextShortDupRef_();
 
     var incomingStatus, existingStatus;
-    if (incomingScore > existingScore) {
+    if (incomingScore > existingScore && rowStatus !== 'Valid') {
       incomingStatus = 'Dup-Primary';
       existingStatus = 'Dup-Others';
     } else {
       incomingStatus = 'Dup-Others';
       existingStatus = (rowStatus === 'Valid') ? 'Valid' : 'Dup-Primary';
     }
-
-    var incomingNote = '[DupRef: ' + dupTag + ' | Paired with ' + rowFlightId + ' (Score: ' + incomingScore + ' vs ' + existingScore + ')]';
 
     return {
       matched: true,
@@ -572,7 +570,7 @@ function findHeuristicOverlap_(parsed, launchFix, rawText, fileName, timeZone, s
       incomingStatus: incomingStatus,
       existingStatus: existingStatus,
       dupTag: dupTag,
-      incomingNote: incomingNote
+      existingNotes: rowNotes
     };
   }
 
@@ -580,39 +578,115 @@ function findHeuristicOverlap_(parsed, launchFix, rawText, fileName, timeZone, s
 }
 
 /**
- * Scores an existing flight row from its linked Master IGC file or row heuristics.
+ * Scores an existing flight row directly from sheet columns without Drive fetches.
+ * Fast, pure in-memory evaluation (0-100 pts).
  */
-function scoreExistingFlight_(igcVal, rowData, map) {
-  var score = 20; // Default base
-  try {
-    var idMatch = igcVal.match(/id=([a-zA-Z0-9_-]+)/);
-    if (idMatch && idMatch[1]) {
-      var file = DriveApp.getFileById(idMatch[1]);
-      var text = file.getBlob().getDataAsString();
-      var parsed = PARSER.parseIgc(text, file.getName());
-      if (parsed) {
-        return scoreFlightQuality_(parsed, text, file.getName());
-      }
-    }
-  } catch (e) {
-    // If Drive fetch fails, use row heuristics
+function scoreFlightQualityFromRow_(row, map, igcVal) {
+  var score = 10; // Default base
+
+  var igcStr = String(igcVal || (map['IGC File'] ? row[map['IGC File'] - 1] : '')).toUpperCase();
+  var notesStr = String((map['Notes'] ? row[map['Notes'] - 1] : '')).toUpperCase();
+  var summaryStr = String((map['Auto Summary'] ? row[map['Auto Summary'] - 1] : '')).toUpperCase();
+  var wingStr = String((map['Wing'] ? row[map['Wing'] - 1] : '')).toUpperCase();
+
+  // 1. Device / Source (Max 40 pts)
+  if (igcStr.indexOf('XCTRACK') !== -1 || notesStr.indexOf('XCTRACK') !== -1) {
+    score += 35;
+  } else if (igcStr.indexOf('FLYMASTER') !== -1 || igcStr.indexOf('XCTRACER') !== -1 || 
+             igcStr.indexOf('ULTRABLIP') !== -1 || igcStr.indexOf('SKYTRAXX') !== -1 || 
+             igcStr.indexOf('OUDIE') !== -1 || igcStr.indexOf('SYRIDE') !== -1) {
+    score += 25;
+  } else if (igcStr.indexOf('XCSOAR') !== -1 || igcStr.indexOf('SEEYOU') !== -1 || igcStr.indexOf('FLYME') !== -1) {
+    score += 15;
   }
 
-  // Row Heuristics
-  var igcUpper = igcVal.toUpperCase();
-  if (igcUpper.indexOf('XCTRACK') !== -1) {
-    score += 30;
-  } else if (igcUpper.indexOf('ULTRABLIP') !== -1 || igcUpper.indexOf('XCTRACER') !== -1 || igcUpper.indexOf('FLYMASTER') !== -1) {
-    score += 20;
+  // 2. Barometric / Altitude Integrity (Max 30 pts)
+  var maxAlt = parseFloat(map['Max Alt (m)'] ? row[map['Max Alt (m)'] - 1] : 0);
+  var minAlt = parseFloat(map['Min Alt (m)'] ? row[map['Min Alt (m)'] - 1] : 0);
+  var heightGain = parseFloat(map['Total Height Gain (m)'] ? row[map['Total Height Gain (m)'] - 1] : 0);
+  if (!isNaN(maxAlt) && maxAlt > 0 && !isNaN(minAlt) && minAlt > 0 && maxAlt !== minAlt) {
+    score += 30; // Authentic baro altitude profile
+  } else if (!isNaN(maxAlt) && maxAlt > 0) {
+    score += 15;
   }
+
+  // 3. Duration & Distance (Max 20 pts)
+  var durVal = map['Flight Duration'] ? row[map['Flight Duration'] - 1] : '';
+  var durMin = parseTimeToMinutes_(durVal) || 0;
+  if (durMin > 30) {
+    score += 15;
+  } else if (durMin > 10) {
+    score += 10;
+  } else if (durMin > 2) {
+    score += 5;
+  }
+
+  var trackLen = parseFloat(map['Track Length (km)'] ? row[map['Track Length (km)'] - 1] : 0);
+  if (!isNaN(trackLen) && trackLen > 5) {
+    score += 5;
+  }
+
+  // 4. Metadata Richness (Max 10 pts)
+  if (wingStr && wingStr.length > 1) score += 4;
+  if (summaryStr && summaryStr.length > 5) score += 3;
+  var xcClass = map['XC Flight Class'] ? String(row[map['XC Flight Class'] - 1] || '') : '';
+  if (xcClass && xcClass.length > 1) score += 3;
+
+  return Math.min(100, score);
+}
+
+function scoreExistingFlight_(igcVal, rowData, map) {
+  return scoreFlightQualityFromRow_(rowData, map, igcVal);
+}
+
+/**
+ * Short throwaway counter for duplicate clusters (e.g. D01, D02).
+ */
+var _shortDupCounter = 0;
+function getNextShortDupRef_() {
+  _shortDupCounter++;
+  return 'D' + (_shortDupCounter < 10 ? '0' + _shortDupCounter : _shortDupCounter);
+}
+
+/**
+ * Generates or updates reciprocal duplicate notes for Primary and Others.
+ * For Primary: [DupRef: D01 | Others: F20240515_02, F20240515_03]
+ * For Others:  [DupRef: D01 | Primary: F20240515_01]
+ * @param {string} currentNote Existing row notes
+ * @param {string} dupTag Short cluster tag (e.g. 'D01')
+ * @param {boolean} isPrimary Whether this row is the primary
+ * @param {string} partnerIds Partner flight ID (single for Others, comma-separated for Primary)
+ * @return {string} Updated notes string
+ */
+function formatOrAppendDupNote_(currentNote, dupTag, isPrimary, partnerIds) {
+  currentNote = String(currentNote || '').trim();
+  partnerIds = String(partnerIds || '').trim();
   
-  if (map['Flight Duration'] && rowData[map['Flight Duration'] - 1]) {
-    score += 10;
+  if (isPrimary) {
+    var re = new RegExp('\\[DupRef:\\s*' + dupTag + '\\s*\\|\\s*Others:\\s*([^\\]]+)\\]', 'i');
+    var m = currentNote.match(re);
+    if (m) {
+      var existingList = m[1].split(',').map(function(s) { return s.trim(); });
+      var newIds = partnerIds.split(',').map(function(s) { return s.trim(); });
+      newIds.forEach(function(id) {
+        if (id && existingList.indexOf(id) === -1) existingList.push(id);
+      });
+      return currentNote.replace(m[0], '[DupRef: ' + dupTag + ' | Others: ' + existingList.join(', ') + ']');
+    } else {
+      // Remove any legacy "Primary: This" or placeholder if present
+      currentNote = currentNote.replace(/\[DupRef:[^\]]*Primary:\s*This[^\]]*\]/gi, '').trim();
+      var newTag = '[DupRef: ' + dupTag + ' | Others: ' + partnerIds + ']';
+      return currentNote ? (currentNote + ' | ' + newTag) : newTag;
+    }
+  } else {
+    // For Dup-Others: points to single Primary
+    var newTag = '[DupRef: ' + dupTag + ' | Primary: ' + partnerIds + ']';
+    var reOld = new RegExp('\\[DupRef:\\s*' + dupTag + '[^\\]]*\\]', 'i');
+    if (reOld.test(currentNote)) {
+      return currentNote.replace(reOld, newTag);
+    }
+    return currentNote ? (currentNote + ' | ' + newTag) : newTag;
   }
-  if (map['Max Alt (m)'] && rowData[map['Max Alt (m)'] - 1]) {
-    score += 10;
-  }
-  return score;
 }
 
 /**
@@ -634,7 +708,6 @@ function updatePairedFlightRow_(sh, overlapInfo, incomingFlightId) {
       var actualId = String(sh.getRange(targetRow, idCol).getValue() || '');
       actualId = actualId.replace(/=HYPERLINK\("[^"]*",\s*"([^"]+)"\)/, '$1').trim();
       if (actualId !== overlapInfo.flightId) {
-        // Search adjacent rows (+- 2) if row indices shifted differently
         for (var offset = -2; offset <= 2; offset++) {
           var checkRow = targetRow + offset;
           if (checkRow >= 5 && checkRow <= sh.getLastRow()) {
@@ -654,12 +727,9 @@ function updatePairedFlightRow_(sh, overlapInfo, incomingFlightId) {
     }
     if (notesCol) {
       var currentNote = String(sh.getRange(targetRow, notesCol).getValue() || '');
-      var pairedNote = '[DupRef: ' + overlapInfo.dupTag + ' | Paired with ' + incomingFlightId +
-                       ' (Score: ' + overlapInfo.existingScore + ' vs ' + overlapInfo.incomingScore + ')]';
-      if (currentNote.indexOf(overlapInfo.dupTag) === -1) {
-        var updatedNote = currentNote ? (currentNote + ' | ' + pairedNote) : pairedNote;
-        sh.getRange(targetRow, notesCol).setValue(updatedNote);
-      }
+      var isExistingPrimary = (overlapInfo.existingStatus === 'Dup-Primary' || overlapInfo.existingStatus === 'Valid');
+      var updatedNote = formatOrAppendDupNote_(currentNote, overlapInfo.dupTag, isExistingPrimary, incomingFlightId);
+      sh.getRange(targetRow, notesCol).setValue(updatedNote);
     }
   } catch (e) {
     console.warn('Error updating paired flight row ' + overlapInfo.matchedRow, e);
@@ -667,33 +737,52 @@ function updatePairedFlightRow_(sh, overlapInfo, incomingFlightId) {
 }
 
 /**
- * Converts HH:mm or Date to minutes from midnight.
+ * Converts HH:mm, HH:mm:ss, 12-hour AM/PM or Date to minutes from midnight.
+ * Uses spreadsheet timezone when formatting Date objects to prevent script timezone drift.
  */
 function parseTimeToMinutes_(timeVal) {
   if (!timeVal) return null;
-  if (timeVal instanceof Date) {
-    return timeVal.getHours() * 60 + timeVal.getMinutes();
-  }
   var str = String(timeVal).trim();
-  var match = str.match(/(\d{1,2}):(\d{2})/);
+  var match = str.match(/(\d{1,2}):(\d{2})(?::\d{2})?(?:\s*([ap]m))?/i);
   if (match) {
-    return parseInt(match[1], 10) * 60 + parseInt(match[2], 10);
+    var h = parseInt(match[1], 10);
+    var m = parseInt(match[2], 10);
+    if (match[3]) {
+      var ampm = match[3].toLowerCase();
+      if (ampm === 'pm' && h < 12) h += 12;
+      if (ampm === 'am' && h === 12) h = 0;
+    }
+    return h * 60 + m;
+  }
+  if (timeVal instanceof Date) {
+    var ss = SpreadsheetApp.getActive();
+    var tz = ss ? ss.getSpreadsheetTimeZone() : Session.getScriptTimeZone();
+    var formatted = Utilities.formatDate(timeVal, tz, 'HH:mm');
+    var parts = formatted.split(':');
+    return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
   }
   return null;
 }
 
 /**
  * Converts Date or string to yyyy-MM-dd format.
+ * Uses spreadsheet timezone when formatting Date objects.
  */
 function formatDateToYmd_(dateVal) {
   if (!dateVal) return '';
   if (dateVal instanceof Date) {
-    return Utilities.formatDate(dateVal, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+    var ss = SpreadsheetApp.getActive();
+    var tz = ss ? ss.getSpreadsheetTimeZone() : Session.getScriptTimeZone();
+    return Utilities.formatDate(dateVal, tz, 'yyyy-MM-dd');
   }
   var str = String(dateVal).trim();
   var match = str.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
   if (match) {
     return match[1] + '-' + ('0' + match[2]).slice(-2) + '-' + ('0' + match[3]).slice(-2);
+  }
+  var match2 = str.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})/);
+  if (match2) {
+    return match2[3] + '-' + ('0' + match2[2]).slice(-2) + '-' + ('0' + match2[1]).slice(-2);
   }
   return str;
 }
@@ -1128,29 +1217,7 @@ function processBulkBatch(batchFiles, options) {
           } catch(eWx) { console.warn('Bulk Weather error:', eWx); }
         }
 
-        // 8. Status & Overlap Deduplication
-        var status = 'Review?';
-        if (scoring.error) {
-          status = 'Invalid?';
-          noteLog.push('Scoring Error: ' + scoring.error);
-        }
-        if (analysis.validation && analysis.validation.status !== 'OK') {
-          status = analysis.validation.status;
-          if (analysis.validation.reason) noteLog.push(analysis.validation.reason);
-        }
-
-        if (status !== 'Invalid?') {
-          var overlap = findHeuristicOverlapInMemory_(parsed, launchFix, text, currentName, timeZone, existingSummaries, config);
-          if (overlap && overlap.matched) {
-            status = overlap.incomingStatus;
-            if (overlap.incomingNote) noteLog.push(overlap.incomingNote);
-            if (overlap.matchedFlight && overlap.matchedFlight.rowNum) {
-              updateExistingMatchedRow_(sh, map, overlap.matchedFlight.rowNum, overlap.existingStatus, overlap.existingNote);
-            }
-          }
-        }
-
-        // 9. Generate Flight ID with in-memory suffix tracking
+        // 8. Generate Flight ID early with in-memory suffix tracking
         var dateObj = new Date(parsed.meta.dateIso || Date.now());
         var yyyy = dateObj.getFullYear();
         var mm = ('0' + (dateObj.getMonth() + 1)).slice(-2);
@@ -1167,6 +1234,48 @@ function processBulkBatch(batchFiles, options) {
         var idSuffix = (nextNum < 10) ? ('0' + nextNum) : String(nextNum);
         var flightId = 'F' + dateStr + '_' + idSuffix;
 
+        // 9. Status & Overlap Deduplication
+        var status = 'Review?';
+        if (scoring.error) {
+          status = 'Invalid?';
+          noteLog.push('Scoring Error: ' + scoring.error);
+        }
+        if (analysis.validation && analysis.validation.status !== 'OK') {
+          status = analysis.validation.status;
+          if (analysis.validation.reason) noteLog.push(analysis.validation.reason);
+        }
+
+        var assignedDupTag = null;
+        if (status !== 'Invalid?') {
+          var overlap = findHeuristicOverlapInMemory_(parsed, launchFix, text, currentName, timeZone, existingSummaries, config, flightId);
+          if (overlap && overlap.matched) {
+            status = overlap.incomingStatus;
+            assignedDupTag = overlap.dupTag;
+            if (overlap.incomingNote) noteLog.push(overlap.incomingNote);
+
+            // Update matched existing flight (either already in sheet or earlier in this batch)
+            var matchedFlight = overlap.matchedFlight;
+            var isExistingPrimary = (overlap.existingStatus === 'Dup-Primary' || (matchedFlight && matchedFlight.status === 'Valid'));
+            if (matchedFlight) {
+              matchedFlight.dupTag = assignedDupTag;
+              if (matchedFlight.rowNum) {
+                // In spreadsheet
+                updateExistingMatchedRow_(sh, map, matchedFlight.rowNum, overlap.existingStatus, assignedDupTag, isExistingPrimary, flightId);
+              } else if (matchedFlight.batchIndex !== undefined && batchRows[matchedFlight.batchIndex]) {
+                // Earlier in current batch!
+                var priorBatchRow = batchRows[matchedFlight.batchIndex];
+                if (map['Status']) {
+                  priorBatchRow[map['Status'] - 1] = overlap.existingStatus;
+                }
+                if (map['Notes']) {
+                  var curPriorNotes = priorBatchRow[map['Notes'] - 1] || '';
+                  priorBatchRow[map['Notes'] - 1] = formatOrAppendDupNote_(curPriorNotes, assignedDupTag, isExistingPrimary, flightId);
+                }
+              }
+            }
+          }
+        }
+
         var finalNotes = noteLog.length > 0 ? noteLog.join(' | ') : '';
 
         // 10. Build 60-column row
@@ -1176,6 +1285,7 @@ function processBulkBatch(batchFiles, options) {
           tz: timeZone
         }, xcStatus, weatherData, hashStr, sh, map, config, prevGear, defGear, flightId);
 
+        var currentBatchRowIndex = batchRows.length;
         batchRows.push(rowData);
         sheetHashes[hashStr] = true;
 
@@ -1189,8 +1299,10 @@ function processBulkBatch(batchFiles, options) {
           lon: launchFix.lon,
           flightId: flightId,
           status: status,
-          score: scoreFlightQuality_(parsed, text, currentName),
-          rowNum: null
+          score: scoreFlightQualityFromRow_(rowData, map, currentName),
+          rowNum: null,
+          batchIndex: currentBatchRowIndex,
+          dupTag: assignedDupTag
         });
 
         batchLogs.push(['Bulk Ingestion', new Date(), '[OK] ' + currentName, (item.id ? 'FileID: ' + item.id + ' | ' : '') + (finalNotes || 'OK')]);
@@ -1240,7 +1352,8 @@ function getFlightSummariesForOverlap_(sh, map) {
   if (!sh || sh.getLastRow() < 5) return list;
   var numRows = sh.getLastRow() - 4;
   var lastCol = sh.getLastColumn();
-  var data = sh.getRange(5, 1, numRows, lastCol).getValues();
+  // Read display values to prevent timezone/epoch shifts
+  var data = sh.getRange(5, 1, numRows, lastCol).getDisplayValues();
 
   var dateCol = map['Date'];
   var timeCol = map['Launch Time'];
@@ -1248,7 +1361,7 @@ function getFlightSummariesForOverlap_(sh, map) {
   var lonCol = map['Launch Lon'];
   var idCol = map['FlightID'];
   var statusCol = map['Status'];
-  var igcCol = map['IGC File'];
+  var notesCol = map['Notes'];
   var durCol = map['Flight Duration'];
 
   for (var i = 0; i < data.length; i++) {
@@ -1261,9 +1374,12 @@ function getFlightSummariesForOverlap_(sh, map) {
     var rowLon = parseFloat(row[lonCol - 1]);
     var rowFlightId = String(row[idCol - 1] || '').replace(/=HYPERLINK\("[^"]*",\s*"([^"]+)"\)/, '$1').trim();
     var rowStatus = String(row[statusCol - 1] || '').trim();
+    var rowNotes = notesCol ? String(row[notesCol - 1] || '') : '';
     var rowDurVal = row[durCol - 1];
     var rowDurMin = parseTimeToMinutes_(rowDurVal) || 0;
-    var rowIgcVal = String(row[igcCol - 1] || '');
+
+    var mTag = rowNotes.match(/\[DupRef:\s*(D\d+)/i);
+    var dupTag = mTag ? mTag[1].toUpperCase() : null;
 
     if (rowDateStr && !isNaN(rowLat) && !isNaN(rowLon)) {
       list.push({
@@ -1274,8 +1390,10 @@ function getFlightSummariesForOverlap_(sh, map) {
         lon: rowLon,
         flightId: rowFlightId,
         status: rowStatus,
-        score: scoreExistingFlight_(rowIgcVal, row, map),
-        rowNum: 5 + i
+        notes: rowNotes,
+        score: scoreFlightQualityFromRow_(row, map),
+        rowNum: 5 + i,
+        dupTag: dupTag
       });
     }
   }
@@ -1285,7 +1403,7 @@ function getFlightSummariesForOverlap_(sh, map) {
 /**
  * In-memory heuristic overlap check against loaded flight summaries.
  */
-function findHeuristicOverlapInMemory_(parsed, launchFix, rawText, fileName, timeZone, summaries, config) {
+function findHeuristicOverlapInMemory_(parsed, launchFix, rawText, fileName, timeZone, summaries, config, incomingFlightId) {
   var result = { matched: false };
   if (!summaries || summaries.length === 0) return result;
 
@@ -1309,8 +1427,8 @@ function findHeuristicOverlapInMemory_(parsed, launchFix, rawText, fileName, tim
     var diffMin = Math.abs(incomingLaunchMin - item.launchMin);
     if (diffMin > 720) diffMin = 1440 - diffMin;
 
-    var isTimeOverlap = (diffMin <= 15);
-    if (!isTimeOverlap && diffMin <= 35) {
+    var isTimeOverlap = (diffMin <= 20);
+    if (!isTimeOverlap && diffMin <= 45) {
       var inDurMin = Math.round((parsed.stats.durationSec || 0) / 60);
       if (item.durMin > 10 && inDurMin > 10) {
         isTimeOverlap = true;
@@ -1320,26 +1438,29 @@ function findHeuristicOverlapInMemory_(parsed, launchFix, rawText, fileName, tim
     if (!isTimeOverlap) continue;
 
     // Overlap match found!
-    var dateCompact = incomingDate.replace(/-/g, '');
-    var hourStr = ('0' + Math.floor(incomingLaunchMin / 60)).slice(-2);
-    var minStr = ('0' + (incomingLaunchMin % 60)).slice(-2);
-    var dupTag = 'DUP_' + dateCompact + '_' + hourStr + minStr;
+    // Reuse cluster tag if matched flight already has one; otherwise assign new short tag
+    var dupTag = item.dupTag || getNextShortDupRef_();
+    item.dupTag = dupTag;
 
     var incomingStatus, existingStatus;
-    if (incomingScore > item.score) {
+    var incomingNote;
+
+    if (incomingScore > item.score && item.status !== 'Valid') {
       incomingStatus = 'Dup-Primary';
       existingStatus = 'Dup-Others';
+      incomingNote = formatOrAppendDupNote_('', dupTag, true, item.flightId);
     } else {
       incomingStatus = 'Dup-Others';
       existingStatus = (item.status === 'Valid') ? 'Valid' : 'Dup-Primary';
+      incomingNote = formatOrAppendDupNote_('', dupTag, false, item.flightId);
     }
 
     return {
       matched: true,
+      dupTag: dupTag,
       incomingStatus: incomingStatus,
       existingStatus: existingStatus,
-      incomingNote: '[DupRef: ' + dupTag + ' | Primary: ' + (incomingStatus === 'Dup-Primary' ? 'This' : item.flightId) + ']',
-      existingNote: '[DupRef: ' + dupTag + ' | Primary: ' + (existingStatus === 'Dup-Primary' ? 'This' : 'Pending') + ']',
+      incomingNote: incomingNote,
       matchedFlight: item
     };
   }
@@ -1349,7 +1470,7 @@ function findHeuristicOverlapInMemory_(parsed, launchFix, rawText, fileName, tim
 /**
  * Updates status and notes on an existing flight row without shifting rows.
  */
-function updateExistingMatchedRow_(sh, map, rowNum, newStatus, newNote) {
+function updateExistingMatchedRow_(sh, map, rowNum, newStatus, dupTag, isPrimary, partnerFlightId) {
   try {
     if (!sh || !rowNum || rowNum < 5) return;
     var statusCol = map['Status'];
@@ -1357,10 +1478,10 @@ function updateExistingMatchedRow_(sh, map, rowNum, newStatus, newNote) {
     if (statusCol && newStatus) {
       sh.getRange(rowNum, statusCol).setValue(newStatus);
     }
-    if (notesCol && newNote) {
+    if (notesCol && dupTag && partnerFlightId) {
       var curVal = String(sh.getRange(rowNum, notesCol).getValue() || '');
-      if (curVal.indexOf(newNote) === -1) {
-        var updatedNote = curVal ? (curVal + ' | ' + newNote) : newNote;
+      var updatedNote = formatOrAppendDupNote_(curVal, dupTag, isPrimary, partnerFlightId);
+      if (updatedNote !== curVal) {
         sh.getRange(rowNum, notesCol).setValue(updatedNote);
       }
     }
@@ -1527,8 +1648,215 @@ INGESTION.processSingleIgcBlob = processSingleIgcBlob_;
 INGESTION.insertFlightRow = insertFlightRow_;
 INGESTION.uiAddManualFlight = uiAddManualFlight_;
 INGESTION.scoreFlightQuality = scoreFlightQuality_;
+INGESTION.scoreFlightQualityFromRow = scoreFlightQualityFromRow_;
 INGESTION.findHeuristicOverlap = findHeuristicOverlap_;
 INGESTION.getExistingSheetHashes = getExistingSheetHashes_;
 INGESTION.getCachedSheetHashes = getCachedSheetHashes_;
 INGESTION.buildFlightRowArray = buildFlightRowArray_;
 INGESTION.processBulkBatch = processBulkBatch;
+INGESTION.scanAndFlagLogbookDuplicates = scanAndFlagLogbookDuplicates_;
+
+/**
+ * Scans the entire Flights sheet for duplicate flight recordings.
+ * Groups by date, clusters by launch proximity (<= 1000m) and time overlap (<= 20 min or interval overlap),
+ * quality scores candidates (0-100), sets Dup-Primary and Dup-Others, and formats reciprocal notes.
+ * @return {Object} { success: boolean, totalFlights: number, clusterCount: number, duplicateCount: number }
+ */
+function scanAndFlagLogbookDuplicates_() {
+  var ss = SpreadsheetApp.getActive();
+  var sh = ss ? ss.getSheetByName(TABS.FLIGHTS.name) : null;
+  if (!sh || sh.getLastRow() < 5) {
+    return { success: true, totalFlights: 0, clusterCount: 0, duplicateCount: 0 };
+  }
+
+  var map = getColumnMap_(sh);
+  var dateCol = map['Date'];
+  var timeCol = map['Launch Time'];
+  var latCol = map['Launch Lat'];
+  var lonCol = map['Launch Lon'];
+  var idCol = map['FlightID'];
+  var statusCol = map['Status'];
+  var notesCol = map['Notes'];
+  var durCol = map['Flight Duration'];
+
+  if (!dateCol || !timeCol || !latCol || !lonCol || !idCol || !statusCol || !notesCol) {
+    return { success: false, error: 'Missing required columns in Flights sheet.' };
+  }
+
+  var numRows = sh.getLastRow() - 4;
+  var lastCol = sh.getLastColumn();
+  var displayData = sh.getRange(5, 1, numRows, lastCol).getDisplayValues();
+
+  var flights = [];
+  var existingMaxTagNum = 0;
+
+  for (var i = 0; i < displayData.length; i++) {
+    var row = displayData[i];
+    var rowNum = 5 + i;
+    var rawId = String(row[idCol - 1] || '');
+    var flightId = rawId.replace(/=HYPERLINK\("[^"]*",\s*"([^"]+)"\)/, '$1').trim();
+    if (!flightId) continue;
+
+    var dateStr = formatDateToYmd_(row[dateCol - 1]);
+    var timeStr = String(row[timeCol - 1] || '').trim();
+    var launchMin = parseTimeToMinutes_(timeStr);
+    var lat = parseFloat(row[latCol - 1]);
+    var lon = parseFloat(row[lonCol - 1]);
+    var durMin = parseTimeToMinutes_(row[durCol - 1]) || 0;
+    var status = String(row[statusCol - 1] || '').trim();
+    var notes = String(row[notesCol - 1] || '').trim();
+
+    var mTag = notes.match(/\[DupRef:\s*D(\d+)/i);
+    if (mTag) {
+      var tNum = parseInt(mTag[1], 10);
+      if (tNum > existingMaxTagNum) existingMaxTagNum = tNum;
+    }
+
+    var score = scoreFlightQualityFromRow_(row, map);
+
+    flights.push({
+      rowNum: rowNum,
+      flightId: flightId,
+      dateIso: dateStr,
+      timeStr: timeStr,
+      launchMin: launchMin,
+      durMin: durMin,
+      lat: lat,
+      lon: lon,
+      status: status,
+      notes: notes,
+      score: score,
+      clusterId: null
+    });
+  }
+
+  if (flights.length === 0) {
+    return { success: true, totalFlights: 0, clusterCount: 0, duplicateCount: 0 };
+  }
+
+  // 1. Group flights by Date
+  var byDate = {};
+  for (var f = 0; f < flights.length; f++) {
+    var fl = flights[f];
+    if (!fl.dateIso || isNaN(fl.lat) || isNaN(fl.lon) || fl.launchMin === null) continue;
+    if (!byDate[fl.dateIso]) byDate[fl.dateIso] = [];
+    byDate[fl.dateIso].push(fl);
+  }
+
+  var clusterList = [];
+  var clusterCounter = existingMaxTagNum;
+
+  // 2. Identify clusters within each date
+  for (var d in byDate) {
+    var dayFlights = byDate[d];
+    if (dayFlights.length < 2) continue;
+
+    for (var a = 0; a < dayFlights.length; a++) {
+      for (var b = a + 1; b < dayFlights.length; b++) {
+        var fA = dayFlights[a];
+        var fB = dayFlights[b];
+
+        // Launch proximity <= 1000m
+        var dist = haversine_(fA.lat, fA.lon, fB.lat, fB.lon);
+        if (dist > 1000) continue;
+
+        // Time overlap: launch within 20 min OR duration overlap
+        var diffMin = Math.abs(fA.launchMin - fB.launchMin);
+        if (diffMin > 720) diffMin = 1440 - diffMin;
+
+        var isOverlap = (diffMin <= 20);
+        if (!isOverlap && diffMin <= 45 && fA.durMin > 10 && fB.durMin > 10) {
+          isOverlap = true;
+        }
+
+        if (isOverlap) {
+          // Merge or create cluster
+          if (fA.clusterId === null && fB.clusterId === null) {
+            clusterCounter++;
+            var newCId = 'D' + (clusterCounter < 10 ? '0' + clusterCounter : clusterCounter);
+            fA.clusterId = newCId;
+            fB.clusterId = newCId;
+            clusterList.push({ id: newCId, members: [fA, fB] });
+          } else if (fA.clusterId !== null && fB.clusterId === null) {
+            fB.clusterId = fA.clusterId;
+            var cObj = clusterList.find(function(c) { return c.id === fA.clusterId; });
+            if (cObj && cObj.members.indexOf(fB) === -1) cObj.members.push(fB);
+          } else if (fA.clusterId === null && fB.clusterId !== null) {
+            fA.clusterId = fB.clusterId;
+            var cObj = clusterList.find(function(c) { return c.id === fB.clusterId; });
+            if (cObj && cObj.members.indexOf(fA) === -1) cObj.members.push(fA);
+          }
+        }
+      }
+    }
+  }
+
+  if (clusterList.length === 0) {
+    LOG.write('DUPE_TRIAGE', '[INFO] Duplicate logbook scan completed', 'Scanned ' + flights.length + ' flights: 0 duplicates detected.');
+    return { success: true, totalFlights: flights.length, clusterCount: 0, duplicateCount: 0 };
+  }
+
+  // 3. For each cluster, elect Primary and Others, format reciprocal notes
+  var totalDupsFlagged = 0;
+  var rowsToUpdate = [];
+
+  for (var c = 0; c < clusterList.length; c++) {
+    var cluster = clusterList[c];
+    var members = cluster.members;
+
+    // Elect Primary:
+    // If one is already marked 'Valid' by pilot, that one remains Primary
+    // Otherwise, highest quality score wins
+    members.sort(function(m1, m2) {
+      if (m1.status === 'Valid' && m2.status !== 'Valid') return -1;
+      if (m2.status === 'Valid' && m1.status !== 'Valid') return 1;
+      return m2.score - m1.score;
+    });
+
+    var primary = members[0];
+    var others = members.slice(1);
+    var otherIds = others.map(function(o) { return o.flightId; });
+
+    // Primary updates
+    var primaryStatus = (primary.status === 'Valid') ? 'Valid' : 'Dup-Primary';
+    var primaryNotes = formatOrAppendDupNote_(primary.notes, cluster.id, true, otherIds.join(', '));
+    rowsToUpdate.push({
+      rowNum: primary.rowNum,
+      status: primaryStatus,
+      notes: primaryNotes
+    });
+
+    // Others updates
+    for (var o = 0; o < others.length; o++) {
+      var otherFl = others[o];
+      var otherNotes = formatOrAppendDupNote_(otherFl.notes, cluster.id, false, primary.flightId);
+      rowsToUpdate.push({
+        rowNum: otherFl.rowNum,
+        status: 'Dup-Others',
+        notes: otherNotes
+      });
+      totalDupsFlagged++;
+    }
+  }
+
+  // 4. Batch commit updates to sheet
+  for (var u = 0; u < rowsToUpdate.length; u++) {
+    var up = rowsToUpdate[u];
+    sh.getRange(up.rowNum, statusCol).setValue(up.status);
+    sh.getRange(up.rowNum, notesCol).setValue(up.notes);
+  }
+  SpreadsheetApp.flush();
+
+  LOG.write(
+    'DUPE_TRIAGE',
+    '[COMPLETE] Duplicate scan finished: Found ' + clusterList.length + ' cluster(s)',
+    'Scanned ' + flights.length + ' flights | Flagged ' + totalDupsFlagged + ' as Dup-Others, ' + clusterList.length + ' as Dup-Primary'
+  );
+
+  return {
+    success: true,
+    totalFlights: flights.length,
+    clusterCount: clusterList.length,
+    duplicateCount: totalDupsFlagged
+  };
+}
