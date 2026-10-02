@@ -938,8 +938,9 @@ function sortFlightsByDate_() {
 
   // Re-apply Flight No formula only to actual flight rows
   var flightNoCol = map['Flight No'] || 3;
+  var fNoColLetter = columnToLetter_(flightNoCol);
   for (var r = minRow; r <= maxRow; r++) {
-    sh.getRange(r, flightNoCol).setFormula('=IFERROR(MAX(INDIRECT("C" & (ROW()+1) & ":C")), 0) + 1');
+    sh.getRange(r, flightNoCol).setFormula('=IFERROR(MAX(INDIRECT("' + fNoColLetter + '" & (ROW()+1) & ":' + fNoColLetter + '")), 0) + 1');
   }
 
   // Ensure dropdowns, data validations, cell text wrapping and conditional formatting cover all actual rows

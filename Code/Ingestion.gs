@@ -811,17 +811,18 @@ function uiAddManualFlight_() {
   var idSuffix = getNextDailyId_(sh, dateStr);
   var flightId = 'F' + dateStr + '_' + idSuffix;
   
-  // 2. Flight No Formula
-  var flightNoFormula = '=IFERROR(MAX(INDIRECT("C" & (ROW()+1) & ":C")), 0) + 1';
-  
-  // 3. Defaults
-  var eq = lookupDefaultEquipment_();
-  var prevGear = getPreviousGear_(sh);
-  
-  // 4. Map to Columns safely
+  // 2. Map to Columns safely
   var map = getColumnMap_(sh);
   var lastCol = sh.getLastColumn();
   var row = new Array(lastCol).fill('');
+  
+  // 3. Flight No Formula (Dynamically resolved)
+  var fNoColLetter = getColLetter_(map, 'Flight No', 'C');
+  var flightNoFormula = '=IFERROR(MAX(INDIRECT("' + fNoColLetter + '" & (ROW()+1) & ":' + fNoColLetter + '")), 0) + 1';
+  
+  // 4. Defaults
+  var eq = lookupDefaultEquipment_();
+  var prevGear = getPreviousGear_(sh);
   
   var setVal = function(header, value) {
     if (map[header]) {
@@ -896,7 +897,8 @@ function buildFlightRowArray_(data, fileId, outerName, status, notes, analysis, 
     }
   };
 
-  var flightNoFormula = '=IFERROR(MAX(INDIRECT("C" & (ROW()+1) & ":C")), 0) + 1';
+  var fNoColLetter = getColLetter_(map, 'Flight No', 'C');
+  var flightNoFormula = '=IFERROR(MAX(INDIRECT("' + fNoColLetter + '" & (ROW()+1) & ":' + fNoColLetter + '")), 0) + 1';
   
   // Auto Summary
   var site = geo.ls || (geo.l && geo.l.town) || '';

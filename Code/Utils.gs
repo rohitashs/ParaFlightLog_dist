@@ -122,6 +122,52 @@ function normalizeXcClass_(cls) {
   return c;
 }
 
+/**
+ * Converts a 1-based column number to a Google Sheets column letter (e.g. 1 -> 'A', 28 -> 'AB').
+ * @param {number} colIdx - 1-based column index
+ * @return {string} Column letter
+ */
+function columnToLetter_(colIdx) {
+  if (!colIdx || colIdx < 1) return '';
+  var letter = '';
+  var temp = colIdx;
+  while (temp > 0) {
+    var rem = (temp - 1) % 26;
+    letter = String.fromCharCode(65 + rem) + letter;
+    temp = Math.floor((temp - 1) / 26);
+  }
+  return letter;
+}
+
+/**
+ * Resolves the column letter of a named column on the Flights sheet (or any mapped sheet).
+ * Resolves dynamically from:
+ * 1. Column map object (or Sheet headers)
+ * 2. TABS.FLIGHTS.groups (or provided columns array)
+ * 3. Fallback letter
+ * @param {Object|Sheet} mapOrSheet - Column map { colName: index } or Sheet object
+ * @param {string} colName - Header name (e.g. 'Status', 'Flight Duration')
+ * @param {string} [fallbackLetter] - Fallback letter if not found
+ * @return {string} Column letter (e.g. 'B', 'M', 'BC')
+ */
+function getColLetter_(mapOrSheet, colName, fallbackLetter) {
+  var idx = 0;
+  if (mapOrSheet && typeof mapOrSheet.getLastColumn === 'function') {
+    var map = getColumnMap_(mapOrSheet);
+    idx = map[colName];
+  } else if (mapOrSheet && typeof mapOrSheet === 'object') {
+    idx = mapOrSheet[colName];
+  }
+  if (!idx && typeof TABS !== 'undefined' && TABS.FLIGHTS && TABS.FLIGHTS.groups) {
+    var flatHeaders = [];
+    TABS.FLIGHTS.groups.forEach(function(g) { flatHeaders = flatHeaders.concat(g.cols); });
+    var pos = flatHeaders.indexOf(colName);
+    if (pos > -1) idx = pos + 1;
+  }
+  if (!idx) return fallbackLetter || '';
+  return columnToLetter_(idx);
+}
+
 // Export to UTILS namespace
 UTILS.haversine = haversine_;
 UTILS.bearing = bearing_;
@@ -130,3 +176,5 @@ UTILS.friendlyDuration = friendlyDuration_;
 UTILS.formatTime = formatTime_;
 UTILS.cleanDriveId = cleanDriveId_;
 UTILS.normalizeXcClass = normalizeXcClass_;
+UTILS.columnToLetter = columnToLetter_;
+UTILS.getColLetter = getColLetter_;

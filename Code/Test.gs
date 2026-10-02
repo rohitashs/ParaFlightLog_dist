@@ -30,6 +30,7 @@ function runAllTests() {
   results.push(testConservativePruningMath_());
   results.push(testDedupeEngineEnhancements_());
   results.push(testStatusChangeUtility_());
+  results.push(testDynamicFormulaResilience_());
   
   var failures = results.filter(function(r) { return !r.idx || r.error; });
   if (failures.length > 0) {
@@ -898,4 +899,103 @@ function testStatusChangeUtility_() {
 
   return { module: 'StatusChange', idx: true };
 }
+
+function testDynamicFormulaResilience_() {
+  // Test 1: columnToLetter_ conversion accuracy across boundaries
+  var cases = [
+    { in: 1, out: 'A' },
+    { in: 2, out: 'B' },
+    { in: 3, out: 'C' },
+    { in: 4, out: 'D' },
+    { in: 8, out: 'H' },
+    { in: 12, out: 'L' },
+    { in: 13, out: 'M' },
+    { in: 22, out: 'V' },
+    { in: 26, out: 'Z' },
+    { in: 27, out: 'AA' },
+    { in: 28, out: 'AB' },
+    { in: 30, out: 'AD' },
+    { in: 33, out: 'AG' },
+    { in: 38, out: 'AL' },
+    { in: 40, out: 'AN' },
+    { in: 52, out: 'AZ' },
+    { in: 53, out: 'BA' },
+    { in: 55, out: 'BC' },
+    { in: 59, out: 'BG' },
+    { in: 702, out: 'ZZ' },
+    { in: 703, out: 'AAA' },
+    { in: 0, out: '' },
+    { in: -5, out: '' },
+    { in: null, out: '' }
+  ];
+
+  for (var i = 0; i < cases.length; i++) {
+    var c = cases[i];
+    var actual = columnToLetter_(c.in);
+    if (actual !== c.out) {
+      return { module: 'DynamicFormulaResilience', error: 'columnToLetter_(' + c.in + ') expected "' + c.out + '", got "' + actual + '"' };
+    }
+  }
+
+  // Test 2: getColLetter_ resolution from TABS.FLIGHTS.groups (canonical schema fallback)
+  var defaultStatus = getColLetter_(null, 'Status', 'B');
+  if (defaultStatus !== 'B') {
+    return { module: 'DynamicFormulaResilience', error: 'getColLetter_ default Status expected B, got ' + defaultStatus };
+  }
+  var defaultDur = getColLetter_(null, 'Flight Duration', 'L');
+  if (defaultDur !== 'L') {
+    return { module: 'DynamicFormulaResilience', error: 'getColLetter_ default Flight Duration expected L, got ' + defaultDur };
+  }
+  var defaultDist = getColLetter_(null, 'Track Length (km)', 'M');
+  if (defaultDist !== 'M') {
+    return { module: 'DynamicFormulaResilience', error: 'getColLetter_ default Track Length expected M, got ' + defaultDist };
+  }
+  var defaultTherm = getColLetter_(null, 'Thermal %', 'BC');
+  if (defaultTherm !== 'BC') {
+    return { module: 'DynamicFormulaResilience', error: 'getColLetter_ default Thermal % expected BC, got ' + defaultTherm };
+  }
+
+  // Test 3: getColLetter_ resolution with custom user-reordered column map
+  var reorderedMap = {
+    'FlightID': 1,
+    'Flight No': 2,        // B (shifted from C)
+    'Status': 3,           // C (shifted from B)
+    'Auto Summary': 4,     // D
+    'Flight Duration': 20, // T (shifted from L)
+    'Track Length (km)': 21, // U (shifted from M)
+    'Thermal %': 30        // AD (shifted from BC)
+  };
+
+  if (getColLetter_(reorderedMap, 'Flight No') !== 'B') {
+    return { module: 'DynamicFormulaResilience', error: 'Reordered Flight No expected B, got ' + getColLetter_(reorderedMap, 'Flight No') };
+  }
+  if (getColLetter_(reorderedMap, 'Status') !== 'C') {
+    return { module: 'DynamicFormulaResilience', error: 'Reordered Status expected C, got ' + getColLetter_(reorderedMap, 'Status') };
+  }
+  if (getColLetter_(reorderedMap, 'Flight Duration') !== 'T') {
+    return { module: 'DynamicFormulaResilience', error: 'Reordered Flight Duration expected T, got ' + getColLetter_(reorderedMap, 'Flight Duration') };
+  }
+  if (getColLetter_(reorderedMap, 'Thermal %') !== 'AD') {
+    return { module: 'DynamicFormulaResilience', error: 'Reordered Thermal % expected AD, got ' + getColLetter_(reorderedMap, 'Thermal %') };
+  }
+
+  // Test 4: Dynamic Flight No formula construction under reordered column
+  var fNoLetter = getColLetter_(reorderedMap, 'Flight No', 'C');
+  var fNoFormula = '=IFERROR(MAX(INDIRECT("' + fNoLetter + '" & (ROW()+1) & ":' + fNoLetter + '")), 0) + 1';
+  if (fNoFormula !== '=IFERROR(MAX(INDIRECT("B" & (ROW()+1) & ":B")), 0) + 1') {
+    return { module: 'DynamicFormulaResilience', error: 'Reordered Flight No formula expected indirect B, got ' + fNoFormula };
+  }
+
+  // Test 5: Dynamic Equipment query column resolution from TABS.EQUIPMENT.columns
+  var eqCols = (TABS.EQUIPMENT && TABS.EQUIPMENT.columns) ? TABS.EQUIPMENT.columns : [];
+  var cCat = columnToLetter_(eqCols.indexOf('Category') + 1);
+  var cId = columnToLetter_(eqCols.indexOf('EquipmentID') + 1);
+  var cRet = columnToLetter_(eqCols.indexOf('Retired?') + 1);
+  if (cCat !== 'A' || cId !== 'B' || cRet !== 'H') {
+    return { module: 'DynamicFormulaResilience', error: 'Equipment column resolution failed: Cat=' + cCat + ', Id=' + cId + ', Ret=' + cRet };
+  }
+
+  return { module: 'DynamicFormulaResilience', idx: true };
+}
+
 
