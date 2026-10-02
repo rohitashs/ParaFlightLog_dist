@@ -291,9 +291,13 @@ Total Quality Score (0–100 Points)
 * **Cross-Referencing Notes**: Both rows receive a standardized audit note in the `Notes` column:
   `[DupRef: DUP_20260930_1420 | Paired with F20260930_02 (Score: 85 vs 60)]`
 
-### 5. Dashboard Protection
+### 5. Dashboard Protection & "Include Review?" Selector
 > [!NOTE]
-> All Dashboard KPI banners (Total Flights, Total Hours, Total Distance), rolling currency charts, and top 5 leaderboard cards strictly filter for **`Status = "Valid"`**. Flights tagged as `Review?`, `Dup-Primary`, or `Dup-Others` will **never pollute your flight statistics** until you review and confirm them.
+> By default, all Dashboard KPI banners (Total Flights, Total Hours, Total Distance), rolling 6-month activity currency charts, top 5 leaderboard cards, and flight count lists strictly filter for **`Status = "Valid"`**. Flights tagged as `Review?`, `Dup-Primary`, or `Dup-Others` will not pollute your confirmed flight statistics.
+> 
+> **Dynamic "Include Review?" Selector**: On the `Dashboard` tab in Row 2 (cell `B2`), you can toggle the **`Include "Review?": [ No ▾ / Yes ▾ ]`** selector:
+> * **`No` (Default)**: Strictly counts confirmed **`Valid`** flights.
+> * **`Yes`**: Dynamically expands all KPI banners, annual summaries, 6-month timelines, leaderboards, launch site counts, and country tallies to include unverified **`Review?`** flights alongside **`Valid`** flights in real time.
 
 ---
 

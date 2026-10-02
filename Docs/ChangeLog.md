@@ -12,6 +12,15 @@
     *   **Batch Worker Routing**: Added `case 'STATUS_CHANGE':` to `executeWorkerBatch()` in `Code/Code.gs` to update Column B (`Status`) on `TABS.FLIGHTS` in batches of 25 with automatic post-execution Dashboard KPI refresh in `finalizeWorkerJob()`.
     *   **Activity Logging Registry**: Added `STATUS_CHANGE: 'Status Change'` to `CFG.LOG_PROCESSES` in `Code/Config.gs`.
     *   **User Guide Scaffolding & Documentation**: Added operation description to Section 4 of `Code/Scaffold.gs` and Section 6 of `Docs/User_Guide.md`.
+*   `[Imp]` **CR-DSH-002 (Dashboard "Include Review?" Status Filter Selector)**:
+    *   **Interactive Row 2 Selector (`Dashboard!B2`)**: Added `Include "Review?": [ No ▾ / Yes ▾ ]` selector in cells `A2:B2` on the `Dashboard` tab with a default of `No`.
+    *   **Dynamic Formula Expansion**: Rebuilt all Dashboard formulas (`scaffoldDashboard_` in `Code/Scaffold.gs`) to dynamically include `Review?` flights alongside confirmed `Valid` flights when cell `B2` is set to `Yes`:
+        *   All-Time Summary KPI Cards (Total Flights, Total Hours, Total Distance).
+        *   Year-To-Date Summary KPI Cards (Flights, Hours, Distance).
+        *   6-Month Activity Timeline (Monthly Flights, Hours, Distance).
+        *   8 Top-5 Leaderboard Cards (Duration, Distance, Max Altitude, Altitude Gain, Thermal Flights, Soaring Flights, XC Score, Max Groundspeed).
+        *   Top Launch Sites and Countries Flown query lists.
+    *   **Instant Spreadsheet Evaluation**: Uses dynamic formula evaluation so toggling the dropdown immediately updates all statistics in real time with zero Apps Script execution delay.
 *   `[Fix]` **Bug-ING-010 (Dropdown, Validation & Formatting Expansion on Bulk Appended Rows)**:
     *   **Root Cause**: Single flight ingestion (`insertFlightRow_`) inserts rows at row 5, inheriting cell validations and conditional formatting from adjacent rows. In contrast, bulk ingestion (`processBulkBatch`) appends raw values in batch directly to the bottom (`sh.getRange(curLastRow + 1, ...).setValues(batchRows)`). When new flights exceed the initial ~60 template rows, new rows lacked dropdowns, validations, cell text wrapping, top vertical alignment, and conditional formatting.
     *   **Automatic Validation & Format Expansion**: Wired `applyFlightsValidation_(sh)` directly into `sortFlightsByDate_()` and `finalizeBulkImport()`, guaranteeing that any bulk ingestion or logbook sort dynamically extends all dropdowns and validations to `sh.getLastRow() + 50`.
