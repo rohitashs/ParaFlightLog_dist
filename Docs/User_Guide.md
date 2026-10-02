@@ -48,7 +48,7 @@ The Paragliding Flight Log is a serverless, cloud-native logbook built directly 
 
 | Component | Function | Architecture Details | Pilot Benefit |
 | :--- | :--- | :--- | :--- |
-| **Google Sheets UI** | Primary Interface | 7 organized tabs: `Dashboard`, `Flights`, `Pilot_Profile`, `Equipment`, `User Guide`, `Config`, and `Activity Logs`. | Zero install required; fully accessible on desktop browsers, tablets, and Google Sheets mobile apps. |
+| **Google Sheets UI** | Primary Interface | 8 organized tabs: `Dashboard`, `Flights`, `Pilot_Profile`, `Equipment`, `User Guide`, `Config`, `Activity Logs`, and `Automation_Queue`. | Zero install required; fully accessible on desktop browsers, tablets, and Google Sheets mobile apps. |
 | **Google Apps Script** | Autonomous Engine | Modular scripts running inside Google's cloud infrastructure that parse IGC files, detect flight modes, query weather APIs, and calculate XC scores. | Free execution with zero server hosting costs, database subscription fees, or maintenance overhead. |
 | **Master Flight Archive** | Permanent Cloud Storage | Designated Google Drive folder mirroring all valid flight tracks with standardized naming (`YYYY-MM-DD_HHMM_PilotName.igc`) and public viewing links. | Direct one-click downloads and instant 3D interactive replay via SeeYou Cloud. |
 | **Automated Watchers** | Hands-Free Background Ingestion | Time-driven background triggers that poll your Google Drive watch folders every 5 minutes for newly synced flight tracks. | Drop files into Google Drive from your phone or flight instrument, and your logbook updates automatically. |
@@ -340,6 +340,18 @@ Under **`Flight Log > Admin > Configuration Management`**:
   * Automatically detects populated sections in your `.json` file and displays live count badges.
   * Sections not present in the uploaded file are automatically unchecked, disabled, and dimmed to prevent configuration errors.
   * Writes purely to Column B (`Value`), completely preserving sheet layout, section header rows, and formulas.
+
+### Tri-Mode Execution Subsystem (Modal, Sidebar, Background Queue)
+All major batch maintenance and ingestion dialogs (`Bulk Flight Ingestion`, `Flight Updates`, `Purge Flights`, `Re-sync Missing Flights`, `Watch Folder Scan`, `URL / Drive Import`, and `File Upload`) support **Tri-Mode Execution**, solving the Google Sheets modal lockdown problem:
+
+| Execution Mode | Button | Best For | Behavior & Grid Interactivity |
+| :--- | :--- | :--- | :--- |
+| **1. In-Modal Stepping** | **`[ 🚀 Run Here ]`** | Quick jobs (< 30s) | Runs synchronously inside the dialog. Ideal when you want to quickly step through a handful of flights and close the dialog immediately. |
+| **2. Universal Sidebar** | **`[ 📌 Run in Sidebar ]`** | Medium-to-large jobs | Closes the modal and launches the **Universal Execution Sidebar** (`300px`). The spreadsheet grid remains **100% interactive**—you can browse flight rows, edit comments, check the Dashboard, or inspect charts while watching live progress. Includes real-time metric pills, an activity console, and a `📋 Copy Log` button. |
+| **3. Headless Cloud Queue** | **`[ ⚙️ Run in Background ]`** | Large batches (100+ flights) | Closes the modal instantly and registers the task in the **`Automation_Queue`** sheet tab. Execution runs headlessly on Google Cloud servers, streaming logs to the **`Activity Logs`** tab. Protected by `TimeBudgetService` (4.5-minute safety threshold) with automatic self-continuation triggers—it continues running even if you close the spreadsheet or browser! |
+
+> [!TIP]
+> **Monitoring Background Jobs**: You can check job progress anytime by switching to the `Automation_Queue` tab (Col C shows status: `QUEUED`, `PROCESSING`, `COMPLETED`, `FAILED`, `CANCELLED`) or by inspecting recent entries in `Activity Logs`. To ensure unattended jobs run automatically every 5 minutes, run **`Flight Log > Admin > Automation & Services > Setup 5-Min Queue Daemon Trigger`**.
 
 ### Flight Updates Dialog
 Click **Flight Log > Flight maintenance > Flight Updates...** to open the unified operations dialog:

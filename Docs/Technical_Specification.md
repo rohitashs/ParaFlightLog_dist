@@ -19,7 +19,7 @@ This document defines the low-level **Code Organization**, **Algorithms**, and *
     *   *Rule*: Never hardcode column indices. Use `Config` maps.
     *   Defines `TABS.CONFIG` (Amber `#FF9800`, index 6) combining Parameters and Lookups into a single sheet. Backwards compatibility aliases `TABS.PARAMETERS` and `TABS.LOOKUPS` map directly to `TABS.CONFIG`.
 3.  **Scaffold (`Scaffold.gs`)**: View Controller. Creates Sheets/Validations.
-    *   `scaffoldConfig_`: Unifies Parameters (Cols A:C) and Lookups (Cols E:N, spacer Col D) into 7 core tabs.
+    *   `scaffoldConfig_`: Unifies Parameters (Cols A:C) and Lookups (Cols E:N, spacer Col D) into 8 core tabs.
     *   *Map*: `RQ-SYS-002`.
 4.  **File Handling Service (`FileHandling.gs`)**: Drive I/O, Watch Folder scanning, Staged Uploads, ZIP extractions, File cleanup, and Master Log copying.
 5.  **Ingestion Service (`Ingestion.gs`)**: Pipeline Controller. Parse/Score orchestration, deduplication, and row mapping.
@@ -32,6 +32,10 @@ This document defines the low-level **Code Organization**, **Algorithms**, and *
     *   **`Scoring.gs`**: Optimization engine (Graph theory/RDP).
     *   **`Geo.gs`**: External API Gateway (Nominatim, Overpass).
     *   **`XContest.gs`**: Verifies flights on XContest.org via Direct Flight Probing, extracts permanent flight IDs, and checks 14-day claim deadlines.
+9.  **Activity Logger (`Logger.gs`)**: Centralized Activity Logging engine (`DSGN-LOG-001`, `CR-LOG-004`). Provides tiered logging (`Brief`, `Normal`, `Debug`), conservative dual-threshold pruning, automated migration, and unified writes to the `Activity Logs` sheet.
+10. **Persistent Job Queue Service (`QueueService.gs`)**: Job manager operating on the `Automation_Queue` tab (`DSGN-UI-001`). Enqueues tasks, tracks progress, and saves serialized state without `PropertiesService` quota limits.
+11. **Time Budget Service (`TimeBudget.gs`)**: Universal 4.5-minute safety threshold manager (`TimeBudgetService`) preventing GAS 6-minute timeout aborts by committing data and scheduling self-continuation triggers.
+12. **Test Harness (`Test.gs`)**: Comprehensive offline and in-app automated unit test suite.
 
 ---
 
@@ -65,6 +69,26 @@ Fixed Header Schema (Row 3=Category, Row 4=Name). Data starts Row 5.
   6. `[ Progression ]` (4 fields): `Current Season XC Goals`, `SIV / Maneuver Notes`, `General Flying Notes`, `Other Progression Info`.
 * **Field Styling**: Col A bold labels, Col B soft yellow editable cells (`#FFFDE7`, solid border `#BDBDBD`), Col C 9pt muted guidance notes (`#616161`).
 * **Non-Destructive Key-Value Contract**: Export, import, and scaffolding treat `Pilot_Profile` as a pure key-value store matching on Column A (`Field`) and writing exclusively to Column B (`Value`), leaving section header rows and Column C completely untouched.
+
+### Activity Logs Schema (`Activity Logs` Tab - `DSGN-LOG-001`, `CR-LOG-004`)
+* **Layout**: 4 columns (`['Process', 'Timestamp', 'Activity / Event', 'Additional Info']`), frozen header rows = 2.
+* **Row 1**: Title Banner merged A1:D1 (`Activity Logs & System Audit`, `#D32F2F`, height 38px).
+* **Row 2**: Column Headers (`Process` [175px], `Timestamp` [165px, format `yyyy-mm-dd hh:mm:ss`], `Activity / Event` [530px, text wrap], `Additional Info` [380px, text wrap, 9pt]).
+* **Retention Policy**: Dual-threshold pruning retains rows if total rows are within `LOG_ROWS_TO_KEEP` (2,000 rows) OR if rows are newer than `LOG_TIME_TO_KEEP_DAYS` (90 days).
+
+### Automation Queue Schema (`Automation_Queue` Tab - `DSGN-UI-001`, `CR-UI-019`)
+* **Layout**: 8 columns (`['Job ID', 'Type', 'Status', 'Progress', 'Started At', 'Updated At', 'Payload & State', 'Last Error']`), frozen header rows = 1.
+* **Row 1**: Column Headers (`#455A64`, font `#FFFFFF`, bold, height 26px).
+* **Columns**:
+  1. `Job ID`: Unique timestamped identifier (`JOB_YYYYMMDD_HHMMSS_...`).
+  2. `Type`: Worker process type (`BULK_INGEST`, `MAINTENANCE`, `PURGE`, `RESYNC`, `WATCH_SCAN`, `URL_DRIVE_INGEST`, `UPLOAD`).
+  3. `Status`: State flag (`QUEUED`, `PROCESSING`, `PAUSED`, `COMPLETED`, `FAILED`, `CANCELLED`).
+  4. `Progress`: Human-readable completion string (e.g. `15/45 (33%)`).
+  5. `Started At`: ISO timestamp of job creation.
+  6. `Updated At`: ISO timestamp of last worker heartbeat.
+  7. `Payload & State`: JSON-serialized job payload, target indices, and intermediate state checkpoints.
+  8. `Last Error`: Detailed stack trace or error message if status is `FAILED`.
+* **Zero Black-Box Storage**: Fully persists execution state in the spreadsheet grid, eliminating the 9 KB size limit of `PropertiesService`.
 
 ---
 
@@ -315,6 +339,13 @@ Fixed Header Schema (Row 3=Category, Row 4=Name). Data starts Row 5.
 *   **`Inspector.html`**: Flight inspector sidebar/modal providing in-depth fix telemetry review, metric calculations, and manual metadata editing.
 *   **`ExecutionSidebar.html` (`DSGN-UI-001`, `CR-UI-019`)**: Universal 300px modeless execution sidebar replacing duplicated progress bars, copy buttons, status lines, and log consoles across dialogs. Features Context Header, Metric Pills, Activity Log Console with `📋 Copy Log`, and dynamic Cancel/Done controls while keeping the spreadsheet grid fully interactive.
 *   **`Style.html`**: Shared CSS tokens, typography, button states, and modal layout styling loaded across all HTML dialogs.
+
+### Universal Dialog Layout & Interaction Standards (`DSGN-UI-001`, `CR-UI-019`)
+*   **Header Deduplication**: All redundant inner `<div class="header-large ...">` elements and orange subtitles have been eliminated; the window title is cleanly handled by Google Apps Script's native modal frame.
+*   **Two-Stage Standardized Lifecycle**: Separates Stage 1 (Discovery/Configuration) from Stage 2 (Execution).
+*   **Standardized Button Docking**: Action button bars (`[ 🚀 Run Here ]`, `[ 📌 Run in Sidebar ]`, `[ ⚙️ Run in Background ]`, `[ Cancel ]`) are docked at the bottom of `.main-content` directly above the footer progress bar container.
+*   **Purge Dialog Layout Exception**: In `PurgeDialog.html`, the button bar is deliberately situated directly **above the Activity Log console**, allowing the pilot to review candidate flights and trigger the purge before inspecting execution logs.
+*   **Standardized Copy Buttons**: All active modal consoles and the Universal Sidebar provide one-click `📋 Copy Log` buttons wired to `copyConsoleLog()` with temporary `✓ Copied!` visual feedback.
 
 ### Execution & Background Services (`DSGN-UI-001`, `DSGN-AUT-001`)
 *   **`Code/QueueService.gs`**: Persistent job queue manager operating on the `Automation_Queue` tab. Handles job enqueuing, progress tracking, state checkpoints, and pilot cancellation without `PropertiesService` 9 KB storage limits. Provides foundational execution substrate for scheduled automation.

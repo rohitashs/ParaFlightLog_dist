@@ -1,5 +1,26 @@
 # Project Change Log
 
+## Session: Tri-Mode Execution Subsystem, Dialog Harmonization & Brochure Publication (DSGN-UI-001)
+**Date**: 2026-10-02
+**Versions**: v0.8.20
+**Focus**: Tri-Mode Execution Subsystem ([`CR-UI-019`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Backlog.md) / [`DSGN-UI-001`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Design/DSGN-UI-001_Tri_Mode_Execution_and_Universal_Sidebar.md)), Universal Modeless Execution Sidebar ([`ExecutionSidebar.html`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/ExecutionSidebar.html)), Persistent Cloud Task Queue ([`QueueService.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/QueueService.gs), `Automation_Queue` tab), Bounded 4.5-Minute Time Budget Engine ([`TimeBudget.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/TimeBudget.gs)), Universal Dialog Visual Harmonization across 10 modal dialogs (header deduplication, standardized button bar docking, and copy-log consoles), Platform Brochure Publication (`External/ParaFlightMgmt_brochure v1.html`, `External/ParaFlightLog_Brochure_v2.pdf`, [`Docs/Brochure.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Brochure.md)), and comprehensive offline test suite expansion.
+
+*   `[Imp]` **CR-UI-019 / DSGN-UI-001 (Tri-Mode Execution Model, Universal Execution Sidebar & Modal Dialog Normalization)**:
+    *   Implemented 3-choice operational execution architecture: (1) `[ Run Here ]` (in-modal synchronous stepping for quick jobs), (2) `[ Run in Sidebar ]` (closes modal, opens modeless 300px `ExecutionSidebar.html`, keeping spreadsheet grid 100% interactive), and (3) `[ Run in Background ]` (closes modal, enqueues to `QueueService`, executes headlessly on Google Cloud servers, streaming logs to `Activity Logs`).
+    *   Created `Code/ExecutionSidebar.html`: Universal 300px modeless sidebar featuring Context Header, Metric Pills, Activity Log Console with `📋 Copy Log`, and dynamic Cancel/Done controls.
+    *   Created `Code/QueueService.gs`: Persistent job queue manager operating on the `Automation_Queue` tab (`['Job ID', 'Type', 'Status', 'Progress', 'Started At', 'Updated At', 'Payload & State', 'Last Error']`). Eliminates `PropertiesService` 9 KB limits and provides foundational execution substrate for scheduled automation.
+    *   Created `Code/TimeBudget.gs`: Execution runtime budget service enforcing a 4.5-minute safety threshold. Prevents Google Apps Script 6-minute hard termination timeouts by committing data, serializing checkpoint state, and spawning 30-second continuation triggers (`ScriptApp.newTrigger`).
+    *   Extended Tri-Mode action button bars across `BulkIngestDialog.html`, `FlightMaintenanceDialog.html`, `PurgeDialog.html`, `ScanDialog.html`, `ResyncDialog.html`, `URLDialog.html`, and `UploadDialog.html`.
+    *   Standardized UI layout across all 10 modal dialogs: eliminated redundant inner `header-large` title bars duplicating native Google Sheets modal frames, standardized action button docking above footer progress bars (with `PurgeDialog.html` docked directly above the activity console for pre-destructive review), and integrated `📋 Copy Log` buttons project-wide.
+    *   Added `Automation_Queue` sheet tab definition to `TABS.QUEUE` in `Code/Config.gs` (Dark Slate Gray `#455A64`, index 8, frozen rows = 1).
+    *   Implemented background queue runner (`processBackgroundQueue`, `executeQueuedJobContinuation`, `setupQueueDaemonTrigger`) and added `Setup 5-Min Queue Daemon Trigger` to `Flight Log > Admin > Automation & Services`.
+*   `[Doc]` **Platform Brochure Publication & Professional PDF Generation**:
+    *   Created standalone external brochure HTML (`External/ParaFlightMgmt_brochure v1.html`) and updated platform manifesto in [`Docs/Brochure.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Brochure.md).
+    *   Generated print-optimized, 5-page publication PDF (`External/ParaFlightLog_Brochure_v2.pdf`) with cohesive page breaks, tuned typography, and structured system diagrams using headless Chrome automation.
+*   `[Test]` **Offline Unit & Static RPC Test Suite Expansion**:
+    *   Expanded offline test harness in `scratch/run_all_offline_tests.js` to 10 automated test suites covering Parser, Analysis, Scoring, Drive ID extraction, Log Process resolution, Log Level filtering, Dual-Threshold pruning math, Time Budget engine, Queue Service constants, and Universal Worker batch routing (10/10 passed).
+    *   Executed comprehensive static analysis (`scratch/code_check_audit.js`) verifying 72/72 RPC endpoints and 26/26 public menu wrappers with 0 trailing underscore violations.
+
 ## Session: Activity Logging System Overhaul (DSGN-LOG-001)
 **Date**: 2026-10-01
 **Versions**: v0.8.19

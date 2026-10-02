@@ -1,9 +1,9 @@
 # Project Context & Ways of Working (Source of Truth)
 
 ## 🧠 Agent Memory & Context
-**Status**: Active Development (v0.8.18)
-**Last Session Focus**: Bulk Flight Ingestion (`CR-ING-008`), Pilot Profile 3-column sub-header schema overhaul (`CR-SYS-004`), Config tab lookups & parameters structural reorganization (`CR-CFG-006`), granular 5-group configuration export/import with dynamic UI protection (`CR-CFG-007`), standardized public menu wrappers (`CR-DEV-002`), batch audit logging fix (`Bug-ING-005`), and bulk status validation (`Bug-ING-006`).
-**Next Focus**: Setup Wizard & Instance Templating (`RQ-SYS-008`), Configurable RDP Tolerance (`CR-CFG-002`).
+**Status**: Active Development (v0.8.20)
+**Last Session Focus**: Tri-Mode Execution Subsystem ([`CR-UI-019`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Backlog.md) / [`DSGN-UI-001`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Design/DSGN-UI-001_Tri_Mode_Execution_and_Universal_Sidebar.md)), Activity Logging System Overhaul ([`CR-LOG-004`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Backlog.md) / [`DSGN-LOG-001`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Design/DSGN-LOG-001_Activity_Logging_System_Overhaul.md)), Universal Dialog UI Standardization across 10 modal dialogs (header deduplication, standardized button bar docking, and copy-log consoles), and Platform Brochure publication (`External/ParaFlightLog_Brochure_v2.pdf`, `Docs/Brochure.md`).
+**Next Focus**: Guided Task Wizards ([`CR-UI-020`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Backlog.md)), Distributed Multi-Instance Update & Lifecycle Manager ([`RQ-SYS-010`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Backlog.md)), and Configurable RDP Tolerance ([`CR-CFG-002`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Backlog.md)).
 
 This file is the **long-term memory** for the project. Read this first to understand *how* we work and *where* we are.
 
@@ -22,7 +22,7 @@ The project follows a strict folder hierarchy. `Docs/Context.md` is the source o
 | **Tier 1: Strategic Vision** | Long-term intent, 5 Evolution Horizons, Open-Source roadmap & non-negotiable architectural tenets. *(Stakeholders, Community, AI)* | [`Roadmap.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Roadmap.md) |
 | **Tier 2: Public Manifesto** | High-level platform whitepaper, value proposition, Gemini AI advantage & "Why Sheets + Apps Script". *(World, Pilots, Clubs)* | [`Brochure.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Brochure.md) |
 | **Tier 3: Product & Operations** | Comprehensive functional capabilities catalog and complete pilot operational handbook. *(End-User Pilots, Flight Instructors)* | [`Features.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Features.md)<br>[`User_Guide.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/User_Guide.md) |
-| **Tier 4: Systems Architecture** | C4 serverless topology, global ERD model, 7-sheet unified data dictionary, math algorithms, and RFC design specs. *(Architects, Devs, AI)* | [`Architecture.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Architecture.md)<br>[`Technical_Specification.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Technical_Specification.md)<br>[`Design/`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Design/README.md) (`DSGN-*.md`) |
+| **Tier 4: Systems Architecture** | C4 serverless topology, global ERD model, 8-sheet unified data dictionary, math algorithms, and RFC design specs. *(Architects, Devs, AI)* | [`Architecture.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Architecture.md)<br>[`Technical_Specification.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Technical_Specification.md)<br>[`Design/`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Design/README.md) (`DSGN-*.md`) |
 | **Tier 5: Execution & Memory** | Tracked work units (`RQ`, `CR`, `Bug`), release history, and engineering memory / ways of working. *(Developers, AI Pair Programmers)* | [`Backlog.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Backlog.md)<br>[`ChangeLog.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/ChangeLog.md)<br>[`Context.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Context.md) |
 
 *   **File Inventory**:
@@ -218,7 +218,7 @@ Edit the header of [`Code/Code.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFl
 clasp status
 clasp push
 ```
-*Expected*: `Pushed 27 files.` with zero errors.
+*Expected*: `Pushed 31 files.` with zero errors.
 
 #### Step 4: Verify & Commit to Git
 ```powershell

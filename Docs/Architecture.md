@@ -108,8 +108,10 @@ Code/
 ├── Geo.gs                    # Layer 3: Geocoding & Takeoff Site Resolution
 ├── XContest.gs               # Layer 3: League Verification & Deadline Probing
 ├── Utils.gs                  # Common: Math, Bearing, Haversine & Date Helpers
+├── Logger.gs                 # Common: Centralized Activity Logging Engine
 ├── QueueService.gs           # Layer 4: Persistent Sheet-Backed Task Queue
 ├── TimeBudget.gs             # Layer 4: Bounded Execution & Resumption Manager
+├── Test.gs                   # Layer 4: Automated Offline & In-App Test Harness
 ├── BulkIngestDialog.html     # Layer 1: High-Speed Batch Ingestion Modal
 ├── ExecutionSidebar.html     # Layer 1: Universal Tri-Mode Execution Sidebar
 ├── FlightMaintenanceDialog.html # Layer 1: Unified Flight Maintenance Modal
@@ -121,8 +123,9 @@ Code/
 ├── URLDialog.html            # Layer 1: External URL / Cloud Drive Import Modal
 ├── UploadDialog.html         # Layer 1: Client Drag-and-Drop Uploader Modal
 ├── ScanDialog.html           # Layer 1: Watch Folder Scanner Modal
-├── FolderPicker.html         # Layer 1: In-App Drive Folder Navigator Modal
-└── FlightInspectorSidebar.html # Layer 1: Deep Flight Inspection Sidebar
+├── FolderPickerDialog.html   # Layer 1: In-App Drive Folder Navigator Modal
+├── Inspector.html            # Layer 1: Deep Flight Inspection Sidebar
+└── Style.html                # Layer 1: Shared Modal CSS Design System
 ```
 
 ### 2.1 Layer 1: Presentation & Interaction (UI)
