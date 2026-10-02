@@ -25,7 +25,8 @@ var CFG = {
     sites: 'Sites',
     dashboard: 'Dashboard',
     pilotProfile: 'Pilot_Profile',
-    userGuide: 'User Guide'
+    userGuide: 'User Guide',
+    queue: 'Automation_Queue'
   },
   // Centralized Parameter Definitions (Source of Truth for Parameters Sheet)
   parameters: [
@@ -274,6 +275,14 @@ var TABS = {
     headerRow: 2,
     frozenRows: 2,
     columns: ['Process', 'Timestamp', 'Activity / Event', 'Additional Info']
+  },
+  QUEUE: {
+    name: CFG.sheets.queue,
+    color: '#455A64', // Dark Slate Gray
+    index: 8,
+    headerRow: 1,
+    frozenRows: 1,
+    columns: ['Job ID', 'Type', 'Status', 'Progress', 'Started At', 'Updated At', 'Payload & State', 'Last Error']
   }
 };
 
@@ -281,6 +290,7 @@ var TABS = {
 TABS.PARAMETERS = TABS.CONFIG;
 TABS.LOOKUPS = TABS.CONFIG;
 TABS.ACTIVITY = TABS.APP_LOG;
+TABS.AUTOMATION_QUEUE = TABS.QUEUE;
 
 // Extensible Process and Message Registries
 CFG.LOG_PROCESSES = {
@@ -299,7 +309,8 @@ CFG.LOG_PROCESSES = {
   SAVE_CONFIG:    'Save Config',
   LOAD_CONFIG:    'Load Config',
   SYSTEM_SETUP:   'System Setup',
-  LOG_CLEAN:      'Log Maintenance'
+  LOG_CLEAN:      'Log Maintenance',
+  BACKGROUND_QUEUE: 'Background Queue'
 };
 
 CFG.LOG_PREFIXES = {

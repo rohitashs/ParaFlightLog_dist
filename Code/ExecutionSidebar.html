@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-size: 13px;
+      color: #333333;
+      background: #FFFFFF;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 12px;
+      overflow-x: hidden;
+    }
+
+    /* 1. Context Header */
+    .header-panel {
+      padding-bottom: 10px;
+      border-bottom: 1px solid #E0E0E0;
+      margin-bottom: 10px;
+    }
+    .header-title-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .header-icon {
+      font-size: 16px;
+    }
+    .header-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #212121;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .header-subtitle {
+      font-size: 11px;
+      color: #757575;
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* 2. Metric Pills Container */
+    .pills-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-bottom: 10px;
+    }
+    .pill {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: #F5F5F5;
+      color: #616161;
+      border: 1px solid #E0E0E0;
+    }
+    .pill-staged { background: #E3F2FD; color: #1565C0; border-color: #BBDEFB; }
+    .pill-success { background: #E8F5E9; color: #2E7D32; border-color: #C8E6C9; }
+    .pill-duplicate { background: #FFF3E0; color: #E65100; border-color: #FFE0B2; }
+    .pill-error { background: #FFEBEE; color: #C62828; border-color: #FFCDD2; }
+
+    /* 3. Activity Log Console */
+    .log-section {
+      display: flex;
+      flex-direction: column;
+      flex: 1 1 auto;
+      min-height: 180px;
+      margin-bottom: 12px;
+    }
+    .log-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    .log-heading {
+      font-size: 12px;
+      font-weight: 600;
+      color: #424242;
+    }
+    .btn-copy-log {
+      font-size: 11px;
+      background: transparent;
+      border: 1px solid #BDBDBD;
+      color: #616161;
+      padding: 2px 7px;
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      transition: background 0.15s, color 0.15s;
+    }
+    .btn-copy-log:hover {
+      background: #EEEEEE;
+      color: #212121;
+    }
+    .log-console {
+      flex: 1 1 auto;
+      background: #FAFAFA;
+      border: 1px solid #E0E0E0;
+      border-radius: 6px;
+      padding: 8px;
+      overflow-y: auto;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 11px;
+      line-height: 1.45;
+      height: 240px;
+      max-height: 300px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .log-line {
+      word-break: break-word;
+      white-space: pre-wrap;
+    }
+    .log-line.info { color: #1565C0; }
+    .log-line.success { color: #2E7D32; }
+    .log-line.warn { color: #E65100; font-weight: 500; }
+    .log-line.error { color: #C62828; font-weight: 500; }
+
+    /* 4. Universal Progress Bar */
+    .progress-section {
+      margin-bottom: 12px;
+    }
+    .progress-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: #616161;
+      margin-bottom: 4px;
+      font-weight: 500;
+    }
+    .progress-track {
+      width: 100%;
+      height: 7px;
+      background: #EEEEEE;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: #1976D2;
+      border-radius: 4px;
+      transition: width 0.25s ease;
+    }
+    .progress-fill.complete {
+      background: #2E7D32;
+    }
+    .progress-fill.failed {
+      background: #C62828;
+    }
+
+    /* 5. Dynamic Controls */
+    .controls-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .btn {
+      width: 100%;
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      text-align: center;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .btn-secondary {
+      background: #FFFFFF;
+      border: 1px solid #D32F2F;
+      color: #D32F2F;
+    }
+    .btn-secondary:hover {
+      background: #FFEBEE;
+    }
+    .btn-primary {
+      background: #2E7D32;
+      border: 1px solid #2E7D32;
+      color: #FFFFFF;
+    }
+    .btn-primary:hover {
+      background: #1B5E20;
+    }
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 1. Context Header -->
+  <div class="header-panel">
+    <div class="header-title-row">
+      <span class="header-icon" id="uiIcon">⚡</span>
+      <span class="header-title" id="uiTitle">Universal Execution</span>
+    </div>
+    <div class="header-subtitle" id="uiSubtitle">Initializing...</div>
+  </div>
+
+  <!-- 2. Metric Pills -->
+  <div class="pills-container" id="uiPills">
+    <span class="pill pill-staged">📂 <span id="pillStaged">0</span> Staged</span>
+    <span class="pill pill-success">✅ <span id="pillDone">0</span> Done</span>
+    <span class="pill pill-duplicate">⚡ <span id="pillDupe">0</span> Dup</span>
+    <span class="pill pill-error">❌ <span id="pillErr">0</span> Err</span>
+  </div>
+
+  <!-- 3. Activity Log Console -->
+  <div class="log-section">
+    <div class="log-header-row">
+      <span class="log-heading">Activity Log</span>
+      <button type="button" class="btn-copy-log" id="btnCopyLog" onclick="copyLog()">📋 Copy</button>
+    </div>
+    <div class="log-console" id="logConsole"></div>
+  </div>
+
+  <!-- 4. Progress Bar -->
+  <div class="progress-section">
+    <div class="progress-labels">
+      <span id="uiStatusText">Starting task...</span>
+      <span id="uiPercentText">0%</span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+  </div>
+
+  <!-- 5. Controls -->
+  <div class="controls-panel">
+    <button type="button" class="btn btn-secondary" id="btnCancel" onclick="cancelExecution()">⏹️ Cancel Operation</button>
+    <button type="button" class="btn btn-primary" id="btnDone" onclick="closeSidebar()" style="display: none;">✅ Done / Close</button>
+  </div>
+
+  <script>
+    // State injected from server template
+    var rawJobData = '<?= jobData ?>';
+    var job = null;
+    var isCancelled = false;
+    var isRunning = false;
+    var allLogLines = [];
+
+    window.onload = function() {
+      try {
+        job = JSON.parse(rawJobData);
+      } catch (e) {
+        logLine('Failed to parse job payload: ' + e.message, 'error');
+        return;
+      }
+      initUI();
+      startExecution();
+    };
+
+    function initUI() {
+      if (!job) return;
+      document.getElementById('uiTitle').textContent = job.title || 'Batch Execution';
+      document.getElementById('uiSubtitle').textContent = job.contextText || '';
+      
+      var total = job.totalItems || (job.queue ? job.queue.length : 0);
+      document.getElementById('pillStaged').textContent = total;
+      document.getElementById('pillDone').textContent = '0';
+      document.getElementById('pillDupe').textContent = '0';
+      document.getElementById('pillErr').textContent = '0';
+      
+      updateProgress(0, total, 'Ready to process ' + total + ' items');
+    }
+
+    function logLine(msg, type) {
+      var consoleDiv = document.getElementById('logConsole');
+      var now = new Date();
+      var timeStr = '[' + ('0' + now.getHours()).slice(-2) + ':' + ('0' + now.getMinutes()).slice(-2) + ':' + ('0' + now.getSeconds()).slice(-2) + '] ';
+      var fullLine = timeStr + msg;
+      
+      allLogLines.push(fullLine);
+      
+      var lineEl = document.createElement('div');
+      lineEl.className = 'log-line ' + (type || 'info');
+      lineEl.textContent = fullLine;
+      consoleDiv.appendChild(lineEl);
+      consoleDiv.scrollTop = consoleDiv.scrollHeight;
+    }
+
+    function updateProgress(processed, total, statusText) {
+      var pct = total > 0 ? Math.round((processed / total) * 100) : 0;
+      pct = Math.min(100, Math.max(0, pct));
+      
+      document.getElementById('uiPercentText').textContent = pct + '%';
+      document.getElementById('progressFill').style.width = pct + '%';
+      if (statusText) {
+        document.getElementById('uiStatusText').textContent = statusText;
+      }
+    }
+
+    function startExecution() {
+      if (!job || !job.queue || job.queue.length === 0) {
+        logLine('No items in queue to process.', 'warn');
+        finishExecution(true);
+        return;
+      }
+      
+      isRunning = true;
+      logLine('Starting ' + (job.title || 'execution') + ' (' + job.totalItems + ' items)...', 'info');
+      stepBatch(0);
+    }
+
+    function stepBatch(startIndex) {
+      if (isCancelled) {
+        logLine('Operation cancelled by user.', 'warn');
+        finishExecution(false);
+        return;
+      }
+
+      var queue = job.queue || [];
+      if (startIndex >= queue.length) {
+        finalizeJob();
+        return;
+      }
+
+      var batchSize = job.batchSize || 5;
+      var batch = queue.slice(startIndex, startIndex + batchSize);
+      var batchNum = Math.floor(startIndex / batchSize) + 1;
+      var totalBatches = Math.ceil(queue.length / batchSize);
+
+      logLine('Processing batch ' + batchNum + '/' + totalBatches + ' (' + batch.length + ' items)...', 'info');
+      updateProgress(startIndex, queue.length, 'Batch ' + batchNum + '/' + totalBatches + '...');
+
+      google.script.run
+        .withSuccessHandler(function(response) {
+          handleBatchSuccess(response, startIndex, batch.length);
+        })
+        .withFailureHandler(function(err) {
+          handleBatchFailure(err, startIndex, batch.length);
+        })
+        .executeWorkerBatch(job.jobType, batch, job.options || {}, startIndex, job.jobId);
+    }
+
+    function handleBatchSuccess(response, startIndex, batchLen) {
+      if (isCancelled) return;
+
+      var res = response || {};
+      if (res.logs && Array.isArray(res.logs)) {
+        res.logs.forEach(function(l) {
+          var type = 'info';
+          if (l.indexOf('[OK]') !== -1 || l.indexOf('Ingested') !== -1 || l.indexOf('Purged') !== -1) type = 'success';
+          else if (l.indexOf('[DUPE]') !== -1 || l.indexOf('Duplicate') !== -1) type = 'warn';
+          else if (l.indexOf('[ERR]') !== -1 || l.indexOf('Error') !== -1) type = 'error';
+          logLine(l, type);
+        });
+      }
+
+      // Update counters
+      var currentDone = parseInt(document.getElementById('pillDone').textContent, 10) || 0;
+      var currentDupe = parseInt(document.getElementById('pillDupe').textContent, 10) || 0;
+      var currentErr = parseInt(document.getElementById('pillErr').textContent, 10) || 0;
+
+      if (res.importedCount) currentDone += res.importedCount;
+      else if (res.processedCount) currentDone += res.processedCount;
+      if (res.duplicateCount) currentDupe += res.duplicateCount;
+      if (res.errorCount) currentErr += res.errorCount;
+
+      document.getElementById('pillDone').textContent = currentDone;
+      document.getElementById('pillDupe').textContent = currentDupe;
+      document.getElementById('pillErr').textContent = currentErr;
+
+      var nextIndex = startIndex + batchLen;
+      updateProgress(nextIndex, job.totalItems, 'Completed ' + nextIndex + '/' + job.totalItems);
+
+      // Next step
+      stepBatch(nextIndex);
+    }
+
+    function handleBatchFailure(err, startIndex, batchLen) {
+      var errStr = (err && err.message) ? err.message : String(err);
+      logLine('Batch error: ' + errStr, 'error');
+
+      var currentErr = parseInt(document.getElementById('pillErr').textContent, 10) || 0;
+      document.getElementById('pillErr').textContent = currentErr + batchLen;
+
+      var nextIndex = startIndex + batchLen;
+      // Continue next batch despite single batch error
+      stepBatch(nextIndex);
+    }
+
+    function finalizeJob() {
+      logLine('Finalizing and sorting logbook...', 'info');
+      updateProgress(job.totalItems, job.totalItems, 'Finalizing...');
+
+      google.script.run
+        .withSuccessHandler(function() {
+          logLine('=== Operation Completed Successfully ===', 'success');
+          finishExecution(true);
+        })
+        .withFailureHandler(function(err) {
+          logLine('Finalization warning: ' + (err.message || err), 'warn');
+          finishExecution(true);
+        })
+        .finalizeWorkerJob(job.jobType, job.jobId);
+    }
+
+    function finishExecution(isSuccess) {
+      isRunning = false;
+      document.getElementById('btnCancel').style.display = 'none';
+      document.getElementById('btnDone').style.display = 'block';
+
+      var progressFill = document.getElementById('progressFill');
+      if (isSuccess) {
+        progressFill.className = 'progress-fill complete';
+        updateProgress(job.totalItems, job.totalItems, 'Completed');
+      } else {
+        progressFill.className = 'progress-fill failed';
+        updateProgress(job.totalItems, job.totalItems, 'Halted');
+      }
+    }
+
+    function cancelExecution() {
+      if (!isRunning) {
+        closeSidebar();
+        return;
+      }
+      if (confirm('Cancel the running operation? Unprocessed items will be skipped.')) {
+        isCancelled = true;
+        logLine('Cancelling operation...', 'warn');
+        document.getElementById('btnCancel').disabled = true;
+        google.script.run.cancelSidebarJob(job ? job.jobId : '');
+      }
+    }
+
+    function closeSidebar() {
+      google.script.host.close();
+    }
+
+    function copyLog() {
+      var text = allLogLines.join('\n');
+      if (!navigator.clipboard) {
+        var textArea = document.createElement('textarea');
+        textArea.value = text;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      } else {
+        navigator.clipboard.writeText(text);
+      }
+      var btn = document.getElementById('btnCopyLog');
+      var orig = btn.textContent;
+      btn.textContent = '✅ Copied!';
+      setTimeout(function() { btn.textContent = orig; }, 2000);
+    }
+  </script>
+</body>
+</html>

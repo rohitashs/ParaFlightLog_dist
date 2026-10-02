@@ -27,6 +27,7 @@ function scaffoldAll_() {
   ensureSheet_(ss, TABS.USER_GUIDE.name);
   ensureSheet_(ss, TABS.CONFIG.name);
   ensureSheet_(ss, TABS.APP_LOG.name);
+  ensureSheet_(ss, TABS.QUEUE.name);
   
   // Clean up legacy tabs if present
   var oldParamSheet = ss.getSheetByName('Parameters');
@@ -50,6 +51,7 @@ function scaffoldAll_() {
   scaffoldEquipment_(ss);
   scaffoldUserGuide_(ss);
   scaffoldAppLog_(ss);
+  scaffoldQueue_(ss);
   
   // 3. Reorder Tabs
   var sheets = [
@@ -59,7 +61,8 @@ function scaffoldAll_() {
     TABS.EQUIPMENT.name, 
     TABS.USER_GUIDE.name,
     TABS.CONFIG.name, 
-    TABS.APP_LOG.name
+    TABS.APP_LOG.name,
+    TABS.QUEUE.name
   ];
   
   for (var i = 0; i < sheets.length; i++) {
@@ -658,6 +661,63 @@ function scaffoldAppLog_(ss) {
   // Text wrap on Activity and Info columns
   sh.getRange('C:D').setWrap(true);
   sh.getRange('B3:B').setNumberFormat('yyyy-mm-dd hh:mm:ss');
+}
+
+/**
+ * Scaffolds the Automation_Queue sheet per DSGN-UI-001 Section 3.3
+ * Provides persistent, observable storage for background and automation jobs.
+ */
+function scaffoldQueue_(ss) {
+  var sh = ss.getSheetByName(TABS.QUEUE.name);
+  if (!sh) {
+    sh = ss.insertSheet(TABS.QUEUE.name, TABS.QUEUE.index);
+  }
+  if (!sh) return;
+  sh.setTabColor(TABS.QUEUE.color);
+  ensureDimensions_(sh, 30, 8);
+
+  // Row 1: Headers
+  var lastCol = Math.max(8, sh.getLastColumn());
+  if (lastCol > 8) {
+    sh.getRange(1, 9, 1, lastCol - 8).clear();
+  }
+  sh.getRange(1, 1, 1, 8).setValues([TABS.QUEUE.columns]);
+  sh.getRange(1, 1, 1, 8)
+    .setFontWeight('bold')
+    .setBackground(TABS.QUEUE.color)
+    .setFontColor('#FFFFFF')
+    .setFontSize(10);
+  sh.setFrozenRows(1);
+
+  // Explicit column widths per DSGN-UI-001
+  sh.setColumnWidth(1, 170); // Job ID
+  sh.setColumnWidth(2, 130); // Type
+  sh.setColumnWidth(3, 120); // Status
+  sh.setColumnWidth(4, 100); // Progress
+  sh.setColumnWidth(5, 150); // Started At
+  sh.setColumnWidth(6, 150); // Updated At
+  sh.setColumnWidth(7, 350); // Payload & State
+  sh.setColumnWidth(8, 200); // Last Error
+
+  // Dropdown validations
+  var ruleType = SpreadsheetApp.newDataValidation()
+    .requireValueInList(['BULK_INGEST', 'PURGE', 'RESYNC', 'MAINTENANCE', 'LOG_CLEANUP'], true)
+    .setAllowInvalid(true)
+    .build();
+  sh.getRange('B2:B').setDataValidation(ruleType);
+
+  var ruleStatus = SpreadsheetApp.newDataValidation()
+    .requireValueInList(['QUEUED', 'RUNNING', 'CHECKPOINT_PAUSED', 'COMPLETED', 'CANCELLED', 'FAILED'], true)
+    .setAllowInvalid(true)
+    .build();
+  sh.getRange('C2:C').setDataValidation(ruleStatus);
+
+  // Formatting
+  sh.getRange('A2:A').setFontFamily('monospace');
+  sh.getRange('G2:G').setFontFamily('monospace').setWrap(true);
+  sh.getRange('H2:H').setWrap(true);
+  sh.getRange('D2:D').setHorizontalAlignment('center');
+  sh.getRange('E2:F').setNumberFormat('yyyy-mm-dd hh:mm:ss');
 }
 
 function scaffoldFlights_(ss) {

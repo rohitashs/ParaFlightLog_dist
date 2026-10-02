@@ -324,9 +324,11 @@
                 </div>
             </div>
 
-            <!-- Start Actions -->
-            <div class="control-group" style="margin-top:8px;">
-                <button type="button" id="btn-start" onclick="startBulkImport()" class="primary-action" disabled>Start Bulk Ingestion</button>
+            <!-- Start Actions (Tri-Mode Execution Bar per DSGN-UI-001) -->
+            <div class="control-group" style="margin-top:8px; display:flex; flex-wrap:wrap; gap:6px;">
+                <button type="button" id="btn-run-here" onclick="startBulkImport('MODAL')" class="primary-action" disabled>🚀 Run Here</button>
+                <button type="button" id="btn-run-sidebar" onclick="startBulkImport('SIDEBAR')" class="secondary" style="border-color:#1976D2; color:#1976D2; font-weight:600;" disabled>📌 Run in Sidebar</button>
+                <button type="button" id="btn-run-background" onclick="startBulkImport('BACKGROUND')" class="secondary" style="border-color:#5E35B1; color:#5E35B1; font-weight:600;" disabled>⚙️ Run in Background</button>
                 <button type="button" class="secondary" onclick="google.script.host.close()">Cancel</button>
             </div>
         </div>
@@ -529,8 +531,17 @@
 
             document.getElementById("target-name-disp").innerText = name + " (" + id + ")";
             document.getElementById("target-path-disp").innerText = "Path: " + selectedTargetPath;
-            document.getElementById("btn-start").disabled = false;
+            setActionButtonsEnabled(true);
             setStatus("Ready to import: " + name, "0%");
+        }
+
+        function setActionButtonsEnabled(enabled) {
+            var b1 = document.getElementById("btn-run-here");
+            var b2 = document.getElementById("btn-run-sidebar");
+            var b3 = document.getElementById("btn-run-background");
+            if (b1) b1.disabled = !enabled;
+            if (b2) b2.disabled = !enabled;
+            if (b3) b3.disabled = !enabled;
         }
 
         function verifyInput() {
@@ -552,7 +563,7 @@
                         selectedTargetPath = "External URL";
                         document.getElementById("target-name-disp").innerText = inputVal;
                         document.getElementById("target-path-disp").innerText = "External URL / Direct Link";
-                        document.getElementById("btn-start").disabled = false;
+                        setActionButtonsEnabled(true);
                         setStatus("External URL ready to import", "0%");
                     }
                 })
@@ -562,13 +573,14 @@
                     selectedTargetPath = "URL Input";
                     document.getElementById("target-name-disp").innerText = inputVal;
                     document.getElementById("target-path-disp").innerText = "Direct Link";
-                    document.getElementById("btn-start").disabled = false;
+                    setActionButtonsEnabled(true);
                     setStatus("Input set", "0%");
                 })
                 .resolveFolderInput(inputVal);
         }
 
-        function startBulkImport() {
+        function startBulkImport(executionMode) {
+            var mode = executionMode || 'MODAL';
             var inputVal = document.getElementById("urlInput").value.trim();
             var target = selectedTarget || inputVal;
             if (!target) {
@@ -589,7 +601,89 @@
                 deleteSource: document.getElementById("opt-delete").checked
             };
 
-            // Switch to progress panel
+            // Mode 2: Run in Sidebar (DSGN-UI-001)
+            if (mode === 'SIDEBAR') {
+                setStatus("Discovering files and launching sidebar...", "10%");
+                setActionButtonsEnabled(false);
+                google.script.run
+                    .withSuccessHandler(function(res) {
+                        if (res && res.error) {
+                            alert("Staging Error: " + res.error);
+                            setActionButtonsEnabled(true);
+                        } else if (res && res.files) {
+                            var jobPayload = {
+                                jobType: 'BULK_INGEST',
+                                title: 'Bulk Flight Ingestion',
+                                contextText: selectedTargetName || target,
+                                totalItems: res.files.length,
+                                queue: res.files,
+                                batchSize: batchSize,
+                                options: activeOptions
+                            };
+                            google.script.run
+                                .withSuccessHandler(function() {
+                                    google.script.host.close();
+                                })
+                                .withFailureHandler(function(err) {
+                                    alert("Sidebar launch failed: " + (err.message || err));
+                                    setActionButtonsEnabled(true);
+                                })
+                                .launchExecutionSidebar(jobPayload);
+                        } else {
+                            alert("Unexpected staging response from server.");
+                            setActionButtonsEnabled(true);
+                        }
+                    })
+                    .withFailureHandler(function(err) {
+                        alert("Staging Error: " + (err.message || err));
+                        setActionButtonsEnabled(true);
+                    })
+                    .stageUrlOrDriveImport(target);
+                return;
+            }
+
+            // Mode 3: Run in Background (DSGN-UI-001)
+            if (mode === 'BACKGROUND') {
+                setStatus("Discovering files and queuing background task...", "10%");
+                setActionButtonsEnabled(false);
+                google.script.run
+                    .withSuccessHandler(function(res) {
+                        if (res && res.error) {
+                            alert("Staging Error: " + res.error);
+                            setActionButtonsEnabled(true);
+                        } else if (res && res.files) {
+                            var jobPayload = {
+                                jobType: 'BULK_INGEST',
+                                title: 'Bulk Flight Ingestion',
+                                contextText: selectedTargetName || target,
+                                totalItems: res.files.length,
+                                queue: res.files,
+                                batchSize: batchSize,
+                                options: activeOptions
+                            };
+                            google.script.run
+                                .withSuccessHandler(function() {
+                                    google.script.host.close();
+                                })
+                                .withFailureHandler(function(err) {
+                                    alert("Background launch failed: " + (err.message || err));
+                                    setActionButtonsEnabled(true);
+                                })
+                                .launchBackgroundJob(jobPayload);
+                        } else {
+                            alert("Unexpected staging response from server.");
+                            setActionButtonsEnabled(true);
+                        }
+                    })
+                    .withFailureHandler(function(err) {
+                        alert("Staging Error: " + (err.message || err));
+                        setActionButtonsEnabled(true);
+                    })
+                    .stageUrlOrDriveImport(target);
+                return;
+            }
+
+            // Mode 1: Run Here (Existing execution inside modal dialog)
             document.getElementById("config-panel").style.display = "none";
             document.getElementById("progress-panel").style.display = "flex";
 

@@ -1948,6 +1948,215 @@ function finalizeBulkImport(stats) {
 }
 
 /* ==========================================================================================
+   TRI-MODE EXECUTION & UNIVERSAL SIDEBAR SUBSYSTEM (DSGN-UI-001)
+   ========================================================================================== */
+
+/**
+ * Launches the Universal Execution Sidebar (Mode 2) with a pre-configured job payload.
+ * Invoked by client dialogs when user clicks "Run in Sidebar".
+ * @param {Object|string} jobPayload
+ * @return {Object} { success: boolean }
+ */
+function launchExecutionSidebar(jobPayload) {
+  var payloadObj = (typeof jobPayload === 'string') ? JSON.parse(jobPayload) : jobPayload;
+  var template = HtmlService.createTemplateFromFile('ExecutionSidebar');
+  template.jobData = JSON.stringify(payloadObj);
+  var title = (payloadObj && payloadObj.title) ? payloadObj.title : 'ParaFlightLog Execution';
+  var userInterface = template.evaluate().setTitle(title).setWidth(300);
+  SpreadsheetApp.getUi().showSidebar(userInterface);
+  return { success: true };
+}
+
+/**
+ * Universal batch worker dispatcher used by both ExecutionSidebar (Mode 2)
+ * and Background Queue Worker (Mode 3).
+ * @param {string} jobType
+ * @param {Array} currentBatch
+ * @param {Object} options
+ * @param {number} stepIndex
+ * @param {string} [jobId]
+ * @return {Object}
+ */
+function executeWorkerBatch(jobType, currentBatch, options, stepIndex, jobId) {
+  var result = { success: false, logs: [], importedCount: 0, duplicateCount: 0, errorCount: 0 };
+  
+  switch (jobType) {
+    case 'BULK_INGEST':
+      result = INGESTION.processBulkBatch(currentBatch, options);
+      break;
+    default:
+      throw new Error('Unsupported jobType: ' + jobType);
+  }
+
+  // If associated with a persistent queue job, update progress
+  if (jobId && typeof QueueService !== 'undefined') {
+    try {
+      var job = QueueService.getJob(jobId);
+      if (job && job.payload) {
+        var processed = (job.payload.stats ? job.payload.stats.processed : 0) + (result.importedCount || currentBatch.length);
+        QueueService.updateProgress(jobId, processed, job.payload.totalItems, result, job.payload);
+      }
+    } catch (e) {
+      console.warn('QueueService update error in executeWorkerBatch: ' + e.message);
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Finalizes a completed job (sorting, log writing, queue completion).
+ * @param {string} jobType
+ * @param {string} [jobId]
+ * @return {Object}
+ */
+function finalizeWorkerJob(jobType, jobId) {
+  switch (jobType) {
+    case 'BULK_INGEST':
+      finalizeBulkImport();
+      break;
+    default:
+      sortFlightsByDate_();
+      break;
+  }
+
+  if (jobId && typeof QueueService !== 'undefined') {
+    try {
+      QueueService.complete(jobId);
+    } catch (e) {
+      console.warn('QueueService complete error: ' + e.message);
+    }
+  }
+
+  return { success: true };
+}
+
+/**
+ * Cancels a job from the sidebar or background runner.
+ * @param {string} jobId
+ * @return {Object}
+ */
+function cancelSidebarJob(jobId) {
+  if (jobId && typeof QueueService !== 'undefined') {
+    QueueService.cancel(jobId);
+  }
+  return { success: true };
+}
+
+/**
+ * Launches an asynchronous task into headless background execution (Mode 3).
+ * Enqueues into Automation_Queue and triggers processing.
+ * @param {Object} jobPayload
+ * @return {Object} { success: boolean, jobId: string }
+ */
+function launchBackgroundJob(jobPayload) {
+  var payloadObj = (typeof jobPayload === 'string') ? JSON.parse(jobPayload) : jobPayload;
+  var enq = QueueService.enqueue(
+    payloadObj.jobType,
+    payloadObj.title,
+    payloadObj.contextText,
+    payloadObj.totalItems,
+    payloadObj.queue,
+    payloadObj.batchSize,
+    payloadObj.options
+  );
+
+  // Trigger immediate background pass
+  ScriptApp.newTrigger('processBackgroundQueue')
+    .timeBased()
+    .after(1000) // Start in 1 second
+    .create();
+
+  SpreadsheetApp.getActive().toast('Task sent to background queue (Job: ' + enq.jobId + '). Monitor via Activity Logs or Automation_Queue.', 'Background Mode', 6);
+  return { success: true, jobId: enq.jobId };
+}
+
+/**
+ * Headless background worker loop bound by the 4.5-minute time budget.
+ * Self-healing continuation triggers ensure multi-hundred-item jobs run to completion.
+ */
+function processBackgroundQueue() {
+  // Remove self/stale continuation triggers to prevent trigger leakage
+  deleteContinuationTriggers_();
+
+  var budget = TimeBudgetService.create();
+  var job = QueueService.getNextActiveJob();
+  if (!job) {
+    return;
+  }
+
+  var jobId = job.jobId;
+  QueueService.markRunning(jobId);
+  LOG.write('BACKGROUND_QUEUE', '[START] Processing background job ' + jobId + ' (' + job.jobType + ')', job.payload.title);
+
+  var queue = (job.payload && job.payload.queue) ? job.payload.queue : [];
+  var startIndex = (job.payload && typeof job.payload.cursorIndex === 'number') ? job.payload.cursorIndex : 0;
+  var batchSize = (job.payload && job.payload.batchSize) ? job.payload.batchSize : 5;
+  var options = (job.payload && job.payload.options) ? job.payload.options : {};
+  var totalItems = job.payload.totalItems || queue.length;
+
+  var currentIndex = startIndex;
+  var isExhausted = false;
+
+  while (currentIndex < queue.length) {
+    // 1. Check if user cancelled via sheet
+    if (QueueService.isCancelled(jobId)) {
+      LOG.write('BACKGROUND_QUEUE', '[WARN] Job cancelled by user: ' + jobId);
+      return;
+    }
+
+    // 2. Check time budget (leave 30s buffer for checkpointing)
+    if (!budget.hasTimeRemaining(30000)) {
+      isExhausted = true;
+      break;
+    }
+
+    // 3. Process current batch
+    var batch = queue.slice(currentIndex, currentIndex + batchSize);
+    try {
+      var res = executeWorkerBatch(job.jobType, batch, options, currentIndex, jobId);
+      currentIndex += batch.length;
+    } catch (bErr) {
+      LOG.write('BACKGROUND_QUEUE', '[ERR] Batch failure at index ' + currentIndex + ': ' + bErr.message);
+      currentIndex += batch.length; // skip failed batch and continue
+    }
+  }
+
+  if (isExhausted && currentIndex < queue.length) {
+    // Checkpoint state and schedule continuation in 30 seconds
+    QueueService.checkpoint(jobId, currentIndex, job.payload);
+    LOG.write('BACKGROUND_QUEUE', '[INFO] Time budget (4.5m) reached. Checkpointed at ' + currentIndex + '/' + totalItems + '. Scheduling continuation trigger.');
+
+    ScriptApp.newTrigger('processBackgroundQueue')
+      .timeBased()
+      .after(30000) // Resume in 30s
+      .create();
+  } else {
+    // Completed all items
+    finalizeWorkerJob(job.jobType, jobId);
+    LOG.write('BACKGROUND_QUEUE', '[COMPLETE] Background job finished: ' + jobId, 'Total items: ' + totalItems);
+    SpreadsheetApp.getActive().toast('Background task complete: ' + job.payload.title, 'Done', 5);
+  }
+}
+
+/**
+ * Finds and deletes any installed continuation triggers for processBackgroundQueue
+ * to avoid exceeding Google's 20-trigger quota.
+ */
+function deleteContinuationTriggers_() {
+  var triggers = ScriptApp.getProjectTriggers();
+  for (var i = 0; i < triggers.length; i++) {
+    if (triggers[i].getHandlerFunction() === 'processBackgroundQueue') {
+      try {
+        ScriptApp.deleteTrigger(triggers[i]);
+      } catch (e) {
+        console.warn('Failed to delete trigger: ' + e.message);
+      }
+    }
+  }
+}
+
+/* ==========================================================================================
    PUBLIC WRAPPERS FOR UI MENU CALLBACKS
    ========================================================================================== */
 
