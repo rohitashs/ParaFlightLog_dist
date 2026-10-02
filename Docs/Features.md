@@ -184,4 +184,37 @@ A standardized execution architecture solving the Google Sheets modal lockdown p
 *   **Bounded 4.5-Minute Time Budget & Self-Continuation**: Universal safety guardrail (`TimeBudgetService`) ensuring background workers commit data, checkpoint state, and spawn 30-second continuation triggers before approaching Google's hard 6-minute timeout, enabling multi-hundred-flight operations to run unattended.
 *   **Direct Substrate for Table-Driven Automation (`DSGN-AUT-001`)**: Provides the headless execution engine, queue management, and time budget required by the upcoming scheduled Automation Engine.
 
+## 13. 🛡️ Platform Role-Based Access Control & Contributor Framework
+*Maps to `RQ-SYS-001`, `RQ-SYS-002`, `CR-SYS-007`, `DSGN-SYS-002`*
+
+An enterprise-grade permissions architecture establishing clean persona separation and an open-source contributor pipeline:
+*   **Centralized Access Authority (`Code/Access.gs`)**: Maps authenticated Google accounts to standardized roles (`ADMIN`, `DEVELOPER`, `DESIGNER`, `PILOT`).
+*   **Dynamic Menu Curation**: Automatically injects or suppresses privileged submenus (`🛠️ Developer Tools`, `🎨 Designer Tools`) during `onOpen()` based on the user's role, keeping the interface uncluttered for standard pilots.
+*   **Dual-Layer Security Guardrail**: Enforces authorization at both the UI menu display level and the server-side RPC execution level (`ACCESS_CONTROL.enforceRole(role)`).
+*   **"No-GitHub" Contributor Lifecycle**: Enables UI designers, flight instructors, and testers to customize layouts, colors, and notes directly in the Google Sheet and package their proposals into structured JSON submissions for core review without requiring Git or GitHub expertise.
+
+## 14. 🎨 Reverse Schema Extraction & Personalization Engine
+*Maps to `RQ-SYS-001`, `RQ-SYS-005`, `CR-SYS-008`, `DSGN-SYS-003`*
+
+Transforms the Google Sheets visual grid into a live visual design surface while guaranteeing zero formula breakage:
+*   **"Sheet as Visual Designer" Reverse Extractor**: A 1-click introspection utility (`Export Sheet Layout to Config`) that reads Row 3 merged categories, Row 4 column headers, cell notes (`getNote()`), and column groups (`visibleCols`), generating clean JavaScript/JSON configuration objects.
+*   **Personalization Manifest (`user_layout.json`)**: Separates mandatory platform schema from pilot presentation preferences, allowing pilots to back up custom column orders, colors, and visibility and restore them cleanly across system upgrades.
+*   **Native Non-Destructive Column Movement**: Robust wrapper around native `sheet.moveColumns(columnSpec, destinationIndex)` that temporarily unmerges Row 3 and removes column groups, repositions entire columns intact (preserving formatting, dropdowns, validations, and notes), and re-establishes groupings.
+*   **Dynamic Formula Resilience**: Decouples formula generators from hardcoded column letter literals (`!B`, `!C`, `!L`, `!M`), resolving column letters dynamically at runtime (`getColLetter_(map, colName)`) to guarantee zero formula breakage when columns are moved.
+
+## 15. 🔄 Unified System Update Manager & Maintenance Orchestrator
+*Maps to `RQ-SYS-001`, `RQ-SYS-007`, `CR-SYS-006`, `DSGN-MNT-001`*
+
+A centralized update and sheet maintenance cockpit replacing fragmented Admin menu items:
+*   **Single Entry Point (`Flight Log > Admin > System Update & Maintenance...`)**: Replaces scattered formatting and scaffolding commands with an intuitive, two-stage interactive update dialog (`SystemUpdateDialog.html`).
+*   **5-Tier Hierarchical Execution Architecture**: Modularizes maintenance into strictly ordered dependency layers:
+    1.  *Tier 1 (Dimensions & Tabs)*: Verifies sheet tabs, ensures 2,000 x 70 dimensions, and sets frozen panes.
+    2.  *Tier 2 (Column Schema & Layout)*: Synchronizes column headers, cell notes, pastel categories, and column groups.
+    3.  *Tier 3 (Validations & Dropdown Ranges)*: Re-binds data validation rules, dropdowns, and idempotent conditional formatting.
+    4.  *Tier 4 (Formula & Dependency Resilience)*: Dynamically re-links Dashboard formulas, sequence counters, and status filters.
+    5.  *Tier 5 (Reference Data & Documentation)*: Synchronizes `Pilot_Profile` fields and re-scaffolds the `User Guide` tab.
+*   **Automated Pre-Flight Safety Backup**: Automatically writes timestamped backup snapshots of active configuration and layout manifests to the Master Log folder before executing structural changes.
+*   **Preset Profiles & Tri-Mode Execution**: Offers Quick Fix (validations only), Standard Update (Tiers 2–4), and Full Overhaul (Tiers 1–5) profiles with execution in modal, modeless Universal Sidebar, or headless background queue.
+
+
 
