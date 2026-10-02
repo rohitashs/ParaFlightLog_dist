@@ -161,11 +161,11 @@
         @media print {
             @page {
                 size: letter portrait;
-                margin: 1.2cm 1.4cm;
+                margin: 1.1cm 1.3cm;
             }
             html, body {
-                font-size: 9pt;
-                line-height: 1.38;
+                font-size: 8.8pt;
+                line-height: 1.35;
                 color: #1e293b;
                 background: #ffffff !important;
                 max-width: 100% !important;
@@ -174,59 +174,66 @@
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
             }
-            h1 { font-size: 19pt; margin: 0 0 0.2rem 0; color: #1a237e !important; }
+            h1 { font-size: 19pt; margin: 0 0 0.15rem 0; color: #1a237e !important; }
             h2 { 
-                font-size: 12pt; 
-                margin-top: 1.2rem; 
-                margin-bottom: 0.35rem; 
-                padding-bottom: 0.2rem;
+                font-size: 11.5pt; 
+                margin-top: 0.8rem; 
+                margin-bottom: 0.25rem; 
+                padding-bottom: 0.15rem;
                 border-bottom: 1.5px solid #1a237e;
                 color: #0f172a !important; 
                 break-after: avoid;
                 page-break-after: avoid;
             }
             h3 { 
-                font-size: 10pt; 
-                margin-top: 0.7rem; 
-                margin-bottom: 0.2rem; 
+                font-size: 9.5pt; 
+                margin-top: 0.5rem; 
+                margin-bottom: 0.15rem; 
                 color: #1e293b !important;
                 break-after: avoid;
                 page-break-after: avoid;
             }
-            h4 { font-size: 9pt; margin: 0 0 0.2rem 0; }
-            p { margin: 0.3rem 0; }
-            ul, ol { margin: 0.25rem 0; padding-left: 1.1rem; }
-            li { margin-bottom: 0.15rem; line-height: 1.35; }
-            code { font-size: 7.5pt; padding: 0.1rem 0.25rem; }
+            h4 { font-size: 8.5pt; margin: 0 0 0.15rem 0; }
+            p { margin: 0.25rem 0; }
+            ul, ol { margin: 0.2rem 0; padding-left: 1.1rem; }
+            li { margin-bottom: 0.12rem; line-height: 1.32; }
+            code { font-size: 7.2pt; padding: 0.1rem 0.25rem; }
+
+            .page-start {
+                break-before: page !important;
+                page-break-before: always !important;
+                margin-top: 0 !important;
+                padding-top: 0 !important;
+            }
 
             .hero {
                 background: #f1f5f9 !important;
                 border: 1px solid #cbd5e1 !important;
-                padding: 1.2rem 1.5rem !important;
-                margin-bottom: 0.8rem !important;
-                border-radius: 8px !important;
+                padding: 1.0rem 1.4rem !important;
+                margin-bottom: 0.6rem !important;
+                border-radius: 6px !important;
                 break-inside: avoid;
                 page-break-inside: avoid;
             }
-            .hero h1 { font-size: 20pt; }
-            .hero h3 { font-size: 11pt; color: #334155 !important; }
-            .hero p { font-size: 8.5pt; }
+            .hero h1 { font-size: 19pt; }
+            .hero h3 { font-size: 10.5pt; color: #334155 !important; margin: 0.2rem 0; }
+            .hero p { font-size: 8pt; margin: 0.2rem 0 0 0; }
 
             .manifesto-quote {
                 background: #f8fafc !important;
                 border-left: 3px solid #3f51b5 !important;
-                padding: 0.6rem 0.9rem !important;
-                margin: 0.6rem 0 !important;
-                font-size: 8.5pt !important;
-                line-height: 1.35 !important;
+                padding: 0.5rem 0.8rem !important;
+                margin: 0.5rem 0 !important;
+                font-size: 8pt !important;
+                line-height: 1.32 !important;
                 break-inside: avoid;
                 page-break-inside: avoid;
             }
 
             .engine-header {
-                font-size: 8.5pt !important;
-                padding: 0.35rem !important;
-                margin-top: 0.6rem !important;
+                font-size: 8pt !important;
+                padding: 0.3rem !important;
+                margin-top: 0.5rem !important;
                 background: #1a237e !important;
                 color: #ffffff !important;
                 break-after: avoid;
@@ -236,47 +243,47 @@
                 display: grid !important;
                 grid-template-columns: repeat(4, 1fr) !important;
                 gap: 1px !important;
-                margin-bottom: 0.8rem !important;
+                margin-bottom: 0.6rem !important;
                 border: 1px solid #cbd5e1 !important;
                 break-inside: avoid;
                 page-break-inside: avoid;
             }
             .arch-col {
-                padding: 0.5rem 0.6rem !important;
+                padding: 0.45rem 0.55rem !important;
                 background: #ffffff !important;
             }
             .arch-col h4 {
-                font-size: 8.5pt !important;
-                padding-bottom: 0.15rem !important;
-                margin-bottom: 0.25rem !important;
+                font-size: 8pt !important;
+                padding-bottom: 0.12rem !important;
+                margin-bottom: 0.2rem !important;
                 color: #1a237e !important;
             }
             .arch-col ul {
-                font-size: 7.5pt !important;
-                padding-left: 0.9rem !important;
+                font-size: 7.2pt !important;
+                padding-left: 0.85rem !important;
             }
 
             .tri-mode-grid {
                 display: grid !important;
                 grid-template-columns: repeat(3, 1fr) !important;
-                gap: 0.6rem !important;
-                margin: 0.6rem 0 !important;
+                gap: 0.5rem !important;
+                margin: 0.5rem 0 !important;
                 break-inside: avoid;
                 page-break-inside: avoid;
             }
             .mode-card {
-                padding: 0.6rem 0.7rem !important;
+                padding: 0.5rem 0.6rem !important;
                 border: 1px solid #cbd5e1 !important;
                 border-radius: 6px !important;
                 background: #ffffff !important;
                 break-inside: avoid;
                 page-break-inside: avoid;
             }
-            .mode-card h4 { font-size: 9pt !important; margin-bottom: 0.2rem !important; color: #1a237e !important; }
-            .mode-card p { font-size: 7.5pt !important; line-height: 1.3 !important; }
+            .mode-card h4 { font-size: 8.5pt !important; margin-bottom: 0.15rem !important; color: #1a237e !important; }
+            .mode-card p { font-size: 7.2pt !important; line-height: 1.28 !important; }
 
             .table-responsive {
-                margin: 0.6rem 0 !important;
+                margin: 0.5rem 0 !important;
                 overflow: visible !important;
                 border: 1px solid #cbd5e1 !important;
                 break-inside: avoid;
@@ -285,15 +292,15 @@
             table {
                 width: 100% !important;
                 min-width: 0 !important;
-                font-size: 7.5pt !important;
+                font-size: 7.2pt !important;
             }
             th, td {
-                padding: 0.35rem 0.5rem !important;
+                padding: 0.25rem 0.45rem !important;
                 border: 1px solid #cbd5e1 !important;
             }
             th {
                 background: #f1f5f9 !important;
-                font-size: 8pt !important;
+                font-size: 7.5pt !important;
                 color: #1a237e !important;
             }
             tr {
@@ -302,8 +309,8 @@
             }
 
             .mermaid {
-                margin: 0.6rem 0 !important;
-                padding: 0.4rem !important;
+                margin: 0.4rem 0 !important;
+                padding: 0.3rem !important;
                 border: 1px solid #cbd5e1 !important;
                 border-radius: 6px !important;
                 background: #ffffff !important;
@@ -313,7 +320,7 @@
             }
             .mermaid svg {
                 max-width: 95% !important;
-                max-height: 200px !important;
+                max-height: 165px !important;
                 height: auto !important;
                 width: auto !important;
                 margin: 0 auto !important;
@@ -329,10 +336,10 @@
                 widows: 2;
             }
             hr {
-                margin: 1.2rem 0 !important;
+                margin: 0.8rem 0 !important;
             }
         }
-    </style>
+</style>
 </head>
 <body>
 
@@ -363,6 +370,7 @@
     <p><strong>ParaFlightLog</strong> was born from a fundamental belief: <strong>A pilot should have absolute sovereignty over their flight records.</strong></p>
     <p>We built an enterprise-grade flight analytics, equipment maintenance, and automation engine that runs <strong>100% inside your personal Google Drive and Google Sheets</strong>. It combines the zero-cost scalability of cloud serverless computing with the familiar, flexible power of a spreadsheet—empowered by native <strong>Gemini AI</strong> to deliver insights no closed app can match.</p>
 
+    <div class="page-start"></div>
     <h2>2. Core Capabilities: Flight Logging Reimagined</h2>
 
     <div class="engine-header">PARAGLIDING FLIGHT ENGINE</div>
@@ -443,6 +451,7 @@
         <li><strong>8-Card Personal Hall of Fame</strong>: Dynamic leaderboards celebrating your top 5 longest flights, highest altitudes, biggest thermal climbs, and peak ground speeds.</li>
     </ul>
 
+    <div class="page-start"></div>
     <h2>3. A Peek Under the Hood: The Genius of Google Sheets + Apps Script</h2>
     
     <p>Why build an advanced flight operations platform on <strong>Google Sheets</strong> and <strong>Google Apps Script</strong> instead of a traditional mobile app or web SaaS?</p>
@@ -502,7 +511,26 @@
     
     <p>Gemini acts as your personal aerodynamicist and flight coach, transforming passive tracklogs into actionable flying intelligence.</p>
 
-    <h2>5. Beyond the Logbook: An Expandable Flight Operations Platform</h2>
+    <h2>5. Execution Freedom: The Tri-Mode Engine</h2>
+    <p>Long-running flight imports and historical backfills should never lock up your computer. ParaFlightLog introduces the <strong>Tri-Mode Execution Subsystem</strong> (<code>DSGN-UI-001</code>):</p>
+
+    <div class="tri-mode-grid">
+        <div class="mode-card">
+            <h4>🚀 Run Here</h4>
+            <p><strong>Modal</strong> dialog execution with instant feedback. Traditional high-context dialog for quick, single-flight tasks.</p>
+        </div>
+        <div class="mode-card">
+            <h4>📌 Run in Sidebar</h4>
+            <p><strong>Modeless</strong> execution docked to a compact 300px side panel. Continue browsing while progress bars update in real time.</p>
+        </div>
+        <div class="mode-card">
+            <h4>⚙️ Run in Background</h4>
+            <p><strong>Headless</strong> automated queue. Bounded by a 4.5-minute time budget, batch jobs self-schedule continuation triggers.</p>
+        </div>
+    </div>
+
+    <div class="page-start"></div>
+    <h2>6. Beyond the Logbook: An Expandable Flight Operations Platform</h2>
     
     <p>ParaFlightLog is engineered not merely as a historical diary, but as a <strong>comprehensive paragliding operations center</strong>:</p>
 
@@ -544,24 +572,6 @@
     <ul>
         <li>Store launch coordinates, LZ waypoints, emergency radio frequencies, retrieve vehicle contact details, and Garmin inReach MapShare links for cross-country flying safaris.</li>
     </ul>
-
-    <h2>6. Execution Freedom: The Tri-Mode Engine</h2>
-    <p>Long-running flight imports and historical backfills should never lock up your computer. ParaFlightLog introduces the <strong>Tri-Mode Execution Subsystem</strong> (<code>DSGN-UI-001</code>):</p>
-
-    <div class="tri-mode-grid">
-        <div class="mode-card">
-            <h4>🚀 Run Here</h4>
-            <p><strong>Modal</strong> dialog execution with instant feedback. Traditional high-context dialog for quick, single-flight tasks.</p>
-        </div>
-        <div class="mode-card">
-            <h4>📌 Run in Sidebar</h4>
-            <p><strong>Modeless</strong> execution docked to a compact 300px side panel. Continue browsing while progress bars update in real time.</p>
-        </div>
-        <div class="mode-card">
-            <h4>⚙️ Run in Background</h4>
-            <p><strong>Headless</strong> automated queue. Bounded by a 4.5-minute time budget, batch jobs self-schedule continuation triggers.</p>
-        </div>
-    </div>
 
     <h2>7. Where We Stand Today: Current Operational Capabilities</h2>
     <p>ParaFlightLog is currently in <strong>active production deployment (v1.x / v2.0 Ready)</strong>, powering daily personal flight operations with rock-solid reliability:</p>
@@ -630,6 +640,7 @@
         </table>
     </div>
 
+    <div class="page-start"></div>
     <h2>8. Strategic Roadmap: The 5 Horizons of Evolution</h2>
     <p>ParaFlightLog is evolving systematically from a private flight operations engine into a globally accessible, community-governed open-source platform:</p>
 

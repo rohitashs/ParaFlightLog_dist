@@ -94,7 +94,23 @@ Gemini acts as your personal aerodynamicist and flight coach, transforming passi
 
 ---
 
-## 5. Beyond the Logbook: An Expandable Flight Operations Platform
+## 5. Execution Freedom: The Tri-Mode Engine
+
+Long-running flight imports and historical backfills should never lock up your computer. ParaFlightLog introduces the **Tri-Mode Execution Subsystem** (`DSGN-UI-001`):
+
+```
+[ 🚀 Run Here ]          [ 📌 Run in Sidebar ]         [ ⚙️ Run in Background ]
+Modal dialog execution    Modeless execution docked     Headless batch queue
+with instant feedback.    to the side while you work.   with auto-continuation.
+```
+
+1. **Run Here (Modal)**: Traditional high-context dialog for quick, single-flight tasks.
+2. **Run in Sidebar (Modeless)**: Docks execution to a compact 300px side panel. Continue browsing your logbook, filtering flights, or checking gear while progress bars update in real time.
+3. **Run in Background (Headless)**: Closes the interface immediately and delegates the workload to an automated queue. Bounded by an intelligent **4.5-minute time budget**, large batch jobs automatically save progress and self-schedule continuation triggers without hitting Google Apps Script timeouts.
+
+---
+
+## 6. Beyond the Logbook: An Expandable Flight Operations Platform
 
 ParaFlightLog is engineered not merely as a historical diary, but as a **comprehensive paragliding operations center**:
 
@@ -128,22 +144,6 @@ graph TD
 
 ### 🧭 4. Expedition & Trip Planning
 * Store launch coordinates, LZ waypoints, emergency radio frequencies, retrieve vehicle contact details, and Garmin inReach MapShare links for cross-country flying safaris.
-
----
-
-## 6. Execution Freedom: The Tri-Mode Engine
-
-Long-running flight imports and historical backfills should never lock up your computer. ParaFlightLog introduces the **Tri-Mode Execution Subsystem** (`DSGN-UI-001`):
-
-```
-[ 🚀 Run Here ]          [ 📌 Run in Sidebar ]         [ ⚙️ Run in Background ]
-Modal dialog execution    Modeless execution docked     Headless batch queue
-with instant feedback.    to the side while you work.   with auto-continuation.
-```
-
-1. **Run Here (Modal)**: Traditional high-context dialog for quick, single-flight tasks.
-2. **Run in Sidebar (Modeless)**: Docks execution to a compact 300px side panel. Continue browsing your logbook, filtering flights, or checking gear while progress bars update in real time.
-3. **Run in Background (Headless)**: Closes the interface immediately and delegates the workload to an automated queue. Bounded by an intelligent **4.5-minute time budget**, large batch jobs automatically save progress and self-schedule continuation triggers without hitting Google Apps Script timeouts.
 
 ---
 
