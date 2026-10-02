@@ -15,14 +15,24 @@ The project follows a strict folder hierarchy. `Docs/Context.md` is the source o
 ### 1. `Docs/` (Persistent Documentation)
 *   **Status**: **Git Tracked**.
 *   **Purpose**: Long-term, evolving documentation. Source of Truth.
-*   **Files**:
+*   **Hierarchy Model**: Organized across **5 Altitudes / Tiers** to cater to distinct audiences (prospective pilots, active users, architects, and AI agents):
+
+| Tier / Altitude | Focus & Target Audience | Core Files |
+| :--- | :--- | :--- |
+| **Tier 1: Strategic Vision** | Long-term intent, 5 Evolution Horizons, Open-Source roadmap & non-negotiable architectural tenets. *(Stakeholders, Community, AI)* | [`Roadmap.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Roadmap.md) |
+| **Tier 2: Public Manifesto** | High-level platform whitepaper, value proposition, Gemini AI advantage & "Why Sheets + Apps Script". *(World, Pilots, Clubs)* | [`Brochure.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Brochure.md) |
+| **Tier 3: Product & Operations** | Comprehensive functional capabilities catalog and complete pilot operational handbook. *(End-User Pilots, Flight Instructors)* | [`Features.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Features.md)<br>[`User_Guide.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/User_Guide.md) |
+| **Tier 4: Systems Architecture** | C4 serverless topology, global ERD model, 7-sheet unified data dictionary, math algorithms, and RFC design specs. *(Architects, Devs, AI)* | [`Architecture.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Architecture.md)<br>[`Technical_Specification.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Technical_Specification.md)<br>[`Design/`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Design/README.md) (`DSGN-*.md`) |
+| **Tier 5: Execution & Memory** | Tracked work units (`RQ`, `CR`, `Bug`), release history, and engineering memory / ways of working. *(Developers, AI Pair Programmers)* | [`Backlog.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Backlog.md)<br>[`ChangeLog.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/ChangeLog.md)<br>[`Context.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Context.md) |
+
+*   **File Inventory**:
     *   **`Roadmap.md`**: Strategic Vision, 5 Evolution Horizons & Open-Source Roadmap.
     *   **`Brochure.md`**: Public Manifesto, Product Brochure & Platform Whitepaper.
     *   **`Architecture.md`**: Systems Architecture, Global Schemas, ERD & Unified Data Dictionary.
-    *   **`Context.md`**: Project Context, Ways of Working.
+    *   **`Context.md`**: Project Context, Ways of Working & Agent Long-Term Memory.
     *   **`User_Guide.md`**: Complete Pilot Handbook, Setup Walkthrough & Metric Dictionary.
     *   **`Features.md`**: Functional capabilities (Admin, UI, System).
-    *   **`Technical_Specification.md`**: Detailed Tech Specs & Code Reference.
+    *   **`Technical_Specification.md`**: Detailed Tech Specs, Math Algorithms & Code Reference.
     *   **`Design/`**: Formal Architectural & Detailed Design Specifications (`DSGN-*.md`), Template (`Design_template.md`), and Index (`README.md`).
     *   **`Backlog.md`**: Requirements, CRs, Bugs.
     *   **`ChangeLog.md`**: Historical record.
@@ -56,10 +66,13 @@ The project follows a strict folder hierarchy. `Docs/Context.md` is the source o
     5.  **Wait for Explicit Approval**: **NEVER edit code or persistent documentation prematurely**. Only when an unambiguous plan has been presented and the user explicitly gives the command to **"execute"** (or unambiguous go-ahead) should execution begin.
 
 ### 2. Document-First Development
-*   **Features.md**: Define *what* we want.
-*   **Technical_Specification.md**: Define *how* to build it.
-*   **Backlog.md**: Track *status* of implementation.
-*   **Code**: Implement only after documentation is aligned.
+*   **`Roadmap.md`**: Define the *strategic vision, non-negotiable tenets, and evolution horizons*.
+*   **`Brochure.md`**: Define the *public value proposition, pilot benefits, and platform overview*.
+*   **`Features.md`**: Define the *functional capabilities and product features*.
+*   **`Architecture.md` & `Technical_Specification.md`**: Define *how* the system is topologically structured, global schemas, and algorithmic implementation details.
+*   **`Design/` (`DSGN-*.md`)**: Define *subsystem RFC specifications* prior to non-trivial code execution.
+*   **`Backlog.md`**: Track *status* of implementation units (`RQ`, `CR`, `Bug`, `ToDo`).
+*   **`Code/`**: Implement only after documentation and design specifications are fully aligned.
 
 ### 3. Backlog Management (`Docs/Backlog.md`)
 The backlog has 5 strict sections:
