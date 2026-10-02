@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ParaFlightLog: The Intelligent, Sovereign Paragliding Platform</title>
+    
+    <!-- MathJax for rendering LaTeX formulas like L/D -->
+    <script>
+        MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']]
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        :root {
+            --primary: #1A237E;
+            --primary-light: #3F51B5;
+            --accent: #00897B;
+            --bg: #f8fafc;
+            --text: #334155;
+            --border: #e2e8f0;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+            line-height: 1.6;
+            color: var(--text);
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 2rem;
+            background-color: #ffffff;
+        }
+
+        h1, h2, h3, h4 {
+            color: #0f172a;
+            margin-top: 2.5rem;
+        }
+        
+        a { color: var(--primary-light); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        /* Hero & Manifesto */
+        .hero {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            padding: 3rem 2rem;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 2rem;
+            border: 1px solid var(--border);
+        }
+        .hero h1 { margin-top: 0; font-size: 2.5rem; color: var(--primary); }
+        .hero h3 { font-weight: 400; color: #475569; margin-top: 0.5rem; }
+        
+        .manifesto-quote {
+            border-left: 4px solid var(--primary-light);
+            padding: 1.5rem;
+            background: var(--bg);
+            border-radius: 0 8px 8px 0;
+            font-style: italic;
+            font-size: 1.1rem;
+            margin: 2rem 0;
+        }
+
+        /* Architecture Grid (Replaces ASCII Engine) */
+        .engine-header {
+            text-align: center;
+            background: var(--primary);
+            color: white;
+            padding: 0.75rem;
+            border-radius: 8px 8px 0 0;
+            font-weight: bold;
+            letter-spacing: 1px;
+            margin-top: 2rem;
+        }
+        .arch-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1px;
+            background: var(--border);
+            border: 1px solid var(--border);
+            border-radius: 0 0 8px 8px;
+            margin-bottom: 2rem;
+        }
+        .arch-col {
+            background: #fff;
+            padding: 1.5rem;
+        }
+        .arch-col h4 {
+            margin-top: 0;
+            color: var(--primary);
+            border-bottom: 2px solid var(--primary-light);
+            padding-bottom: 0.5rem;
+            font-size: 1.1rem;
+        }
+        .arch-col ul { padding-left: 1.2rem; margin-bottom: 0; font-size: 0.95rem; }
+
+        /* Tri-Mode Execution Grid (Replaces ASCII Tri-Mode) */
+        .tri-mode-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+        .mode-card {
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            transition: transform 0.2s;
+        }
+        .mode-card:hover { transform: translateY(-3px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .mode-card h4 { margin-top: 0; color: var(--primary); font-size: 1.2rem; margin-bottom: 0.5rem; }
+        .mode-card p { margin: 0; font-size: 0.95rem; color: #475569; }
+
+        /* Responsive Tables */
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            margin: 2rem 0;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 600px;
+        }
+        th, td {
+            border: 1px solid var(--border);
+            padding: 1rem;
+            text-align: left;
+        }
+        th { background: var(--bg); font-weight: 600; color: var(--primary); }
+        tr:nth-child(even) { background-color: #fdfdfd; }
+        
+        .mermaid { 
+            margin: 3rem 0; 
+            text-align: center;
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+        
+        code {
+            background: var(--bg);
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 0.9em;
+            color: #b91c1c;
+        }
+        
+        /* Print Styles */
+        @media print {
+            @page { margin: 1.5cm; }
+            body { background: white; max-width: 100%; padding: 0; }
+            .hero { background: none; border: 1px solid #ccc; padding: 2rem; break-inside: avoid; }
+            .manifesto-quote { border-left-color: #000; background: none; break-inside: avoid; }
+            
+            /* Force new pages for major sections */
+            h2 { break-before: page; margin-top: 0; padding-top: 1rem; }
+            h3, h4 { break-after: avoid; }
+            p, li { orphans: 3; widows: 3; }
+            
+            /* Strictly prevent splitting inside these blocks */
+            .arch-grid, .tri-mode-grid, .mermaid, table, .table-responsive, ul, ol { 
+                break-inside: avoid; 
+                page-break-inside: avoid; 
+            }
+            .arch-col, .mode-card { border: 1px solid #ccc; break-inside: avoid; }
+            table, .table-responsive { border: 1px solid #ccc; }
+            .mermaid { border: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="hero">
+        <h1>🪂 ParaFlightLog</h1>
+        <h3>The Intelligent, Sovereign Paragliding Platform</h3>
+        <p><em>A Modern Flight Analytics, Gear Lifecycle & Automation Engine Built on Open Principles</em></p>
+    </div>
+
+    <div class="manifesto-quote">
+        <p><strong>"Your Flight Data. Sovereign. Intelligent. Infinitely Extensible."</strong></p>
+        <p>A high-performance, private, zero-cost personal flight operations center that runs entirely within your personal Google Workspace. No monthly subscriptions. No proprietary clouds. No vendor lock-in.</p>
+    </div>
+
+    <h2>1. The Manifesto: Flight Data in an Era of Walled Gardens</h2>
+    
+    <h3>The Pilot's Dilemma</h3>
+    <p>Every free-flight pilot understands the struggle of fragmented data. Over a flying career, your tracklogs become scattered across a dozen incompatible ecosystems:</p>
+    <ul>
+        <li>Dedicated flight computers (<strong>Flymaster</strong>, <strong>XC Tracer</strong>, <strong>Oudie</strong>, <strong>Syride</strong>).</li>
+        <li>Mobile cockpit apps (<strong>XCTrack</strong>, <strong>FlyMe</strong>, <strong>SeeYou Navigator</strong>, <strong>Garmin</strong>).</li>
+        <li>Online contest servers (<strong>XContest</strong>, <strong>DHV-XC</strong>, <strong>Leonardo</strong>).</li>
+        <li>Miscellaneous folders of <code>.igc</code> and <code>.gpx</code> files lost across multiple hard drives.</li>
+    </ul>
+    <p>When a commercial flight-tracking service introduces a monthly subscription, changes its terms, or shuts down, <strong>your hard-earned airtime and flight history are held hostage</strong>. Commercial flight logbooks treat your data as their proprietary asset, locking your statistics behind paywalls and denying you the ability to deeply query, customize, or extend your records.</p>
+
+    <h3>The ParaFlightLog Vision</h3>
+    <p><strong>ParaFlightLog</strong> was born from a fundamental belief: <strong>A pilot should have absolute sovereignty over their flight records.</strong></p>
+    <p>We built an enterprise-grade flight analytics, equipment maintenance, and automation engine that runs <strong>100% inside your personal Google Drive and Google Sheets</strong>. It combines the zero-cost scalability of cloud serverless computing with the familiar, flexible power of a spreadsheet—empowered by native <strong>Gemini AI</strong> to deliver insights no closed app can match.</p>
+
+    <h2>2. Core Capabilities: Flight Logging Reimagined</h2>
+
+    <div class="engine-header">PARAGLIDING FLIGHT ENGINE</div>
+    <div class="arch-grid">
+        <div class="arch-col">
+            <h4>📥 Ingestion</h4>
+            <ul>
+                <li>Drag & Drop</li>
+                <li>Cloud URLs</li>
+                <li>Watch Folders</li>
+                <li>Multi-Archive</li>
+                <li>Smart Dedupe</li>
+            </ul>
+        </div>
+        <div class="arch-col">
+            <h4>🧮 Physics</h4>
+            <ul>
+                <li>Thermal Detect</li>
+                <li>Ridge Soaring</li>
+                <li>Glide $L/D$ Ratio</li>
+                <li>FAI XC Scoring</li>
+                <li>RDP Optimizer</li>
+            </ul>
+        </div>
+        <div class="arch-col">
+            <h4>🌦️ Enrichment</h4>
+            <ul>
+                <li>Open-Meteo</li>
+                <li>Wind at Launch</li>
+                <li>Cloudbase (m)</li>
+                <li>OSM Geocoding</li>
+                <li>XContest Sync</li>
+            </ul>
+        </div>
+        <div class="arch-col">
+            <h4>📊 Cockpit</h4>
+            <ul>
+                <li>KPI Banners</li>
+                <li>6-Mo Currency</li>
+                <li>8 Leaderboard</li>
+                <li>Dynamic Top 5</li>
+                <li>SeeYou 3D</li>
+            </ul>
+        </div>
+    </div>
+
+    <h3>📥 1. Zero-Friction Multi-Source Ingestion</h3>
+    <ul>
+        <li><strong>Drag-and-Drop Web Uploader</strong>: Drop single IGC files or compressed archives directly into the browser.</li>
+        <li><strong>Continuous Drive Watch Folders</strong>: Set up a dedicated folder in Google Drive. Drop your flight files from your phone or instrument, and ParaFlightLog automatically ingests, processes, and archives them in the background.</li>
+        <li><strong>Bulk Archive Unpacking</strong>: High-speed batch processing for <code>.zip</code> and <code>.gz</code> archives, effortlessly onboarding 500+ historical flights in minutes.</li>
+        <li><strong>Smart Heuristic Deduplication</strong>: Multi-criteria matching pairs dual-device recordings (e.g. your phone running XCTrack plus your backup audio vario), grading track quality (0–100 pts) and labeling primary vs. secondary logs without corrupting your statistics.</li>
+    </ul>
+
+    <h3>🧮 2. Aeronautical Physics & FAI Scoring Engine</h3>
+    <ul>
+        <li><strong>Automated Flight Regime Classification</strong>: Sliding-window physics algorithms decompose every second of your flight into <strong>Thermal Climb</strong>, <strong>Dynamic Ridge Soaring</strong>, and <strong>Straight Glide</strong>.</li>
+        <li><strong>Climb & Glide Diagnostics</strong>: Computes peak integrated 10s climbs, maximum sink, average thermal efficiency, and true aerodynamic glide ratios ($L/D$).</li>
+        <li><strong>FAI Cross-Country Optimization</strong>: Built-in Ramer-Douglas-Peucker (RDP) trajectory simplification and brute-force 3-Turnpoint optimization for <strong>Free Distance</strong>, <strong>Out-and-Return</strong>, <strong>Flat Triangle</strong>, and <strong>FAI Triangle</strong> scoring.</li>
+    </ul>
+
+    <h3>🌦️ 3. Meteorological & Geographic Enrichment</h3>
+    <ul>
+        <li><strong>Historical Weather Backfill</strong>: Automatically queries meteorological archives to pinpoint surface wind speeds, gusts, cardinal directions, ambient temperature, cloud cover %, and estimated boundary-layer cloudbase heights at the exact minute and coordinates of takeoff and landing.</li>
+        <li><strong>Automated Site Resolution</strong>: Uses OpenStreetMap and global paragliding site databases to automatically identify takeoff site names, landing towns, counties, and countries.</li>
+    </ul>
+
+    <h3>🏆 4. Competition & League Sync</h3>
+    <ul>
+        <li><strong>Native XContest Probing</strong>: Directly validates flights against XContest.org servers, links permanent competition IDs, and alerts you if a flight is approaching the strict 14-day claiming deadline.</li>
+        <li><strong>One-Click 3D Visualization</strong>: Instant hyperlink generation to inspect your flight in 3D terrain on <strong>SeeYou Cloud</strong>.</li>
+    </ul>
+
+    <h3>📊 5. Personal Cockpit & Currency Dashboard</h3>
+    <ul>
+        <li><strong>Instant KPI Banners</strong>: High-contrast career and year-to-date summaries displaying total flights, cumulative airtime hours, and cross-country kilometers.</li>
+        <li><strong>Rolling 6-Month Pilot Currency Monitor</strong>: Dynamic safety indicators (Green / Yellow / Orange) monitoring your recent airtime to ensure you stay current and safe.</li>
+        <li><strong>8-Card Personal Hall of Fame</strong>: Dynamic leaderboards celebrating your top 5 longest flights, highest altitudes, biggest thermal climbs, and peak ground speeds.</li>
+    </ul>
+
+    <h2>3. A Peek Under the Hood: The Genius of Google Sheets + Apps Script</h2>
+    
+    <p>Why build an advanced flight operations platform on <strong>Google Sheets</strong> and <strong>Google Apps Script</strong> instead of a traditional mobile app or web SaaS?</p>
+
+    <div class="table-responsive">
+        <table>
+            <thead>
+                <tr>
+                    <th>Traditional Flight Apps (SaaS)</th>
+                    <th>The ParaFlightLog Model</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Subscription Lock-in</strong>: $50–$120/year forever.</td>
+                    <td><strong>100% Free Forever</strong>: Runs on Google's free consumer tier.</td>
+                </tr>
+                <tr>
+                    <td><strong>Data in Silos</strong>: Your flights reside on corporate servers.</td>
+                    <td><strong>Absolute Sovereignty</strong>: Stored directly in your private Google Drive.</td>
+                </tr>
+                <tr>
+                    <td><strong>Rigid Layouts</strong>: You can only view what the developer designed.</td>
+                    <td><strong>Infinitely Hackable</strong>: Create custom charts, pivot tables, and columns.</td>
+                </tr>
+                <tr>
+                    <td><strong>App Discontinuation Risk</strong>: If the startup fails, data is lost.</td>
+                    <td><strong>Permanent Durability</strong>: Standard spreadsheet and IGC files last for decades.</td>
+                </tr>
+                <tr>
+                    <td><strong>Limited AI</strong>: Generic stats or rudimentary summaries.</td>
+                    <td><strong>Native Gemini AI</strong>: Query your flight history in plain English.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h3>🛠️ The Power of Single-Tenant Serverless</h3>
+    <ul>
+        <li><strong>Zero Infrastructure Overhead</strong>: No Docker containers to manage, no Linux updates, no database connection strings. Google manages 99.9% uptime, backup redundancy, and security.</li>
+        <li><strong>Universal Multi-Device Access</strong>: Seamlessly review and log flights on your desktop workstation, your iPad in the campervan, or your smartphone at the landing field via native Google Sheets mobile apps.</li>
+        <li><strong>Complete Portability</strong>: Your data is always ready for instant export to CSV, Microsoft Excel, GeoJSON, or JSON.</li>
+    </ul>
+
+    <h2>4. The AI Powerhouse: Native Gemini Intelligence</h2>
+    <p>Because ParaFlightLog lives inside Google Sheets, you unlock direct integration with <strong>Google Gemini</strong>. You can interrogate your entire flying history using natural human language—no complex formulas required:</p>
+    
+    <div class="manifesto-quote">
+        <p>💬 "Gemini, compare my glide ratios and ground speeds on my Ozone Rush 6 versus my previous wing when flying into headwinds exceeding 15 km/h."</p>
+    </div>
+    <div class="manifesto-quote">
+        <p>💬 "Gemini, analyze all flights launched from Mount Tamalpais over the last two years. What wind direction and time of day yielded my highest thermal climb rates?"</p>
+    </div>
+    <div class="manifesto-quote">
+        <p>💬 "Gemini, summarize my airtime progression, thermalling percentage, and highest altitude gains over the past 12 months in a format suitable for my FAI Advanced Pilot certification renewal."</p>
+    </div>
+    
+    <p>Gemini acts as your personal aerodynamicist and flight coach, transforming passive tracklogs into actionable flying intelligence.</p>
+
+    <h2>5. Beyond the Logbook: An Expandable Flight Operations Platform</h2>
+    
+    <p>ParaFlightLog is engineered not merely as a historical diary, but as a <strong>comprehensive paragliding operations center</strong>:</p>
+
+    <div class="mermaid">
+    graph TD
+        classDef core fill:#1A237E,stroke:#3F51B5,stroke-width:2px,color:#fff;
+        classDef domain fill:#E0F2F1,stroke:#00897B,stroke-width:2px,color:#004D40;
+        classDef ai fill:#F3E5F5,stroke:#8E24AA,stroke-width:2px,color:#4A148C;
+
+        Core(["🪂 ParaFlightLog Core Engine<br><i>Reactive Relational Tabular Store</i>"]):::core
+
+        Core --> Gear["🪂 Gear Lifecycle & Airworthiness<br>• Automated Hour & Flight Tracking<br>• Line Trim Reminders (100h)<br>• Porosity & Annual Inspection Logs<br>• Reserve Repack Deadlines (180/360d)"]:::domain
+        Core --> Edu["🎓 Pilot Education & Progression<br>• P1–P5 / IPPI Certification Tracker<br>• SIV Maneuver & Incident Journal<br>• XC Clinic & Endorsement Records<br>• Annual Currency Self-Auditing"]:::domain
+        Core --> Sites["🏔️ Site Intelligence & Weather<br>• Wind-Rose Site Compatibility Matrix<br>• Live Forecast-to-History Matching<br>• Airspace Ceilings & Frequency Notes<br>• Launch Hazards & LZ Waypoints"]:::domain
+        Core --> Trips["🧭 Expedition & Trip Planning<br>• Multi-Pilot Safari Coordination<br>• Retrieve Crew Tracking Links<br>• Waypoint & Turnpoint Packs<br>• Emergency SAR Coordinates & Frequencies"]:::domain
+
+        Core -.-> Gemini["🤖 Native Gemini AI Analytics<br>• Multi-glider polar comparison<br>• Thermal efficiency queries<br>• Natural language coaching"]:::ai
+    </div>
+
+    <h3>🪂 1. Intelligent Equipment Lifecycle & Airworthiness</h3>
+    <ul>
+        <li><strong>Automated Usage Logging</strong>: Your gliders, harnesses, and reserves automatically accumulate flight hours and launch counts directly from your flight rows.</li>
+        <li><strong>Proactive Safety Alerts</strong>: Visual indicators flag when a wing reaches its 100-hour line trim check, when fabric porosity testing is recommended, or when a reserve parachute reaches its 180-day / 360-day repack deadline.</li>
+    </ul>
+
+    <h3>🎓 2. Pilot Education & Progression Matrix</h3>
+    <ul>
+        <li><strong>Rating & Endorsement Tracking</strong>: Structured competency tracking for national associations (USHPA, BHPA, DHV, HPAC) and international FAI / IPPI licensing.</li>
+        <li><strong>SIV & Maneuver Journal</strong>: Record maneuvers executed during safety clinics (asymmetric collapses, stalls, spirals) with wing-specific notes and instructor feedback.</li>
+    </ul>
+
+    <h3>🏔️ 3. Flying Site Intelligence & Weather Matrix</h3>
+    <ul>
+        <li><strong>Centralized Site Registry</strong>: Maintain detailed notes on launches, landing fields, frequency channels, site regulations, and airspace ceilings.</li>
+        <li><strong>Predictive Weekend Matching</strong>: Compare upcoming weekend meteorological forecasts with your personal historical flight data to recommend which local site offers the highest probability of good flying.</li>
+    </ul>
+
+    <h3>🧭 4. Expedition & Trip Planning</h3>
+    <ul>
+        <li>Store launch coordinates, LZ waypoints, emergency radio frequencies, retrieve vehicle contact details, and Garmin inReach MapShare links for cross-country flying safaris.</li>
+    </ul>
+
+    <h2>6. Execution Freedom: The Tri-Mode Engine</h2>
+    <p>Long-running flight imports and historical backfills should never lock up your computer. ParaFlightLog introduces the <strong>Tri-Mode Execution Subsystem</strong> (<code>DSGN-UI-001</code>):</p>
+
+    <div class="tri-mode-grid">
+        <div class="mode-card">
+            <h4>🚀 Run Here</h4>
+            <p><strong>Modal</strong> dialog execution with instant feedback. Traditional high-context dialog for quick, single-flight tasks.</p>
+        </div>
+        <div class="mode-card">
+            <h4>📌 Run in Sidebar</h4>
+            <p><strong>Modeless</strong> execution docked to a compact 300px side panel. Continue browsing while progress bars update in real time.</p>
+        </div>
+        <div class="mode-card">
+            <h4>⚙️ Run in Background</h4>
+            <p><strong>Headless</strong> automated queue. Bounded by a 4.5-minute time budget, batch jobs self-schedule continuation triggers.</p>
+        </div>
+    </div>
+
+    <h2>7. Where We Stand Today: Current Operational Capabilities</h2>
+    <p>ParaFlightLog is currently in <strong>active production deployment (v1.x / v2.0 Ready)</strong>, powering daily personal flight operations with rock-solid reliability:</p>
+
+    <div class="table-responsive">
+        <table>
+            <thead>
+                <tr>
+                    <th>Capability Area</th>
+                    <th style="text-align: center;">Current Operational Status</th>
+                    <th>Key Subsystems & Highlights</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Multi-Source Ingestion</strong></td>
+                    <td style="text-align: center;">✅ <strong>Live & Operational</strong></td>
+                    <td>Drag-and-drop web uploader, Drive folder/URL import, <code>.zip</code>/<code>.gz</code> extraction, continuous Watch Folder scanning, and high-speed bulk batching.</td>
+                </tr>
+                <tr>
+                    <td><strong>Aero Physics Engine</strong></td>
+                    <td style="text-align: center;">✅ <strong>Live & Operational</strong></td>
+                    <td>Sliding-window thermalling, ridge soaring, and glide detection; climb/sink rate integration; $L/D$ aerodynamic efficiency.</td>
+                </tr>
+                <tr>
+                    <td><strong>FAI Cross-Country Scoring</strong></td>
+                    <td style="text-align: center;">✅ <strong>Live & Operational</strong></td>
+                    <td>RDP trajectory optimization, 3-turnpoint brute-force solver, Free Flight, Out-and-Return, Flat Triangle, and FAI Triangle scoring.</td>
+                </tr>
+                <tr>
+                    <td><strong>Meteorological Backfill</strong></td>
+                    <td style="text-align: center;">✅ <strong>Live & Operational</strong></td>
+                    <td>Open-Meteo historical archive API with 7-day forecast fallback; surface winds, gusts, temps, cloud cover, and Lawrence cloudbase spread.</td>
+                </tr>
+                <tr>
+                    <td><strong>Geographic Site Resolution</strong></td>
+                    <td style="text-align: center;">✅ <strong>Live & Operational</strong></td>
+                    <td>OpenStreetMap Nominatim reverse geocoding & Overpass API site detection; 6-hour caching in <code>CacheService</code>.</td>
+                </tr>
+                <tr>
+                    <td><strong>Contest League Probing</strong></td>
+                    <td style="text-align: center;">✅ <strong>Live & Operational</strong></td>
+                    <td>Direct XContest flight probing with Cloudflare bypass, UTC date shifting, permanent flight ID linking, and 14-day claim deadline countdown.</td>
+                </tr>
+                <tr>
+                    <td><strong>Cockpit Dashboard</strong></td>
+                    <td style="text-align: center;">✅ <strong>Live & Operational</strong></td>
+                    <td>Resilient 6-column layout with career/YTD KPI banners, 6-month pilot currency alerts (Green/Yellow/Orange), and 8 dynamic leaderboards.</td>
+                </tr>
+                <tr>
+                    <td><strong>Tri-Mode Execution</strong></td>
+                    <td style="text-align: center;">✅ <strong>Live & Operational</strong></td>
+                    <td>Foreground Modal (<code>Run Here</code>), Modeless Sidebar (<code>Run in Sidebar</code>), and Headless Background Queue with 4.5-minute time budgeting.</td>
+                </tr>
+                <tr>
+                    <td><strong>Data Integrity & Dedupe</strong></td>
+                    <td style="text-align: center;">✅ <strong>Live & Operational</strong></td>
+                    <td>Row-based MD5 hashing on <code>Flights</code> (Col 70), multi-criteria heuristic overlap detection, 0–100 pt sensor quality scoring, and duplicate pairing.</td>
+                </tr>
+                <tr>
+                    <td><strong>Configuration Management</strong></td>
+                    <td style="text-align: center;">✅ <strong>Live & Operational</strong></td>
+                    <td>49 parameters across 9 sections, 10 lookups, and granular 5-group JSON export/import with dynamic UI protection.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h2>8. Strategic Roadmap: The 5 Horizons of Evolution</h2>
+    <p>ParaFlightLog is evolving systematically from a private flight operations engine into a globally accessible, community-governed open-source platform:</p>
+
+    <div class="mermaid">
+    %%{init: { 
+      'theme': 'base', 
+      'themeVariables': {
+        'cScale0': '#f8fafc',
+        'cScale1': '#f1f5f9',
+        'cScale2': '#e2e8f0',
+        'cScale3': '#cbd5e1',
+        'cScale4': '#94a3b8'
+      }
+    }}%%
+    timeline
+        title ParaFlightLog Strategic Evolution
+        
+        section Horizon 1
+          Current State : Single-Pilot Core Engine : Aeronautical Physics : Weather and Geo Backfill : Cockpit Dashboard
+          
+        section Horizon 2
+          v2.0 Active : Tri-Mode Execution : Universal Sidebar : Table-Driven Automation
+          
+        section Horizon 3
+          v2.5 Pre-OSS : Multi-Instance Updater : Guided Task Wizards : Security Audit : AI Testing Harness
+          
+        section Horizon 4
+          v3.0 Public : Open-Source Release : Golden Starter Sheet : Community Governance : Plugin Architecture
+          
+        section Horizon 5
+          v3.5 Plus : Equipment Airworthiness : Pilot Progression : Site Intelligence : Expedition Planning
+    </div>
+
+    <h3>Roadmap Highlights:</h3>
+    <ul>
+        <li><strong>Horizon 2 (v2.0)</strong>: Extends our live Tri-Mode Execution engine into a full <strong>Table-Driven Automation Engine</strong> (<code>DSGN-AUT-001</code>), allowing pilots to configure recurring automation triggers and pipelines from a simple spreadsheet tab.</li>
+        <li><strong>Horizon 3 (v2.5)</strong>: Introduces a <strong>Non-Destructive Multi-Instance Updater</strong> (<code>RQ-SYS-010</code>) to deploy code and schema updates across distributed pilot sheets without touching flight data, paired with automated AI test suites (<code>CR-DEV-004</code>) and strict PII scrubbers (<code>CR-SEC-001</code>).</li>
+        <li><strong>Horizon 4 (v3.0)</strong>: <strong>Public Open-Source Launch</strong> on GitHub under the MIT License, featuring a one-click <strong>Golden Starter Sheet</strong> that allows any pilot in the world to launch their own sovereign logbook in under 3 minutes.</li>
+        <li><strong>Horizon 5 (v3.5+)</strong>: Full expansion into <strong>Equipment Airworthiness Management</strong>, <strong>Pilot Education & Progression</strong>, and <strong>Flying Site Intelligence</strong>.</li>
+    </ul>
+
+    <h2>9. Open Source, Community & Extensibility</h2>
+    <p>ParaFlightLog is <strong>100% open source</strong> released under the permissive <strong>MIT License</strong>.</p>
+    <ul>
+        <li><strong>No Walled Gardens</strong>: Built by pilots, for pilots. The code is completely auditable, transparent, and forkable.</li>
+        <li><strong>Plugin-Ready Architecture</strong>: Easily create custom hardware parsers, connect to regional league servers, or integrate local weather stations.</li>
+        <li><strong>Community-Driven Evolution</strong>: Participate in design discussions, propose new features via RFCs, and contribute improvements back to the global free-flight community.</li>
+    </ul>
+
+    <h2>10. Take Flight in 3 Minutes</h2>
+    <p>Getting started requires no software installation, no command line, and no server configuration:</p>
+    <ol>
+        <li><strong>Make a Copy</strong>: Open the public <strong>Golden Starter Sheet</strong> and click <code>File > Make a copy</code> into your personal Google Drive.</li>
+        <li><strong>Run the Setup Wizard</strong>: Click <code>Flight Log > First-Time Setup Wizard</code>. The system guides you through selecting your Drive storage folders and entering your pilot name.</li>
+        <li><strong>Drop Your Flights</strong>: Drag and drop your <code>.igc</code> files or paste a Google Drive folder link.</li>
+        <li><strong>Enjoy Sovereign Analytics</strong>: Watch your personal dashboard populate with rich aeronautical data, weather, and leaderboards!</li>
+    </ol>
+
+    <hr style="border: 0; border-top: 1px solid var(--border); margin: 3rem 0;">
+
+    <div style="text-align: center; color: #64748b; margin-bottom: 3rem;">
+        <p><em>Fly far, fly safe, and own your sky. 🪂✨</em></p>
+    </div>
+
+    <!-- Initialize Mermaid v10+ -->
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'default',
+            securityLevel: 'loose'
+        });
+    </script>
+</body>
+</html>
