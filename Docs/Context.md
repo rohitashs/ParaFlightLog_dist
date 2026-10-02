@@ -16,10 +16,13 @@ The project follows a strict folder hierarchy. `Docs/Context.md` is the source o
 *   **Status**: **Git Tracked**.
 *   **Purpose**: Long-term, evolving documentation. Source of Truth.
 *   **Files**:
+    *   **`Roadmap.md`**: Strategic Vision, 5 Evolution Horizons & Open-Source Roadmap.
+    *   **`Brochure.md`**: Public Manifesto, Product Brochure & Platform Whitepaper.
+    *   **`Architecture.md`**: Systems Architecture, Global Schemas, ERD & Unified Data Dictionary.
     *   **`Context.md`**: Project Context, Ways of Working.
     *   **`User_Guide.md`**: Complete Pilot Handbook, Setup Walkthrough & Metric Dictionary.
     *   **`Features.md`**: Functional capabilities (Admin, UI, System).
-    *   **`Technical_Specification.md`**: detailed Tech Specs & Code Reference.
+    *   **`Technical_Specification.md`**: Detailed Tech Specs & Code Reference.
     *   **`Design/`**: Formal Architectural & Detailed Design Specifications (`DSGN-*.md`), Template (`Design_template.md`), and Index (`README.md`).
     *   **`Backlog.md`**: Requirements, CRs, Bugs.
     *   **`ChangeLog.md`**: Historical record.

@@ -1,9 +1,11 @@
 # Technical Specifications (Source of Truth)
 
 ## 1. Overview
-This document defines the **Code Organization**, **Algorithms**, and **Data Schema**.
-*   **Feature Map**: See `Features.md` for the functional view.
-*   **Requirements**: See `Backlog.md` (`RQ-*`).
+This document defines the low-level **Code Organization**, **Algorithms**, and **Function-Level Technical References**.
+*   **Systems Architecture & Global Schemas**: See [`Architecture.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Architecture.md) for overarching topology, C4 models, ERD, and unified data dictionary.
+*   **Strategic Horizons**: See [`Roadmap.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Roadmap.md) for macro evolution milestones.
+*   **Feature Map**: See [`Features.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Features.md) for the functional capability view.
+*   **Requirements & Backlog**: See [`Backlog.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Backlog.md) (`RQ-*`, `CR-*`, `Bug-*`).
 
 ---
 

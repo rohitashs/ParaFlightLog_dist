@@ -2,6 +2,9 @@
 
 ## 1. Description
 This file is the single source of truth for **ToDos**, **Requirements**, **Change Requests (CRs)**, and **Bugs**.
+*   **Strategic Horizons & Roadmap**: See [`Roadmap.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Roadmap.md) for macro-level horizons (H1–H5) and open-source initiatives.
+*   **Architecture & Global Schemas**: See [`Architecture.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Architecture.md) for architectural topology and entity schemas.
+*   **Functional Features**: See [`Features.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Features.md) for capability descriptions.
 
 ### Numbering Schema
 *   **Requirements**: `RQ-{Module}-{Number}` (Nested).

@@ -1,9 +1,12 @@
 # Features & Capabilities
 
 ## Overview
-This document describes the *intent* and *capabilities* of the Paragliding Flight Log system.
-*   **Technical Spec**: See `Technical_Specification.md` for *how* it works.
-*   **Requirements**: See `Backlog.md` for the status of these features (`RQ-*`).
+This document describes the functional *capabilities* and *feature set* of the Paragliding Flight Log system.
+*   **Strategic Vision & Horizons**: See [`Roadmap.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Roadmap.md) for long-term vision, 5 Horizons, and open-source milestones.
+*   **Platform Manifesto & Overview**: See [`Brochure.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Brochure.md) for the public product brochure and Gemini AI overview.
+*   **Systems Architecture**: See [`Architecture.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Architecture.md) for topology, ERD, and global data dictionary.
+*   **Technical Specification**: See [`Technical_Specification.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Technical_Specification.md) for algorithmic and function references.
+*   **Requirements & Backlog**: See [`Backlog.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Backlog.md) for status of tracked work units (`RQ-*`, `CR-*`, `Bug-*`).
 
 ---
 
