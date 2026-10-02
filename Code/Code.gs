@@ -1979,11 +1979,188 @@ function launchExecutionSidebar(jobPayload) {
  */
 function executeWorkerBatch(jobType, currentBatch, options, stepIndex, jobId) {
   var result = { success: false, logs: [], importedCount: 0, duplicateCount: 0, errorCount: 0 };
+  options = options || {};
   
   switch (jobType) {
     case 'BULK_INGEST':
       result = INGESTION.processBulkBatch(currentBatch, options);
       break;
+
+    case 'MAINTENANCE':
+      var maintLogs = [];
+      var updatedRows = 0;
+      var maintErrors = 0;
+      for (var m = 0; m < currentBatch.length; m++) {
+        var mItem = currentBatch[m];
+        var rowNum = (typeof mItem === 'object') ? (mItem.row || mItem.rowNum) : mItem;
+        var fId = (typeof mItem === 'object' && mItem.id) ? mItem.id : ('Row ' + rowNum);
+        try {
+          var mRes = executeFlightMaintenanceRow(rowNum, options);
+          if (mRes && mRes.updated && mRes.updated.length > 0) {
+            maintLogs.push('Row ' + rowNum + ' (' + fId + '): Updated ' + mRes.updated.join(', '));
+            updatedRows++;
+          } else if (mRes && mRes.notes) {
+            maintLogs.push('Row ' + rowNum + ' (' + fId + '): ' + mRes.notes);
+            updatedRows++;
+          } else if (mRes && mRes.error) {
+            maintLogs.push('Row ' + rowNum + ' (' + fId + ') ERROR: ' + mRes.error);
+            maintErrors++;
+          } else {
+            maintLogs.push('Row ' + rowNum + ' (' + fId + '): Up to date');
+            updatedRows++;
+          }
+        } catch (mErr) {
+          maintLogs.push('Row ' + rowNum + ' (' + fId + ') ERROR: ' + mErr.message);
+          maintErrors++;
+        }
+      }
+      result = {
+        success: true,
+        logs: maintLogs,
+        importedCount: updatedRows,
+        duplicateCount: 0,
+        errorCount: maintErrors
+      };
+      break;
+
+    case 'PURGE':
+      var purgeLogs = [];
+      var purgedCnt = 0;
+      var purgeErrCnt = 0;
+      for (var p = 0; p < currentBatch.length; p++) {
+        var pItem = currentBatch[p];
+        try {
+          var pRes = purgeSingleCandidateFlight(pItem);
+          if (pRes && pRes.success) {
+            var pMsg = 'Purged ' + (pItem.flightId || 'Flight') + ' (' + (pItem.name || '') + ')';
+            if (pRes.trashed) pMsg += ' [Drive File Trashed]';
+            purgeLogs.push(pMsg);
+            purgedCnt++;
+          } else {
+            purgeLogs.push((pItem.flightId || 'Flight') + ' ERROR: ' + (pRes ? pRes.error : 'Failed to purge'));
+            purgeErrCnt++;
+          }
+        } catch (pErr) {
+          purgeLogs.push((pItem.flightId || 'Flight') + ' ERROR: ' + pErr.message);
+          purgeErrCnt++;
+        }
+      }
+      result = {
+        success: true,
+        logs: purgeLogs,
+        importedCount: purgedCnt,
+        duplicateCount: 0,
+        errorCount: purgeErrCnt
+      };
+      break;
+
+    case 'RESYNC':
+      var resyncLogs = [];
+      var resyncImported = 0;
+      var resyncSkipped = 0;
+      var resyncErrors = 0;
+      for (var r = 0; r < currentBatch.length; r++) {
+        var rItem = currentBatch[r];
+        try {
+          var rRes = restoreSingleMasterFlight(rItem.id);
+          if (rRes && rRes.success) {
+            resyncLogs.push(rItem.name + ': ' + (rRes.msg || 'Restored (Review?)'));
+            resyncImported++;
+          } else {
+            var rMsg = rItem.name + ': ' + (rRes ? rRes.error : 'Skipped');
+            if (rRes && rRes.error && rRes.error.indexOf('Skipped') !== -1) {
+              resyncLogs.push(rMsg);
+              resyncSkipped++;
+            } else {
+              resyncLogs.push(rMsg);
+              resyncErrors++;
+            }
+          }
+        } catch (rErr) {
+          resyncLogs.push(rItem.name + ' ERROR: ' + rErr.message);
+          resyncErrors++;
+        }
+      }
+      result = {
+        success: true,
+        logs: resyncLogs,
+        importedCount: resyncImported,
+        duplicateCount: resyncSkipped,
+        errorCount: resyncErrors
+      };
+      break;
+
+    case 'UPLOAD':
+    case 'WATCH_SCAN':
+      var scanLogs = [];
+      var scanImported = 0;
+      var scanSkipped = 0;
+      var scanErrors = 0;
+      var scanContext = (jobType === 'UPLOAD') ? 'UPLOAD' : 'WATCH';
+      for (var w = 0; w < currentBatch.length; w++) {
+        var wItem = currentBatch[w];
+        try {
+          var wRes = processFileById(wItem.id, scanContext);
+          if (wRes && wRes.success) {
+            scanLogs.push(wItem.name + ': ' + (wRes.msg || 'Processed'));
+            if (wRes.processed) {
+              scanImported += (wRes.flights || 1);
+            } else {
+              scanSkipped++;
+            }
+          } else {
+            scanLogs.push(wItem.name + ' ERROR: ' + (wRes ? wRes.error : 'Failed'));
+            scanErrors++;
+          }
+        } catch (wErr) {
+          scanLogs.push(wItem.name + ' ERROR: ' + wErr.message);
+          scanErrors++;
+        }
+      }
+      result = {
+        success: true,
+        logs: scanLogs,
+        importedCount: scanImported,
+        duplicateCount: scanSkipped,
+        errorCount: scanErrors
+      };
+      break;
+
+    case 'URL_DRIVE_INGEST':
+      var urlLogs = [];
+      var urlImported = 0;
+      var urlSkipped = 0;
+      var urlErrors = 0;
+      var deleteSource = !!options.deleteSource;
+      for (var u = 0; u < currentBatch.length; u++) {
+        var uItem = currentBatch[u];
+        try {
+          var uRes = processFileById(uItem.id, "URL_CUSTOM", deleteSource, !!uItem.isDriveSource);
+          if (uRes && uRes.success) {
+            urlLogs.push(uItem.name + ': ' + (uRes.msg || 'Processed'));
+            if (uRes.processed) {
+              urlImported++;
+            } else {
+              urlSkipped++;
+            }
+          } else {
+            urlLogs.push(uItem.name + ' ERROR: ' + (uRes ? uRes.error : 'Failed'));
+            urlErrors++;
+          }
+        } catch (uErr) {
+          urlLogs.push(uItem.name + ' ERROR: ' + uErr.message);
+          urlErrors++;
+        }
+      }
+      result = {
+        success: true,
+        logs: urlLogs,
+        importedCount: urlImported,
+        duplicateCount: urlSkipped,
+        errorCount: urlErrors
+      };
+      break;
+
     default:
       throw new Error('Unsupported jobType: ' + jobType);
   }
@@ -2015,8 +2192,19 @@ function finalizeWorkerJob(jobType, jobId) {
     case 'BULK_INGEST':
       finalizeBulkImport();
       break;
+    case 'PURGE':
+      finalizePurge_();
+      break;
+    case 'MAINTENANCE':
+    case 'RESYNC':
+    case 'WATCH_SCAN':
+    case 'URL_DRIVE_INGEST':
     default:
-      sortFlightsByDate_();
+      try {
+        sortFlightsByDate_();
+      } catch (e) {
+        console.warn('Post-job sort warning:', e);
+      }
       break;
   }
 

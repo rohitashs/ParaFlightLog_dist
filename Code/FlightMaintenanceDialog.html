@@ -1,7 +1,7 @@
 <!--
  * Paragliding Flight Log v2.0
- * Updated: 2026-10-01 01:31:18
  * Unified Flight Maintenance Dialog (RQ-SYS-007)
+ * Tri-Mode Execution Enabled (DSGN-UI-001)
  -->
 <!DOCTYPE html>
 <html>
@@ -16,24 +16,24 @@
             letter-spacing: 0.5px;
             color: #616161;
             font-weight: 700;
-            margin-top: 10px;
-            margin-bottom: 6px;
+            margin-top: 4px;
+            margin-bottom: 4px;
         }
 
         .scope-card, .ops-card {
             background-color: #f8f9fa;
             border: 1px solid #e0e0e0;
             border-radius: 6px;
-            padding: 10px 12px;
-            margin-bottom: 12px;
+            padding: 8px 12px;
+            margin-bottom: 8px;
         }
 
         .radio-item, .check-item {
             display: flex;
             align-items: center;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
             cursor: pointer;
-            font-size: 13px;
+            font-size: 12px;
             color: #333;
         }
 
@@ -50,8 +50,8 @@
             font-size: 11px;
             color: #757575;
             margin-left: 24px;
-            margin-top: -3px;
-            margin-bottom: 6px;
+            margin-top: -2px;
+            margin-bottom: 4px;
         }
 
         .badge {
@@ -69,26 +69,31 @@
             color: #e65100;
         }
 
-        .control-row {
+        .control-group {
             display: flex;
-            gap: 8px;
-            margin-top: 10px;
-            margin-bottom: 8px;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
         }
 
-        button.action {
-            background-color: #2196F3;
+        .primary-action {
+            background-color: #FFA000;
             color: white;
             border: none;
-            padding: 8px 16px;
-            border-radius: 4px;
-            font-weight: 600;
+            padding: 6px 14px;
             font-size: 12px;
+            border-radius: 4px;
             cursor: pointer;
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            font-weight: 600;
         }
 
-        button.action:disabled {
-            background-color: #b0bec5;
+        .primary-action:hover {
+            background-color: #FF8F00;
+        }
+
+        .primary-action:disabled {
+            background-color: #FFE082;
             cursor: not-allowed;
         }
 
@@ -96,17 +101,30 @@
             background-color: #f1f3f4;
             color: #333;
             border: 1px solid #ccc;
-            padding: 8px 16px;
+            padding: 6px 14px;
             border-radius: 4px;
             font-size: 12px;
             cursor: pointer;
+        }
+
+        #log-console {
+            margin-top: 4px;
+            background-color: #f8f9fa;
+            border: 1px solid #eee;
+            border-radius: 4px;
+            padding: 8px;
+            font-family: monospace;
+            font-size: 11px;
+            white-space: pre-wrap;
+            color: #444;
+            height: 120px;
+            overflow-y: auto;
+            flex: 1 1 auto;
         }
     </style>
 </head>
 
 <body>
-    <div class="header-large text-blue">Flight Updates</div>
-
     <div class="main-content">
         <div class="section-label">1. Target Scope</div>
         <div class="scope-card">
@@ -127,39 +145,47 @@
 
         <div class="section-label">2. Operations to Perform</div>
         <div class="ops-card">
-            <label class="check-item">
-                <input type="checkbox" id="op-weather" checked>
-                <span><strong>Backfill Weather</strong> (Open-Meteo & Visual Crossing)</span>
-            </label>
-            <label class="check-item">
-                <input type="checkbox" id="op-geo" checked>
-                <span><strong>Backfill Geo & Sites</strong> (Reverse geo, Launch/Landing sites)</span>
-            </label>
-            <label class="check-item">
-                <input type="checkbox" id="op-xcontest" checked>
-                <span><strong>Re-verify XContest</strong> (Check flight upload status)</span>
-            </label>
-            <label class="check-item">
-                <input type="checkbox" id="op-physics" checked>
-                <span><strong>Recompute Physics</strong> (Thermals, Soar, Glide from IGC)</span>
-            </label>
-            <label class="check-item">
-                <input type="checkbox" id="op-scoring">
-                <span><strong>Recalculate XC Scoring</strong> (FAI Triangles, Turnpoints from IGC)</span>
-            </label>
-            <label class="check-item">
-                <input type="checkbox" id="op-sort">
-                <span><strong>Sort All Flights by Date</strong> (Newest first, re-index Flight No)</span>
-            </label>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 4px 12px;">
+                <label class="check-item">
+                    <input type="checkbox" id="op-weather" checked>
+                    <span><strong>Weather</strong> (Open-Meteo)</span>
+                </label>
+                <label class="check-item">
+                    <input type="checkbox" id="op-geo" checked>
+                    <span><strong>Geo & Sites</strong> (Launch/Landing)</span>
+                </label>
+                <label class="check-item">
+                    <input type="checkbox" id="op-xcontest" checked>
+                    <span><strong>XContest</strong> (Status check)</span>
+                </label>
+                <label class="check-item">
+                    <input type="checkbox" id="op-physics" checked>
+                    <span><strong>Physics</strong> (Thermals, Glide)</span>
+                </label>
+                <label class="check-item">
+                    <input type="checkbox" id="op-scoring">
+                    <span><strong>XC Scoring</strong> (Turnpoints, FAI)</span>
+                </label>
+                <label class="check-item">
+                    <input type="checkbox" id="op-sort">
+                    <span><strong>Sort by Date</strong> (Newest first)</span>
+                </label>
+            </div>
         </div>
 
-        <div class="control-row">
-            <button id="btn-run" class="action" onclick="startMaintenance()">Apply Updates</button>
-            <button id="btn-cancel" class="secondary" onclick="google.script.host.close()">Close</button>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:2px;">
+            <div class="section-label" style="margin:0;">Activity Log:</div>
+            <button type="button" id="btn-copy-log" class="secondary" style="padding:2px 8px; font-size:11px;" onclick="copyConsoleLog()">📋 Copy Log</button>
         </div>
-
-        <div class="section-label">Activity Log</div>
         <div id="log-console">Ready to apply updates. Select scope and operations above.</div>
+
+        <!-- Action Buttons (Tri-Mode Execution Bar at bottom above progress bar) -->
+        <div class="control-group">
+            <button type="button" id="btn-run-here" onclick="startMaintenance('MODAL')" class="primary-action" disabled>🚀 Run Here</button>
+            <button type="button" id="btn-run-sidebar" onclick="startMaintenance('SIDEBAR')" class="secondary" style="border-color:#1976D2; color:#1976D2; font-weight:600;" disabled>📌 Run in Sidebar</button>
+            <button type="button" id="btn-run-background" onclick="startMaintenance('BACKGROUND')" class="secondary" style="border-color:#5E35B1; color:#5E35B1; font-weight:600;" disabled>⚙️ Run in Background</button>
+            <button type="button" id="btn-cancel" class="secondary" onclick="google.script.host.close()">Cancel</button>
+        </div>
     </div>
 
     <div class="footer">
@@ -203,13 +229,36 @@
             document.getElementById('progress-bar').style.width = pct + '%';
         }
 
+        function copyConsoleLog() {
+            var logEl = document.getElementById('log-console');
+            var text = logEl.innerText || logEl.textContent;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(function() {
+                    alert('Activity log copied to clipboard.');
+                });
+            } else {
+                var ta = document.createElement('textarea');
+                ta.value = text;
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+                alert('Activity log copied to clipboard.');
+            }
+        }
+
+        function setActionButtonsEnabled(enabled) {
+            document.getElementById('btn-run-here').disabled = !enabled;
+            document.getElementById('btn-run-sidebar').disabled = !enabled;
+            document.getElementById('btn-run-background').disabled = !enabled;
+        }
+
         function initScopeUI(info) {
             scopeInfo = info;
             var badgeSel = document.getElementById('badge-selected');
             var badgeAll = document.getElementById('badge-all');
             var rSel = document.getElementById('scope-selected');
             var rAll = document.getElementById('scope-all');
-            var btnRun = document.getElementById('btn-run');
 
             badgeAll.innerText = info.totalFlights + ' flights';
 
@@ -218,18 +267,19 @@
                 badgeSel.className = 'badge';
                 rSel.checked = true;
                 rSel.disabled = false;
+                setActionButtonsEnabled(true);
             } else {
                 badgeSel.innerText = info.isFlightsSheet ? 'No flights in selection' : 'Not on Flights sheet';
                 badgeSel.className = 'badge badge-warn';
                 rAll.checked = true;
                 rSel.disabled = true;
+                setActionButtonsEnabled(info.totalFlights > 0);
             }
 
             if (info.totalFlights === 0) {
                 badgeAll.className = 'badge badge-warn';
                 if (!info.isFlightsSheet || info.selectedRowCount === 0) {
-                    btnRun.disabled = true;
-                    btnRun.title = 'No flights available in logbook';
+                    setActionButtonsEnabled(false);
                 }
             } else {
                 badgeAll.className = 'badge';
@@ -239,22 +289,17 @@
 
         function onScopeChange() {
             var selectedScope = document.querySelector('input[name="scope"]:checked').value;
-            var btnRun = document.getElementById('btn-run');
             if (selectedScope === 'selected' && (!scopeInfo || scopeInfo.selectedRowCount === 0)) {
-                btnRun.disabled = true;
-                btnRun.title = 'No flights in current selection';
+                setActionButtonsEnabled(false);
             } else if (selectedScope === 'all' && (!scopeInfo || scopeInfo.totalFlights === 0)) {
-                btnRun.disabled = true;
-                btnRun.title = 'No flights in logbook';
+                setActionButtonsEnabled(false);
             } else {
-                btnRun.disabled = false;
-                btnRun.title = '';
+                setActionButtonsEnabled(true);
             }
         }
 
-        function startMaintenance() {
-            var selectedScope = document.querySelector('input[name="scope"]:checked').value;
-            opConfig = {
+        function getSelectedOps() {
+            return {
                 weather: document.getElementById('op-weather').checked,
                 geo: document.getElementById('op-geo').checked,
                 xcontest: document.getElementById('op-xcontest').checked,
@@ -262,35 +307,39 @@
                 scoring: document.getElementById('op-scoring').checked,
                 sort: document.getElementById('op-sort').checked
             };
+        }
 
+        function startMaintenance(mode) {
+            opConfig = getSelectedOps();
             var hasAnyOp = opConfig.weather || opConfig.geo || opConfig.xcontest || opConfig.physics || opConfig.scoring || opConfig.sort;
             if (!hasAnyOp) {
                 alert('Please select at least one operation to perform.');
                 return;
             }
 
-            document.getElementById('btn-run').disabled = true;
-            document.getElementById('btn-cancel').innerText = 'Cancel';
-            isRunning = true;
+            var selectedScope = document.querySelector('input[name="scope"]:checked').value;
+            setActionButtonsEnabled(false);
 
-            setStatus('Fetching flight rows...', '0%');
-            log('Starting maintenance process. Target scope: ' + selectedScope);
-            google.script.run.logClientActivity('MAINTENANCE', '[START] Starting flight maintenance (' + selectedScope + ')');
+            setStatus('Fetching flight rows...', '10%');
+            log('Starting maintenance. Mode: ' + mode + ' | Scope: ' + selectedScope);
+            google.script.run.logClientActivity('MAINTENANCE', '[START] Starting flight maintenance (' + selectedScope + ', ' + mode + ')');
 
             google.script.run
-                .withSuccessHandler(onRowsReceived)
+                .withSuccessHandler(function(rows) {
+                    onRowsReceived(rows, mode, selectedScope);
+                })
                 .withFailureHandler(function (err) {
                     log('Failed to fetch flight rows: ' + err.message);
+                    setActionButtonsEnabled(true);
                     finishProcess(false);
                 })
                 .getMaintenanceTargetRows(selectedScope);
         }
 
-        function onRowsReceived(rows) {
+        function onRowsReceived(rows, mode, selectedScope) {
             targetRows = rows || [];
             if (targetRows.length === 0) {
                 if (opConfig.sort) {
-                    // Only sorting requested
                     runSortStep();
                     return;
                 }
@@ -300,7 +349,56 @@
             }
 
             log('Found ' + targetRows.length + ' flights to process.');
-            google.script.run.logClientActivity('MAINTENANCE', '[INFO] Discovered ' + targetRows.length + ' flight(s) to process');
+
+            // Mode 2: Run in Sidebar (DSGN-UI-001)
+            if (mode === 'SIDEBAR') {
+                var sidebarPayload = {
+                    jobType: 'MAINTENANCE',
+                    title: 'Flight Maintenance',
+                    contextText: (selectedScope === 'selected' ? 'Selected Rows (' : 'All Flights (') + targetRows.length + ')',
+                    totalItems: targetRows.length,
+                    queue: targetRows,
+                    batchSize: 5,
+                    options: opConfig
+                };
+                google.script.run
+                    .withSuccessHandler(function() {
+                        google.script.host.close();
+                    })
+                    .withFailureHandler(function(err) {
+                        alert('Sidebar launch failed: ' + err.message);
+                        setActionButtonsEnabled(true);
+                    })
+                    .launchExecutionSidebar(sidebarPayload);
+                return;
+            }
+
+            // Mode 3: Run in Background (DSGN-UI-001)
+            if (mode === 'BACKGROUND') {
+                var bgPayload = {
+                    jobType: 'MAINTENANCE',
+                    title: 'Flight Maintenance',
+                    contextText: (selectedScope === 'selected' ? 'Selected Rows (' : 'All Flights (') + targetRows.length + ')',
+                    totalItems: targetRows.length,
+                    queue: targetRows,
+                    batchSize: 5,
+                    options: opConfig
+                };
+                google.script.run
+                    .withSuccessHandler(function() {
+                        google.script.host.close();
+                    })
+                    .withFailureHandler(function(err) {
+                        alert('Background launch failed: ' + err.message);
+                        setActionButtonsEnabled(true);
+                    })
+                    .launchBackgroundJob(bgPayload);
+                return;
+            }
+
+            // Mode 1: Run Here (Modal)
+            isRunning = true;
+            document.getElementById('btn-cancel').innerText = 'Cancel';
             currentIndex = 0;
             processNextRow();
         }
@@ -359,10 +457,12 @@
         function finishProcess(success) {
             isRunning = false;
             setStatus(success ? 'Completed' : 'Finished with warnings', '100%');
-            document.getElementById('btn-run').style.display = 'none';
+            document.getElementById('btn-run-here').style.display = 'none';
+            document.getElementById('btn-run-sidebar').style.display = 'none';
+            document.getElementById('btn-run-background').style.display = 'none';
             var btnClose = document.getElementById('btn-cancel');
             btnClose.innerText = 'Done';
-            btnClose.className = 'action';
+            btnClose.className = 'primary-action';
             google.script.run.logClientActivity('MAINTENANCE', '[COMPLETE] Flight maintenance complete: ' + targetRows.length + ' flight(s) processed');
             log('=== Updates Complete ===');
         }

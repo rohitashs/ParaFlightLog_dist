@@ -1,10 +1,7 @@
 <!--
  * Paragliding Flight Log v2.0
- * Updated: 2026-10-01 01:31:18
- -->
-<!--
- * Paragliding Flight Log v2.0
  * Interactive Purge Flights Modal Dialog
+ * Tri-Mode Execution Enabled (DSGN-UI-001)
  -->
 <!DOCTYPE html>
 <html>
@@ -33,26 +30,48 @@
             background-color: #ef9a9a;
             cursor: not-allowed;
         }
+
+        .control-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 10px;
+            margin-bottom: 8px;
+        }
+
+        #log-console {
+            margin-top: 4px;
+            background-color: #f8f9fa;
+            border: 1px solid #eee;
+            border-radius: 4px;
+            padding: 8px;
+            font-family: monospace;
+            font-size: 11px;
+            white-space: pre-wrap;
+            color: #444;
+            height: 180px;
+            overflow-y: auto;
+            flex: 1 1 auto;
+        }
     </style>
 </head>
 
 <body>
-    <!-- Header -->
-    <div class="header-large text-blue">Purge Flights Marked 'Remove'</div>
-
     <div class="main-content">
         <div id="instructions" class="instructions">
             Scanning logbook for flights marked for removal...<br>
             Please wait while flight candidates are detected.
         </div>
 
-        <!-- Buttons -->
+        <!-- Buttons: Placed above the activity box per design requirement -->
         <div class="control-group">
-            <button id="btn-purge" onclick="startPurge()" class="danger-action" style="display:none;">Purge Flights</button>
-            <button id="btn-close" onclick="google.script.host.close()" class="secondary">Cancel</button>
+            <button type="button" id="btn-purge-here" onclick="startPurge('MODAL')" class="danger-action" style="display:none;">🚀 Purge Here</button>
+            <button type="button" id="btn-purge-sidebar" onclick="startPurge('SIDEBAR')" class="secondary" style="border-color:#1976D2; color:#1976D2; font-weight:600; display:none;">📌 Purge in Sidebar</button>
+            <button type="button" id="btn-purge-background" onclick="startPurge('BACKGROUND')" class="secondary" style="border-color:#5E35B1; color:#5E35B1; font-weight:600; display:none;">⚙️ Purge in Background</button>
+            <button type="button" id="btn-close" onclick="google.script.host.close()" class="secondary">Cancel</button>
         </div>
 
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:15px; margin-bottom:5px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; margin-bottom:4px;">
             <div class="instructions" style="font-weight:bold; margin:0;">Activity Log:</div>
             <button type="button" id="btn-copy-log" class="secondary" style="padding:2px 8px; font-size:11px;" onclick="copyConsoleLog()">📋 Copy Log</button>
         </div>
@@ -87,6 +106,28 @@
                 .getPurgeCandidateFlightsStatus();
         };
 
+        function setActionButtonsVisible(visible, count) {
+            var b1 = document.getElementById('btn-purge-here');
+            var b2 = document.getElementById('btn-purge-sidebar');
+            var b3 = document.getElementById('btn-purge-background');
+            var disp = visible ? 'inline-block' : 'none';
+            if (b1) {
+                b1.style.display = disp;
+                b1.innerText = '🚀 Purge Here (' + count + ')';
+            }
+            if (b2) b2.style.display = disp;
+            if (b3) b3.style.display = disp;
+        }
+
+        function setActionButtonsEnabled(enabled) {
+            var b1 = document.getElementById('btn-purge-here');
+            var b2 = document.getElementById('btn-purge-sidebar');
+            var b3 = document.getElementById('btn-purge-background');
+            if (b1) b1.disabled = !enabled;
+            if (b2) b2.disabled = !enabled;
+            if (b3) b3.disabled = !enabled;
+        }
+
         function onCandidatesLoaded(result) {
             if (result.error) {
                 showFatalError(result.error);
@@ -107,19 +148,65 @@
                 log('Found ' + totalCandidates + ' flight(s) with Status = "Remove".');
                 log('CAUTION: Purging will permanently move Master IGC files to the Trash folder and delete the flight rows.');
                 
-                document.getElementById('instructions').innerHTML = '<strong>' + totalCandidates + ' flight(s)</strong> are marked for removal.<br>Click "Purge Flights" below to proceed with file trashing and row deletion.';
-                
-                var btnPurge = document.getElementById('btn-purge');
-                btnPurge.innerText = 'Purge ' + totalCandidates + ' Flight(s)';
-                btnPurge.style.display = 'inline-block';
+                document.getElementById('instructions').innerHTML = '<strong>' + totalCandidates + ' flight(s)</strong> are marked for removal.<br>Select a Tri-Mode option below to proceed with file trashing and row deletion:';
+                setActionButtonsVisible(true, totalCandidates);
             }
         }
 
-        function startPurge() {
+        function startPurge(mode) {
             if (isPurging || totalCandidates === 0) return;
-            isPurging = true;
 
-            document.getElementById('btn-purge').style.display = 'none';
+            // Mode 2: Run in Sidebar (DSGN-UI-001)
+            if (mode === 'SIDEBAR') {
+                var sidebarPayload = {
+                    jobType: 'PURGE',
+                    title: 'Purge Flights',
+                    contextText: totalCandidates + ' flights marked Remove',
+                    totalItems: totalCandidates,
+                    queue: candidateList,
+                    batchSize: 5,
+                    options: {}
+                };
+                setActionButtonsEnabled(false);
+                google.script.run
+                    .withSuccessHandler(function() {
+                        google.script.host.close();
+                    })
+                    .withFailureHandler(function(err) {
+                        alert('Sidebar launch failed: ' + (err.message || err));
+                        setActionButtonsEnabled(true);
+                    })
+                    .launchExecutionSidebar(sidebarPayload);
+                return;
+            }
+
+            // Mode 3: Run in Background (DSGN-UI-001)
+            if (mode === 'BACKGROUND') {
+                var bgPayload = {
+                    jobType: 'PURGE',
+                    title: 'Purge Flights',
+                    contextText: totalCandidates + ' flights marked Remove',
+                    totalItems: totalCandidates,
+                    queue: candidateList,
+                    batchSize: 5,
+                    options: {}
+                };
+                setActionButtonsEnabled(false);
+                google.script.run
+                    .withSuccessHandler(function() {
+                        google.script.host.close();
+                    })
+                    .withFailureHandler(function(err) {
+                        alert('Background launch failed: ' + (err.message || err));
+                        setActionButtonsEnabled(true);
+                    })
+                    .launchBackgroundJob(bgPayload);
+                return;
+            }
+
+            // Mode 1: Run Here (Modal)
+            isPurging = true;
+            setActionButtonsVisible(false, 0);
             var btnClose = document.getElementById('btn-close');
             btnClose.disabled = true;
             btnClose.style.opacity = '0.6';
@@ -191,7 +278,7 @@
         function setDoneButton() {
             var btnClose = document.getElementById('btn-close');
             btnClose.innerText = 'Done';
-            btnClose.className = 'action';
+            btnClose.className = 'primary-action';
             btnClose.disabled = false;
             btnClose.style.opacity = '1';
             btnClose.onclick = function () { google.script.host.close(); };

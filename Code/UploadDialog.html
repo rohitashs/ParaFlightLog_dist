@@ -1,6 +1,7 @@
 <!--
  * Paragliding Flight Log v2.0
- * Updated: 2026-10-01 01:31:18
+ * Upload Flight Logs Modal Dialog
+ * Tri-Mode Execution Enabled (DSGN-UI-001)
  -->
 <!DOCTYPE html>
 <html>
@@ -8,37 +9,88 @@
 <head>
   <base target="_top">
   <?!= HtmlService.createTemplateFromFile('Style').evaluate().getContent(); ?>
+  <style>
+    .control-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 10px;
+    }
+
+    .primary-action {
+      background-color: #FFA000;
+      color: white;
+      border: none;
+      padding: 6px 14px;
+      font-size: 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: 'Segoe UI', Roboto, sans-serif;
+      font-weight: 600;
+    }
+
+    .primary-action:hover {
+      background-color: #FF8F00;
+    }
+
+    .primary-action:disabled {
+      background-color: #FFE082;
+      cursor: not-allowed;
+    }
+
+    button.secondary {
+      background-color: #f1f3f4;
+      color: #333;
+      border: 1px solid #ccc;
+      padding: 6px 14px;
+      border-radius: 4px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    #log-console {
+      margin-top: 4px;
+      background-color: #f8f9fa;
+      border: 1px solid #eee;
+      border-radius: 4px;
+      padding: 8px;
+      font-family: monospace;
+      font-size: 11px;
+      white-space: pre-wrap;
+      color: #444;
+      height: 180px;
+      overflow-y: auto;
+      flex: 1 1 auto;
+    }
+  </style>
 </head>
 
 <body>
-  <!-- Header: Text Color Only, No Background -->
-  <div class="header-large text-green">Upload Flight Logs</div>
-
   <div class="main-content">
-    <!-- Instructions: Consistent Div -->
     <div class="instructions">
       Select IGC, ZIP, or GZ files to upload.<br>
-      Supported formats: .igc, .igx, .zip, .gz
+      Supported formats: <strong>.igc, .igx, .zip, .gz</strong>
     </div>
 
-    <!-- Inputs Group: Hidden when running -->
-    <div id="input-group" class="control-group">
-      <input type="file" name="files" id="files" multiple accept=".igc,.igx,.zip,.gz">
+    <!-- Inputs Group -->
+    <div id="input-group" style="margin-bottom:8px;">
+      <input type="file" name="files" id="files" multiple accept=".igc,.igx,.zip,.gz" onchange="onFilesSelected()">
     </div>
 
-    <!-- Buttons: Left Aligned -->
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px; margin-bottom:4px;">
+      <div class="instructions" style="font-weight:bold; margin:0;">Activity Log:</div>
+      <button type="button" id="btn-copy-log" class="secondary" style="padding:2px 8px; font-size:11px;" onclick="copyConsoleLog()">📋 Copy Log</button>
+    </div>
+    <div id="log-console">Select files above to begin.</div>
+
+    <!-- Action Buttons (Tri-Mode Execution Bar at bottom right above progress bar) -->
     <div class="control-group">
-      <!-- Action: Upload (starts), Done (ends) -->
-      <!-- We use two buttons to handle ID references easier or just toggle visibility -->
-      <button id="btn-start" onclick="startUpload()" class="action">Upload & Process</button>
-      <button id="btn-done" onclick="google.script.host.close()" class="action" style="display:none;">Done</button>
-
-      <!-- Close/Cancel -->
-      <button id="btn-close" onclick="google.script.host.close()" class="secondary">Close</button>
+      <button type="button" id="btn-run-here" onclick="startUpload('MODAL')" class="primary-action" disabled>🚀 Run Here</button>
+      <button type="button" id="btn-run-sidebar" onclick="startUpload('SIDEBAR')" class="secondary" style="border-color:#1976D2; color:#1976D2; font-weight:600;" disabled>📌 Run in Sidebar</button>
+      <button type="button" id="btn-run-background" onclick="startUpload('BACKGROUND')" class="secondary" style="border-color:#5E35B1; color:#5E35B1; font-weight:600;" disabled>⚙️ Run in Background</button>
+      <button type="button" id="btn-done" onclick="google.script.host.close()" class="primary-action" style="display:none;">Done</button>
+      <button type="button" id="btn-close" onclick="google.script.host.close()" class="secondary">Cancel</button>
     </div>
-
-    <div class="instructions" style="margin-top:15px; font-weight:bold;">Activity Log:</div>
-    <div id="log-console"></div>
   </div>
 
   <div class="footer">
@@ -59,47 +111,64 @@
     var processedFlights = 0;
     var errorFlights = 0;
     var skippedFlights = 0;
+    var activeMode = 'MODAL';
 
-    function startUpload() {
+    function setActionButtonsEnabled(enabled) {
+      document.getElementById('btn-run-here').disabled = !enabled;
+      document.getElementById('btn-run-sidebar').disabled = !enabled;
+      document.getElementById('btn-run-background').disabled = !enabled;
+    }
+
+    function onFilesSelected() {
       var fileInput = document.getElementById('files');
-      if (fileInput.files.length === 0) {
+      var count = fileInput.files ? fileInput.files.length : 0;
+      if (count > 0) {
+        setActionButtonsEnabled(true);
+        setStatus(count + ' file(s) selected', '0%');
+        log(count + ' file(s) selected. Choose a run mode below:');
+      } else {
+        setActionButtonsEnabled(false);
+        setStatus('Ready', '0%');
+      }
+    }
+
+    function startUpload(mode) {
+      activeMode = mode || 'MODAL';
+      var fileInput = document.getElementById('files');
+      if (!fileInput.files || fileInput.files.length === 0) {
         alert('Please select at least one file.');
         return;
       }
 
-      // UI Setup: HIDE Inputs and Start Button
       document.getElementById('input-group').style.display = 'none';
-      document.getElementById('btn-start').style.display = 'none';
+      document.getElementById('btn-run-here').style.display = 'none';
+      document.getElementById('btn-run-sidebar').style.display = 'none';
+      document.getElementById('btn-run-background').style.display = 'none';
 
-      // CHANGE Close to Cancel
       var btnClose = document.getElementById('btn-close');
-      btnClose.innerHTML = 'Cancel';
-      // keep it visible
+      btnClose.innerText = 'Cancel';
 
-      // Reset
       uploadQueue = Array.from(fileInput.files);
       processingQueue = [];
       processedFlights = 0;
       errorFlights = 0;
       skippedFlights = 0;
 
-      log('Starting upload of ' + uploadQueue.length + ' files...');
-      google.script.run.logClientActivity('FILE_UPLOAD', '[START] Starting upload of ' + uploadQueue.length + ' file(s)');
-      setStatus('Initializing...', '0%');
+      log('Starting upload & staging of ' + uploadQueue.length + ' file(s)...');
+      google.script.run.logClientActivity('FILE_UPLOAD', '[START] Starting upload of ' + uploadQueue.length + ' file(s) (Mode: ' + activeMode + ')');
+      setStatus('Uploading files...', '0%');
       uploadNext(0);
     }
 
     function uploadNext(index) {
       if (index >= uploadQueue.length) {
-        startProcessing();
+        onUploadStaged();
         return;
       }
 
       var file = uploadQueue[index];
       var pct = Math.round((index / uploadQueue.length) * 50) + '%';
-
-      var statusStr = (index + 1) + '/' + uploadQueue.length + ' Files | ' +
-        '0/0 Flights | ' + pct + ' | Uploading: ' + file.name;
+      var statusStr = (index + 1) + '/' + uploadQueue.length + ' Uploading: ' + file.name;
 
       setStatus(statusStr, pct);
       setProgress(pct);
@@ -112,11 +181,11 @@
 
         google.script.run
           .withSuccessHandler(function (res) {
-            if (res.success) {
+            if (res && res.success) {
               log(file.name + ': Staged (' + res.files.length + ' flights)', 'log-info');
               res.files.forEach(function (f) { processingQueue.push(f); });
             } else {
-              log(file.name + ': Error Staging (Server) - ' + res.error, 'log-error');
+              log(file.name + ': Error Staging - ' + (res ? res.error : 'Unknown error'), 'log-error');
             }
             uploadNext(index + 1);
           })
@@ -129,16 +198,65 @@
       reader.readAsDataURL(file);
     }
 
-    function startProcessing() {
+    function onUploadStaged() {
       totalFlightsToProcess = processingQueue.length;
       if (totalFlightsToProcess === 0) {
         log('No valid flights found to process.', 'log-info');
         finish();
         return;
       }
+
+      log('Upload complete. Discovered ' + totalFlightsToProcess + ' valid flight(s).');
+
+      // Mode 2: Run in Sidebar (DSGN-UI-001)
+      if (activeMode === 'SIDEBAR') {
+        var sidebarPayload = {
+          jobType: 'UPLOAD',
+          title: 'Upload Flight Logs',
+          contextText: uploadQueue.length + ' files (' + totalFlightsToProcess + ' flights)',
+          totalItems: totalFlightsToProcess,
+          queue: processingQueue,
+          batchSize: 5,
+          options: {}
+        };
+        google.script.run
+          .withSuccessHandler(function() {
+            google.script.host.close();
+          })
+          .withFailureHandler(function(err) {
+            alert('Sidebar launch failed: ' + (err.message || err));
+            finish();
+          })
+          .launchExecutionSidebar(sidebarPayload);
+        return;
+      }
+
+      // Mode 3: Run in Background (DSGN-UI-001)
+      if (activeMode === 'BACKGROUND') {
+        var bgPayload = {
+          jobType: 'UPLOAD',
+          title: 'Upload Flight Logs',
+          contextText: uploadQueue.length + ' files (' + totalFlightsToProcess + ' flights)',
+          totalItems: totalFlightsToProcess,
+          queue: processingQueue,
+          batchSize: 5,
+          options: {}
+        };
+        google.script.run
+          .withSuccessHandler(function() {
+            google.script.host.close();
+          })
+          .withFailureHandler(function(err) {
+            alert('Background launch failed: ' + (err.message || err));
+            finish();
+          })
+          .launchBackgroundJob(bgPayload);
+        return;
+      }
+
+      // Mode 1: Run Here (Modal)
       log('------------------------------------------------');
       log('Processing ' + totalFlightsToProcess + ' Flight(s)...');
-      google.script.run.logClientActivity('FILE_UPLOAD', '[INFO] Discovered ' + totalFlightsToProcess + ' valid flight(s) in upload');
       processNext(0);
     }
 
@@ -153,17 +271,14 @@
       var stepPct = Math.round((index / totalFlightsToProcess) * 50);
       var totalPct = (basePct + stepPct) + '%';
 
-      var statusStr = uploadQueue.length + '/' + uploadQueue.length + ' Files | ' +
-        (index + 1) + '/' + totalFlightsToProcess + ' Flights | ' +
-        totalPct + ' | ' + item.name;
-
+      var statusStr = (index + 1) + '/' + totalFlightsToProcess + ' Flights | ' + totalPct + ' | ' + item.name;
       setStatus(statusStr, totalPct);
       setProgress(totalPct);
 
       google.script.run
         .withSuccessHandler(function (res) {
-          if (res.success) {
-            var msg = item.name + ': ' + res.msg;
+          if (res && res.success) {
+            var msg = item.name + ': ' + (res.msg || 'Processed');
             log(msg, res.processed ? 'log-success' : 'log-info');
             if (res.processed) {
               processedFlights++;
@@ -171,14 +286,14 @@
               skippedFiles++;
             }
           } else {
-            log(item.name + ': Error ' + res.error, 'log-error');
-            errorFiles++;
+            log(item.name + ': Error ' + (res ? res.error : 'Failed'), 'log-error');
+            errorFlights++;
           }
           processNext(index + 1);
         })
         .withFailureHandler(function (err) {
           log(item.name + ': Fatal Error ' + err, 'log-error');
-          errorFiles++;
+          errorFlights++;
           processNext(index + 1);
         })
         .processFileById(item.id, 'UPLOAD');
@@ -187,16 +302,15 @@
     function finish() {
       setProgress('100%');
 
-      var statusStr = uploadQueue.length + '/' + uploadQueue.length + ' Files | ' +
-        processedFlights + '/' + totalFlightsToProcess + ' Flights | 100% | Completed';
+      var statusStr = 'Completed | ' + processedFlights + ' Imported | ' + skippedFiles + ' Skipped | ' + errorFlights + ' Errors';
       setStatus(statusStr, '100%');
 
       log('------------------------------------------------');
-      log('Batch Complete.');
+      log('Upload & Ingest Complete.');
       log('Flights Imported: ' + processedFlights);
-      log('Skipped: ' + skippedFlights);
+      log('Skipped: ' + skippedFiles);
       log('Errors: ' + errorFlights);
-      google.script.run.logClientActivity('FILE_UPLOAD', '[COMPLETE] Upload complete: ' + processedFlights + ' imported, ' + skippedFlights + ' skipped, ' + errorFlights + ' errors');
+      google.script.run.logClientActivity('FILE_UPLOAD', '[COMPLETE] Upload complete: ' + processedFlights + ' imported, ' + skippedFiles + ' skipped, ' + errorFlights + ' errors');
 
       if (processedFlights > 0) {
         log('Sorting logbook chronologically (most recent flight first)...');
@@ -210,7 +324,6 @@
           .sortFlightsByDate();
       }
 
-      // Button Swap: Hide Cancel, Show Done
       document.getElementById('btn-close').style.display = 'none';
       document.getElementById('btn-done').style.display = 'inline-block';
     }
@@ -231,6 +344,27 @@
       if (cls) p.className = cls;
       div.appendChild(p);
       div.scrollTop = div.scrollHeight;
+    }
+
+    function copyConsoleLog() {
+      var consoleEl = document.getElementById('log-console');
+      if (!consoleEl) return;
+      var text = consoleEl.innerText || consoleEl.textContent;
+      navigator.clipboard.writeText(text).then(function() {
+        var btn = document.getElementById('btn-copy-log');
+        if (!btn) return;
+        var origText = btn.innerText;
+        btn.innerText = '✓ Copied!';
+        btn.style.backgroundColor = '#2E7D32';
+        btn.style.color = '#FFFFFF';
+        setTimeout(function() {
+          btn.innerText = origText;
+          btn.style.backgroundColor = '';
+          btn.style.color = '';
+        }, 2000);
+      }).catch(function(err) {
+        alert('Failed to copy log: ' + err);
+      });
     }
   </script>
 </body>

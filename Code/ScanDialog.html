@@ -1,6 +1,7 @@
 <!--
  * Paragliding Flight Log v2.0
- * Updated: 2026-10-01 01:31:18
+ * Scan Watch Folder Modal Dialog
+ * Tri-Mode Execution Enabled (DSGN-UI-001)
  -->
 <!DOCTYPE html>
 <html>
@@ -8,33 +9,82 @@
 <head>
     <base target="_top">
     <?!= HtmlService.createTemplateFromFile('Style').evaluate().getContent(); ?>
+    <style>
+        .control-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 10px;
+        }
+
+        .primary-action {
+            background-color: #FFA000;
+            color: white;
+            border: none;
+            padding: 6px 14px;
+            font-size: 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            font-weight: 600;
+        }
+
+        .primary-action:hover {
+            background-color: #FF8F00;
+        }
+
+        .primary-action:disabled {
+            background-color: #FFE082;
+            cursor: not-allowed;
+        }
+
+        button.secondary {
+            background-color: #f1f3f4;
+            color: #333;
+            border: 1px solid #ccc;
+            padding: 6px 14px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        #log-console {
+            margin-top: 4px;
+            background-color: #f8f9fa;
+            border: 1px solid #eee;
+            border-radius: 4px;
+            padding: 8px;
+            font-family: monospace;
+            font-size: 11px;
+            white-space: pre-wrap;
+            color: #444;
+            height: 180px;
+            overflow-y: auto;
+            flex: 1 1 auto;
+        }
+    </style>
 </head>
 
 <body>
-    <!-- Header: Text Color Only, No Background -->
-    <div class="header-large text-blue">Scan Watch Folder</div>
-
     <div class="main-content">
-        <!-- Instructions: Consistent Div -->
-        <div class="instructions">
+        <div id="instructions" class="instructions">
             Scanning Watch Folder for new files...<br>
-            Please wait while processing completes.
+            Please wait while files are detected.
         </div>
 
-        <!-- Buttons: Left Aligned -->
-        <div class="control-group">
-            <!-- Action Button (Hidden start, becomes Done) -->
-            <button id="btn-action" onclick="google.script.host.close()" class="action"
-                style="display:none;">Done</button>
-            <!-- Close Button (Acts as Cancel during process) -->
-            <button id="btn-close" onclick="google.script.host.close()" class="secondary">Cancel</button>
-        </div>
-
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:15px; margin-bottom:5px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px; margin-bottom:4px;">
             <div class="instructions" style="font-weight:bold; margin:0;">Activity Log:</div>
             <button type="button" id="btn-copy-log" class="secondary" style="padding:2px 8px; font-size:11px;" onclick="copyConsoleLog()">📋 Copy Log</button>
         </div>
         <div id="log-console"></div>
+
+        <!-- Action Buttons (Tri-Mode Execution Bar at bottom right above progress bar) -->
+        <div class="control-group">
+            <button type="button" id="btn-run-here" onclick="startScan('MODAL')" class="primary-action" style="display:none;">🚀 Run Here</button>
+            <button type="button" id="btn-run-sidebar" onclick="startScan('SIDEBAR')" class="secondary" style="border-color:#1976D2; color:#1976D2; font-weight:600; display:none;">📌 Run in Sidebar</button>
+            <button type="button" id="btn-run-background" onclick="startScan('BACKGROUND')" class="secondary" style="border-color:#5E35B1; color:#5E35B1; font-weight:600; display:none;">⚙️ Run in Background</button>
+            <button type="button" id="btn-close" onclick="google.script.host.close()" class="secondary">Cancel</button>
+        </div>
     </div>
 
     <div class="footer">
@@ -49,63 +99,141 @@
 
     <script>
         var fileList = [];
-        var processedFiles = 0;
-
+        var folderName = 'Watch Folder';
+        var totalFiles = 0;
         var totalFlights = 0;
+        var processedFiles = 0;
         var processedFlights = 0;
-
         var errorFiles = 0;
         var skippedFiles = 0;
-        var totalFiles = 0;
+        var isScanning = false;
 
-        // 0-Stage: Auto Start
         window.onload = function () {
-            // "Cancel" is visible by default (btn-close)
-
             setStatus('Scanning Watch Folder...', '0%');
-            log('Scanning Watch Folder...');
+            log('Scanning Watch Folder for new files...');
 
             google.script.run
-                .withSuccessHandler(showScanResultsAndProcess)
+                .withSuccessHandler(onFilesDiscovered)
                 .withFailureHandler(showError)
                 .getWatchFolderStatus();
         };
 
-        function showScanResultsAndProcess(result) {
+        function setActionButtonsVisible(visible, count) {
+            var b1 = document.getElementById('btn-run-here');
+            var b2 = document.getElementById('btn-run-sidebar');
+            var b3 = document.getElementById('btn-run-background');
+            var disp = visible ? 'inline-block' : 'none';
+            if (b1) {
+                b1.style.display = disp;
+                b1.innerText = '🚀 Run Here (' + count + ')';
+            }
+            if (b2) b2.style.display = disp;
+            if (b3) b3.style.display = disp;
+        }
+
+        function setActionButtonsEnabled(enabled) {
+            var b1 = document.getElementById('btn-run-here');
+            var b2 = document.getElementById('btn-run-sidebar');
+            var b3 = document.getElementById('btn-run-background');
+            if (b1) b1.disabled = !enabled;
+            if (b2) b2.disabled = !enabled;
+            if (b3) b3.disabled = !enabled;
+        }
+
+        function onFilesDiscovered(result) {
             if (result.error) {
                 showError(result.error);
                 return;
             }
 
-            if (result.files.length === 0) {
-                log('Scanning Watch Folder: ' + (result.folderName || 'Unknown'));
-                log('No new files found.');
-                finish(true);
-            } else {
-                fileList = result.files;
-                totalFiles = fileList.length;
+            folderName = result.folderName || 'Watch Folder';
+            fileList = result.files || [];
+            totalFiles = fileList.length;
 
-                // Calculate Total Flights (Denominator)
+            if (totalFiles === 0) {
+                log('Watch Folder: ' + folderName);
+                log('No new flight files found.');
+                setStatus('No new files found', '100%');
+                setProgress('100%');
+                document.getElementById('instructions').innerHTML = 'Watch Folder: <strong>' + folderName + '</strong><br>No new flight files (.igc, .zip, .gz) found.';
+                setDoneButton();
+            } else {
                 totalFlights = 0;
                 fileList.forEach(function (f) {
                     totalFlights += (f.flightCount || 1);
                 });
 
-                log('Scanning Watch Folder: ' + (result.folderName || 'Unknown'));
-                log('Found ' + totalFiles + ' files (' + totalFlights + ' flights). Starting process...');
-                google.script.run.logClientActivity('WATCH_FOLDER', '[INFO] Discovered ' + totalFiles + ' file(s) in Watch Folder (' + (result.folderName || 'Watch Folder') + ')');
-                google.script.run.logClientActivity('WATCH_FOLDER', '[START] Starting scan of ' + totalFiles + ' file(s)');
-                processNext(0);
+                log('Watch Folder: ' + folderName);
+                log('Found ' + totalFiles + ' file(s) containing ' + totalFlights + ' flight(s).');
+                log('Select a Tri-Mode execution option below:');
+
+                setStatus('Found ' + totalFiles + ' new file(s)', '0%');
+                document.getElementById('instructions').innerHTML = 'Watch Folder: <strong>' + folderName + '</strong><br>Found <strong>' + totalFiles + ' new file(s)</strong> (' + totalFlights + ' flights). Ready to import:';
+                setActionButtonsVisible(true, totalFiles);
             }
         }
 
-        function showError(msg) {
-            setStatus('Error', 'Failed');
-            log('Error: ' + msg, 'log-error');
-            document.getElementById('progress-bar').classList.add('error-fill');
-            // Ensure Cancel/Close is visible
-            document.getElementById('btn-close').innerHTML = 'Close';
-            document.getElementById('btn-close').style.display = 'inline-block';
+        function startScan(mode) {
+            if (isScanning || totalFiles === 0) return;
+
+            // Mode 2: Run in Sidebar (DSGN-UI-001)
+            if (mode === 'SIDEBAR') {
+                var sidebarPayload = {
+                    jobType: 'WATCH_SCAN',
+                    title: 'Watch Folder Scan',
+                    contextText: folderName + ' (' + totalFiles + ' files)',
+                    totalItems: totalFiles,
+                    queue: fileList,
+                    batchSize: 5,
+                    options: {}
+                };
+                setActionButtonsEnabled(false);
+                google.script.run
+                    .withSuccessHandler(function() {
+                        google.script.host.close();
+                    })
+                    .withFailureHandler(function(err) {
+                        alert('Sidebar launch failed: ' + (err.message || err));
+                        setActionButtonsEnabled(true);
+                    })
+                    .launchExecutionSidebar(sidebarPayload);
+                return;
+            }
+
+            // Mode 3: Run in Background (DSGN-UI-001)
+            if (mode === 'BACKGROUND') {
+                var bgPayload = {
+                    jobType: 'WATCH_SCAN',
+                    title: 'Watch Folder Scan',
+                    contextText: folderName + ' (' + totalFiles + ' files)',
+                    totalItems: totalFiles,
+                    queue: fileList,
+                    batchSize: 5,
+                    options: {}
+                };
+                setActionButtonsEnabled(false);
+                google.script.run
+                    .withSuccessHandler(function() {
+                        google.script.host.close();
+                    })
+                    .withFailureHandler(function(err) {
+                        alert('Background launch failed: ' + (err.message || err));
+                        setActionButtonsEnabled(true);
+                    })
+                    .launchBackgroundJob(bgPayload);
+                return;
+            }
+
+            // Mode 1: Run Here (Modal)
+            isScanning = true;
+            setActionButtonsVisible(false, 0);
+            var btnClose = document.getElementById('btn-close');
+            btnClose.innerText = 'Cancel';
+
+            log('------------------------------------------------');
+            log('Starting import of ' + totalFiles + ' file(s)...');
+            google.script.run.logClientActivity('WATCH_FOLDER', '[START] Starting scan of ' + totalFiles + ' file(s)');
+            processNext(0);
         }
 
         function processNext(index) {
@@ -116,18 +244,14 @@
 
             var file = fileList[index];
             var pct = Math.round((index / fileList.length) * 100) + '%';
-
-            var statusStr = (index + 1) + '/' + totalFiles + ' Files | ' +
-                processedFlights + '/' + totalFlights + ' Flights | ' +
-                pct + ' | ' + file.name;
-
+            var statusStr = (index + 1) + '/' + totalFiles + ' Files | ' + pct + ' | ' + file.name;
             setStatus(statusStr, pct);
             setProgress(pct);
 
             google.script.run
                 .withSuccessHandler(function (res) {
-                    if (res.success) {
-                        var msg = file.name + ': ' + res.msg;
+                    if (res && res.success) {
+                        var msg = file.name + ': ' + (res.msg || 'Imported');
                         log(msg, res.processed ? 'log-success' : 'log-info');
                         if (res.processed) {
                             processedFiles++;
@@ -136,7 +260,7 @@
                             skippedFiles++;
                         }
                     } else {
-                        log(file.name + ': Error ' + res.error, 'log-error');
+                        log(file.name + ': Error ' + (res ? res.error : 'Failed'), 'log-error');
                         errorFiles++;
                     }
                     processNext(index + 1);
@@ -149,28 +273,41 @@
                 .processFileById(file.id, 'WATCH');
         }
 
-        function finish(isEmpty) {
+        function finish() {
             setProgress('100%');
-
-            // Final Status
             var statusStr = totalFiles + '/' + totalFiles + ' Files | ' + processedFlights + '/' + totalFlights + ' Flights | 100% | Completed';
             setStatus(statusStr, '100%');
 
-            if (!isEmpty) {
-                log('------------------------------------------------');
-                log('Batch Complete.');
-                log('Files Processed: ' + processedFiles);
-                log('Flights Created: ' + processedFlights);
-                log('Skipped: ' + skippedFiles);
-                log('Errors: ' + errorFiles);
-                google.script.run.logClientActivity('WATCH_FOLDER', '[COMPLETE] Scan complete: ' + processedFiles + ' processed, ' + skippedFiles + ' skipped, ' + errorFiles + ' errors', processedFlights + ' flight(s) added');
-                google.script.run.sortFlightsByDate();
-            }
+            log('------------------------------------------------');
+            log('Scan Complete.');
+            log('Files Processed: ' + processedFiles);
+            log('Flights Created: ' + processedFlights);
+            log('Skipped: ' + skippedFiles);
+            log('Errors: ' + errorFiles);
+            google.script.run.logClientActivity('WATCH_FOLDER', '[COMPLETE] Scan complete: ' + processedFiles + ' processed, ' + skippedFiles + ' skipped, ' + errorFiles + ' errors', processedFlights + ' flight(s) added');
+            google.script.run.sortFlightsByDate();
 
-            // Button Swap: Hide Cancel, Show Done
-            document.getElementById('btn-close').style.display = 'none';
-            var btn = document.getElementById('btn-action');
-            btn.style.display = 'inline-block';
+            setDoneButton();
+        }
+
+        function setDoneButton() {
+            var btnClose = document.getElementById('btn-close');
+            btnClose.innerText = 'Done';
+            btnClose.className = 'primary-action';
+            btnClose.disabled = false;
+            btnClose.style.opacity = '1';
+            btnClose.onclick = function () { google.script.host.close(); };
+        }
+
+        function showError(msg) {
+            setStatus('Error', 'Failed');
+            log('Error: ' + msg, 'log-error');
+            document.getElementById('progress-bar').classList.add('error-fill');
+            var btnClose = document.getElementById('btn-close');
+            btnClose.innerText = 'Close';
+            btnClose.className = 'secondary';
+            btnClose.disabled = false;
+            btnClose.style.opacity = '1';
         }
 
         function setStatus(left, right) {

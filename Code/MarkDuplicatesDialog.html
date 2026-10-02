@@ -1,9 +1,5 @@
 <!--
  * Paragliding Flight Log v2.0
- * Updated: 2026-10-01 01:31:18
- -->
-<!--
- * Paragliding Flight Log v2.0
  * Mark Duplicates for Removal Modal Dialog
  -->
 <!DOCTYPE html>
@@ -17,8 +13,8 @@
             background-color: #f8f9fa;
             border: 1px solid #e0e0e0;
             border-radius: 6px;
-            padding: 12px 14px;
-            margin-bottom: 12px;
+            padding: 10px 14px;
+            margin-bottom: 8px;
         }
 
         .check-item {
@@ -58,12 +54,63 @@
             background-color: #fff9c4;
             color: #f57f17;
         }
+
+        .control-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 10px;
+        }
+
+        .primary-action {
+            background-color: #FFA000;
+            color: white;
+            border: none;
+            padding: 6px 14px;
+            font-size: 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            font-weight: 600;
+        }
+
+        .primary-action:hover {
+            background-color: #FF8F00;
+        }
+
+        .primary-action:disabled {
+            background-color: #FFE082;
+            cursor: not-allowed;
+        }
+
+        button.secondary {
+            background-color: #f1f3f4;
+            color: #333;
+            border: 1px solid #ccc;
+            padding: 6px 14px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        #log-console {
+            margin-top: 4px;
+            background-color: #f8f9fa;
+            border: 1px solid #eee;
+            border-radius: 4px;
+            padding: 8px;
+            font-family: monospace;
+            font-size: 11px;
+            white-space: pre-wrap;
+            color: #444;
+            height: 180px;
+            overflow-y: auto;
+            flex: 1 1 auto;
+        }
     </style>
 </head>
 
 <body>
-    <div class="header-large text-blue">Mark Duplicates for Removal</div>
-
     <div class="main-content">
         <div id="instructions" class="instructions">
             Select which duplicate flight categories to mark as <strong>'Remove'</strong>.<br>
@@ -83,14 +130,17 @@
             </label>
         </div>
 
-        <!-- Buttons -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px; margin-bottom:4px;">
+            <div class="instructions" style="font-weight:bold; margin:0;">Activity Log:</div>
+            <button type="button" id="btn-copy-log" class="secondary" style="padding:2px 8px; font-size:11px;" onclick="copyConsoleLog()">📋 Copy Log</button>
+        </div>
+        <div id="log-console"></div>
+
+        <!-- Action Buttons (Placed at bottom directly above progress bar) -->
         <div class="control-group">
-            <button id="btn-mark" onclick="applyMarking()" class="action" disabled>Mark Selected for Removal</button>
+            <button id="btn-mark" onclick="applyMarking()" class="primary-action" disabled>Mark Selected for Removal</button>
             <button id="btn-close" onclick="google.script.host.close()" class="secondary">Cancel</button>
         </div>
-
-        <div class="instructions" style="margin-top:15px; font-weight:bold;">Activity Log:</div>
-        <div id="log-console"></div>
     </div>
 
     <div class="footer">
@@ -196,7 +246,8 @@
         function setDoneButton() {
             var btnClose = document.getElementById('btn-close');
             btnClose.innerText = 'Done';
-            btnClose.className = 'action';
+            btnClose.className = 'primary-action';
+            btnClose.disabled = false;
             btnClose.onclick = function () { google.script.host.close(); };
         }
 
@@ -204,7 +255,10 @@
             setStatus('Error', 'Failed');
             log('Error: ' + msg, 'log-error');
             document.getElementById('progress-bar').classList.add('error-fill');
-            setDoneButton();
+            var btnClose = document.getElementById('btn-close');
+            btnClose.innerText = 'Close';
+            btnClose.className = 'secondary';
+            btnClose.disabled = false;
         }
 
         function setStatus(left, right) {
@@ -223,6 +277,27 @@
             if (cls) p.className = cls;
             div.appendChild(p);
             div.scrollTop = div.scrollHeight;
+        }
+
+        function copyConsoleLog() {
+            var consoleEl = document.getElementById('log-console');
+            if (!consoleEl) return;
+            var text = consoleEl.innerText || consoleEl.textContent;
+            navigator.clipboard.writeText(text).then(function() {
+                var btn = document.getElementById('btn-copy-log');
+                if (!btn) return;
+                var origText = btn.innerText;
+                btn.innerText = '✓ Copied!';
+                btn.style.backgroundColor = '#2E7D32';
+                btn.style.color = '#FFFFFF';
+                setTimeout(function() {
+                    btn.innerText = origText;
+                    btn.style.backgroundColor = '';
+                    btn.style.color = '';
+                }, 2000);
+            }).catch(function(err) {
+                alert('Failed to copy log: ' + err);
+            });
         }
     </script>
 </body>
