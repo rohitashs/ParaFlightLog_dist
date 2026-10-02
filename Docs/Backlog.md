@@ -21,6 +21,12 @@ This file is the single source of truth for **ToDos**, **Requirements**, **Chang
 - [x] **Status**: Completed | **Date**: 2026-09-29 | **Imp**: Medium | **Description**: Refactor code based on `Plans/CodeCheckReports/2026-02-13_CodeCheck.md` & `2026-09-29_CodeCheck.md` (Ingestion modularized into `FileHandling.gs`, XContest rollover fixed, `Utils.gs` extraction).
 - [x] **Status**: Completed | **Date**: 2026-09-30 | **Imp**: High | **Description**: **Ways of Working**: Formalized artifact storage policy in `Docs/Context.md`. All planning documents, session summaries, and code/doc check reports now reside strictly within `Plans/` inside the project root for multi-computer portability.
 - [ ] **Status**: Open | **Date**: 2026-10-01 | **Imp**: Medium | **Description**: **Tri-Mode Execution Subsystem, Universal Execution Sidebar & Modal Dialog Normalization**: Detailed in [`DSGN-UI-001`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Design/DSGN-UI-001_Tri_Mode_Execution_and_Universal_Sidebar.md). Standardize all dialogs to a single header (eliminating redundant inner headers), implement 3-mode execution bar (`[ Run Here ]`, `[ Run in Sidebar ]`, `[ Run in Background ]`), build universal 300px `ExecutionSidebar.html`, and establish `QueueService` on `Automation_Queue` tab as the execution substrate for `DSGN-AUT-001`. Tracked in CR-UI-019.
+- [ ] **Status**: Open | **Date**: 2026-10-01 | **Imp**: High | **Description**: **Design: Distributed Multi-Instance Update & Lifecycle Manager**: Architect push/pull update notification and non-destructive code/schema deployment across independent pilot installations. Tracked in RQ-SYS-010.
+- [ ] **Status**: Open | **Date**: 2026-10-01 | **Imp**: Medium | **Description**: **Design: Multi-Step Wizards for Complex Tasks**: Design guided wizards for initial onboarding, seasonal archiving, equipment migration, and API provider setup. Tracked in CR-UI-020.
+- [ ] **Status**: Open | **Date**: 2026-10-01 | **Imp**: High | **Description**: **Pre-Open-Source Architecture, Code Quality & Documentation Integrity Audit**: Perform deep refactoring, modularity check, dead code removal, JSDoc typing, and documentation harmonization to meet high open-source quality bar. Tracked in CR-DEV-003.
+- [ ] **Status**: Open | **Date**: 2026-10-01 | **Imp**: High | **Description**: **Design: AI-Driven & Automated End-to-End Testing Harness**: Explore and build automated browser UI testing (Playwright/subagents) and synthetic flight ingestion test suite. Tracked in CR-DEV-004.
+- [ ] **Status**: Open | **Date**: 2026-10-01 | **Imp**: Medium | **Description**: **Open Source Release Packaging & Governance Roadmap**: Prepare licensing, GitHub CI/CD, contributor guides, issue templates, and sanitized starter sheet. Tracked in RQ-SYS-011.
+- [ ] **Status**: Open | **Date**: 2026-10-01 | **Imp**: High | **Description**: **Pilot PII Privacy, Sensitive Data Scrubbing & Secrets Guardrail**: Implement automated pre-commit scanners to ensure personal pilot credentials, coordinates, and API keys are never published. Tracked in CR-SEC-001.
 
 ---
 
@@ -91,6 +97,15 @@ This file is the single source of truth for **ToDos**, **Requirements**, **Chang
     - [x] **RQ-SYS-009.1** | **Status**: Implemented | **Phase**: 2 | **Description**: In-App `Pilot_Profile` Sheet Tab (Structured key-value fields and free-form notes).
     - [x] **RQ-SYS-009.2** | **Status**: Implemented | **Phase**: 2 | **Description**: Centralized Pilot Profile Integration (Structured credentials, emergency contacts, medical rescue, and inReach tracking links in dedicated `Pilot_Profile` sheet).
 
+- [ ] **RQ-SYS-010** | **Status**: Open | **Phase**: 3 | **Description**: **Distributed Multi-Instance Update & Lifecycle Manager**: Architectural design and tooling for distributing updates across independent pilot-deployed instances. Covers update notification (push/pull checks), delivery mechanisms (Google Workspace Marketplace Add-on vs. GitHub release script vs. in-app updater), and non-destructive schema/code application that preserves pilot flights, custom formulas, credentials, and settings.
+    - [ ] **RQ-SYS-010.1** | **Status**: Open | **Phase**: 3 | **Description**: Update Discovery & Notification Engine (version manifest checks via GitHub Releases API or centralized endpoint, in-sheet update banner/badge).
+    - [ ] **RQ-SYS-010.2** | **Status**: Open | **Phase**: 3 | **Description**: Non-Destructive Update Application Engine (schema migrations, parameter diffing, code deployment without overwriting user data).
+
+- [ ] **RQ-SYS-011** | **Status**: Open | **Phase**: 3 | **Description**: **Open Source Release Packaging, Governance & Community Strategy**: Comprehensive roadmap and packaging for public GitHub open-source launch. Includes OSI-compliant licensing (MIT / AGPLv3 evaluation), security audits (zero hardcoded secrets or pilot PII), contribution guides, issue/PR templates, sanitized golden template sheet, and CI/CD pipelines.
+    - [ ] **RQ-SYS-011.1** | **Status**: Open | **Phase**: 3 | **Description**: Repository Legal & Community Infrastructure (LICENSE, CONTRIBUTING.md, CODE_OF_CONDUCT.md, SECURITY.md, bug/feature issue templates).
+    - [ ] **RQ-SYS-011.2** | **Status**: Open | **Phase**: 3 | **Description**: Automated GitHub Actions CI Pipeline (linter, unit tests, static RPC checks, secret scanning on pull requests).
+    - [ ] **RQ-SYS-011.3** | **Status**: Open | **Phase**: 3 | **Description**: Public Starter Template Sheet (zero personal pilot data, pre-formatted, pre-scaffolded, with first-time onboarding links).
+
 ---
 
 ## 4. Change Requests (`CR`)
@@ -146,6 +161,29 @@ This file is the single source of truth for **ToDos**, **Requirements**, **Chang
     - **Tri-Mode Execution Button Bar**: Provide 3 execution choices upon configuration completion: (1) `[ Run Here ]` (in-modal synchronous execution for quick jobs), (2) `[ Run in Sidebar ]` (closes modal, opens modeless 300px `ExecutionSidebar.html`, keeping spreadsheet grid 100% interactive), and (3) `[ Run in Background ]` (closes modal, enqueues to `QueueService`, executes headlessly on Google Cloud servers, streaming logs to `Activity Logs`).
     - **Universal Execution Sidebar (`ExecutionSidebar.html`)**: Reusable 300px sidebar replacing duplicate progress bars, activity logs, and copy buttons across 7 dialogs.
     - **Foundational Substrate for Automation Engine (`DSGN-AUT-001`)**: Implements `QueueService` (`Automation_Queue` sheet tab), 4.5-minute bounded time budget (`TimeBudgetService`), and automatic self-continuation triggers.
+
+- [ ] **CR-UI-020** | **Status**: Open | **Date**: 2026-10-01 | **Req**: RQ-SYS-002, RQ-SYS-008 | **Description**: **Guided Multi-Step Task Wizards (Setup, Migration & Rollover)**: Design and implement a reusable multi-step wizard framework for complex user journeys:
+    - **Initial Onboarding Wizard**: Step-by-step first-time setup (Welcome $\to$ Folder Picker for Watch/Master/Trash $\to$ Pilot Identity $\to$ Wing/Gear Selection $\to$ Trigger Installation $\to$ Finish).
+    - **Season Rollover / Archive Wizard**: End-of-season logbook archiving (Snapshotting stats, freezing historical year, creating clean new season sheet or tagging).
+    - **Equipment Migration Wizard**: Guided glider retirement or equipment transfer updating past flights or applying effective dates.
+    - **API Gateway Setup Wizard**: Interactive validation and credential testing for Open-Meteo, Visual Crossing, XContest, and Paragliding Earth.
+
+- [ ] **CR-DEV-003** | **Status**: Open | **Date**: 2026-10-01 | **Req**: RQ-SYS-001 | **Description**: **Pre-Open-Source Architecture, Code Quality & Documentation Integrity Audit**: Comprehensive code and documentation audit across `Code/` and `Docs/` ahead of public release:
+    - **Architectural Cleanup & Modularity**: Eliminate dead code, obsolete helpers, duplicate logic, and redundant state variables across all 19 `.gs` and 12 `.html` files.
+    - **Performance & Quota Optimization**: Review batch sizes, memory allocations, caching (`CacheService`), and API call throttling.
+    - **Code Quality & Style Standardization**: Enforce consistent naming conventions, complete JSDoc annotations with `@param` and `@return` types, strict error handling, and robust `try/catch` fallbacks.
+    - **Documentation Harmonization**: Synchronize `Technical_Specification.md`, `Features.md`, `Backlog.md`, `ChangeLog.md`, and all `Docs/Design/` specifications with 100% active code fidelity.
+
+- [ ] **CR-DEV-004** | **Status**: Open | **Date**: 2026-10-01 | **Req**: RQ-SYS-001 | **Description**: **AI-Driven & Automated End-to-End Testing Harness (Backend & Frontend UI)**: Automated testing framework extending beyond offline Node unit tests to eliminate manual testing overhead:
+    - **AI-Driven Browser / UI Testing**: Headless browser automation (Playwright / Puppeteer or Antigravity browser subagent) capable of driving Google Sheets modals and sidebars, clicking buttons, testing input validations, and verifying DOM updates.
+    - **Synthetic Flight Log Test Suite**: Curated library of edge-case IGC files (zero fixes, corrupted headers, extreme durations, international dates, midnight crossings, triangle flights) to run through ingestion pipelines.
+    - **Automated Regression CI**: Pre-commit / GitHub Actions workflow that executes all unit, RPC, and simulation tests on pull requests.
+
+- [ ] **CR-SEC-001** | **Status**: Open | **Date**: 2026-10-01 | **Req**: RQ-SYS-001 | **Description**: **Pilot PII Privacy, Sensitive Data Scrubbing & Secrets Guardrail**: Establish strict data privacy protections ensuring pilot sensitive information (home takeoff coordinates, emergency contacts, medical notes, tracking URLs) and API keys (Visual Crossing, custom tokens) are never committed to git, shared in template sheets, or leaked in logs:
+    - Automated pre-commit hook scanning for API keys, email addresses, phone numbers, and coordinate signatures.
+    - Secure storage guidelines for pilot credentials (using `UserProperties` or private sheet cells).
+
+- [ ] **CR-SCH-002** | **Status**: Open | **Date**: 2026-10-01 | **Req**: RQ-SYS-001 | **Description**: **Automated Non-Destructive Schema Evolution & Migration Framework**: Robust migration engine (`migrateSchema(fromVersion, toVersion)`) capable of updating distributed pilot sheets to new versions (adding new columns, renaming parameters, upgrading tabs) without corrupting existing flight rows, user formulas, or custom formatting.
 
 ---
 
