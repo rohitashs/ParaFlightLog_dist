@@ -81,6 +81,7 @@
 
                 log('Master Log Folder: ' + (result.folderName || 'Master Logs'));
                 log('Found ' + totalFiles + ' missing flight file(s). Restoring to Flights sheet...');
+                google.script.run.logClientActivity('MASTER_RESYNC', '[START] Starting re-sync of ' + totalFiles + ' missing Master flight(s)');
                 processNext(0);
             }
         }
@@ -160,7 +161,7 @@
                         log('Finalize warning: ' + err.message, 'log-error');
                         setDoneButton();
                     })
-                    .finalizeResync();
+                    .finalizeResync({ restored: processedFiles, skipped: skippedFiles, errors: errorFiles });
             } else {
                 var statusStr = totalFiles + '/' + totalFiles + ' Files | 100% | Completed';
                 setStatus(statusStr, '100%');

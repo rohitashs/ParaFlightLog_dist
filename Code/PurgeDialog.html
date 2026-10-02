@@ -126,6 +126,7 @@
 
             log('------------------------------------------------');
             log('Starting purge of ' + totalCandidates + ' flight(s)...');
+            google.script.run.logClientActivity('PURGE_FLIGHTS', '[START] Starting purge of ' + totalCandidates + ' flight(s)');
             processNext(0);
         }
 
@@ -184,7 +185,7 @@
                     log('Finalize warning: ' + err.message, 'log-error');
                     setDoneButton();
                 })
-                .finalizePurge();
+                .finalizePurge({ purged: purgedCount, trashed: trashedCount, errors: errorCount });
         }
 
         function setDoneButton() {

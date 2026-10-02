@@ -616,15 +616,9 @@ function testLogProcessResolution_() {
 function testLogLevelFiltering_() {
   if (typeof LOG === 'undefined') return { module: 'LogLevelFiltering', error: 'LOG service undefined' };
 
-  // Brief level
-  if (LOG.shouldLog('Brief', '[INFO] Scanning folder') !== false) {
-    return { module: 'LogLevelFiltering', error: 'Brief should filter [INFO]' };
-  }
-  if (LOG.shouldLog('Brief', '[OK] Imported flight 123') !== false) {
-    return { module: 'LogLevelFiltering', error: 'Brief should filter [OK]' };
-  }
-  if (LOG.shouldLog('Brief', '[DUPE] Duplicate flight') !== false) {
-    return { module: 'LogLevelFiltering', error: 'Brief should filter [DUPE]' };
+  // Brief level: allows discovery ([INFO]), lifecycle ([START], [COMPLETE]), alerts ([WARN], [ERR]); filters transactions ([OK], [DUPE]) and [DEBUG]
+  if (LOG.shouldLog('Brief', '[INFO] Discovered 5 flights') !== true) {
+    return { module: 'LogLevelFiltering', error: 'Brief should allow discovery [INFO]' };
   }
   if (LOG.shouldLog('Brief', '[START] Bulk Ingestion') !== true) {
     return { module: 'LogLevelFiltering', error: 'Brief should allow [START]' };
@@ -638,10 +632,22 @@ function testLogLevelFiltering_() {
   if (LOG.shouldLog('Brief', '[ERR] Parse error') !== true) {
     return { module: 'LogLevelFiltering', error: 'Brief should allow [ERR]' };
   }
+  if (LOG.shouldLog('Brief', '[OK] Imported flight 123') !== false) {
+    return { module: 'LogLevelFiltering', error: 'Brief should filter out transaction [OK]' };
+  }
+  if (LOG.shouldLog('Brief', '[DUPE] Duplicate flight') !== false) {
+    return { module: 'LogLevelFiltering', error: 'Brief should filter out transaction [DUPE]' };
+  }
+  if (LOG.shouldLog('Brief', '[DEBUG] Internal parser details') !== false) {
+    return { module: 'LogLevelFiltering', error: 'Brief should filter out [DEBUG]' };
+  }
 
-  // Normal level
-  if (LOG.shouldLog('Normal', '[INFO] Scanning folder') !== false) {
-    return { module: 'LogLevelFiltering', error: 'Normal should filter [INFO]' };
+  // Normal level: mimics dialog console (lifecycle, discovery, transactions, alerts); filters only deep [DEBUG]
+  if (LOG.shouldLog('Normal', '[INFO] Discovered 5 flights') !== true) {
+    return { module: 'LogLevelFiltering', error: 'Normal should allow discovery [INFO]' };
+  }
+  if (LOG.shouldLog('Normal', '[START] Bulk Ingestion') !== true) {
+    return { module: 'LogLevelFiltering', error: 'Normal should allow [START]' };
   }
   if (LOG.shouldLog('Normal', '[OK] Imported flight 123') !== true) {
     return { module: 'LogLevelFiltering', error: 'Normal should allow [OK]' };
@@ -649,10 +655,25 @@ function testLogLevelFiltering_() {
   if (LOG.shouldLog('Normal', '[DUPE] Duplicate flight') !== true) {
     return { module: 'LogLevelFiltering', error: 'Normal should allow [DUPE]' };
   }
+  if (LOG.shouldLog('Normal', '[COMPLETE] Ingestion done') !== true) {
+    return { module: 'LogLevelFiltering', error: 'Normal should allow [COMPLETE]' };
+  }
+  if (LOG.shouldLog('Normal', '[WARN] Missing site') !== true) {
+    return { module: 'LogLevelFiltering', error: 'Normal should allow [WARN]' };
+  }
+  if (LOG.shouldLog('Normal', '[ERR] Parse error') !== true) {
+    return { module: 'LogLevelFiltering', error: 'Normal should allow [ERR]' };
+  }
+  if (LOG.shouldLog('Normal', '[DEBUG] Internal parser details') !== false) {
+    return { module: 'LogLevelFiltering', error: 'Normal should filter out [DEBUG]' };
+  }
 
-  // Debug level
-  if (LOG.shouldLog('Debug', '[INFO] Scanning folder') !== true) {
+  // Debug level: allows everything
+  if (LOG.shouldLog('Debug', '[INFO] Discovered 5 flights') !== true) {
     return { module: 'LogLevelFiltering', error: 'Debug should allow [INFO]' };
+  }
+  if (LOG.shouldLog('Debug', '[DEBUG] Internal parser details') !== true) {
+    return { module: 'LogLevelFiltering', error: 'Debug should allow [DEBUG]' };
   }
 
   return { module: 'LogLevelFiltering', idx: true };

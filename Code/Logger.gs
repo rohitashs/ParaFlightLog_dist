@@ -62,16 +62,17 @@ var LOG = {
     if (!message) return false;
     var lvl = logLevel || 'Normal';
     if (lvl === 'Debug') return true;
+    if (String(message).indexOf('[DEBUG]') > -1) return false;
     if (lvl === 'Normal') {
-      // Normal logs everything except high-frequency [INFO] heartbeat traces
-      return String(message).indexOf('[INFO]') === -1;
+      // Normal logs all lifecycle boundaries, discovery events, transactions, and alerts
+      return true;
     }
 
-    // Brief mode filter: only allow lifecycle boundaries and errors
+    // Brief mode filter: logs lifecycle boundaries ([START], [COMPLETE]), discovery ([INFO]), and alerts ([WARN], [ERR]),
+    // skipping individual per-file transaction records ([OK], [DUPE])
     var str = String(message);
-    var isBoundary = str.indexOf('[START]') > -1 || str.indexOf('[COMPLETE]') > -1;
-    var isAlert = str.indexOf('[WARN]') > -1 || str.indexOf('[ERR]') > -1 || str.indexOf('[ERROR]') > -1;
-    return isBoundary || isAlert;
+    var isTransaction = str.indexOf('[OK]') > -1 || str.indexOf('[DUPE]') > -1;
+    return !isTransaction;
   },
 
   /**

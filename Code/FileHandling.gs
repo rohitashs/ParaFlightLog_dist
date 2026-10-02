@@ -64,7 +64,7 @@ function scanWatchFolderNow_() {
         
         console.log('Checking file: ' + fName);
         try {
-          var result = processDriveFile_(file, config);
+          var result = processDriveFile_(file, config, 'WATCH_FOLDER');
           if (result && result.processed) {
             console.log('Processed: ' + fName);
             stats.processed++;
@@ -241,9 +241,13 @@ function processFileById(fileId, source, deleteSource, isDriveSource) {
   var isDelete = (deleteSource === true || deleteSource === 'true');
   if (isDriveSource === undefined) isDriveSource = true;
 
+  var procKey = 'FILE_UPLOAD';
+  if (source === 'WATCH') procKey = 'WATCH_FOLDER';
+  else if (source === 'URL' || source === 'URL_CUSTOM') procKey = 'URL_IMPORT';
+
   try {
     file = DriveApp.getFileById(fileId);
-    var result = processDriveFile_(file, config);
+    var result = processDriveFile_(file, config, procKey);
     
     // Context-Aware Cleanup
     if (source === 'UPLOAD' || source === 'URL') {

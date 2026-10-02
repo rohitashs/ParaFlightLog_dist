@@ -80,7 +80,20 @@ LOG_ROWS_TO_KEEP:            2000         (Minimum row retention threshold)
 LOG_TIME_TO_KEEP_DAYS:       90           (Minimum age retention threshold)
 ```
 
-### 3.3 Extensible Registries (`Code/Config.gs`)
+### 3.3 Log Level Verbosity Contract
+
+| Prefix / Event Type | Brief | Normal (Default) | Debug | Description & Role |
+| :--- | :---: | :---: | :---: | :--- |
+| `[START]` | ✅ Logged | ✅ Logged | ✅ Logged | Operation kickoff (e.g. `Starting purge of 3 flight(s)`) |
+| `[INFO]` | ✅ Logged | ✅ Logged | ✅ Logged | Discovery & pre-flight scans (e.g. `Discovered 3 flight(s) with Status = "Remove"`) |
+| `[WARN]` | ✅ Logged | ✅ Logged | ✅ Logged | Warning alerts (e.g. missing metadata, rate limits) |
+| `[ERR]` | ✅ Logged | ✅ Logged | ✅ Logged | Failure and exception events |
+| `[COMPLETE]` | ✅ Logged | ✅ Logged | ✅ Logged | Finalized summaries with metrics (e.g. `Purge complete: 3 purged, 3 trashed`) |
+| `[OK]` | ❌ Skipped | ✅ Logged | ✅ Logged | Individual per-file transaction success (mimicked in Normal; skipped in Brief) |
+| `[DUPE]` | ❌ Skipped | ✅ Logged | ✅ Logged | Individual per-file duplicate notice (mimicked in Normal; skipped in Brief) |
+| `[DEBUG]` | ❌ Skipped | ❌ Skipped | ✅ Logged | Low-level diagnostic and developer traces |
+
+### 3.4 Extensible Registries (`Code/Config.gs`)
 
 ```javascript
 CFG.LOG_PROCESSES = {

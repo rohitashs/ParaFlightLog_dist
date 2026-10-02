@@ -22,12 +22,12 @@ var INGESTION = INGESTION || {};
  * @param {Object} config
  * @return {Object} { processed: boolean, isDuplicate: boolean, count: number }
  */
-function processDriveFile_(file, config) {
+function processDriveFile_(file, config, processSource) {
   var blob = file.getBlob();
   var name = file.getName();
   var id = file.getId();
   
-  return processBlob_(blob, name, id, config);
+  return processBlob_(blob, name, id, config, processSource);
 }
 
 /**
@@ -36,9 +36,10 @@ function processDriveFile_(file, config) {
  * @param {string} fileName
  * @param {string} fileId
  * @param {Object} config
+ * @param {string} [processSource]
  * @return {Object} { processed: boolean, isDuplicate: boolean, count: number }
  */
-function processBlob_(blob, fileName, fileId, config) {
+function processBlob_(blob, fileName, fileId, config, processSource) {
   var lowerName = fileName.toLowerCase();
   var result = { processed: false, count: 0 };
   
@@ -52,7 +53,7 @@ function processBlob_(blob, fileName, fileId, config) {
         var bName = b.getName();
         if (bName.match(/\.(igc|igx)$/i)) {
           totalInZip++;
-          var success = processSingleIgcBlob_(b, bName, fileId, fileName, config); // pass outer name
+          var success = processSingleIgcBlob_(b, bName, fileId, fileName, config, processSource); // pass outer name
           if (success) {
              result.processed = true;
              result.count++;
@@ -75,7 +76,7 @@ function processBlob_(blob, fileName, fileId, config) {
     try {
       var rawBlob = Utilities.gunzip(blob);
       var innerName = fileName.replace(/\.gz$/i, '');
-      var success = processSingleIgcBlob_(rawBlob, innerName, fileId, fileName, config);
+      var success = processSingleIgcBlob_(rawBlob, innerName, fileId, fileName, config, processSource);
       if (success) {
          result.processed = true;
          result.count = 1;
@@ -89,7 +90,7 @@ function processBlob_(blob, fileName, fileId, config) {
   }
   
   // 3. Plain IGC
-  var success = processSingleIgcBlob_(blob, fileName, fileId, fileName, config);
+  var success = processSingleIgcBlob_(blob, fileName, fileId, fileName, config, processSource);
   if (success) {
      result.processed = true;
      result.count = 1;
@@ -107,9 +108,11 @@ function processBlob_(blob, fileName, fileId, config) {
  * @param {string} fileId
  * @param {string} outerName
  * @param {Object} config
+ * @param {string} [processSource] - Optional process key (e.g. 'WATCH_FOLDER', 'URL_IMPORT', 'MASTER_RESYNC')
  * @return {boolean}
  */
-function processSingleIgcBlob_(blob, fileName, fileId, outerName, config) {
+function processSingleIgcBlob_(blob, fileName, fileId, outerName, config, processSource) {
+  var procKey = processSource || 'FILE_UPLOAD';
   var text = blob.getDataAsString();
   var ss = SpreadsheetApp.getActive();
   var sh = ss ? ss.getSheetByName(TABS.FLIGHTS.name) : null;
@@ -119,14 +122,14 @@ function processSingleIgcBlob_(blob, fileName, fileId, outerName, config) {
   var hashStr = hash.map(function(b) { return ('0' + (b & 0xFF).toString(16)).slice(-2); }).join('');
   
   if (isHashSeen_(hashStr, sh)) {
-    LOG.write('FILE_UPLOAD', '[DUPE] ' + fileName, (fileId ? 'FileID: ' + fileId + ' | ' : '') + 'Skipped (Already in Flights)');
+    LOG.write(procKey, '[DUPE] ' + fileName, (fileId ? 'FileID: ' + fileId + ' | ' : '') + 'Skipped (Already in Flights)');
     return false;
   }
   
   // B. Parse
   var parsed = PARSER.parseIgc(text, fileName);
   if (!parsed) {
-     LOG.write('FILE_UPLOAD', '[ERR] ' + fileName, (fileId ? 'FileID: ' + fileId + ' | ' : '') + 'Invalid IGC structure');
+     LOG.write(procKey, '[ERR] ' + fileName, (fileId ? 'FileID: ' + fileId + ' | ' : '') + 'Invalid IGC structure');
      copyToErrorFolder_(blob, fileName, config);
      return false;
   }
@@ -265,7 +268,7 @@ function processSingleIgcBlob_(blob, fileName, fileId, outerName, config) {
 
   // J. Mark Hash as Seen & Log
   markHashSeen_(hashStr, 5);
-  LOG.write('FILE_UPLOAD', '[OK] ' + fileName, (fileId ? 'FileID: ' + fileId + ' | ' : '') + (finalNotes || 'OK'));
+  LOG.write(procKey, '[OK] ' + fileName, (fileId ? 'FileID: ' + fileId + ' | ' : '') + (finalNotes || 'OK'));
   
   return true;
 }

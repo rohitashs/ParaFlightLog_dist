@@ -275,6 +275,7 @@
 
             setStatus('Fetching flight rows...', '0%');
             log('Starting maintenance process. Target scope: ' + selectedScope);
+            google.script.run.logClientActivity('MAINTENANCE', '[START] Starting flight maintenance (' + selectedScope + ')');
 
             google.script.run
                 .withSuccessHandler(onRowsReceived)
@@ -299,6 +300,7 @@
             }
 
             log('Found ' + targetRows.length + ' flights to process.');
+            google.script.run.logClientActivity('MAINTENANCE', '[INFO] Discovered ' + targetRows.length + ' flight(s) to process');
             currentIndex = 0;
             processNextRow();
         }
@@ -361,6 +363,7 @@
             var btnClose = document.getElementById('btn-cancel');
             btnClose.innerText = 'Done';
             btnClose.className = 'action';
+            google.script.run.logClientActivity('MAINTENANCE', '[COMPLETE] Flight maintenance complete: ' + targetRows.length + ' flight(s) processed');
             log('=== Updates Complete ===');
         }
     </script>

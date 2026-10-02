@@ -616,6 +616,7 @@
                         totalStaged = processingQueue.length;
                         updatePills();
                         log("Discovered " + totalStaged + " flight file(s) across folder hierarchy.", "log-info");
+                        google.script.run.logClientActivity('BULK_INGEST', '[INFO] Discovered ' + totalStaged + ' flight file(s) across folder hierarchy');
                         startBatchExecution();
                     } else {
                         handleFatalError("Unknown staging response from server.");
@@ -641,6 +642,7 @@
             }
 
             log("Executing batch ingestion (" + batchSize + " files per atomic execution)...");
+            google.script.run.logClientActivity('BULK_INGEST', '[START] Starting bulk ingestion of ' + totalStaged + ' flight(s)');
             processNextBatch();
         }
 
@@ -717,7 +719,7 @@
                     log("Sort warning: " + (err.message || String(err)), "log-warn");
                     finish();
                 })
-                .finalizeBulkImport();
+                .finalizeBulkImport({ imported: countImported, duplicates: countDuplicates, errors: countErrors });
         }
 
         function finish() {

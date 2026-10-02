@@ -450,6 +450,7 @@
             btnClose.innerHTML = "Cancel";
 
             log("Starting import for: " + (selectedTargetName || target));
+            google.script.run.logClientActivity('URL_IMPORT', '[START] Starting import from: ' + (selectedTargetName || target));
             if (shouldDeleteSource) {
                 log("Option: 'Delete from source' is ENABLED", "log-info");
             }
@@ -464,6 +465,7 @@
                         processingQueue = res.files;
                         sourceArchiveQueue = res.sourceArchiveIds || [];
                         log("Found " + processingQueue.length + " file(s) to process", "log-info");
+                        google.script.run.logClientActivity('URL_IMPORT', '[INFO] Discovered ' + processingQueue.length + ' file(s) to process');
                         if (sourceArchiveQueue.length > 0 && shouldDeleteSource) {
                             log("Tracking " + sourceArchiveQueue.length + " source archive(s) for cleanup", "log-info");
                         }
@@ -548,6 +550,8 @@
             log("Files Imported: " + processedFlights, "log-success");
             log("Skipped: " + skippedFlights);
             log("Errors: " + errorFlights, errorFlights > 0 ? "log-error" : "");
+
+            google.script.run.logClientActivity('URL_IMPORT', '[COMPLETE] Import complete: ' + processedFlights + ' imported, ' + skippedFlights + ' skipped, ' + errorFlights + ' errors');
 
             if (processedFlights > 0) {
                 log("Sorting logbook chronologically (most recent flight first)...", "log-info");

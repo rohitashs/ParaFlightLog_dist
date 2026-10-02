@@ -287,6 +287,7 @@ CFG.LOG_PROCESSES = {
   WATCH_FOLDER:   'Watch Folder',
   BULK_INGEST:    'Bulk Ingestion',
   URL_IMPORT:     'URL / Drive Import',
+  URL_CUSTOM:     'URL / Drive Import',
   FILE_UPLOAD:    'File Upload',
   MANUAL_ENTRY:   'Manual Flight Entry',
   MAINTENANCE:    'Flight Maintenance',

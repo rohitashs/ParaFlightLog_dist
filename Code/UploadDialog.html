@@ -84,6 +84,7 @@
       skippedFlights = 0;
 
       log('Starting upload of ' + uploadQueue.length + ' files...');
+      google.script.run.logClientActivity('FILE_UPLOAD', '[START] Starting upload of ' + uploadQueue.length + ' file(s)');
       setStatus('Initializing...', '0%');
       uploadNext(0);
     }
@@ -137,6 +138,7 @@
       }
       log('------------------------------------------------');
       log('Processing ' + totalFlightsToProcess + ' Flight(s)...');
+      google.script.run.logClientActivity('FILE_UPLOAD', '[INFO] Discovered ' + totalFlightsToProcess + ' valid flight(s) in upload');
       processNext(0);
     }
 
@@ -194,6 +196,7 @@
       log('Flights Imported: ' + processedFlights);
       log('Skipped: ' + skippedFlights);
       log('Errors: ' + errorFlights);
+      google.script.run.logClientActivity('FILE_UPLOAD', '[COMPLETE] Upload complete: ' + processedFlights + ' imported, ' + skippedFlights + ' skipped, ' + errorFlights + ' errors');
 
       if (processedFlights > 0) {
         log('Sorting logbook chronologically (most recent flight first)...');

@@ -168,6 +168,7 @@
             setProgress('50%');
             log('------------------------------------------------');
             log('Updating selected duplicate flight rows to Status = "Remove"...');
+            google.script.run.logClientActivity('DUPE_TRIAGE', '[START] Starting duplicate triage for selected categories');
 
             google.script.run
                 .withSuccessHandler(function (res) {

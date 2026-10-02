@@ -1029,6 +1029,10 @@ function getPurgeCandidateFlightsStatus() {
       }
     }
 
+    if (flights.length > 0) {
+      LOG.write('PURGE_FLIGHTS', '[INFO] Discovered ' + flights.length + ' flight(s) with Status = "Remove"');
+    }
+
     return {
       count: flights.length,
       flights: flights
@@ -1123,8 +1127,9 @@ function purgeSingleCandidateFlight(flightInfo) {
 
 /**
  * Finalizes purge action by resetting deduplication caches and sorting logbook.
+ * @param {Object} [stats] - Optional completion stats { purged, trashed, errors }.
  */
-function finalizePurge_() {
+function finalizePurge_(stats) {
   if (typeof _cachedSheetHashes !== 'undefined') {
     _cachedSheetHashes = null;
   }
@@ -1133,15 +1138,25 @@ function finalizePurge_() {
   } catch (e) {
     console.warn('Post-purge sort warning:', e);
   }
-  LOG.write('PURGE_FLIGHTS', '[COMPLETE] Purge session completed');
+  var summaryMsg = '[COMPLETE] Purge session completed';
+  var details = '';
+  if (stats) {
+    summaryMsg = '[COMPLETE] Purge complete: ' + (stats.purged || 0) + ' flight(s) purged, ' + (stats.trashed || 0) + ' Drive file(s) trashed';
+    if (stats.errors > 0) {
+      summaryMsg += ', ' + stats.errors + ' error(s)';
+    }
+    details = 'Purged: ' + (stats.purged || 0) + ' | Trashed: ' + (stats.trashed || 0) + ' | Errors: ' + (stats.errors || 0);
+  }
+  LOG.write('PURGE_FLIGHTS', summaryMsg, details);
   return { success: true };
 }
 
 /**
  * Public RPC Gateway for PurgeDialog.html.
+ * @param {Object} [stats] - Optional completion stats.
  */
-function finalizePurge() {
-  return finalizePurge_();
+function finalizePurge(stats) {
+  return finalizePurge_(stats);
 }
 
 /**
@@ -1165,6 +1180,10 @@ function getDuplicateCounts() {
     var st = String(statuses[i][0] || '').trim();
     if (st === 'Dup-Others') others++;
     else if (st === 'Dup-Primary') primary++;
+  }
+  var totalDups = others + primary;
+  if (totalDups > 0) {
+    LOG.write('DUPE_TRIAGE', '[INFO] Discovered ' + totalDups + ' duplicate flight(s) in logbook', 'Dup-Others: ' + others + ' | Dup-Primary: ' + primary);
   }
   return { dupOthersCount: others, dupPrimaryCount: primary };
 }
@@ -1203,7 +1222,7 @@ function markDuplicatesForRemoval_(includeOthers, includePrimary) {
   var total = updatedOthers + updatedPrimary;
   if (total > 0) {
     statusRange.setValues(statusValues);
-    LOG.write('DUPE_TRIAGE', '[OK] Marked ' + total + ' flights as Remove', 'Others: ' + updatedOthers + ', Primary: ' + updatedPrimary);
+    LOG.write('DUPE_TRIAGE', '[COMPLETE] Duplicate triage finished: Marked ' + total + ' flight(s) as Remove', 'Dup-Others: ' + updatedOthers + ', Dup-Primary: ' + updatedPrimary);
   }
 
   return {
@@ -1558,6 +1577,10 @@ function getMissingMasterLogsStatus() {
       }
     }
 
+    if (missingFiles.length > 0) {
+      LOG.write('MASTER_RESYNC', '[INFO] Discovered ' + missingFiles.length + ' missing Master flight(s) in folder "' + folder.getName() + '"');
+    }
+
     return {
       folderName: folder.getName(),
       files: missingFiles
@@ -1579,12 +1602,10 @@ function restoreSingleMasterFlight(fileId) {
     var blob = file.getBlob();
     var config = getParameters_();
 
-    var success = processSingleIgcBlob_(blob, fName, file.getId(), fName, config);
+    var success = processSingleIgcBlob_(blob, fName, file.getId(), fName, config, 'MASTER_RESYNC');
     if (success) {
-      LOG.write('MASTER_RESYNC', '[OK] ' + fName, 'FileID: ' + file.getId() + ' | Restored to Flights sheet');
       return { success: true, name: fName, msg: 'Restored to Flights sheet' };
     } else {
-      LOG.write('MASTER_RESYNC', '[DUPE] ' + fName, 'FileID: ' + file.getId() + ' | Skipped or duplicate');
       return { success: false, name: fName, error: 'Skipped (Duplicate or already present)' };
     }
   } catch (e) {
@@ -1594,8 +1615,9 @@ function restoreSingleMasterFlight(fileId) {
 
 /**
  * Post-resync cleanup: resets cache and sorts logbook.
+ * @param {Object} [stats] - Optional completion stats { restored, skipped, errors }.
  */
-function finalizeResync_() {
+function finalizeResync_(stats) {
   if (typeof _cachedSheetHashes !== 'undefined') {
     _cachedSheetHashes = null;
   }
@@ -1604,15 +1626,25 @@ function finalizeResync_() {
   } catch (e) {
     console.warn('Post-resync sort warning:', e);
   }
-  LOG.write('MASTER_RESYNC', '[COMPLETE] Master Re-sync session completed');
+  var summaryMsg = '[COMPLETE] Master Re-sync session completed';
+  var details = '';
+  if (stats) {
+    summaryMsg = '[COMPLETE] Re-sync complete: ' + (stats.restored || 0) + ' restored, ' + (stats.skipped || 0) + ' skipped';
+    if (stats.errors > 0) {
+      summaryMsg += ', ' + stats.errors + ' error(s)';
+    }
+    details = 'Restored: ' + (stats.restored || 0) + ' | Skipped: ' + (stats.skipped || 0) + ' | Errors: ' + (stats.errors || 0);
+  }
+  LOG.write('MASTER_RESYNC', summaryMsg, details);
   return { success: true };
 }
 
 /**
  * Public RPC Gateway for ResyncDialog.html.
+ * @param {Object} [stats] - Optional completion stats.
  */
-function finalizeResync() {
-  return finalizeResync_();
+function finalizeResync(stats) {
+  return finalizeResync_(stats);
 }
 
 /**
@@ -1891,9 +1923,17 @@ function processBulkBatch(batchFiles, options) {
 
 /**
  * Public wrapper for finalizing bulk import by sorting the logbook chronologically.
+ * @param {Object} [stats] - Optional completion stats { imported, duplicates, errors }.
  */
-function finalizeBulkImport() {
+function finalizeBulkImport(stats) {
   sortFlightsByDate_();
+  var summaryMsg = '[COMPLETE] Bulk Ingestion session completed';
+  var details = '';
+  if (stats) {
+    summaryMsg = '[COMPLETE] Bulk Ingestion complete: ' + (stats.imported || 0) + ' imported, ' + (stats.duplicates || 0) + ' duplicates, ' + (stats.errors || 0) + ' errors';
+    details = 'Imported: ' + (stats.imported || 0) + ' | Duplicates: ' + (stats.duplicates || 0) + ' | Errors: ' + (stats.errors || 0);
+  }
+  LOG.write('BULK_INGEST', summaryMsg, details);
   return { success: true, message: 'All flights imported and logbook sorted.' };
 }
 

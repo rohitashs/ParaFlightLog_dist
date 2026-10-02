@@ -93,6 +93,8 @@
 
                 log('Scanning Watch Folder: ' + (result.folderName || 'Unknown'));
                 log('Found ' + totalFiles + ' files (' + totalFlights + ' flights). Starting process...');
+                google.script.run.logClientActivity('WATCH_FOLDER', '[INFO] Discovered ' + totalFiles + ' file(s) in Watch Folder (' + (result.folderName || 'Watch Folder') + ')');
+                google.script.run.logClientActivity('WATCH_FOLDER', '[START] Starting scan of ' + totalFiles + ' file(s)');
                 processNext(0);
             }
         }
@@ -161,6 +163,7 @@
                 log('Flights Created: ' + processedFlights);
                 log('Skipped: ' + skippedFiles);
                 log('Errors: ' + errorFiles);
+                google.script.run.logClientActivity('WATCH_FOLDER', '[COMPLETE] Scan complete: ' + processedFiles + ' processed, ' + skippedFiles + ' skipped, ' + errorFiles + ' errors', processedFlights + ' flight(s) added');
                 google.script.run.sortFlightsByDate();
             }
 
