@@ -144,7 +144,7 @@ function showBulkIngestionDialog() {
   var html = HtmlService.createTemplateFromFile('BulkIngestDialog')
       .evaluate()
       .setWidth(680)
-      .setHeight(620);
+      .setHeight(650);
   SpreadsheetApp.getUi().showModalDialog(html, 'Bulk Flight Ingestion');
 }
 

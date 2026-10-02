@@ -10,12 +10,17 @@
     <base target="_top">
     <?!= HtmlService.createTemplateFromFile('Style').evaluate().getContent(); ?>
     <style>
+        .main-content {
+            padding: 10px 15px;
+        }
+
         .picker-container {
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 7px;
             overflow-y: auto;
-            max-height: 480px;
+            flex: 1 1 auto;
+            min-height: 0;
             padding-right: 4px;
         }
 
@@ -64,7 +69,7 @@
         .folder-list-container {
             border: 1px solid #ddd;
             border-radius: 4px;
-            height: 110px;
+            height: 200px;
             overflow-y: auto;
             background: #fff;
         }
@@ -213,12 +218,6 @@
 </head>
 
 <body>
-    <!-- Header -->
-    <div class="header-large text-amber" style="display:flex; justify-content:space-between; align-items:center; padding-bottom:8px;">
-        <span>⚡ Bulk Flight Ingestion</span>
-        <span onclick="google.script.host.close()" style="cursor:pointer; font-size:22px; color:#888; line-height:1;" title="Close">&times;</span>
-    </div>
-
     <div class="main-content">
         <!-- Configuration Panel (Shown before execution) -->
         <div id="config-panel" class="picker-container">
