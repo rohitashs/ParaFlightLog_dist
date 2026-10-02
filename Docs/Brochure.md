@@ -29,18 +29,11 @@ We built an enterprise-grade flight analytics, equipment maintenance, and automa
 
 ## 2. Core Capabilities: Flight Logging Reimagined
 
-```
-┌────────────────────────────────────────────────────────────────────────┐
-│                        PARAGLIDING FLIGHT ENGINE                       │
-├─────────────────┬───────────────────┬─────────────────┬────────────────┤
-│ 📥 INGESTION    │ 🧮 PHYSICS        │ 🌦️ ENRICHMENT   │ 📊 COCKPIT     │
-│ • Drag & Drop   │ • Thermal Detect  │ • Open-Meteo    │ • KPI Banners  │
-│ • Cloud URLs    │ • Ridge Soaring   │ • Wind at Launch│ • 6-Mo Currency│
-│ • Watch Folders │ • Glide L/D Ratio │ • Cloudbase (m) │ • 8 Leaderboard│
-│ • Multi-Archive │ • FAI XC Scoring  │ • OSM Geocoding │ • Dynamic Top 5│
-│ • Smart Dedupe  │ • RDP Optimizer   │ • XContest Sync │ • SeeYou 3D    │
-└─────────────────┴───────────────────┴─────────────────┴────────────────┘
-```
+**PARAGLIDING FLIGHT ENGINE**
+
+| 📥 INGESTION | 🧮 PHYSICS | 🌦️ ENRICHMENT | 📊 COCKPIT |
+| :--- | :--- | :--- | :--- |
+| • Drag & Drop <br> • Cloud URLs <br> • Watch Folders <br> • Multi-Archive <br> • Smart Dedupe | • Thermal Detect <br> • Ridge Soaring <br> • Glide $L/D$ Ratio <br> • FAI XC Scoring <br> • RDP Optimizer | • Open-Meteo <br> • Wind at Launch <br> • Cloudbase (m) <br> • OSM Geocoding <br> • XContest Sync | • KPI Banners <br> • 6-Mo Currency <br> • 8 Leaderboard <br> • Dynamic Top 5 <br> • SeeYou 3D |
 
 ### 📥 1. Zero-Friction Multi-Source Ingestion
 * **Drag-and-Drop Web Uploader**: Drop single IGC files or compressed archives directly into the browser.
@@ -178,18 +171,18 @@ ParaFlightLog is currently in **active production deployment (v1.x / v2.0 Ready)
 ParaFlightLog is evolving systematically from a private flight operations engine into a globally accessible, community-governed open-source platform:
 
 ```mermaid
-timeline
-    title ParaFlightLog Strategic Evolution
-    section Horizon 1 : Current State
-      Single-Pilot Core Engine : Aeronautical Physics : Weather & Geo Backfill : Zero Black-Box Dedupe : Cockpit Dashboard
-    section Horizon 2 : v2.0 Active
-      Tri-Mode Execution : Universal Execution Sidebar : Persistent Automation_Queue : Table-Driven Automation Engine
-    section Horizon 3 : v2.5 Pre-OSS
-      Multi-Instance Distribution & Updater : Guided Task Wizards : Pre-OSS Quality & Security Audit : Automated AI Testing Harness
-    section Horizon 4 : v3.0 Public Launch
-      Public Open-Source Release : Golden Starter Sheet : Community Governance & RFCs : Plugin Architecture
-    section Horizon 5 : v3.5+ Global Ecosystem
-      Equipment Airworthiness Engine : Pilot Progression & SIV Matrix : Site Intelligence & Weather Matrix : Expedition Planning
+flowchart LR
+    classDef h1 fill:#E8EAF6,stroke:#3F51B5,stroke-width:2px,color:#1A237E;
+    classDef h2 fill:#E0F2F1,stroke:#00897B,stroke-width:2px,color:#004D40;
+    classDef h3 fill:#FFF3E0,stroke:#FB8C00,stroke-width:2px,color:#E65100;
+    classDef h4 fill:#F3E5F5,stroke:#8E24AA,stroke-width:2px,color:#4A148C;
+    classDef h5 fill:#E8F5E9,stroke:#43A047,stroke-width:2px,color:#1B5E20;
+
+    H1["<b>Horizon 1: Current State</b><br>• Core Single-Pilot Engine<br>• Aero Physics & Scoring<br>• Weather & OSM Backfill<br>• Zero Black-Box Dedupe"]:::h1
+    --> H2["<b>Horizon 2: v2.0 Active</b><br>• Tri-Mode Execution<br>• Universal Sidebar<br>• Automation_Queue<br>• Table-Driven Engine"]:::h2
+    --> H3["<b>Horizon 3: v2.5 Pre-OSS</b><br>• Multi-Instance Distribution<br>• Non-Destructive Updater<br>• Security & PII Audit<br>• Automated AI Testing"]:::h3
+    --> H4["<b>Horizon 4: v3.0 Public Launch</b><br>• Public Open-Source Release<br>• Golden Starter Sheet<br>• Community Governance<br>• Extensible Plugins"]:::h4
+    --> H5["<b>Horizon 5: v3.5+ Ecosystem</b><br>• Gear Airworthiness Engine<br>• Pilot Progression & SIV<br>• Site Intelligence Matrix<br>• Expedition Planning"]:::h5
 ```
 
 ### Roadmap Highlights:
