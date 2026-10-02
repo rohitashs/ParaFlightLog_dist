@@ -311,7 +311,8 @@ CFG.LOG_PROCESSES = {
   LOAD_CONFIG:    'Load Config',
   SYSTEM_SETUP:   'System Setup',
   LOG_CLEAN:      'Log Maintenance',
-  BACKGROUND_QUEUE: 'Background Queue'
+  BACKGROUND_QUEUE: 'Background Queue',
+  STATUS_CHANGE:  'Status Change'
 };
 
 CFG.LOG_PREFIXES = {

@@ -25,6 +25,7 @@ function onOpen(e) {
         .addItem('Scan Watch Folder Now', 'showScanDialog'))
     .addSubMenu(ui.createMenu('Flight maintenance')
         .addItem('Flight Updates...', 'showFlightMaintenanceDialog')
+        .addItem('Change Flight Status in Bulk...', 'showChangeFlightStatusDialog')
         .addItem('Sort All Flights by Date', 'sortFlightsByDate')
         .addSeparator()
         .addItem('Scan & Flag Duplicates in Logbook...', 'uiScanAndFlagLogbookDuplicates')
@@ -163,6 +164,14 @@ function showFlightMaintenanceDialog() {
       .setWidth(560)
       .setHeight(580);
   SpreadsheetApp.getUi().showModalDialog(html, 'Flight Updates');
+}
+
+function showChangeFlightStatusDialog() {
+  var html = HtmlService.createTemplateFromFile('ChangeFlightStatusDialog')
+      .evaluate()
+      .setWidth(540)
+      .setHeight(540);
+  SpreadsheetApp.getUi().showModalDialog(html, 'Change Flight Status in Bulk');
 }
 
 function showPurgeDialog() {
@@ -482,6 +491,120 @@ function getMaintenanceTargetRows(scope) {
   } else {
     return allFlights;
   }
+}
+
+/**
+ * Discovers scope and status counts for the Change Flight Status dialog.
+ * @return {Object}
+ */
+function getStatusChangeScopeInfo() {
+  var ss = SpreadsheetApp.getActive();
+  var sh = ss.getActiveSheet();
+  var actName = sh ? sh.getName() : '';
+  var isFlights = (actName === TABS.FLIGHTS.name);
+  
+  var shFlights = ss.getSheetByName(TABS.FLIGHTS.name);
+  if (!shFlights) {
+    return {
+      isFlightsSheet: false,
+      selectedRowCount: 0,
+      selectedRowRange: '',
+      totalFlights: 0,
+      allFlights: [],
+      selectedFlights: [],
+      allStatusCounts: {},
+      selectedStatusCounts: {}
+    };
+  }
+
+  var lastRow = shFlights.getLastRow();
+  var allFlights = [];
+  var allStatusCounts = {
+    'Valid': 0, 'Review?': 0, 'Dup-Primary': 0, 'Dup-Others': 0, 'Invalid?': 0, 'Remove': 0
+  };
+  var selectedStatusCounts = {
+    'Valid': 0, 'Review?': 0, 'Dup-Primary': 0, 'Dup-Others': 0, 'Invalid?': 0, 'Remove': 0
+  };
+
+  var selectedCount = 0;
+  var selectedRangeStr = '';
+  var startRow = -1;
+  var endRow = -1;
+
+  if (isFlights) {
+    var activeRange = sh.getActiveRange();
+    if (activeRange) {
+      startRow = activeRange.getRow();
+      endRow = activeRange.getLastRow();
+    }
+  }
+
+  if (lastRow >= 5) {
+    var map = getColumnMap_(shFlights);
+    var idCol = map['FlightID'] || 1;
+    var statusCol = map['Status'] || 2;
+    var maxCol = Math.max(idCol, statusCol);
+    var numRows = lastRow - 4;
+    var vals = shFlights.getRange(5, 1, numRows, maxCol).getDisplayValues();
+
+    for (var i = 0; i < vals.length; i++) {
+      var rowNum = 5 + i;
+      var rawId = String(vals[i][idCol - 1]).trim();
+      var rawStatus = String(vals[i][statusCol - 1]).trim();
+      if (rawId !== '') {
+        var flightItem = { row: rowNum, id: rawId, status: rawStatus };
+        allFlights.push(flightItem);
+        allStatusCounts[rawStatus] = (allStatusCounts[rawStatus] || 0) + 1;
+
+        if (isFlights && rowNum >= startRow && rowNum <= endRow) {
+          selectedStatusCounts[rawStatus] = (selectedStatusCounts[rawStatus] || 0) + 1;
+        }
+      }
+    }
+  }
+
+  var selectedFlights = [];
+  if (isFlights && allFlights.length > 0 && startRow !== -1) {
+    selectedFlights = allFlights.filter(function(item) {
+      return item.row >= startRow && item.row <= endRow;
+    });
+    selectedCount = selectedFlights.length;
+    if (selectedCount > 0) {
+      var minR = selectedFlights[0].row;
+      var maxR = selectedFlights[selectedFlights.length - 1].row;
+      selectedRangeStr = minR + (minR !== maxR ? ('-' + maxR) : '');
+    }
+  }
+
+  return {
+    isFlightsSheet: isFlights,
+    selectedRowCount: selectedCount,
+    selectedRowRange: selectedRangeStr,
+    totalFlights: allFlights.length,
+    allFlights: allFlights,
+    selectedFlights: selectedFlights,
+    allStatusCounts: allStatusCounts,
+    selectedStatusCounts: selectedStatusCounts
+  };
+}
+
+/**
+ * Resolves flights targeted for status change based on scope and source status filters.
+ * CRITICAL SAFETY RULE: When sourceStatuses is empty/unselected, returns [] (0 flights match).
+ * @param {string} scope 'selected' or 'all'
+ * @param {Array<string>} sourceStatuses List of source statuses to filter
+ * @return {Array<Object>}
+ */
+function getStatusChangeTargetRows(scope, sourceStatuses) {
+  if (!sourceStatuses || !Array.isArray(sourceStatuses) || sourceStatuses.length === 0) {
+    return [];
+  }
+
+  var info = getStatusChangeScopeInfo();
+  var pool = (scope === 'selected') ? info.selectedFlights : info.allFlights;
+  return pool.filter(function(flt) {
+    return sourceStatuses.indexOf(flt.status) !== -1;
+  });
 }
 
 function executeFlightMaintenanceRow(rowNum, opConfig) {
@@ -2166,6 +2289,40 @@ function executeWorkerBatch(jobType, currentBatch, options, stepIndex, jobId) {
       };
       break;
 
+    case 'STATUS_CHANGE':
+      var statusLogs = [];
+      var statusUpdated = 0;
+      var statusErrors = 0;
+      var targetStatus = options.targetStatus;
+      if (!targetStatus) {
+        throw new Error('Target status is required for STATUS_CHANGE');
+      }
+      var ssStatus = SpreadsheetApp.getActive();
+      var shStatus = ssStatus.getSheetByName(TABS.FLIGHTS.name);
+      var mapStatus = getColumnMap_(shStatus);
+      var statusCol = mapStatus['Status'] || 2;
+      for (var sc = 0; sc < currentBatch.length; sc++) {
+        var sItem = currentBatch[sc];
+        var sRow = (typeof sItem === 'object') ? (sItem.row || sItem.rowNum) : sItem;
+        var sId = (typeof sItem === 'object' && sItem.id) ? sItem.id : ('Row ' + sRow);
+        try {
+          shStatus.getRange(sRow, statusCol).setValue(targetStatus);
+          statusLogs.push(sId + ' (Row ' + sRow + '): ' + targetStatus);
+          statusUpdated++;
+        } catch (sErr) {
+          statusLogs.push(sId + ' (Row ' + sRow + ') ERROR: ' + sErr.message);
+          statusErrors++;
+        }
+      }
+      result = {
+        success: true,
+        logs: statusLogs,
+        importedCount: statusUpdated,
+        duplicateCount: 0,
+        errorCount: statusErrors
+      };
+      break;
+
     default:
       throw new Error('Unsupported jobType: ' + jobType);
   }
@@ -2199,6 +2356,13 @@ function finalizeWorkerJob(jobType, jobId, stats) {
       break;
     case 'PURGE':
       finalizePurge_();
+      break;
+    case 'STATUS_CHANGE':
+      try {
+        refreshDashboard_();
+      } catch (e) {
+        console.warn('Post-status change dashboard refresh warning:', e);
+      }
       break;
     case 'MAINTENANCE':
     case 'RESYNC':

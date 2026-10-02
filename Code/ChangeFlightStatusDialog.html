@@ -1,0 +1,618 @@
+<!--
+ * Paragliding Flight Log v2.0
+ * Bulk Flight Status Change Dialog (CR-MNT-004)
+ * Tri-Mode Execution Enabled (DSGN-UI-001)
+ -->
+<!DOCTYPE html>
+<html>
+
+<head>
+    <base target="_top">
+    <?!= HtmlService.createTemplateFromFile('Style').evaluate().getContent(); ?>
+    <style>
+        .section-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #616161;
+            font-weight: 700;
+            margin-top: 4px;
+            margin-bottom: 4px;
+        }
+
+        .scope-card, .filter-card, .target-card {
+            background-color: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 8px 12px;
+            margin-bottom: 8px;
+        }
+
+        .radio-item, .check-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            color: #333;
+        }
+
+        .radio-item:last-child, .check-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .radio-item input, .check-item input {
+            margin-right: 8px;
+            accent-color: #2196F3;
+        }
+
+        .scope-desc {
+            font-size: 11px;
+            color: #757575;
+            margin-left: 24px;
+            margin-top: -2px;
+            margin-bottom: 4px;
+        }
+
+        .badge {
+            background-color: #e3f2fd;
+            color: #1976d2;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-left: 6px;
+        }
+
+        .badge-warn {
+            background-color: #fff3e0;
+            color: #e65100;
+        }
+
+        .badge-subtle {
+            background-color: #f5f5f5;
+            color: #757575;
+            border: 1px solid #e0e0e0;
+            padding: 1px 5px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: 600;
+            margin-left: 4px;
+        }
+
+        .status-pill {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+        .pill-valid { background-color: #4CAF50; }
+        .pill-review { background-color: #FDD835; }
+        .pill-dup-pri { background-color: #FFA000; }
+        .pill-dup-oth { background-color: #FF7043; }
+        .pill-invalid { background-color: #9E9E9E; }
+        .pill-remove { background-color: #E53935; }
+
+        .filter-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 6px 10px;
+        }
+
+        .safety-note {
+            font-size: 11px;
+            color: #616161;
+            margin-top: 6px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .target-select-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .target-select {
+            flex: 1 1 auto;
+            padding: 6px 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 12px;
+            background-color: #fff;
+            color: #333;
+            font-family: inherit;
+        }
+
+        .target-select:focus {
+            outline: none;
+            border-color: #2196F3;
+        }
+
+        .control-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+        }
+
+        .primary-action {
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            padding: 6px 14px;
+            font-size: 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            font-weight: 600;
+        }
+
+        .primary-action:hover {
+            background-color: #1976D2;
+        }
+
+        .primary-action:disabled {
+            background-color: #BBDEFB;
+            cursor: not-allowed;
+        }
+
+        button.secondary {
+            background-color: #f1f3f4;
+            color: #333;
+            border: 1px solid #ccc;
+            padding: 6px 14px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        button.secondary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        #log-console {
+            margin-top: 4px;
+            background-color: #f8f9fa;
+            border: 1px solid #eee;
+            border-radius: 4px;
+            padding: 8px;
+            font-family: monospace;
+            font-size: 11px;
+            white-space: pre-wrap;
+            color: #444;
+            height: 90px;
+            overflow-y: auto;
+            flex: 1 1 auto;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="main-content">
+        <!-- 1. Target Scope -->
+        <div class="section-label">1. Target Scope</div>
+        <div class="scope-card">
+            <label class="radio-item">
+                <input type="radio" name="scope" id="scope-selected" value="selected" checked onchange="onScopeChange()">
+                <span>Selected Rows</span>
+                <span id="badge-selected" class="badge">Detecting...</span>
+            </label>
+            <div id="desc-selected" class="scope-desc">Current row selection on Flights tab.</div>
+
+            <label class="radio-item">
+                <input type="radio" name="scope" id="scope-all" value="all" onchange="onScopeChange()">
+                <span>All Flights</span>
+                <span id="badge-all" class="badge">Detecting...</span>
+            </label>
+            <div id="desc-all" class="scope-desc">All flights currently in the Flights logbook.</div>
+        </div>
+
+        <!-- 2. Source Status Filter (Multi-Select Checkboxes) -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:2px;">
+            <div class="section-label" style="margin:0;">2. Filter by Current Status</div>
+            <span id="match-summary" class="badge badge-warn">0 flights match filter</span>
+        </div>
+        <div class="filter-card">
+            <div class="filter-grid">
+                <label class="check-item">
+                    <input type="checkbox" id="flt-Valid" value="Valid" onchange="onFilterChange()">
+                    <span class="status-pill pill-valid"></span>
+                    <span>Valid</span>
+                    <span id="cnt-Valid" class="badge-subtle">0</span>
+                </label>
+                <label class="check-item">
+                    <input type="checkbox" id="flt-Review" value="Review?" onchange="onFilterChange()">
+                    <span class="status-pill pill-review"></span>
+                    <span>Review?</span>
+                    <span id="cnt-Review" class="badge-subtle">0</span>
+                </label>
+                <label class="check-item">
+                    <input type="checkbox" id="flt-Dup-Primary" value="Dup-Primary" onchange="onFilterChange()">
+                    <span class="status-pill pill-dup-pri"></span>
+                    <span>Dup-Primary</span>
+                    <span id="cnt-Dup-Primary" class="badge-subtle">0</span>
+                </label>
+                <label class="check-item">
+                    <input type="checkbox" id="flt-Dup-Others" value="Dup-Others" onchange="onFilterChange()">
+                    <span class="status-pill pill-dup-oth"></span>
+                    <span>Dup-Others</span>
+                    <span id="cnt-Dup-Others" class="badge-subtle">0</span>
+                </label>
+                <label class="check-item">
+                    <input type="checkbox" id="flt-Invalid" value="Invalid?" onchange="onFilterChange()">
+                    <span class="status-pill pill-invalid"></span>
+                    <span>Invalid?</span>
+                    <span id="cnt-Invalid" class="badge-subtle">0</span>
+                </label>
+                <label class="check-item">
+                    <input type="checkbox" id="flt-Remove" value="Remove" onchange="onFilterChange()">
+                    <span class="status-pill pill-remove"></span>
+                    <span>Remove</span>
+                    <span id="cnt-Remove" class="badge-subtle">0</span>
+                </label>
+            </div>
+            <div class="safety-note">
+                <span>🛡️</span>
+                <span>Select at least one status above to target flights. Default is all unselected for safety.</span>
+            </div>
+        </div>
+
+        <!-- 3. Target Status Dropdown -->
+        <div class="section-label">3. Target Status</div>
+        <div class="target-card">
+            <div class="target-select-row">
+                <select id="target-status" class="target-select" onchange="onTargetStatusChange()">
+                    <option value="" disabled selected>-- Select Target Status --</option>
+                    <option value="Valid">Valid (Green - Counted in Dashboard & Stats)</option>
+                    <option value="Review?">Review? (Yellow - Default for Unverified Logs)</option>
+                    <option value="Dup-Primary">Dup-Primary (Gold - Preferred Duplicate)</option>
+                    <option value="Dup-Others">Dup-Others (Orange - Backup Duplicate)</option>
+                    <option value="Invalid?">Invalid? (Gray - Problematic Track)</option>
+                    <option value="Remove">Remove (Red - Staged for Permanent Purge)</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- 4. Activity Log Console -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:2px;">
+            <div class="section-label" style="margin:0;">Activity Log:</div>
+            <button type="button" id="btn-copy-log" class="secondary" style="padding:2px 8px; font-size:11px;" onclick="copyConsoleLog()">📋 Copy Log</button>
+        </div>
+        <div id="log-console">Ready. Select scope, check one or more source statuses, and pick a target status.</div>
+
+        <!-- 5. Action Buttons (Tri-Mode Execution Bar) -->
+        <div class="control-group">
+            <button type="button" id="btn-run-here" onclick="startStatusChange('MODAL')" class="primary-action" disabled>🚀 Run Here</button>
+            <button type="button" id="btn-run-sidebar" onclick="startStatusChange('SIDEBAR')" class="secondary" style="border-color:#1976D2; color:#1976D2; font-weight:600;" disabled>📌 Run in Sidebar</button>
+            <button type="button" id="btn-run-background" onclick="startStatusChange('BACKGROUND')" class="secondary" style="border-color:#5E35B1; color:#5E35B1; font-weight:600;" disabled>⚙️ Run in Background</button>
+            <button type="button" id="btn-cancel" class="secondary" onclick="google.script.host.close()">Cancel</button>
+        </div>
+    </div>
+
+    <!-- 6. Progress Footer -->
+    <div class="footer">
+        <div class="status-line">
+            <span id="status-left">Idle</span>
+            <span id="status-right">0%</span>
+        </div>
+        <div class="progress-bar-bg">
+            <div id="progress-bar" class="progress-bar-fill"></div>
+        </div>
+    </div>
+
+    <script>
+        var scopeData = null;
+        var matchingFlights = [];
+        var isRunning = false;
+        var BATCH_SIZE = 25;
+
+        var STATUS_KEYS = ['Valid', 'Review?', 'Dup-Primary', 'Dup-Others', 'Invalid?', 'Remove'];
+        var STATUS_ID_MAP = {
+            'Valid': 'flt-Valid',
+            'Review?': 'flt-Review',
+            'Dup-Primary': 'flt-Dup-Primary',
+            'Dup-Others': 'flt-Dup-Others',
+            'Invalid?': 'flt-Invalid',
+            'Remove': 'flt-Remove'
+        };
+        var STATUS_CNT_MAP = {
+            'Valid': 'cnt-Valid',
+            'Review?': 'cnt-Review',
+            'Dup-Primary': 'cnt-Dup-Primary',
+            'Dup-Others': 'cnt-Dup-Others',
+            'Invalid?': 'cnt-Invalid',
+            'Remove': 'cnt-Remove'
+        };
+
+        window.onload = function () {
+            log('Detecting flight selection and status counts...');
+            google.script.run
+                .withSuccessHandler(initUI)
+                .withFailureHandler(function (err) {
+                    log('Error detecting scope: ' + err.message);
+                    setStatus('Error detecting scope', '0%');
+                })
+                .getStatusChangeScopeInfo();
+        };
+
+        function log(msg) {
+            var c = document.getElementById('log-console');
+            c.textContent += '\n' + msg;
+            c.scrollTop = c.scrollHeight;
+        }
+
+        function setStatus(text, pctStr) {
+            document.getElementById('status-left').innerText = text;
+            document.getElementById('status-right').innerText = pctStr;
+            var pct = parseInt(pctStr, 10) || 0;
+            document.getElementById('progress-bar').style.width = pct + '%';
+        }
+
+        function copyConsoleLog() {
+            var logEl = document.getElementById('log-console');
+            var text = logEl.innerText || logEl.textContent;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(function() {
+                    alert('Activity log copied to clipboard.');
+                });
+            } else {
+                var ta = document.createElement('textarea');
+                ta.value = text;
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+                alert('Activity log copied to clipboard.');
+            }
+        }
+
+        function setActionButtonsEnabled(enabled) {
+            document.getElementById('btn-run-here').disabled = !enabled;
+            document.getElementById('btn-run-sidebar').disabled = !enabled;
+            document.getElementById('btn-run-background').disabled = !enabled;
+        }
+
+        function initUI(info) {
+            scopeData = info;
+            var badgeSel = document.getElementById('badge-selected');
+            var badgeAll = document.getElementById('badge-all');
+            var rSel = document.getElementById('scope-selected');
+            var rAll = document.getElementById('scope-all');
+
+            badgeAll.innerText = info.totalFlights + ' flights';
+
+            if (info.isFlightsSheet && info.selectedRowCount > 0) {
+                badgeSel.innerText = info.selectedRowCount + ' selected (Rows ' + info.selectedRowRange + ')';
+                badgeSel.className = 'badge';
+                rSel.checked = true;
+                rSel.disabled = false;
+            } else {
+                badgeSel.innerText = info.isFlightsSheet ? 'No flights in selection' : 'Not on Flights sheet';
+                badgeSel.className = 'badge badge-warn';
+                rAll.checked = true;
+                rSel.disabled = true;
+            }
+
+            if (info.totalFlights === 0) {
+                badgeAll.className = 'badge badge-warn';
+            } else {
+                badgeAll.className = 'badge';
+            }
+
+            updateFilterPillsAndCounts();
+            recomputeMatchingFlights();
+            log('Ready. Loaded ' + info.totalFlights + ' flights in logbook.');
+        }
+
+        function getActiveScope() {
+            var el = document.querySelector('input[name="scope"]:checked');
+            return el ? el.value : 'selected';
+        }
+
+        function onScopeChange() {
+            updateFilterPillsAndCounts();
+            recomputeMatchingFlights();
+        }
+
+        function getCheckedSourceStatuses() {
+            var checked = [];
+            STATUS_KEYS.forEach(function(key) {
+                var id = STATUS_ID_MAP[key];
+                var cb = document.getElementById(id);
+                if (cb && cb.checked) {
+                    checked.push(key);
+                }
+            });
+            return checked;
+        }
+
+        function updateFilterPillsAndCounts() {
+            if (!scopeData) return;
+            var scope = getActiveScope();
+            var counts = (scope === 'selected') ? (scopeData.selectedStatusCounts || {}) : (scopeData.allStatusCounts || {});
+            
+            STATUS_KEYS.forEach(function(key) {
+                var cntId = STATUS_CNT_MAP[key];
+                var el = document.getElementById(cntId);
+                if (el) {
+                    el.innerText = counts[key] || 0;
+                }
+            });
+        }
+
+        function onFilterChange() {
+            recomputeMatchingFlights();
+        }
+
+        function onTargetStatusChange() {
+            recomputeMatchingFlights();
+        }
+
+        function recomputeMatchingFlights() {
+            if (!scopeData || isRunning) return;
+
+            var scope = getActiveScope();
+            var flightsInScope = (scope === 'selected') ? (scopeData.selectedFlights || []) : (scopeData.allFlights || []);
+            var checkedStatuses = getCheckedSourceStatuses();
+            var targetStatus = document.getElementById('target-status').value;
+            var matchSummary = document.getElementById('match-summary');
+
+            // CRITICAL SAFETY RULE: When NONE of the status checkboxes are selected, NO flights match!
+            if (checkedStatuses.length === 0) {
+                matchingFlights = [];
+                matchSummary.innerText = '0 flights match (None selected)';
+                matchSummary.className = 'badge badge-warn';
+                setActionButtonsEnabled(false);
+                return;
+            }
+
+            // Filter flights in scope matching ANY of the checked source statuses
+            matchingFlights = flightsInScope.filter(function(flt) {
+                return checkedStatuses.indexOf(flt.status) !== -1;
+            });
+
+            var count = matchingFlights.length;
+            if (count > 0) {
+                matchSummary.innerText = count + ' flight(s) match filter';
+                matchSummary.className = 'badge';
+            } else {
+                matchSummary.innerText = '0 flights match filter';
+                matchSummary.className = 'badge badge-warn';
+            }
+
+            // Enable buttons only if we have matching flights AND a valid target status selected
+            var canRun = (count > 0 && !!targetStatus);
+            setActionButtonsEnabled(canRun);
+        }
+
+        function startStatusChange(mode) {
+            var targetStatus = document.getElementById('target-status').value;
+            if (!targetStatus) {
+                alert('Please select a target status from the dropdown.');
+                return;
+            }
+
+            if (!matchingFlights || matchingFlights.length === 0) {
+                alert('No flights match the selected filter.');
+                return;
+            }
+
+            var checkedStatuses = getCheckedSourceStatuses();
+            var scope = getActiveScope();
+            var scopeLabel = (scope === 'selected') ? 'Selected Rows' : 'All Flights';
+
+            setActionButtonsEnabled(false);
+            document.getElementById('target-status').disabled = true;
+            document.getElementById('scope-selected').disabled = true;
+            document.getElementById('scope-all').disabled = true;
+            STATUS_KEYS.forEach(function(key) {
+                var cb = document.getElementById(STATUS_ID_MAP[key]);
+                if (cb) cb.disabled = true;
+            });
+
+            var descText = matchingFlights.length + ' flight(s) [' + checkedStatuses.join(', ') + '] -> ' + targetStatus;
+            log('Starting status change: ' + descText + ' (' + mode + ')');
+            google.script.run.logClientActivity('STATUS_CHANGE', '[START] Status change: ' + descText + ' (' + mode + ')');
+
+            // Mode 2: Run in Sidebar (DSGN-UI-001)
+            if (mode === 'SIDEBAR') {
+                var sidebarPayload = {
+                    jobType: 'STATUS_CHANGE',
+                    title: 'Flight Status Change',
+                    contextText: scopeLabel + ' (' + matchingFlights.length + ' flights)',
+                    totalItems: matchingFlights.length,
+                    queue: matchingFlights,
+                    batchSize: BATCH_SIZE,
+                    options: { targetStatus: targetStatus }
+                };
+                google.script.run
+                    .withSuccessHandler(function() {
+                        google.script.host.close();
+                    })
+                    .withFailureHandler(function(err) {
+                        alert('Sidebar launch failed: ' + err.message);
+                        finishExecution(false);
+                    })
+                    .launchExecutionSidebar(sidebarPayload);
+                return;
+            }
+
+            // Mode 3: Run in Background (DSGN-UI-001)
+            if (mode === 'BACKGROUND') {
+                var bgPayload = {
+                    jobType: 'STATUS_CHANGE',
+                    title: 'Flight Status Change',
+                    contextText: scopeLabel + ' (' + matchingFlights.length + ' flights)',
+                    totalItems: matchingFlights.length,
+                    queue: matchingFlights,
+                    batchSize: BATCH_SIZE,
+                    options: { targetStatus: targetStatus }
+                };
+                google.script.run
+                    .withSuccessHandler(function() {
+                        google.script.host.close();
+                    })
+                    .withFailureHandler(function(err) {
+                        alert('Background launch failed: ' + err.message);
+                        finishExecution(false);
+                    })
+                    .launchBackgroundJob(bgPayload);
+                return;
+            }
+
+            // Mode 1: Run Here (Modal)
+            isRunning = true;
+            setStatus('Starting update...', '0%');
+            stepModalBatch(0, targetStatus);
+        }
+
+        function stepModalBatch(startIndex, targetStatus) {
+            if (startIndex >= matchingFlights.length) {
+                finishExecution(true);
+                return;
+            }
+
+            var batch = matchingFlights.slice(startIndex, startIndex + BATCH_SIZE);
+            var batchNum = Math.floor(startIndex / BATCH_SIZE) + 1;
+            var totalBatches = Math.ceil(matchingFlights.length / BATCH_SIZE);
+
+            var pct = Math.round((startIndex / matchingFlights.length) * 100);
+            setStatus('Updating batch ' + batchNum + '/' + totalBatches + '...', pct + '%');
+            log('Processing batch ' + batchNum + '/' + totalBatches + ' (' + batch.length + ' flights)...');
+
+            google.script.run
+                .withSuccessHandler(function(res) {
+                    if (res && res.logs) {
+                        res.logs.forEach(function(l) { log(l); });
+                    }
+                    var nextIndex = startIndex + batch.length;
+                    var newPct = Math.round((nextIndex / matchingFlights.length) * 100);
+                    setStatus('Batch ' + batchNum + ' completed', newPct + '%');
+                    stepModalBatch(nextIndex, targetStatus);
+                })
+                .withFailureHandler(function(err) {
+                    log('ERROR in batch ' + batchNum + ': ' + err.message);
+                    setStatus('Error in batch ' + batchNum, '0%');
+                    finishExecution(false);
+                })
+                .executeWorkerBatch('STATUS_CHANGE', batch, { targetStatus: targetStatus }, startIndex);
+        }
+
+        function finishExecution(success) {
+            isRunning = false;
+            document.getElementById('btn-cancel').innerText = 'Done';
+            if (success) {
+                setStatus('Status update complete!', '100%');
+                log('Finished: Updated ' + matchingFlights.length + ' flights to ' + document.getElementById('target-status').value);
+                google.script.run.logClientActivity('STATUS_CHANGE', '[COMPLETE] Updated ' + matchingFlights.length + ' flight(s)');
+            } else {
+                setStatus('Process halted', '0%');
+            }
+        }
+    </script>
+</body>
+</html>

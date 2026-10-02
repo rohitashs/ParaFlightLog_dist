@@ -29,6 +29,7 @@ function runAllTests() {
   results.push(testLogLevelFiltering_());
   results.push(testConservativePruningMath_());
   results.push(testDedupeEngineEnhancements_());
+  results.push(testStatusChangeUtility_());
   
   var failures = results.filter(function(r) { return !r.idx || r.error; });
   if (failures.length > 0) {
@@ -833,5 +834,52 @@ function testDedupeEngineEnhancements_() {
   }
 
   return { module: 'DedupeEngineEnhancements', idx: true };
+}
+
+function testStatusChangeUtility_() {
+  if (typeof showChangeFlightStatusDialog !== 'function') {
+    return { module: 'StatusChange', error: 'showChangeFlightStatusDialog function missing' };
+  }
+  if (typeof getStatusChangeScopeInfo !== 'function') {
+    return { module: 'StatusChange', error: 'getStatusChangeScopeInfo function missing' };
+  }
+  if (typeof getStatusChangeTargetRows !== 'function') {
+    return { module: 'StatusChange', error: 'getStatusChangeTargetRows function missing' };
+  }
+
+  // Test 1: CRITICAL SAFETY RULE: When sourceStatuses is empty/unselected, returns [] (0 flights match)
+  var emptyRes = getStatusChangeTargetRows('all', []);
+  if (!Array.isArray(emptyRes) || emptyRes.length !== 0) {
+    return { module: 'StatusChange', error: 'getStatusChangeTargetRows with empty array must return []' };
+  }
+
+  var nullRes = getStatusChangeTargetRows('all', null);
+  if (!Array.isArray(nullRes) || nullRes.length !== 0) {
+    return { module: 'StatusChange', error: 'getStatusChangeTargetRows with null must return []' };
+  }
+
+  // Test 2: In-memory simulation of filter matching logic
+  var mockFlights = [
+    { row: 5, id: 'F01', status: 'Valid' },
+    { row: 6, id: 'F02', status: 'Review?' },
+    { row: 7, id: 'F03', status: 'Dup-Primary' },
+    { row: 8, id: 'F04', status: 'Dup-Others' },
+    { row: 9, id: 'F05', status: 'Remove' }
+  ];
+
+  var filter1 = ['Review?', 'Dup-Others'];
+  var matched1 = mockFlights.filter(function(flt) {
+    return filter1.indexOf(flt.status) !== -1;
+  });
+  if (matched1.length !== 2) {
+    return { module: 'StatusChange', error: 'Expected 2 matched flights, got ' + matched1.length };
+  }
+
+  // Test 3: CFG.LOG_PROCESSES registration
+  if (!CFG.LOG_PROCESSES || CFG.LOG_PROCESSES.STATUS_CHANGE !== 'Status Change') {
+    return { module: 'StatusChange', error: 'CFG.LOG_PROCESSES.STATUS_CHANGE not registered' };
+  }
+
+  return { module: 'StatusChange', idx: true };
 }
 

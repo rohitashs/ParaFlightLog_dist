@@ -323,26 +323,17 @@ All flight logbook maintenance routines are consolidated under the **`Flight Log
 ```
 Flight Log > Flight maintenance
 ├── Flight Updates...                              (Unified batch update modal)
-├── Mark Duplicates for Removal...                 (Batch mark triaged duplicates to 'Remove')
+├── Change Flight Status in Bulk...                 (Multi-scoped status conversion with multi-select safety filters)
 ├── Sort All Flights by Date                      (Chronological sort & re-numbering)
 ├── ───
+├── Scan & Flag Duplicates in Logbook...          (In-memory heuristic audit & duplicate cluster tagging)
+├── Mark Duplicates for Removal...                 (Batch mark triaged duplicates to 'Remove')
 ├── Purge Flights Marked 'Remove'...               (Interactive stepping modal with trash transfer & row deletion)
 └── Re-sync Missing Flights from Master Folder...  (Interactive modal self-healing tool)
 ```
 
-### Configuration Management (Backup & Restore Settings)
-Under **`Flight Log > Admin > Configuration Management`**:
-* **`Save Config...`**: Opens `SaveConfigDialog.html` allowing you to export your settings to a portable `.json` file. Supports granular selection across:
-  * **Pilot Profile** (34 fields)
-  * **System Parameters** (5 sub-groups: 8 Ingestion, 16 Integrations & Geo/Time, 19 Scoring & Physics, 2 Format and Units, 4 UI & Dashboard Currency)
-  * **Lookups** (6 manual controlled vocabularies)
-* **`Load Config...`**: Opens `LoadConfigDialog.html` allowing you to upload and restore settings from a previous backup:
-  * Automatically detects populated sections in your `.json` file and displays live count badges.
-  * Sections not present in the uploaded file are automatically unchecked, disabled, and dimmed to prevent configuration errors.
-  * Writes purely to Column B (`Value`), completely preserving sheet layout, section header rows, and formulas.
-
 ### Tri-Mode Execution Subsystem (Modal, Sidebar, Background Queue)
-All major batch maintenance and ingestion dialogs (`Bulk Flight Ingestion`, `Flight Updates`, `Purge Flights`, `Re-sync Missing Flights`, `Watch Folder Scan`, `URL / Drive Import`, and `File Upload`) support **Tri-Mode Execution**, solving the Google Sheets modal lockdown problem:
+All major batch maintenance and ingestion dialogs (`Bulk Flight Ingestion`, `Flight Updates`, `Change Flight Status`, `Purge Flights`, `Re-sync Missing Flights`, `Watch Folder Scan`, `URL / Drive Import`, and `File Upload`) support **Tri-Mode Execution**, solving the Google Sheets modal lockdown problem:
 
 | Execution Mode | Button | Best For | Behavior & Grid Interactivity |
 | :--- | :--- | :--- | :--- |
@@ -352,6 +343,33 @@ All major batch maintenance and ingestion dialogs (`Bulk Flight Ingestion`, `Fli
 
 > [!TIP]
 > **Monitoring Background Jobs**: You can check job progress anytime by switching to the `Automation_Queue` tab (Col C shows status: `QUEUED`, `PROCESSING`, `COMPLETED`, `FAILED`, `CANCELLED`) or by inspecting recent entries in `Activity Logs`. To ensure unattended jobs run automatically every 5 minutes, run **`Flight Log > Admin > Automation & Services > Setup 5-Min Queue Daemon Trigger`**.
+
+### Change Flight Status in Bulk
+Click **Flight Log > Flight maintenance > Change Flight Status in Bulk...** to batch update flight lifecycle states with strict safety guardrails:
+1. **Target Scope**:
+   * **Selected Rows (Default)**: Automatically detects highlighted rows on the `Flights` tab and shows range badge (e.g. `[12 selected (Rows 5-16)]`).
+   * **All Flights**: Selects all flights in your logbook (e.g. `[263 flights]`).
+2. **Filter by Current Status (Multi-Select Checkboxes)**:
+   * Displays 6 source status checkboxes with real-time count badges reflecting flights in the active scope:
+     * `[ ] Valid (count)`
+     * `[ ] Review? (count)`
+     * `[ ] Dup-Primary (count)`
+     * `[ ] Dup-Others (count)`
+     * `[ ] Invalid? (count)`
+     * `[ ] Remove (count)`
+   * > [!IMPORTANT]
+     > **Intentional Selection Safety Rule**: By default, **all status checkboxes are unselected**. When none are checked, **0 flights match** and the Run buttons remain disabled. You must intentionally check one or more source statuses to target flights, eliminating accidental mass updates.
+3. **Target Status Dropdown**:
+   * Choose the new status to apply: `Valid`, `Review?`, `Dup-Primary`, `Dup-Others`, `Invalid?`, or `Remove`.
+4. **Tri-Mode Execution**:
+   * Click **`[ 🚀 Run Here ]`**, **`[ 📌 Run in Sidebar ]`**, or **`[ ⚙️ Run in Background ]`**. The system updates Column B (`Status`) in batches of 25 and automatically refreshes Dashboard KPIs.
+
+### Scan & Flag Duplicates in Logbook
+Click **Flight Log > Flight maintenance > Scan & Flag Duplicates in Logbook...** to audit your historical logbook for unflagged duplicate recordings:
+* Scans all flights and pairs tracks matching spatial proximity ($\le 1000\text{ m}$) and time overlap ($\pm 20\text{ min}$ or interval overlap).
+* Computes in-memory quality scores ($0\text{--}100$) evaluating instrument type, baro integrity, duration, and metadata.
+* Tags primary flights as `Dup-Primary` (gold) and secondary tracks as `Dup-Others` (orange) with reciprocal cluster notes (`[DupRef: D01 | Others: ...]`).
+* **Preserves Valid Flights**: Flights already marked `Valid` are never demoted, protecting confirmed logbook records.
 
 ### Flight Updates Dialog
 Click **Flight Log > Flight maintenance > Flight Updates...** to open the unified operations dialog:

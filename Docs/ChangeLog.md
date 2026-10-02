@@ -1,10 +1,17 @@
 # Project Change Log
 
-## Session: Dedupe Engine Overhaul, In-Memory Row Scoring, Logbook Duplicate Scanner (CR-ING-009) & Configurable RDP Tolerance (CR-CFG-002)
+## Session: Dedupe Engine Overhaul, In-Memory Row Scoring, Logbook Duplicate Scanner (CR-ING-009), Configurable RDP Tolerance (CR-CFG-002) & Bulk Flight Status Change (CR-MNT-004)
 **Date**: 2026-10-02
 **Versions**: v0.8.21
-**Focus**: Dedupe Engine Overhaul (`CR-ING-009`), In-Memory Row Quality Scoring (`scoreFlightQualityFromRow_`), Elimination of Compounding Drive Round-Trips (`Bug-ING-007`), Automation Queue Checkpoint Progress Preservation (`Bug-AUT-001`), Timezone-Immune String Extraction (`Bug-ING-008`), Short Throwaway Tags (`D01`, `D02`, ...) & Reciprocal Notes, Intra-Batch Duplicate Pairing (`Bug-ING-009`), Folder Crawl Discovery Metrics, End-of-Run Summary Formatting, Logbook Duplicate Scanner (`Flight maintenance > Scan & Flag Duplicates in Logbook...`), and Configurable RDP Simplification Tolerance (`CR-CFG-002`).
+**Focus**: Dedupe Engine Overhaul (`CR-ING-009`), In-Memory Row Quality Scoring (`scoreFlightQualityFromRow_`), Elimination of Compounding Drive Round-Trips (`Bug-ING-007`), Automation Queue Checkpoint Progress Preservation (`Bug-AUT-001`), Timezone-Immune String Extraction (`Bug-ING-008`), Short Throwaway Tags (`D01`, `D02`, ...) & Reciprocal Notes, Intra-Batch Duplicate Pairing (`Bug-ING-009`), Folder Crawl Discovery Metrics, End-of-Run Summary Formatting, Logbook Duplicate Scanner (`Flight maintenance > Scan & Flag Duplicates in Logbook...`), Configurable RDP Simplification Tolerance (`CR-CFG-002`), and Bulk Flight Status Change Utility (`CR-MNT-004`).
 
+*   `[Imp]` **CR-MNT-004 (Bulk Flight Status Change Utility & Intentional Selection Safety Guardrail)**:
+    *   **Unified Status Conversion Dialog (`Code/ChangeFlightStatusDialog.html`)**: Created modal interface under `Flight Log > Flight maintenance > Change Flight Status in Bulk...` (`showChangeFlightStatusDialog`) supporting both `Selected Rows` and `All Flights` scopes.
+    *   **Intentional Selection Safety Rule**: Implemented 6 multi-select source status filter checkboxes (`Valid`, `Review?`, `Dup-Primary`, `Dup-Others`, `Invalid?`, `Remove`) with live count badges. By default, all checkboxes are unselected matching strictly **0 flights**; execution buttons remain disabled until at least one filter and target status are intentionally selected, preventing accidental bulk updates.
+    *   **Tri-Mode Execution**: Full support for in-modal stepped batch execution (`[ 🚀 Run Here ]`), modeless sidebar execution (`[ 📌 Run in Sidebar ]` via `launchExecutionSidebar`), and headless cloud queue execution (`[ ⚙️ Run in Background ]` via `launchBackgroundJob` / `processBackgroundQueue`).
+    *   **Batch Worker Routing**: Added `case 'STATUS_CHANGE':` to `executeWorkerBatch()` in `Code/Code.gs` to update Column B (`Status`) on `TABS.FLIGHTS` in batches of 25 with automatic post-execution Dashboard KPI refresh in `finalizeWorkerJob()`.
+    *   **Activity Logging Registry**: Added `STATUS_CHANGE: 'Status Change'` to `CFG.LOG_PROCESSES` in `Code/Config.gs`.
+    *   **User Guide Scaffolding & Documentation**: Added operation description to Section 4 of `Code/Scaffold.gs` and Section 6 of `Docs/User_Guide.md`.
 *   `[Imp]` **CR-CFG-002 (Configurable RDP Simplification Tolerance)**:
     *   **Dynamic RDP Tolerance (`RDP_TOLERANCE`)**: Exposed Ramer-Douglas-Peucker simplification tolerance as a user-configurable parameter in `Code/Config.gs` under `[ Flight Scoring, Physics and Analysis ]` with a default of `0.0005` (degrees, approx 50m).
     *   **Scoring Engine Integration**: Updated `SCORING.calculateXcScore(fixes, configOrTol)` in `Code/Scoring.gs` to dynamically resolve tolerance from the passed configuration object or numeric value, falling back gracefully to `CFG.defaults.RDP_TOLERANCE` or `0.0005`.
@@ -20,8 +27,9 @@
     *   **End-of-Run Aggregate Summary**: Formatted detailed summary reporting total files processed, added to logbook, duplicates discarded, and errors in `finalizeBulkImport` and background queue logging.
     *   **Logbook Duplicate Scanner Utility**: Added `Flight Log > Flight maintenance > Scan & Flag Duplicates in Logbook...` (`uiScanAndFlagLogbookDuplicates`, `scanAndFlagLogbookDuplicates_`) allowing pilots to audit and flag existing logbook duplicates into `Dup-Primary` and `Dup-Others` with reciprocal notes without demoting user-validated flights (`Valid`).
 *   `[Test]` **Unit Test Suite Expansion (`Code/Test.gs`)**:
+    *   Added `testStatusChangeUtility_()` to automated test suite: verifies public dialog and discovery RPC availability, empty source filter safety invariant (`[]` on unselected), and `CFG.LOG_PROCESSES.STATUS_CHANGE` registration (12/12 test suites pass).
     *   Added `testDedupeEngineEnhancements_()` to automated test suite: verifies in-memory row quality scoring invariants, short `DupRef` tags and reciprocal notes formatting, tag replacement idempotency, and public RPC/menu function availability.
-    *   Updated `testConfigStructureAndGrouping_()` and `testScoring_()` in `Code/Test.gs` to validate 20 scoring parameters and dynamic `RDP_TOLERANCE` simplification handling. All 11/11 test suites pass.
+    *   Updated `testConfigStructureAndGrouping_()` and `testScoring_()` in `Code/Test.gs` to validate 20 scoring parameters and dynamic `RDP_TOLERANCE` simplification handling.
 
 ## Session: Tri-Mode Execution Subsystem, Dialog Harmonization & Brochure Publication (DSGN-UI-001)
 **Date**: 2026-10-02

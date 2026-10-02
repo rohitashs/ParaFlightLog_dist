@@ -95,7 +95,13 @@ The visual layer where users interact with the data.
 *   **Menus**: A custom "Flight Log" menu provides one-click access to common actions (Add Flight, Upload, Flight Maintenance, and Admin tools including dedicated Dashboard and User Guide tab refreshers).
 *   **Dialogs**: Custom HTML interfaces for File Uploads, URL/Drive imports, interactive Purge stepping, duplicate removal staging, and configuration export/import.
 *   **Flight Inspector**: A dedicated sidebar to view, edit, and audit flight details without horizontal scrolling. Includes collapsible sections and direct SeeYou Cloud links.
-*   **Flight Maintenance & Bulk Operations (`RQ-SYS-007`)**: A unified modal dialog (`FlightMaintenanceDialog.html`) allowing pilots to select scope (Selected rows vs. All flights) and execute batch operations: backfill historical weather, backfill missing geo/site data, re-verify XContest flight claims, recompute physics and thermalling modes, recalculate XC score, and sort flights by date.
+*   **Flight Maintenance & Bulk Operations (`RQ-SYS-007`, `CR-MNT-004`, `CR-ING-009`)**: Comprehensive suite of maintenance tools under `Flight Log > Flight maintenance`:
+    *   **Flight Updates (`FlightMaintenanceDialog.html`)**: Batch-execute weather backfill, geo/site reverse lookup, XContest verification, physics/XC scoring recalculation, and chronological sorting across Selected rows or All flights.
+    *   **Change Flight Status in Bulk (`ChangeFlightStatusDialog.html`)**: Multi-scoped status conversion utility featuring 6 multi-select status filter checkboxes (`Valid`, `Review?`, `Dup-Primary`, `Dup-Others`, `Invalid?`, `Remove`) with live count badges and an **Intentional Selection Safety Rule** (default all unselected matching 0 flights). Supports Tri-Mode execution (Modal, Sidebar, Background Queue).
+    *   **Scan & Flag Duplicates in Logbook**: Heuristic audit scanning existing flights (+/- 20 min, <= 1000m), scoring quality in memory, and assigning `Dup-Primary` and `Dup-Others` with reciprocal notes without demoting user-validated flights.
+    *   **Mark Duplicates for Removal (`MarkDuplicatesDialog.html`)**: Triage dialog allowing pilots to stage duplicate categories to `Remove`.
+    *   **Purge Flights Marked 'Remove' (`PurgeDialog.html`)**: Interactive stepping modal moving Master IGCs to trash, deleting rows bottom-up, and re-sorting flights.
+    *   **Re-sync Missing Flights (`ResyncDialog.html`)**: Self-healing tool restoring missing logbook rows from Master Log folder.
 
 ## 7. 📊 Flight Dashboard
 *Maps to `RQ-SYS-005`, `CR-SYS-001`, `CR-SYS-002`*
