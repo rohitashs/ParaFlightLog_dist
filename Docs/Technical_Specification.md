@@ -311,5 +311,9 @@ Fixed Header Schema (Row 3=Category, Row 4=Name). Data starts Row 5.
 *   **`UploadDialog.html`**: Direct browser file upload modal supporting drag-and-drop of `.igc`, `.zip`, and `.gz` archives into Google Drive staging.
 *   **`ScanDialog.html`**: Watch folder scanning modal displaying real-time batch detection, extraction progress, and completion reporting.
 *   **`Inspector.html`**: Flight inspector sidebar/modal providing in-depth fix telemetry review, metric calculations, and manual metadata editing.
+*   **`ExecutionSidebar.html` (`DSGN-UI-001`, `CR-UI-019`)**: Universal 300px modeless execution sidebar replacing duplicated progress bars, copy buttons, status lines, and log consoles across dialogs. Features Context Header, Metric Pills, Activity Log Console with `📋 Copy Log`, and dynamic Cancel/Done controls while keeping the spreadsheet grid fully interactive.
 *   **`Style.html`**: Shared CSS tokens, typography, button states, and modal layout styling loaded across all HTML dialogs.
 
+### Execution & Background Services (`DSGN-UI-001`, `DSGN-AUT-001`)
+*   **`Code/QueueService.gs`**: Persistent job queue manager operating on the `Automation_Queue` tab. Handles job enqueuing, progress tracking, state checkpoints, and pilot cancellation without `PropertiesService` 9 KB storage limits. Provides foundational execution substrate for scheduled automation.
+*   **`Code/TimeBudget.gs`**: Execution runtime budget service (`TimeBudgetService`) enforcing a 4.5-minute safety threshold. Prevents Google Apps Script 6-minute hard termination errors by committing sheet mutations, serializing checkpoint state to the queue, and spawning 30-second continuation triggers (`ScriptApp.newTrigger`).

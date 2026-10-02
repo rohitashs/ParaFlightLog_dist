@@ -2,12 +2,12 @@
 
 * **Design ID**: `DSGN-AUT-001`
 * **Status**: `Under Review`
-* **Current Revision**: `Rev 1.0`
+* **Current Revision**: `Rev 1.1`
 * **Date Created**: `2026-10-01`
 * **Last Updated**: `2026-10-01`
 * **Author / Contributors**: `Rohitash / Antigravity AI`
 * **Parent Design**: `None`
-* **Child Designs**: `None`
+* **Child / Sibling Designs**: [`DSGN-UI-001`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Design/DSGN-UI-001_Tri_Mode_Execution_and_Universal_Sidebar.md) (Sibling / Execution Substrate & QueueService)
 * **Umbrella Module / Primary Code**: [`Code/Automation.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Automation.gs)
 * **Code Revision Stamp**: `Pending Implementation`
 * **Related Requirements / CRs**: `RQ-SYS-001`, `CR-AUT-001`
@@ -157,7 +157,7 @@ events: {
   }
 }
 ```
-* **Event Queue Storage**: Stored as a serialized JSON array in `PropertiesService.getScriptProperties().getProperty('AUTOMATION_EVENT_QUEUE')`.
+* **Event & Job Queue Storage**: Durable queue lifecycle managed by `QueueService` on the `Automation_Queue` tab (defined in [`DSGN-UI-001`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Design/DSGN-UI-001_Tri_Mode_Execution_and_Universal_Sidebar.md)). Eliminates the fragile 9 KB property limits of `PropertiesService` and provides 100% human-in-the-loop visibility.
 * **Deprecation / TTL**: Events include a timestamp. Events older than 2 hours expire automatically, preventing accidental stale runs.
 
 #### 3. Action Registry
@@ -350,7 +350,7 @@ sequenceDiagram
                 Dispatcher->>Sheet: Stamp Last Run & Last Result
                 Dispatcher->>Log: Append [OK] Automation Log Line
             else Time Budget Low (< 30s remaining)
-                Dispatcher->>Dispatcher: Save Continuation State to PropertiesService
+                Dispatcher->>Dispatcher: Save Continuation State to QueueService (Automation_Queue tab)
                 Dispatcher->>Log: Append [WARN] Heartbeat yielding to next tick
             end
         end
@@ -473,3 +473,4 @@ sequenceDiagram
 | Revision | Date | Author | Revision Note |
 | :---: | :---: | :--- | :--- |
 | `Rev 1.0` | `2026-10-01` | `Rohitash / Antigravity AI` | Initial formal design draft: Table-Driven Automation Engine, Single Heartbeat Dispatcher, Scope DSL, Predefined Templates, and Rule Validation Engine. |
+| `Rev 1.1` | `2026-10-01` | `Rohitash / Antigravity AI` | Synchronized execution substrate with `DSGN-UI-001`: Event/Job queueing and continuation cursors now leverage `QueueService` and `Automation_Queue` tab, replacing the 9 KB-limited `PropertiesService`. Linked `DSGN-UI-001` as foundational execution layer. |

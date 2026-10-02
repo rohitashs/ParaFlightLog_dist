@@ -150,4 +150,19 @@ A centralized profile tab (`Pilot_Profile`) structured into a clean 3-column lay
 *   **Non-Destructive Key-Value Sync**: Scaffolding, JSON config export, and JSON config restore treat the profile as a pure key-value store, matching by Field name and writing strictly into the Value column without disturbing section headers, formatting, or instructions.
 *   **Dashboard & Inspector Integration**: Surfaces pilot name, rating, and quick-access emergency tracking links onto the `Dashboard` and `Flight Inspector` sidebar.
 
+## 12. ⚡ Tri-Mode Execution & Universal Execution Sidebar
+*Maps to `RQ-SYS-002`, `CR-UI-019`, `DSGN-UI-001`*
+
+A standardized execution architecture solving the Google Sheets modal lockdown problem while establishing the core execution substrate for background automation:
+*   **Two-Stage Standardized Lifecycle**:
+    *   *Stage 1 (Discovery & Configuration)*: Wide, comfortable modal dialogs dedicated to Drive folder browsing, URL inputs, and enrichment parameter tuning.
+    *   *Stage 2 (Tri-Mode Execution Choice)*: When ready to execute, pilots choose their preferred operational mode:
+        1.  **`[ Run Here ]`**: Immediate synchronous execution in the modal dialog; best for fast operations (< 30 seconds).
+        2.  **`[ Run in Sidebar ]`**: Modal immediately closes and hands off to the **Universal Execution Sidebar** (`ExecutionSidebar.html`). The spreadsheet grid remains **100% interactive**—pilots can review Dashboard metrics, inspect flights, or edit cells while watching live progress.
+        3.  **`[ Run in Background ]`**: Modal closes instantly; the task is enqueued to `QueueService` and executes headlessly on Google Cloud servers. Progress logs to `Activity Logs` with zero UI footprint, completing even if the browser is closed.
+*   **Universal Execution Sidebar (`Code/ExecutionSidebar.html`)**: A unified, 300px modeless sidebar replacing duplicated progress bars, copy buttons, and activity logs across 7 dialogs (`BulkIngestDialog`, `URLDialog`, `ResyncDialog`, `PurgeDialog`, `FlightMaintenanceDialog`, `ScanDialog`, `MarkDuplicatesDialog`).
+*   **Persistent Job Queue (`Automation_Queue` Tab)**: Transparent spreadsheet-backed queue eliminating the fragile 9 KB property limits of `PropertiesService`. Supports real-time progress monitoring and one-click manual cancellation directly from the sheet.
+*   **Bounded 4.5-Minute Time Budget & Self-Continuation**: Universal safety guardrail (`TimeBudgetService`) ensuring background workers commit data, checkpoint state, and spawn 30-second continuation triggers before approaching Google's hard 6-minute timeout, enabling multi-hundred-flight operations to run unattended.
+*   **Direct Substrate for Table-Driven Automation (`DSGN-AUT-001`)**: Provides the headless execution engine, queue management, and time budget required by the upcoming scheduled Automation Engine.
+
 
