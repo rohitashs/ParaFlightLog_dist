@@ -877,15 +877,22 @@ function applyFlightsValidation_(sh) {
     
     // Conditional Formatting
     var range = sh.getRange(startRow, map['Status'], valRows, 1);
-    var rules = sh.getConditionalFormatRules();
+    var existingRules = sh.getConditionalFormatRules() || [];
+    var nonStatusRules = existingRules.filter(function(r) {
+      var rngs = r.getRanges();
+      for (var ri = 0; ri < rngs.length; ri++) {
+        if (rngs[ri].getColumn() === map['Status']) return false;
+      }
+      return true;
+    });
 
-    rules.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('Valid').setBackground('#C8E6C9').setRanges([range]).build());
-    rules.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('Review?').setBackground('#BBDEFB').setRanges([range]).build());
-    rules.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('Dup-Primary').setBackground('#FFE082').setRanges([range]).build());
-    rules.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('Dup-Others').setBackground('#FFCC80').setRanges([range]).build());
-    rules.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('Invalid?').setBackground('#FFCDD2').setRanges([range]).build());
-    rules.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('Remove').setBackground('#E0E0E0').setRanges([range]).build());
-    sh.setConditionalFormatRules(rules);
+    nonStatusRules.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('Valid').setBackground('#C8E6C9').setRanges([range]).build());
+    nonStatusRules.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('Review?').setBackground('#BBDEFB').setRanges([range]).build());
+    nonStatusRules.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('Dup-Primary').setBackground('#FFE082').setRanges([range]).build());
+    nonStatusRules.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('Dup-Others').setBackground('#FFCC80').setRanges([range]).build());
+    nonStatusRules.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('Invalid?').setBackground('#FFCDD2').setRanges([range]).build());
+    nonStatusRules.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('Remove').setBackground('#E0E0E0').setRanges([range]).build());
+    sh.setConditionalFormatRules(nonStatusRules);
   }
 
   // Flight Type (Config Col G)

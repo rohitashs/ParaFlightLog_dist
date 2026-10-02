@@ -350,13 +350,14 @@ Click **Flight Log > Flight maintenance > Change Flight Status in Bulk...** to b
    * **Selected Rows (Default)**: Automatically detects highlighted rows on the `Flights` tab and shows range badge (e.g. `[12 selected (Rows 5-16)]`).
    * **All Flights**: Selects all flights in your logbook (e.g. `[263 flights]`).
 2. **Filter by Current Status (Multi-Select Checkboxes)**:
-   * Displays 6 source status checkboxes with real-time count badges reflecting flights in the active scope:
+   * Displays 7 source status checkboxes with real-time count badges reflecting flights in the active scope:
      * `[ ] Valid (count)`
      * `[ ] Review? (count)`
      * `[ ] Dup-Primary (count)`
      * `[ ] Dup-Others (count)`
      * `[ ] Invalid? (count)`
      * `[ ] Remove (count)`
+     * `[ ] (Blank / Empty) (count)`: Targets flights where the status cell was accidentally cleared or left blank (since cell validation warns on delete but does not strictly prevent it).
    * > [!IMPORTANT]
      > **Intentional Selection Safety Rule**: By default, **all status checkboxes are unselected**. When none are checked, **0 flights match** and the Run buttons remain disabled. You must intentionally check one or more source statuses to target flights, eliminating accidental mass updates.
 3. **Target Status Dropdown**:

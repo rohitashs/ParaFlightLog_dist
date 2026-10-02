@@ -875,7 +875,23 @@ function testStatusChangeUtility_() {
     return { module: 'StatusChange', error: 'Expected 2 matched flights, got ' + matched1.length };
   }
 
-  // Test 3: CFG.LOG_PROCESSES registration
+  // Test 3: Blank / Empty status matching
+  var mockFlightsWithBlank = [
+    { row: 5, id: 'F01', status: 'Valid' },
+    { row: 6, id: 'F02', status: '(Blank)' },
+    { row: 7, id: 'F03', status: '' },
+    { row: 8, id: 'F04', status: 'Review?' }
+  ];
+  var filterBlank = ['(Blank)'];
+  var matchedBlank = mockFlightsWithBlank.filter(function(flt) {
+    var st = (!flt.status || flt.status === '') ? '(Blank)' : flt.status;
+    return filterBlank.indexOf(st) !== -1;
+  });
+  if (matchedBlank.length !== 2) {
+    return { module: 'StatusChange', error: 'Expected 2 matched blank flights, got ' + matchedBlank.length };
+  }
+
+  // Test 4: CFG.LOG_PROCESSES registration
   if (!CFG.LOG_PROCESSES || CFG.LOG_PROCESSES.STATUS_CHANGE !== 'Status Change') {
     return { module: 'StatusChange', error: 'CFG.LOG_PROCESSES.STATUS_CHANGE not registered' };
   }

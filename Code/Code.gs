@@ -170,7 +170,7 @@ function showChangeFlightStatusDialog() {
   var html = HtmlService.createTemplateFromFile('ChangeFlightStatusDialog')
       .evaluate()
       .setWidth(540)
-      .setHeight(540);
+      .setHeight(560);
   SpreadsheetApp.getUi().showModalDialog(html, 'Change Flight Status in Bulk');
 }
 
@@ -520,10 +520,10 @@ function getStatusChangeScopeInfo() {
   var lastRow = shFlights.getLastRow();
   var allFlights = [];
   var allStatusCounts = {
-    'Valid': 0, 'Review?': 0, 'Dup-Primary': 0, 'Dup-Others': 0, 'Invalid?': 0, 'Remove': 0
+    'Valid': 0, 'Review?': 0, 'Dup-Primary': 0, 'Dup-Others': 0, 'Invalid?': 0, 'Remove': 0, '(Blank)': 0
   };
   var selectedStatusCounts = {
-    'Valid': 0, 'Review?': 0, 'Dup-Primary': 0, 'Dup-Others': 0, 'Invalid?': 0, 'Remove': 0
+    'Valid': 0, 'Review?': 0, 'Dup-Primary': 0, 'Dup-Others': 0, 'Invalid?': 0, 'Remove': 0, '(Blank)': 0
   };
 
   var selectedCount = 0;
@@ -551,13 +551,14 @@ function getStatusChangeScopeInfo() {
       var rowNum = 5 + i;
       var rawId = String(vals[i][idCol - 1]).trim();
       var rawStatus = String(vals[i][statusCol - 1]).trim();
+      var normStatus = (rawStatus === '' ? '(Blank)' : rawStatus);
       if (rawId !== '') {
-        var flightItem = { row: rowNum, id: rawId, status: rawStatus };
+        var flightItem = { row: rowNum, id: rawId, status: normStatus };
         allFlights.push(flightItem);
-        allStatusCounts[rawStatus] = (allStatusCounts[rawStatus] || 0) + 1;
+        allStatusCounts[normStatus] = (allStatusCounts[normStatus] || 0) + 1;
 
         if (isFlights && rowNum >= startRow && rowNum <= endRow) {
-          selectedStatusCounts[rawStatus] = (selectedStatusCounts[rawStatus] || 0) + 1;
+          selectedStatusCounts[normStatus] = (selectedStatusCounts[normStatus] || 0) + 1;
         }
       }
     }
@@ -603,7 +604,8 @@ function getStatusChangeTargetRows(scope, sourceStatuses) {
   var info = getStatusChangeScopeInfo();
   var pool = (scope === 'selected') ? info.selectedFlights : info.allFlights;
   return pool.filter(function(flt) {
-    return sourceStatuses.indexOf(flt.status) !== -1;
+    return sourceStatuses.indexOf(flt.status) !== -1 ||
+           (sourceStatuses.indexOf('(Blank)') !== -1 && (!flt.status || flt.status === '' || flt.status === '(Blank)'));
   });
 }
 
@@ -938,6 +940,13 @@ function sortFlightsByDate_() {
   var flightNoCol = map['Flight No'] || 3;
   for (var r = minRow; r <= maxRow; r++) {
     sh.getRange(r, flightNoCol).setFormula('=IFERROR(MAX(INDIRECT("C" & (ROW()+1) & ":C")), 0) + 1');
+  }
+
+  // Ensure dropdowns, data validations, cell text wrapping and conditional formatting cover all actual rows
+  try {
+    applyFlightsValidation_(sh);
+  } catch (eVld) {
+    console.warn('Validation expansion warning in sortFlightsByDate_:', eVld);
   }
 
   LOG.write('SORT_LOGBOOK', '[COMPLETE] Logbook sorted chronologically and flight numbers re-indexed', actualFlights.length + ' flight(s) sequenced');
@@ -2070,6 +2079,16 @@ function finalizeBulkImport(stats) {
     details = 'Imported: ' + (stats.imported || 0) + ' | Duplicates: ' + (stats.duplicates || 0) + ' | Errors: ' + (stats.errors || 0);
   }
   LOG.write('BULK_INGEST', summaryMsg, details);
+
+  var ss = SpreadsheetApp.getActive();
+  var sh = ss ? ss.getSheetByName(TABS.FLIGHTS.name) : null;
+  if (sh) {
+    try {
+      applyFlightsValidation_(sh);
+    } catch (eVld) {
+      console.warn('Validation expansion warning in finalizeBulkImport:', eVld);
+    }
+  }
 
   sortFlightsByDate_();
   return { success: true, message: 'All flights imported and logbook sorted.' };

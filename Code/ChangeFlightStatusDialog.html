@@ -93,6 +93,7 @@
         .pill-dup-oth { background-color: #FF7043; }
         .pill-invalid { background-color: #9E9E9E; }
         .pill-remove { background-color: #E53935; }
+        .pill-blank { background-color: #FFFFFF; border: 1.5px dashed #9E9E9E; box-sizing: border-box; }
 
         .filter-grid {
             display: grid;
@@ -254,6 +255,12 @@
                     <span>Remove</span>
                     <span id="cnt-Remove" class="badge-subtle">0</span>
                 </label>
+                <label class="check-item">
+                    <input type="checkbox" id="flt-Blank" value="(Blank)" onchange="onFilterChange()">
+                    <span class="status-pill pill-blank"></span>
+                    <span>(Blank / Empty)</span>
+                    <span id="cnt-Blank" class="badge-subtle">0</span>
+                </label>
             </div>
             <div class="safety-note">
                 <span>🛡️</span>
@@ -310,14 +317,15 @@
         var isRunning = false;
         var BATCH_SIZE = 25;
 
-        var STATUS_KEYS = ['Valid', 'Review?', 'Dup-Primary', 'Dup-Others', 'Invalid?', 'Remove'];
+        var STATUS_KEYS = ['Valid', 'Review?', 'Dup-Primary', 'Dup-Others', 'Invalid?', 'Remove', '(Blank)'];
         var STATUS_ID_MAP = {
             'Valid': 'flt-Valid',
             'Review?': 'flt-Review',
             'Dup-Primary': 'flt-Dup-Primary',
             'Dup-Others': 'flt-Dup-Others',
             'Invalid?': 'flt-Invalid',
-            'Remove': 'flt-Remove'
+            'Remove': 'flt-Remove',
+            '(Blank)': 'flt-Blank'
         };
         var STATUS_CNT_MAP = {
             'Valid': 'cnt-Valid',
@@ -325,7 +333,8 @@
             'Dup-Primary': 'cnt-Dup-Primary',
             'Dup-Others': 'cnt-Dup-Others',
             'Invalid?': 'cnt-Invalid',
-            'Remove': 'cnt-Remove'
+            'Remove': 'cnt-Remove',
+            '(Blank)': 'cnt-Blank'
         };
 
         window.onload = function () {
@@ -472,7 +481,8 @@
 
             // Filter flights in scope matching ANY of the checked source statuses
             matchingFlights = flightsInScope.filter(function(flt) {
-                return checkedStatuses.indexOf(flt.status) !== -1;
+                var st = (!flt.status || flt.status === '') ? '(Blank)' : flt.status;
+                return checkedStatuses.indexOf(st) !== -1;
             });
 
             var count = matchingFlights.length;
