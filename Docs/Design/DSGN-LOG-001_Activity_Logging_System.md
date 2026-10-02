@@ -106,6 +106,7 @@ CFG.LOG_PROCESSES = {
   DUPE_TRIAGE:    'Duplicate Triage',
   PURGE_FLIGHTS:  'Purge Flights',
   MASTER_RESYNC:  'Master Re-sync',
+  SORT_LOGBOOK:   'Sort Logbook',
   SAVE_CONFIG:    'Save Config',
   LOAD_CONFIG:    'Load Config',
   SYSTEM_SETUP:   'System Setup',

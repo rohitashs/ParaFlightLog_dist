@@ -604,6 +604,12 @@ function testLogProcessResolution_() {
   if (LOG.resolveProcess('DUPE_TRIAGE') !== 'Duplicate Triage') {
     return { module: 'LogProcessResolution', error: 'DUPE_TRIAGE failed to resolve to Duplicate Triage' };
   }
+  if (LOG.resolveProcess('SORT_LOGBOOK') !== 'Sort Logbook') {
+    return { module: 'LogProcessResolution', error: 'SORT_LOGBOOK failed to resolve to Sort Logbook' };
+  }
+  if (LOG.resolveProcess('SORT_FLIGHTS') !== 'Sort Logbook') {
+    return { module: 'LogProcessResolution', error: 'SORT_FLIGHTS failed to resolve to Sort Logbook' };
+  }
   if (LOG.resolveProcess('Custom Process') !== 'Custom Process') {
     return { module: 'LogProcessResolution', error: 'Custom process string was modified unexpectedly' };
   }

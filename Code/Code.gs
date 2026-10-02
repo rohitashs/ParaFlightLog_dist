@@ -779,14 +779,16 @@ function sortFlightsByDate() {
 
 function sortFlightsByDate_() {
   var ss = SpreadsheetApp.getActive();
-  var sh = ss.getSheetByName(TABS.FLIGHTS.name);
+  var sh = ss ? ss.getSheetByName(TABS.FLIGHTS.name) : null;
   if (!sh) return;
 
   var actualFlights = getActualFlightRows_(sh);
-  if (actualFlights.length < 2) {
-    ss.toast('Not enough flights to sort (' + actualFlights.length + ' found).', 'Flight Log');
+  if (actualFlights.length === 0) {
+    LOG.write('SORT_LOGBOOK', '[INFO] Logbook sort skipped: No flights found in Flights sheet');
     return;
   }
+
+  LOG.write('SORT_LOGBOOK', '[START] Sorting logbook chronologically and re-indexing flights');
 
   var minRow = actualFlights[0].row;
   var maxRow = actualFlights[actualFlights.length - 1].row;
@@ -795,16 +797,18 @@ function sortFlightsByDate_() {
   var launchTimeCol = map['Launch Time'] || 10;
   var lastCol = sh.getLastColumn();
 
-  // Multi-level sort: Date descending (primary), Launch Time descending (secondary)
-  var sortSpecs = [{ column: dateCol, ascending: false }];
-  if (launchTimeCol) {
-    sortSpecs.push({ column: launchTimeCol, ascending: false });
-  }
+  if (actualFlights.length >= 2) {
+    // Multi-level sort: Date descending (primary), Launch Time descending (secondary)
+    var sortSpecs = [{ column: dateCol, ascending: false }];
+    if (launchTimeCol) {
+      sortSpecs.push({ column: launchTimeCol, ascending: false });
+    }
 
-  // Sort only actual flight rows (from minRow to maxRow)
-  var numRows = maxRow - minRow + 1;
-  var dataRange = sh.getRange(minRow, 1, numRows, lastCol);
-  dataRange.sort(sortSpecs);
+    // Sort only actual flight rows (from minRow to maxRow)
+    var numRows = maxRow - minRow + 1;
+    var dataRange = sh.getRange(minRow, 1, numRows, lastCol);
+    dataRange.sort(sortSpecs);
+  }
 
   // Re-apply Flight No formula only to actual flight rows
   var flightNoCol = map['Flight No'] || 3;
@@ -812,7 +816,10 @@ function sortFlightsByDate_() {
     sh.getRange(r, flightNoCol).setFormula('=IFERROR(MAX(INDIRECT("C" & (ROW()+1) & ":C")), 0) + 1');
   }
 
-  ss.toast('Flights (' + actualFlights.length + ') sorted chronologically by date & time.', 'Flight Log');
+  LOG.write('SORT_LOGBOOK', '[COMPLETE] Logbook sorted chronologically and flight numbers re-indexed', actualFlights.length + ' flight(s) sequenced');
+  if (ss.toast) {
+    ss.toast('Flights (' + actualFlights.length + ') sorted chronologically by date & time.', 'Flight Log');
+  }
 }
 
 /**
@@ -1133,11 +1140,6 @@ function finalizePurge_(stats) {
   if (typeof _cachedSheetHashes !== 'undefined') {
     _cachedSheetHashes = null;
   }
-  try {
-    sortFlightsByDate_();
-  } catch (e) {
-    console.warn('Post-purge sort warning:', e);
-  }
   var summaryMsg = '[COMPLETE] Purge session completed';
   var details = '';
   if (stats) {
@@ -1148,6 +1150,12 @@ function finalizePurge_(stats) {
     details = 'Purged: ' + (stats.purged || 0) + ' | Trashed: ' + (stats.trashed || 0) + ' | Errors: ' + (stats.errors || 0);
   }
   LOG.write('PURGE_FLIGHTS', summaryMsg, details);
+
+  try {
+    sortFlightsByDate_();
+  } catch (e) {
+    console.warn('Post-purge sort warning:', e);
+  }
   return { success: true };
 }
 
@@ -1621,11 +1629,6 @@ function finalizeResync_(stats) {
   if (typeof _cachedSheetHashes !== 'undefined') {
     _cachedSheetHashes = null;
   }
-  try {
-    sortFlightsByDate_();
-  } catch (e) {
-    console.warn('Post-resync sort warning:', e);
-  }
   var summaryMsg = '[COMPLETE] Master Re-sync session completed';
   var details = '';
   if (stats) {
@@ -1636,6 +1639,12 @@ function finalizeResync_(stats) {
     details = 'Restored: ' + (stats.restored || 0) + ' | Skipped: ' + (stats.skipped || 0) + ' | Errors: ' + (stats.errors || 0);
   }
   LOG.write('MASTER_RESYNC', summaryMsg, details);
+
+  try {
+    sortFlightsByDate_();
+  } catch (e) {
+    console.warn('Post-resync sort warning:', e);
+  }
   return { success: true };
 }
 
@@ -1926,7 +1935,6 @@ function processBulkBatch(batchFiles, options) {
  * @param {Object} [stats] - Optional completion stats { imported, duplicates, errors }.
  */
 function finalizeBulkImport(stats) {
-  sortFlightsByDate_();
   var summaryMsg = '[COMPLETE] Bulk Ingestion session completed';
   var details = '';
   if (stats) {
@@ -1934,6 +1942,8 @@ function finalizeBulkImport(stats) {
     details = 'Imported: ' + (stats.imported || 0) + ' | Duplicates: ' + (stats.duplicates || 0) + ' | Errors: ' + (stats.errors || 0);
   }
   LOG.write('BULK_INGEST', summaryMsg, details);
+
+  sortFlightsByDate_();
   return { success: true, message: 'All flights imported and logbook sorted.' };
 }
 
