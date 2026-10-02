@@ -637,8 +637,13 @@ function scaffoldAppLog_(ss) {
   ensureDimensions_(sh, 50, 4);
 
   // Set / refresh headers
-  sh.getRange('A1').setValue(TABS.APP_LOG.name).setFontWeight('bold').setFontSize(12);
+  var lastCol = Math.max(4, sh.getLastColumn());
   sh.getRange('A1:D1').setBackground(TABS.APP_LOG.color).setFontColor('white');
+  sh.getRange('A1').setValue(TABS.APP_LOG.name).setFontWeight('bold').setFontSize(12);
+  if (lastCol > 4) {
+    sh.getRange(1, 5, 1, lastCol - 4).clear();
+    sh.getRange(2, 5, 1, lastCol - 4).clear();
+  }
   
   sh.getRange(2, 1, 1, 4).setValues([TABS.APP_LOG.columns]);
   sh.getRange(2, 1, 1, 4).setFontWeight('bold').setBackground('#F5F5F5').setFontColor('#333333');
@@ -789,8 +794,11 @@ function updateValidationOnly_() {
   scaffoldParameters_(ss);
   
   scaffoldUserGuide_(ss);
+
+  // Refresh Activity Logs tab schema & headers
+  scaffoldAppLog_(ss);
   
-  ss.toast('Validation rules, Column Notes, Parameters, and User Guide updated.');
+  ss.toast('Validation rules, Column Notes, Parameters, User Guide, and Activity Logs updated.');
 }
 
 function applyFlightsValidation_(sh) {
@@ -1016,7 +1024,10 @@ function reapplyFormatting_() {
   // 5. Dashboard
   scaffoldDashboard_(ss);
 
-  ss.toast('Formatting Re-applied: Obsolete columns eliminated, Config updated, Pilot Profile refreshed, Dashboard refreshed, Flights frozen.');
+  // 6. Activity Logs
+  scaffoldAppLog_(ss);
+
+  ss.toast('Formatting Re-applied: Obsolete columns eliminated, Config updated, Pilot Profile refreshed, Dashboard refreshed, Activity Logs refreshed, Flights frozen.');
 }
 
 function backupSystemSheets_() {
