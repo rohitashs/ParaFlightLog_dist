@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-10-01 01:31:18
+ * Updated: 2026-10-02 17:25:41
  */
 /**
  * Paragliding Flight Log v2.0 - Configuration
@@ -324,4 +324,57 @@ CFG.LOG_PREFIXES = {
   ERR:      '[ERR]',
   COMPLETE: '[COMPLETE]'
 };
+
+/* ==========================================================================================
+   RESILIENT SHEET ID RESOLUTION (CR-SYS-009 / AUD-RES-003)
+   ========================================================================================== */
+
+/**
+ * Registers a sheet's immutable integer SheetId into DocumentProperties.
+ * This allows the system to locate the tab even if the user renames it in the UI.
+ */
+function registerSheetId_(ss, tabKey, sheet) {
+  if (!sheet) return;
+  try {
+    var props = PropertiesService.getDocumentProperties();
+    var id = String(sheet.getSheetId());
+    props.setProperty('SHEET_ID_' + tabKey, id);
+    props.setProperty('SHEET_NAME_' + tabKey, sheet.getName());
+  } catch (e) {
+    console.warn('Failed to register sheetId for ' + tabKey + ':', e.message);
+  }
+}
+
+/**
+ * Retrieves a sheet by its immutable integer SheetId, with fallback to name lookup.
+ * Survives user tab renaming in Google Sheets UI.
+ */
+function getSheetByIdOrName_(ss, tabKey, defaultName) {
+  if (!ss) ss = SpreadsheetApp.getActive();
+  if (!ss) return null;
+  
+  var props = PropertiesService.getDocumentProperties();
+  var propKey = 'SHEET_ID_' + tabKey;
+  var savedId = props.getProperty(propKey);
+  
+  if (savedId !== null && savedId !== undefined && savedId !== '') {
+    var numId = parseInt(savedId, 10);
+    var allSheets = ss.getSheets();
+    for (var i = 0; i < allSheets.length; i++) {
+      if (allSheets[i].getSheetId() === numId) {
+        if (allSheets[i].getName() !== defaultName) {
+          props.setProperty('SHEET_NAME_' + tabKey, allSheets[i].getName());
+        }
+        return allSheets[i];
+      }
+    }
+  }
+  
+  var sh = ss.getSheetByName(defaultName);
+  if (sh) {
+    registerSheetId_(ss, tabKey, sh);
+  }
+  return sh;
+}
+
 

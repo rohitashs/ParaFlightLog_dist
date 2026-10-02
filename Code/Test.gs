@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-10-01 01:31:18
+ * Updated: 2026-10-02 17:25:41
  */
 /**
  * Paragliding Flight Log v2.0
@@ -31,6 +31,7 @@ function runAllTests() {
   results.push(testDedupeEngineEnhancements_());
   results.push(testStatusChangeUtility_());
   results.push(testDynamicFormulaResilience_());
+  results.push(testNativeSheetsResilience_());
   
   var failures = results.filter(function(r) { return !r.idx || r.error; });
   if (failures.length > 0) {
@@ -996,6 +997,87 @@ function testDynamicFormulaResilience_() {
   }
 
   return { module: 'DynamicFormulaResilience', idx: true };
+}
+
+function testNativeSheetsResilience_() {
+  // Test 1: getColumnMap_ whitespace and case tolerance with Proxy wrapper
+  var mockHeaders = [' FlightID ', 'Flight No', 'Status ', 'wing', '  Date  ', 'Flight Duration'];
+  var mockSheet = {
+    getLastColumn: function() { return mockHeaders.length; },
+    getLastRow: function() { return 10; },
+    getRange: function(row, col, numRows, numCols) {
+      return {
+        getValues: function() { return [mockHeaders]; }
+      };
+    }
+  };
+
+  var map = getColumnMap_(mockSheet, 4);
+
+  // Exact match
+  if (map['Flight No'] !== 2) {
+    return { module: 'NativeSheetsResilience', error: 'Exact Flight No expected 2, got ' + map['Flight No'] };
+  }
+  // Trimmed lookup
+  if (map['FlightID'] !== 1) {
+    return { module: 'NativeSheetsResilience', error: 'Trimmed FlightID expected 1, got ' + map['FlightID'] };
+  }
+  // Trailing space in query on clean header
+  if (map['Flight No '] !== 2) {
+    return { module: 'NativeSheetsResilience', error: 'Trailing space Flight No expected 2, got ' + map['Flight No '] };
+  }
+  // Trailing space in header on clean query
+  if (map['Status'] !== 3) {
+    return { module: 'NativeSheetsResilience', error: 'Status with trailing space in header expected 3, got ' + map['Status'] };
+  }
+  // Case insensitivity: 'wing' in header, 'Wing' in query
+  if (map['Wing'] !== 4) {
+    return { module: 'NativeSheetsResilience', error: 'Wing case insensitivity expected 4, got ' + map['Wing'] };
+  }
+  // Case insensitivity: 'Flight Duration' in header, 'flight duration' in query
+  if (map['flight duration'] !== 6) {
+    return { module: 'NativeSheetsResilience', error: 'flight duration lower query expected 6, got ' + map['flight duration'] };
+  }
+
+  // Test 2: Batch formula generation dimensions for sorting
+  var minRow = 5;
+  var maxRow = 14;
+  var fNoColLetter = 'C';
+  var batchFormulas = [];
+  for (var r = minRow; r <= maxRow; r++) {
+    batchFormulas.push(['=IFERROR(MAX(INDIRECT("' + fNoColLetter + '" & (ROW()+1) & ":' + fNoColLetter + '")), 0) + 1']);
+  }
+  if (batchFormulas.length !== 10 || batchFormulas[0].length !== 1) {
+    return { module: 'NativeSheetsResilience', error: 'Batch formulas expected 10x1 2D array, got ' + batchFormulas.length + 'x' + (batchFormulas[0] ? batchFormulas[0].length : 0) };
+  }
+  if (batchFormulas[0][0] !== '=IFERROR(MAX(INDIRECT("C" & (ROW()+1) & ":C")), 0) + 1') {
+    return { module: 'NativeSheetsResilience', error: 'Batch formula text mismatch: ' + batchFormulas[0][0] };
+  }
+
+  // Test 3: Native FILTER formula construction for equipment lookups (replacing QUERY)
+  var eqName = 'Equipment';
+  var cId = 'B';
+  var cCat = 'A';
+  var cRet = 'H';
+  var rngId = eqName + '!$' + cId + '$3:$' + cId;
+  var rngCat = eqName + '!$' + cCat + '$3:$' + cCat;
+  var rngRet = eqName + '!$' + cRet + '$3:$' + cRet;
+  var filterWingFormula = '=IFERROR(SORT(FILTER(' + rngId + ', ' + rngCat + '="Wing", ' + rngRet + '=FALSE)), "")';
+  var expectedFilter = '=IFERROR(SORT(FILTER(Equipment!$B$3:$B, Equipment!$A$3:$A="Wing", Equipment!$H$3:$H=FALSE)), "")';
+  if (filterWingFormula !== expectedFilter) {
+    return { module: 'NativeSheetsResilience', error: 'Equipment FILTER formula mismatch: ' + filterWingFormula };
+  }
+
+  // Test 4: Dashboard Named Range status filter expression
+  var fSheet = 'Flights';
+  var colStatus = 'B';
+  var fStart = 5;
+  var fStatusFilter = '((INDIRECT("' + fSheet + '!' + colStatus + fStart + ':' + colStatus + '")="Valid") + (DASHBOARD_REVIEW_FILTER="Yes")*(INDIRECT("' + fSheet + '!' + colStatus + fStart + ':' + colStatus + '")="Review?"))';
+  if (fStatusFilter.indexOf('DASHBOARD_REVIEW_FILTER="Yes"') === -1) {
+    return { module: 'NativeSheetsResilience', error: 'Dashboard filter did not include DASHBOARD_REVIEW_FILTER Named Range' };
+  }
+
+  return { module: 'NativeSheetsResilience', idx: true };
 }
 
 

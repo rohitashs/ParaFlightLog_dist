@@ -1,4 +1,8 @@
 /**
+ * Paragliding Flight Log v2.0
+ * Updated: 2026-10-02 17:25:41
+ */
+/**
  * Paragliding Flight Log - Activity Logging Engine
  * 
  * @design Docs/Design/DSGN-LOG-001_Activity_Logging_System.md

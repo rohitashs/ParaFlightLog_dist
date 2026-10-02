@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-10-01 01:31:18
+ * Updated: 2026-10-02 17:25:41
  */
 /**
  * Paragliding Flight Log v2.0 - Scaffolding & Setup
@@ -166,6 +166,9 @@ function scaffoldDashboard_(ss) {
     .setBackground('#FFFFFF')
     .setBorder(true, true, true, true, true, true, '#B0BEC5', SpreadsheetApp.BorderStyle.SOLID);
 
+  // Register Native Google Sheets Named Range for Review Toggle (survives cell/col movements)
+  registerNamedRange_(ss, 'DASHBOARD_REVIEW_FILTER', sh.getRange('B2'));
+
   var masterLinkFormula = '=IF(ISBLANK(VLOOKUP("MASTER_LOG_FOLDER_ID", ' + TABS.CONFIG.name + '!A:B, 2, FALSE)), "Master Flight Logs folder (Not Configured)", HYPERLINK("https://drive.google.com/drive/folders/" & VLOOKUP("MASTER_LOG_FOLDER_ID", ' + TABS.CONFIG.name + '!A:B, 2, FALSE), "📁 Master Flight Logs folder"))';
   sh.getRange('C2:F2').merge().setFormula(masterLinkFormula).setFontSize(10).setFontStyle('italic').setHorizontalAlignment('center').setVerticalAlignment('middle');
   sh.setRowHeight(2, 24);
@@ -192,8 +195,8 @@ function scaffoldDashboard_(ss) {
   var colThermalPct = getColLetter_(fMap, 'Thermal %', 'BC');
   var colSoarPct = getColLetter_(fMap, 'Soar %', 'BG');
 
-  // Status Filter Expression for formulas (When B2="Yes", includes both "Valid" and "Review?")
-  var fStatusFilter = '((INDIRECT("' + fSheet + '!' + colStatus + fStart + ':' + colStatus + '")="Valid") + ($B$2="Yes")*(INDIRECT("' + fSheet + '!' + colStatus + fStart + ':' + colStatus + '")="Review?"))';
+  // Status Filter Expression for formulas (When DASHBOARD_REVIEW_FILTER="Yes", includes both "Valid" and "Review?")
+  var fStatusFilter = '((INDIRECT("' + fSheet + '!' + colStatus + fStart + ':' + colStatus + '")="Valid") + (DASHBOARD_REVIEW_FILTER="Yes")*(INDIRECT("' + fSheet + '!' + colStatus + fStart + ':' + colStatus + '")="Review?"))';
 
   // Spacer Row 3
   sh.setRowHeight(3, 10);
@@ -202,9 +205,9 @@ function scaffoldDashboard_(ss) {
   sh.getRange('A4:F4').merge().setValue('ALL-TIME SUMMARY').setBackground('#ECEFF1').setFontColor('#546E7A').setFontWeight('bold').setFontSize(10).setHorizontalAlignment('center').setVerticalAlignment('middle');
   sh.setRowHeight(4, 18);
 
-  var fTotalFlights = '=IFERROR(TEXT(COUNTIF(INDIRECT("' + fSheet + '!' + colStatus + fStart + ':' + colStatus + '"), "Valid") + IF($B$2="Yes", COUNTIF(INDIRECT("' + fSheet + '!' + colStatus + fStart + ':' + colStatus + '"), "Review?"), 0), "#,##0") & CHAR(10) & "Total Flights", "0" & CHAR(10) & "Total Flights")';
+  var fTotalFlights = '=IFERROR(TEXT(COUNTIF(INDIRECT("' + fSheet + '!' + colStatus + fStart + ':' + colStatus + '"), "Valid") + IF(DASHBOARD_REVIEW_FILTER="Yes", COUNTIF(INDIRECT("' + fSheet + '!' + colStatus + fStart + ':' + colStatus + '"), "Review?"), 0), "#,##0") & CHAR(10) & "Total Flights", "0" & CHAR(10) & "Total Flights")';
   var fTotalHours = '=IFERROR(TEXT(SUMPRODUCT(' + fStatusFilter + ' * IFERROR(TIMEVALUE(INDIRECT("' + fSheet + '!' + colDuration + fStart + ':' + colDuration + '")), 0)), "[h]:mm") & " hrs" & CHAR(10) & "Total Hours", "0:00 hrs" & CHAR(10) & "Total Hours")';
-  var fTotalDist = '=IFERROR(TEXT(SUMIF(INDIRECT("' + fSheet + '!' + colStatus + fStart + ':' + colStatus + '"), "Valid", INDIRECT("' + fSheet + '!' + colDist + fStart + ':' + colDist + '")) + IF($B$2="Yes", SUMIF(INDIRECT("' + fSheet + '!' + colStatus + fStart + ':' + colStatus + '"), "Review?", INDIRECT("' + fSheet + '!' + colDist + fStart + ':' + colDist + '")), 0), "#,##0") & " km" & CHAR(10) & "Total Distance", "0 km" & CHAR(10) & "Total Distance")';
+  var fTotalDist = '=IFERROR(TEXT(SUMIF(INDIRECT("' + fSheet + '!' + colStatus + fStart + ':' + colStatus + '"), "Valid", INDIRECT("' + fSheet + '!' + colDist + fStart + ':' + colDist + '")) + IF(DASHBOARD_REVIEW_FILTER="Yes", SUMIF(INDIRECT("' + fSheet + '!' + colStatus + fStart + ':' + colStatus + '"), "Review?", INDIRECT("' + fSheet + '!' + colDist + fStart + ':' + colDist + '")), 0), "#,##0") & " km" & CHAR(10) & "Total Distance", "0 km" & CHAR(10) & "Total Distance")';
 
   var kpisAllTime = [
     { r: 'A5:B6', f: fTotalFlights },
@@ -230,9 +233,9 @@ function scaffoldDashboard_(ss) {
   sh.getRange('A8:F8').merge().setFormula('="YEAR-TO-DATE SUMMARY (" & YEAR(TODAY()) & ")"').setBackground('#ECEFF1').setFontColor('#546E7A').setFontWeight('bold').setFontSize(10).setHorizontalAlignment('center').setVerticalAlignment('middle');
   sh.setRowHeight(8, 18);
 
-  var fYearFlights = '=IFERROR(TEXT(COUNTIFS(INDIRECT("' + fSheet + '!' + colStatus + fStart + ':' + colStatus + '"), "Valid", INDIRECT("' + fSheet + '!' + colDate + fStart + ':' + colDate + '"), ">=" & DATE(YEAR(TODAY()), 1, 1), INDIRECT("' + fSheet + '!' + colDate + fStart + ':' + colDate + '"), "<=" & DATE(YEAR(TODAY()), 12, 31)) + IF($B$2="Yes", COUNTIFS(INDIRECT("' + fSheet + '!' + colStatus + fStart + ':' + colStatus + '"), "Review?", INDIRECT("' + fSheet + '!' + colDate + fStart + ':' + colDate + '"), ">=" & DATE(YEAR(TODAY()), 1, 1), INDIRECT("' + fSheet + '!' + colDate + fStart + ':' + colDate + '"), "<=" & DATE(YEAR(TODAY()), 12, 31)), 0), "#,##0") & CHAR(10) & "Flights (" & YEAR(TODAY()) & ")", "0" & CHAR(10) & "Flights (" & YEAR(TODAY()) & ")")';
+  var fYearFlights = '=IFERROR(TEXT(COUNTIFS(INDIRECT("' + fSheet + '!' + colStatus + fStart + ':' + colStatus + '"), "Valid", INDIRECT("' + fSheet + '!' + colDate + fStart + ':' + colDate + '"), ">=" & DATE(YEAR(TODAY()), 1, 1), INDIRECT("' + fSheet + '!' + colDate + fStart + ':' + colDate + '"), "<=" & DATE(YEAR(TODAY()), 12, 31)) + IF(DASHBOARD_REVIEW_FILTER="Yes", COUNTIFS(INDIRECT("' + fSheet + '!' + colStatus + fStart + ':' + colStatus + '"), "Review?", INDIRECT("' + fSheet + '!' + colDate + fStart + ':' + colDate + '"), ">=" & DATE(YEAR(TODAY()), 1, 1), INDIRECT("' + fSheet + '!' + colDate + fStart + ':' + colDate + '"), "<=" & DATE(YEAR(TODAY()), 12, 31)), 0), "#,##0") & CHAR(10) & "Flights (" & YEAR(TODAY()) & ")", "0" & CHAR(10) & "Flights (" & YEAR(TODAY()) & ")")';
   var fYearHours = '=IFERROR(TEXT(SUMPRODUCT(' + fStatusFilter + ' * (IFERROR(YEAR(INDIRECT("' + fSheet + '!' + colDate + fStart + ':' + colDate + '")), 0)=YEAR(TODAY())) * IFERROR(TIMEVALUE(INDIRECT("' + fSheet + '!' + colDuration + fStart + ':' + colDuration + '")), 0)), "[h]:mm") & " hrs" & CHAR(10) & "Hours (" & YEAR(TODAY()) & ")", "0:00 hrs" & CHAR(10) & "Hours (" & YEAR(TODAY()) & ")")';
-  var fYearDist = '=IFERROR(TEXT(SUMIFS(INDIRECT("' + fSheet + '!' + colDist + fStart + ':' + colDist + '"), INDIRECT("' + fSheet + '!' + colStatus + fStart + ':' + colStatus + '"), "Valid", INDIRECT("' + fSheet + '!' + colDate + fStart + ':' + colDate + '"), ">=" & DATE(YEAR(TODAY()), 1, 1), INDIRECT("' + fSheet + '!' + colDate + fStart + ':' + colDate + '"), "<=" & DATE(YEAR(TODAY()), 12, 31)) + IF($B$2="Yes", SUMIFS(INDIRECT("' + fSheet + '!' + colDist + fStart + ':' + colDist + '"), INDIRECT("' + fSheet + '!' + colStatus + fStart + ':' + colStatus + '"), "Review?", INDIRECT("' + fSheet + '!' + colDate + fStart + ':' + colDate + '"), ">=" & DATE(YEAR(TODAY()), 1, 1), INDIRECT("' + fSheet + '!' + colDate + fStart + ':' + colDate + '"), "<=" & DATE(YEAR(TODAY()), 12, 31)), 0), "#,##0") & " km" & CHAR(10) & "Distance (" & YEAR(TODAY()) & ")", "0 km" & CHAR(10) & "Distance (" & YEAR(TODAY()) & ")")';
+  var fYearDist = '=IFERROR(TEXT(SUMIFS(INDIRECT("' + fSheet + '!' + colDist + fStart + ':' + colDist + '"), INDIRECT("' + fSheet + '!' + colStatus + fStart + ':' + colStatus + '"), "Valid", INDIRECT("' + fSheet + '!' + colDate + fStart + ':' + colDate + '"), ">=" & DATE(YEAR(TODAY()), 1, 1), INDIRECT("' + fSheet + '!' + colDate + fStart + ':' + colDate + '"), "<=" & DATE(YEAR(TODAY()), 12, 31)) + IF(DASHBOARD_REVIEW_FILTER="Yes", SUMIFS(INDIRECT("' + fSheet + '!' + colDist + fStart + ':' + colDist + '"), INDIRECT("' + fSheet + '!' + colStatus + fStart + ':' + colStatus + '"), "Review?", INDIRECT("' + fSheet + '!' + colDate + fStart + ':' + colDate + '"), ">=" & DATE(YEAR(TODAY()), 1, 1), INDIRECT("' + fSheet + '!' + colDate + fStart + ':' + colDate + '"), "<=" & DATE(YEAR(TODAY()), 12, 31)), 0), "#,##0") & " km" & CHAR(10) & "Distance (" & YEAR(TODAY()) & ")", "0 km" & CHAR(10) & "Distance (" & YEAR(TODAY()) & ")")';
 
   var kpisYear = [
     { r: 'A9:B10', f: fYearFlights },
@@ -421,7 +424,7 @@ function scaffoldDashboard_(ss) {
   sh.getRange('D46:F46').merge().setValue('List of Countries').setBackground('#CFD8DC').setFontWeight('bold').setHorizontalAlignment('center').setVerticalAlignment('middle');
   sh.setRowHeight(46, 26);
 
-  var qWhere = '"SELECT Col2, COUNT(Col2) WHERE (Col1 = \'Valid\' " & IF($B$2="Yes", "OR Col1 = \'Review?\'", "") & ") AND Col2 IS NOT NULL AND Col2 <> \'\' GROUP BY Col2 ORDER BY COUNT(Col2) DESC LABEL COUNT(Col2) \'\'"';
+  var qWhere = '"SELECT Col2, COUNT(Col2) WHERE (Col1 = \'Valid\' " & IF(DASHBOARD_REVIEW_FILTER="Yes", "OR Col1 = \'Review?\'", "") & ") AND Col2 IS NOT NULL AND Col2 <> \'\' GROUP BY Col2 ORDER BY COUNT(Col2) DESC LABEL COUNT(Col2) \'\'"';
 
   for (var n = 1; n <= 20; n++) {
     var rNum5 = n + 46;
@@ -455,6 +458,12 @@ function scaffoldDashboard_(ss) {
     try { sh.deleteRows(71, sh.getMaxRows() - 70); } catch(e) {}
   }
 
+  // Soft Guardrails on Dashboard to prevent accidental paste wipes
+  applySoftGuardrail_(sh, sh.getRange('A4:F15'), 'Guardrail: Dashboard Summary & Activity KPIs');
+  applySoftGuardrail_(sh, sh.getRange('A18:F45'), 'Guardrail: Dashboard Leaderboard Cards');
+  applySoftGuardrail_(sh, sh.getRange('A46:F66'), 'Guardrail: Dashboard Lists');
+
+  registerSheetId_(ss, 'DASHBOARD', sh);
   sh.setHiddenGridlines(true);
 }
 
@@ -615,7 +624,8 @@ function scaffoldConfig_(ss) {
   if (dateFormats.length > 0) sh.getRange(3, 9, dateFormats.length, 1).setNumberFormat('@').setValues(dateFormats.map(function(t) { return [t]; }));
   if (timeFormats.length > 0) sh.getRange(3, 10, timeFormats.length, 1).setNumberFormat('@').setValues(timeFormats.map(function(t) { return [t]; }));
 
-  // K3:N3: Dynamic Queries from Equipment (Auto Lookups: Cols K=11, L=12, M=13, N=14)
+  // K3:N3: Native FILTER & SORT from Equipment (Auto Lookups: Cols K=11, L=12, M=13, N=14)
+  // Replaces string-based SQL QUERY with native FILTER/SORT so Google Sheets auto-tracks column moves
   var eqName = TABS.EQUIPMENT.name;
   var eqCols = (TABS.EQUIPMENT && TABS.EQUIPMENT.columns) ? TABS.EQUIPMENT.columns : [];
   var colCatIdx = eqCols.indexOf('Category') + 1;
@@ -624,13 +634,29 @@ function scaffoldConfig_(ss) {
   var cCat = columnToLetter_(colCatIdx > 0 ? colCatIdx : 1);
   var cId = columnToLetter_(colIdIdx > 0 ? colIdIdx : 2);
   var cRet = columnToLetter_(colRetIdx > 0 ? colRetIdx : 8);
-  var cEnd = columnToLetter_(eqCols.length > 0 ? eqCols.length : 13);
-  var eqRange = eqName + '!A:' + cEnd;
 
-  sh.getRange('K3').setFormula('=IFERROR(QUERY(' + eqRange + ', "select ' + cId + ' where ' + cCat + '=\'Wing\' and ' + cRet + '=FALSE order by ' + cId + ' asc label ' + cId + ' \'\'", 0), "")');
-  sh.getRange('L3').setFormula('=IFERROR(QUERY(' + eqRange + ', "select ' + cId + ' where ' + cCat + '=\'Harness\' and ' + cRet + '=FALSE order by ' + cId + ' asc label ' + cId + ' \'\'", 0), "")');
-  sh.getRange('M3').setFormula('=IFERROR(QUERY(' + eqRange + ', "select ' + cId + ' where ' + cCat + '=\'Reserve\' and ' + cRet + '=FALSE order by ' + cId + ' asc label ' + cId + ' \'\'", 0), "")');
-  sh.getRange('N3').setFormula('=IFERROR(QUERY(' + eqRange + ', "select ' + cId + ' where ' + cCat + '=\'Other\' and ' + cRet + '=FALSE order by ' + cId + ' asc label ' + cId + ' \'\'", 0), "")');
+  var rngId = eqName + '!$' + cId + '$3:$' + cId;
+  var rngCat = eqName + '!$' + cCat + '$3:$' + cCat;
+  var rngRet = eqName + '!$' + cRet + '$3:$' + cRet;
+
+  sh.getRange('K3').setFormula('=IFERROR(SORT(FILTER(' + rngId + ', ' + rngCat + '="Wing", ' + rngRet + '=FALSE)), "")');
+  sh.getRange('L3').setFormula('=IFERROR(SORT(FILTER(' + rngId + ', ' + rngCat + '="Harness", ' + rngRet + '=FALSE)), "")');
+  sh.getRange('M3').setFormula('=IFERROR(SORT(FILTER(' + rngId + ', ' + rngCat + '="Reserve", ' + rngRet + '=FALSE)), "")');
+  sh.getRange('N3').setFormula('=IFERROR(SORT(FILTER(' + rngId + ', ' + rngCat + '="Other", ' + rngRet + '=FALSE)), "")');
+
+  // Register Native Google Sheets Named Ranges for Lookups
+  registerNamedRange_(ss, 'LOOKUP_EQUIPMENT_CATS', sh.getRange('E3:E'));
+  registerNamedRange_(ss, 'LOOKUP_FLIGHT_STATUSES', sh.getRange('F3:F'));
+  registerNamedRange_(ss, 'LOOKUP_FLIGHT_TYPES', sh.getRange('G3:G'));
+  registerNamedRange_(ss, 'LOOKUP_XC_CLASSES', sh.getRange('H3:H'));
+  registerNamedRange_(ss, 'LOOKUP_ACTIVE_WINGS', sh.getRange('K3:K'));
+  registerNamedRange_(ss, 'LOOKUP_ACTIVE_HARNESSES', sh.getRange('L3:L'));
+  registerNamedRange_(ss, 'LOOKUP_ACTIVE_RESERVES', sh.getRange('M3:M'));
+  registerNamedRange_(ss, 'LOOKUP_ACTIVE_OTHER', sh.getRange('N3:N'));
+
+  // Soft Guardrails on Config Tab
+  applySoftGuardrail_(sh, sh.getRange('K3:N3'), 'Guardrail: Equipment Auto-Lookup Formulas');
+  registerSheetId_(ss, 'CONFIG', sh);
 
   // Validation for Date/Time Formats & Booleans in Parameters
   var dateRange = sh.getRange('I3:I7');
@@ -886,6 +912,8 @@ function scaffoldFlights_(ss) {
   sh.setFrozenColumns(4);
   SpreadsheetApp.flush();
   applyFlightsValidation_(sh);
+  applyFlightsGuardrails_(sh);
+  registerSheetId_(ss, 'FLIGHTS', sh);
 }
 
 /* ==========================================================================================
@@ -897,6 +925,7 @@ function updateValidationOnly_() {
   var sh = ss.getSheetByName(TABS.FLIGHTS.name);
   if (sh) {
     applyFlightsValidation_(sh);
+    applyFlightsGuardrails_(sh);
     // Also re-apply column notes (row 4)
     var colNotes = TABS.FLIGHTS.colNotes || {};
     var lastCol = sh.getLastColumn();
@@ -933,7 +962,7 @@ function applyFlightsValidation_(sh) {
   var map = getColumnMap_(sh);
   
   var startRow = TABS.FLIGHTS.dataStartRow;
-  var endRow = Math.max(sh.getLastRow() + 50, TABS.FLIGHTS.dataEndRow || 100); 
+  var endRow = Math.max(sh.getMaxRows(), TABS.FLIGHTS.dataEndRow || 100); 
   var valRows = endRow - startRow + 1;
   if (valRows < 1) return;
 
@@ -962,34 +991,41 @@ function applyFlightsValidation_(sh) {
     sh.setConditionalFormatRules(nonStatusRules);
   }
 
-  // Flight Type (Config Col G)
+  var shConfig = ss.getSheetByName(TABS.CONFIG.name);
+
+  // Flight Type (Config Col G / Named Range LOOKUP_FLIGHT_TYPES)
   if (map['Flight Type']) {
-      var shConfig = ss.getSheetByName(TABS.CONFIG.name);
-      if (shConfig) {
-        var rule = SpreadsheetApp.newDataValidation().requireValueInRange(shConfig.getRange('G3:G'), true).build();
-        sh.getRange(startRow, map['Flight Type'], valRows, 1).setDataValidation(rule);
-      }
+    var rngFlightTypes = ss.getRangeByName('LOOKUP_FLIGHT_TYPES') || (shConfig ? shConfig.getRange('G3:G') : null);
+    if (rngFlightTypes) {
+      var rule = SpreadsheetApp.newDataValidation().requireValueInRange(rngFlightTypes, true).setAllowInvalid(true).build();
+      sh.getRange(startRow, map['Flight Type'], valRows, 1).setDataValidation(rule);
+    }
   }
 
-  // Equipment (Config Cols K, L, M)
-  var shConfig = ss.getSheetByName(TABS.CONFIG.name);
+  // Equipment (Config Cols K, L, M / Named Ranges)
   if (shConfig) {
-    var apply = function(colName, rngA1) {
-       if (map[colName]) {
-         var rule = SpreadsheetApp.newDataValidation().requireValueInRange(shConfig.getRange(rngA1), true).build();
-         sh.getRange(startRow, map[colName], valRows, 1).setDataValidation(rule);
-       }
+    var applyLookup = function(colName, namedRange, fallbackA1) {
+      if (map[colName]) {
+        var rng = ss.getRangeByName(namedRange) || shConfig.getRange(fallbackA1);
+        if (rng) {
+          var rule = SpreadsheetApp.newDataValidation().requireValueInRange(rng, true).setAllowInvalid(true).build();
+          sh.getRange(startRow, map[colName], valRows, 1).setDataValidation(rule);
+        }
+      }
     };
-    apply('Wing', 'K3:K');
-    apply('Harness', 'L3:L');
-    apply('Reserve 1', 'M3:M');
-    apply('Reserve 2', 'M3:M');
+    applyLookup('Wing', 'LOOKUP_ACTIVE_WINGS', 'K3:K');
+    applyLookup('Harness', 'LOOKUP_ACTIVE_HARNESSES', 'L3:L');
+    applyLookup('Reserve 1', 'LOOKUP_ACTIVE_RESERVES', 'M3:M');
+    applyLookup('Reserve 2', 'LOOKUP_ACTIVE_RESERVES', 'M3:M');
   }
   
-  // XC Flight Class (Config Col H)
+  // XC Flight Class (Config Col H / Named Range LOOKUP_XC_CLASSES)
   if (map['XC Flight Class'] && shConfig) {
-      var rule = SpreadsheetApp.newDataValidation().requireValueInRange(shConfig.getRange('H3:H'), true).build();
+    var rngXcClass = ss.getRangeByName('LOOKUP_XC_CLASSES') || shConfig.getRange('H3:H');
+    if (rngXcClass) {
+      var rule = SpreadsheetApp.newDataValidation().requireValueInRange(rngXcClass, true).setAllowInvalid(true).build();
       sh.getRange(startRow, map['XC Flight Class'], valRows, 1).setDataValidation(rule);
+    }
   }
   
   // Closed? (Checkbox)
@@ -1008,27 +1044,64 @@ function applyEquipmentValidation_(sh) {
   var ss = SpreadsheetApp.getActive();
   var shConfig = ss.getSheetByName(TABS.CONFIG.name);
   if (shConfig) {
-      var dataStart = TABS.EQUIPMENT.dataStartRow;
-      var dataEnd = TABS.EQUIPMENT.dataEndRow;
-      var numRows = dataEnd - dataStart + 1; // 50 - 3 + 1 = 48 rows.
-      
-      if (numRows < 1) return;
+    var dataStart = TABS.EQUIPMENT.dataStartRow;
+    var dataEnd = Math.max(sh.getMaxRows(), TABS.EQUIPMENT.dataEndRow || 50);
+    var numRows = dataEnd - dataStart + 1;
+    if (numRows < 1) return;
 
-      // Category Range (Config Col E: Equipment Categories)
-      var range = shConfig.getRange('E3:E');
-      var rule = SpreadsheetApp.newDataValidation().requireValueInRange(range, true).setAllowInvalid(true).build();
-      
-      // Apply to limited range
-      sh.getRange(dataStart, 1, numRows, 1).setDataValidation(rule);
+    // Category Range (Config Col E: Equipment Categories / Named Range)
+    var range = ss.getRangeByName('LOOKUP_EQUIPMENT_CATS') || shConfig.getRange('E3:E');
+    var rule = SpreadsheetApp.newDataValidation().requireValueInRange(range, true).setAllowInvalid(true).build();
+    sh.getRange(dataStart, 1, numRows, 1).setDataValidation(rule);
+    
+    // Retired? Checkbox (Col H)
+    var retiredRule = SpreadsheetApp.newDataValidation().requireValueInList(['TRUE', 'FALSE'], true).setAllowInvalid(true).build();
+    sh.getRange(dataStart, 8, numRows, 1).setDataValidation(retiredRule);
   }
 }
 
-function getColumnMap_(sh) {
+function getColumnMap_(sh, headerRow) {
+  if (!sh) return {};
   var lastCol = sh.getLastColumn();
   if (lastCol < 1) return {};
-  var headers = sh.getRange(4, 1, 1, lastCol).getValues()[0];
+  
+  var hRow = headerRow || 4;
+  if (sh.getLastRow() < hRow) {
+    hRow = Math.max(1, Math.min(2, sh.getLastRow()));
+  }
+  
+  var headers = sh.getRange(hRow, 1, 1, lastCol).getValues()[0];
   var map = {};
-  headers.forEach(function(h, i) { if (h) map[h] = i + 1; });
+  var normalized = {};
+  
+  headers.forEach(function(h, i) {
+    if (h !== null && h !== undefined && String(h).trim() !== '') {
+      var clean = String(h).trim();
+      map[clean] = i + 1;
+      normalized[clean.toLowerCase()] = i + 1;
+    }
+  });
+
+  if (typeof Proxy !== 'undefined') {
+    return new Proxy(map, {
+      get: function(target, prop) {
+        if (typeof prop !== 'string') return target[prop];
+        if (prop in target) return target[prop];
+        var trimmed = prop.trim();
+        if (trimmed in target) return target[trimmed];
+        var lower = trimmed.toLowerCase();
+        if (lower in normalized) return normalized[lower];
+        return undefined;
+      },
+      has: function(target, prop) {
+        if (typeof prop !== 'string') return prop in target;
+        if (prop in target) return true;
+        var trimmed = prop.trim();
+        if (trimmed in target) return true;
+        return trimmed.toLowerCase() in normalized;
+      }
+    });
+  }
   return map;
 }
 
@@ -1564,3 +1637,66 @@ function uiRefreshDashboard_() {
   scaffoldDashboard_(ss);
   ss.toast('Dashboard refreshed successfully.', 'Flight Log');
 }
+
+/* ==========================================================================================
+   RESILIENCY & NATIVE GOOGLE SHEETS HELPERS (CR-SYS-009 / AUD-RES-003)
+   ========================================================================================== */
+
+/**
+ * Registers or updates a Google Sheets Named Range.
+ * Removes any pre-existing Named Range with the same name before binding.
+ */
+function registerNamedRange_(ss, name, range) {
+  if (!ss || !range) return;
+  try {
+    var namedRanges = ss.getNamedRanges();
+    for (var i = 0; i < namedRanges.length; i++) {
+      if (namedRanges[i].getName() === name) {
+        namedRanges[i].remove();
+        break;
+      }
+    }
+    ss.setNamedRange(name, range);
+  } catch (e) {
+    console.warn('Error setting named range ' + name + ':', e.message);
+  }
+}
+
+/**
+ * Applies a native Google Sheets soft warning protection to a range.
+ * setWarningOnly(true) provides visual safety against accidental keystrokes
+ * or clipboard paste-overs without locking users out or causing auth errors.
+ */
+function applySoftGuardrail_(sh, range, description) {
+  if (!sh || !range) return;
+  try {
+    var protections = sh.getProtections(SpreadsheetApp.ProtectionType.RANGE);
+    for (var i = 0; i < protections.length; i++) {
+      if (protections[i].getDescription() === description) {
+        protections[i].remove();
+      }
+    }
+    var p = range.protect().setDescription(description);
+    p.setWarningOnly(true);
+  } catch (e) {
+    console.warn('Soft guardrail warning on ' + description + ':', e.message);
+  }
+}
+
+/**
+ * Applies native soft guardrails across Flights tab header rows and formula sequence cells.
+ */
+function applyFlightsGuardrails_(sh) {
+  if (!sh) return;
+  var map = getColumnMap_(sh);
+  var lastCol = sh.getLastColumn();
+  if (lastCol > 0) {
+    applySoftGuardrail_(sh, sh.getRange(1, 1, 4, lastCol), 'Guardrail: Flights Headers (Rows 1-4)');
+  }
+  var flightNoCol = map['Flight No'] || 3;
+  var maxRows = sh.getMaxRows();
+  if (maxRows >= 5) {
+    applySoftGuardrail_(sh, sh.getRange(5, flightNoCol, maxRows - 4, 1), 'Guardrail: Flights Auto-Numbering Formulas');
+  }
+}
+

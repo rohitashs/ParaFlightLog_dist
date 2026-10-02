@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-10-01 01:31:18
+ * Updated: 2026-10-02 17:25:41
  * Test access verification: Verified GAS write access on 2026-09-25 08:26:00.
  * 
  * CORE MODULE: Orchestration Only.
@@ -936,11 +936,16 @@ function sortFlightsByDate_() {
     dataRange.sort(sortSpecs);
   }
 
-  // Re-apply Flight No formula only to actual flight rows
+  // Re-apply Flight No formula only to actual flight rows (Batch 2D array write - 1 API call instead of 500)
   var flightNoCol = map['Flight No'] || 3;
   var fNoColLetter = columnToLetter_(flightNoCol);
-  for (var r = minRow; r <= maxRow; r++) {
-    sh.getRange(r, flightNoCol).setFormula('=IFERROR(MAX(INDIRECT("' + fNoColLetter + '" & (ROW()+1) & ":' + fNoColLetter + '")), 0) + 1');
+  var fNoRows = maxRow - minRow + 1;
+  if (fNoRows > 0) {
+    var formulas = [];
+    for (var r = minRow; r <= maxRow; r++) {
+      formulas.push(['=IFERROR(MAX(INDIRECT("' + fNoColLetter + '" & (ROW()+1) & ":' + fNoColLetter + '")), 0) + 1']);
+    }
+    sh.getRange(minRow, flightNoCol, fNoRows, 1).setFormulas(formulas);
   }
 
   // Ensure dropdowns, data validations, cell text wrapping and conditional formatting cover all actual rows
