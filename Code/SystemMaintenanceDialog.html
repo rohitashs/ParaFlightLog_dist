@@ -1,6 +1,6 @@
 <!--
  * Paragliding Flight Log v2.0
- * Updated: 2026-10-02 19:10:42
+ * Updated: 2026-10-02 19:33:18
  -->
 <!DOCTYPE html>
 <html>
@@ -9,20 +9,35 @@
     <base target="_top">
     <?!= HtmlService.createTemplateFromFile('Style').evaluate().getContent(); ?>
     <style>
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        html, body {
+            height: 100%;
             margin: 0;
-            padding: 16px;
+            padding: 0;
+            overflow: hidden;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             color: #212121;
             background: #FAFAFA;
             font-size: 12px;
+        }
+
+        .dialog-shell {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .fixed-top-section {
+            flex-shrink: 0;
+            padding: 14px 16px 6px 16px;
+            background: #FAFAFA;
         }
 
         .header-bar {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             padding-bottom: 8px;
             border-bottom: 1px solid #E0E0E0;
         }
@@ -52,15 +67,15 @@
             border: 1px solid #C8E6C9;
             border-left: 4px solid #4CAF50;
             border-radius: 6px;
-            padding: 10px 14px;
-            margin-bottom: 12px;
+            padding: 8px 12px;
+            margin-bottom: 8px;
         }
 
         .backup-title {
             font-weight: 700;
             color: #2E7D32;
-            font-size: 12px;
-            margin-bottom: 6px;
+            font-size: 11px;
+            margin-bottom: 4px;
             display: flex;
             align-items: center;
             gap: 6px;
@@ -69,7 +84,7 @@
         .backup-options {
             display: flex;
             gap: 20px;
-            font-size: 12px;
+            font-size: 11px;
             color: #333;
         }
 
@@ -85,7 +100,7 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
 
         .preset-title {
@@ -105,7 +120,7 @@
             background: #FFFFFF;
             border: 1px solid #BDBDBD;
             color: #424242;
-            padding: 4px 10px;
+            padding: 3px 8px;
             border-radius: 4px;
             font-size: 11px;
             font-weight: 600;
@@ -126,6 +141,32 @@
 
         .btn-preset.recommended:hover {
             background: #BBDEFB;
+        }
+
+        /* Scrollable Middle Body */
+        .scrollable-content-area {
+            flex: 1 1 auto;
+            overflow-y: auto;
+            padding: 6px 16px 14px 16px;
+            min-height: 0; /* Crucial for CSS flex scrolling */
+        }
+
+        .scrollable-content-area::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .scrollable-content-area::-webkit-scrollbar-track {
+            background: #F1F1F1;
+            border-radius: 4px;
+        }
+
+        .scrollable-content-area::-webkit-scrollbar-thumb {
+            background: #BDBDBD;
+            border-radius: 4px;
+        }
+
+        .scrollable-content-area::-webkit-scrollbar-thumb:hover {
+            background: #9E9E9E;
         }
 
         /* Matrix Table */
@@ -222,7 +263,7 @@
             border: 1px solid #C8E6C9;
             border-radius: 6px;
             padding: 10px 14px;
-            margin-bottom: 14px;
+            margin-bottom: 12px;
             font-size: 11px;
             color: #2E7D32;
         }
@@ -249,7 +290,7 @@
             color: #E0E0E0;
             border-radius: 6px;
             padding: 10px 12px;
-            margin-bottom: 14px;
+            margin-bottom: 12px;
             font-family: 'Consolas', 'Menlo', monospace;
             font-size: 11px;
             max-height: 180px;
@@ -271,7 +312,7 @@
             border-radius: 4px;
             height: 6px;
             overflow: hidden;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
         }
 
         .progress-bar-fill {
@@ -281,13 +322,15 @@
             transition: width 0.3s ease;
         }
 
-        /* Footer */
-        .footer-bar {
+        /* Fixed Bottom Footer */
+        .fixed-bottom-footer {
+            flex-shrink: 0;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding-top: 10px;
+            padding: 10px 16px;
             border-top: 1px solid #E0E0E0;
+            background: #FFFFFF;
         }
 
         .footer-left {
@@ -344,108 +387,116 @@
 </head>
 
 <body>
-    <div class="header-bar">
-        <div class="header-title">
-            <span>🛠️</span> System Maintenance Cockpit
+    <div class="dialog-shell">
+        <!-- Fixed Header & Presets -->
+        <div class="fixed-top-section">
+            <div class="header-bar">
+                <div class="header-title">
+                    <span>🛠️</span> System Maintenance Cockpit
+                </div>
+                <div class="version-badge" id="appVersionBadge">Core v2.1.0</div>
+            </div>
+
+            <!-- Pre-Flight Safety Backup -->
+            <div class="backup-card">
+                <div class="backup-title">
+                    <span>🛡️</span> Pre-Flight Safety Backups (Recommended)
+                </div>
+                <div class="backup-options">
+                    <label>
+                        <input type="checkbox" id="chkBackupSheets" checked>
+                        <span>Create In-Workbook Sheet Clones (Backup Flights, Backup Config)</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Presets Bar -->
+            <div class="preset-bar">
+                <div class="preset-title">Update Scope & Target Elements:</div>
+                <div class="preset-btns">
+                    <button class="btn-preset recommended" onclick="applyPreset('recommended')">🎯 Select Recommended Updates</button>
+                    <button class="btn-preset" onclick="applyPreset('all')">🗹 Select All</button>
+                    <button class="btn-preset" onclick="applyPreset('clear')">🗵 Clear All</button>
+                </div>
+            </div>
         </div>
-        <div class="version-badge" id="appVersionBadge">Core v2.1.0</div>
-    </div>
 
-    <!-- Pre-Flight Safety Backup -->
-    <div class="backup-card">
-        <div class="backup-title">
-            <span>🛡️</span> Pre-Flight Safety Backups (Recommended)
+        <!-- Scrollable Middle Body -->
+        <div class="scrollable-content-area">
+            <!-- Loading State -->
+            <div id="loadingView" class="loading-view">
+                <div>⏳ Inspecting system manifest and spreadsheet schema...</div>
+            </div>
+
+            <!-- Matrix Table Container -->
+            <div id="matrixContainer" class="matrix-wrapper" style="display: none;">
+                <table class="matrix-table" id="matrixTable">
+                    <thead>
+                        <tr id="headerRowSheets">
+                            <th>Element Type / System Tab</th>
+                            <!-- Populated dynamically -->
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="sheet-master-row" id="rowMasterSheets">
+                            <td class="row-label"><strong>[x] Toggle Entire Sheet</strong></td>
+                            <!-- Populated dynamically -->
+                        </tr>
+                        <tr id="rowGrid">
+                            <td class="row-label">Grid Dimensions & Frozen Panes</td>
+                        </tr>
+                        <tr id="rowHeaders">
+                            <td class="row-label">Headers & Category Groupings</td>
+                        </tr>
+                        <tr id="rowNotes">
+                            <td class="row-label">Column Tooltips & Cell Notes</td>
+                        </tr>
+                        <tr id="rowValidations">
+                            <td class="row-label">Dropdown Validations & Rules</td>
+                        </tr>
+                        <tr id="rowFormulas">
+                            <td class="row-label">Formulas, Named Ranges & Queries</td>
+                        </tr>
+                        <tr id="rowParameters">
+                            <td class="row-label">Parameters & Key Definitions</td>
+                        </tr>
+                        <tr id="rowGuardrails">
+                            <td class="row-label">Soft Guardrails (setWarningOnly)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="progress-bar-container" id="progressBar">
+                <div class="progress-bar-fill" id="progressFill"></div>
+            </div>
+
+            <!-- Console Log Window -->
+            <div class="console-card" id="consoleLogs"></div>
+
+            <!-- Impact Preview -->
+            <div class="impact-box" id="impactBox">
+                <div class="impact-title">
+                    <span>ℹ️</span> Non-Destructive Update Guarantee:
+                </div>
+                <ul class="impact-bullets">
+                    <li><strong id="impactCount">0 elements</strong> selected across <strong id="impactSheets">0 sheets</strong>.</li>
+                    <li><strong>Zero-Loss Contract:</strong> Flight rows 5:N and custom equipment inventory remain 100% UNTOUCHED (read-only).</li>
+                    <li>Config parameters are read into memory and preserved; only missing defaults are added.</li>
+                </ul>
+            </div>
         </div>
-        <div class="backup-options">
-            <label>
-                <input type="checkbox" id="chkBackupSheets" checked>
-                <span>Create In-Workbook Sheet Clones (Backup Flights, Backup Config)</span>
-            </label>
-        </div>
-    </div>
 
-    <!-- Presets Bar -->
-    <div class="preset-bar">
-        <div class="preset-title">Update Scope & Target Elements:</div>
-        <div class="preset-btns">
-            <button class="btn-preset recommended" onclick="applyPreset('recommended')">🎯 Select Recommended Updates</button>
-            <button class="btn-preset" onclick="applyPreset('all')">🗹 Select All</button>
-            <button class="btn-preset" onclick="applyPreset('clear')">🗵 Clear All</button>
-        </div>
-    </div>
-
-    <!-- Loading State -->
-    <div id="loadingView" class="loading-view">
-        <div>⏳ Inspecting system manifest and spreadsheet schema...</div>
-    </div>
-
-    <!-- Matrix Table Container -->
-    <div id="matrixContainer" class="matrix-wrapper" style="display: none;">
-        <table class="matrix-table" id="matrixTable">
-            <thead>
-                <tr id="headerRowSheets">
-                    <th>Element Type / System Tab</th>
-                    <!-- Populated dynamically -->
-                </tr>
-            </thead>
-            <tbody>
-                <tr class="sheet-master-row" id="rowMasterSheets">
-                    <td class="row-label"><strong>[x] Toggle Entire Sheet</strong></td>
-                    <!-- Populated dynamically -->
-                </tr>
-                <tr id="rowGrid">
-                    <td class="row-label">Grid Dimensions & Frozen Panes</td>
-                </tr>
-                <tr id="rowHeaders">
-                    <td class="row-label">Headers & Category Groupings</td>
-                </tr>
-                <tr id="rowNotes">
-                    <td class="row-label">Column Tooltips & Cell Notes</td>
-                </tr>
-                <tr id="rowValidations">
-                    <td class="row-label">Dropdown Validations & Rules</td>
-                </tr>
-                <tr id="rowFormulas">
-                    <td class="row-label">Formulas, Named Ranges & Queries</td>
-                </tr>
-                <tr id="rowParameters">
-                    <td class="row-label">Parameters & Key Definitions</td>
-                </tr>
-                <tr id="rowGuardrails">
-                    <td class="row-label">Soft Guardrails (setWarningOnly)</td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-
-    <!-- Progress Bar -->
-    <div class="progress-bar-container" id="progressBar">
-        <div class="progress-bar-fill" id="progressFill"></div>
-    </div>
-
-    <!-- Console Log Window -->
-    <div class="console-card" id="consoleLogs"></div>
-
-    <!-- Impact Preview -->
-    <div class="impact-box" id="impactBox">
-        <div class="impact-title">
-            <span>ℹ️</span> Non-Destructive Update Guarantee:
-        </div>
-        <ul class="impact-bullets">
-            <li><strong id="impactCount">0 elements</strong> selected across <strong id="impactSheets">0 sheets</strong>.</li>
-            <li><strong>Zero-Loss Contract:</strong> Flight rows 5:N and custom equipment inventory remain 100% UNTOUCHED (read-only).</li>
-            <li>Config parameters are read into memory and preserved; only missing defaults are added.</li>
-        </ul>
-    </div>
-
-    <!-- Footer -->
-    <div class="footer-bar">
-        <div class="footer-left" id="footerSummary">Ready to inspect and apply updates.</div>
-        <div class="footer-actions">
-            <button class="btn-cancel" id="btnCancel" onclick="google.script.host.close()">Cancel</button>
-            <button class="btn-apply" id="btnApply" onclick="executeMaintenance()">
-                <span>🚀</span> Apply Selected Maintenance
-            </button>
+        <!-- Fixed Footer -->
+        <div class="fixed-bottom-footer">
+            <div class="footer-left" id="footerSummary">Ready to inspect and apply updates.</div>
+            <div class="footer-actions">
+                <button class="btn-cancel" id="btnCancel" onclick="google.script.host.close()">Cancel</button>
+                <button class="btn-apply" id="btnApply" onclick="executeMaintenance()">
+                    <span>🚀</span> Apply Selected Maintenance
+                </button>
+            </div>
         </div>
     </div>
 
@@ -522,7 +573,6 @@
                     if (data.matrix && data.matrix[sName] && data.matrix[sName][rowDef.key]) {
                         comp = data.matrix[sName][rowDef.key];
                     } else {
-                        // Check if key exists in system components
                         for (var sk in data.diff.sheets) {
                             var sheet = data.diff.sheets[sk];
                             if (sheet.sheetName === sName) {

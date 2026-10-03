@@ -1,6 +1,6 @@
 <!--
  * Paragliding Flight Log v2.0
- * Updated: 2026-10-02 19:10:42
+ * Updated: 2026-10-02 19:33:18
  -->
 <!DOCTYPE html>
 <html>
@@ -9,26 +9,41 @@
     <base target="_top">
     <?!= HtmlService.createTemplateFromFile('Style').evaluate().getContent(); ?>
     <style>
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        html, body {
+            height: 100%;
             margin: 0;
-            padding: 16px;
+            padding: 0;
+            overflow: hidden;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             color: #212121;
             background: #FAFAFA;
             font-size: 13px;
+        }
+
+        .dialog-shell {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .fixed-top-header {
+            flex-shrink: 0;
+            padding: 14px 16px 0 16px;
+            background: #FAFAFA;
         }
 
         .header-bar {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
             padding-bottom: 8px;
             border-bottom: 1px solid #E0E0E0;
         }
 
         .header-title {
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 700;
             display: flex;
             align-items: center;
@@ -41,15 +56,15 @@
             color: #283593;
             font-weight: 600;
             font-size: 11px;
-            padding: 3px 8px;
+            padding: 2px 8px;
             border-radius: 12px;
             border: 1px solid #C5CAE9;
         }
 
         .status-banner {
-            padding: 12px 16px;
+            padding: 10px 14px;
             border-radius: 8px;
-            margin-bottom: 14px;
+            margin-bottom: 10px;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -100,11 +115,16 @@
             background: #1565C0;
         }
 
+        .nav-tabs-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #E0E0E0;
+        }
+
         .nav-tabs {
             display: flex;
             gap: 6px;
-            border-bottom: 1px solid #E0E0E0;
-            margin-bottom: 12px;
         }
 
         .nav-tab {
@@ -114,12 +134,62 @@
             color: #757575;
             cursor: pointer;
             border-bottom: 2px solid transparent;
+            margin-bottom: -1px;
             transition: all 0.15s ease;
         }
 
         .nav-tab.active {
             color: #1976D2;
             border-bottom-color: #1976D2;
+        }
+
+        .manifest-quick-toggles {
+            display: flex;
+            gap: 6px;
+            padding-bottom: 4px;
+        }
+
+        .btn-mini-toggle {
+            background: #FFFFFF;
+            border: 1px solid #E0E0E0;
+            color: #616161;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .btn-mini-toggle:hover {
+            background: #EEEEEE;
+            color: #212121;
+        }
+
+        /* Scrollable Middle Container */
+        .scrollable-content-area {
+            flex: 1 1 auto;
+            overflow-y: auto;
+            padding: 12px 16px;
+            min-height: 0; /* Crucial for CSS flex scrolling */
+        }
+
+        .scrollable-content-area::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .scrollable-content-area::-webkit-scrollbar-track {
+            background: #F1F1F1;
+            border-radius: 4px;
+        }
+
+        .scrollable-content-area::-webkit-scrollbar-thumb {
+            background: #BDBDBD;
+            border-radius: 4px;
+        }
+
+        .scrollable-content-area::-webkit-scrollbar-thumb:hover {
+            background: #9E9E9E;
         }
 
         .tab-pane {
@@ -137,7 +207,7 @@
             border-radius: 8px;
             margin-bottom: 10px;
             overflow: hidden;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.03);
             transition: border-color 0.15s ease;
         }
 
@@ -300,14 +370,16 @@
             word-break: break-all;
         }
 
-        .footer-bar {
+        /* Fixed Bottom Footer */
+        .fixed-bottom-footer {
+            flex-shrink: 0;
             display: flex;
             align-items: center;
             justify-content: flex-end;
             gap: 10px;
-            margin-top: 14px;
-            padding-top: 10px;
+            padding: 10px 16px;
             border-top: 1px solid #E0E0E0;
+            background: #FFFFFF;
         }
 
         .btn-secondary {
@@ -335,103 +407,117 @@
 </head>
 
 <body>
-    <div class="header-bar">
-        <div class="header-title">
-            <span>ℹ️</span> System Info & Manifest Inspector
-        </div>
-        <div class="version-badge" id="appVersionBadge">Core v2.1.0</div>
-    </div>
+    <div class="dialog-shell">
+        <!-- Fixed Header -->
+        <div class="fixed-top-header">
+            <div class="header-bar">
+                <div class="header-title">
+                    <span>ℹ️</span> System Info & Manifest Inspector
+                </div>
+                <div class="version-badge" id="appVersionBadge">Core v2.1.0</div>
+            </div>
 
-    <!-- Live Status Banner -->
-    <div id="statusBanner" class="status-banner green" style="display: none;">
-        <div>
-            <div class="banner-text" id="bannerTitle">All System Components Up-to-Date</div>
-            <div class="banner-sub" id="bannerSub">Spreadsheet elements are 100% synchronized with core code.</div>
-        </div>
-        <button class="btn-launch-maint" id="btnLaunchMaint" style="display: none;" onclick="launchSystemMaintenance()">
-            <span>🛠️</span> Open System Maintenance...
-        </button>
-    </div>
+            <!-- Live Status Banner -->
+            <div id="statusBanner" class="status-banner green" style="display: none;">
+                <div>
+                    <div class="banner-text" id="bannerTitle">All System Components Up-to-Date</div>
+                    <div class="banner-sub" id="bannerSub">Spreadsheet elements are 100% synchronized with core code.</div>
+                </div>
+                <button class="btn-launch-maint" id="btnLaunchMaint" style="display: none;" onclick="launchSystemMaintenance()">
+                    <span>🛠️</span> Open System Maintenance...
+                </button>
+            </div>
 
-    <!-- Tabs -->
-    <div class="nav-tabs">
-        <div class="nav-tab active" onclick="switchTab('tabManifest')">🔍 Manifest & Schema Health</div>
-        <div class="nav-tab" onclick="switchTab('tabEnvironment')">⚙️ Environment & Quotas</div>
-        <div class="nav-tab" onclick="switchTab('tabAbout')">📜 About & Attribution</div>
-    </div>
-
-    <!-- Loading State -->
-    <div id="loadingView" class="loading-spinner">
-        <div>⏳ Inspecting system manifest and active spreadsheet elements...</div>
-    </div>
-
-    <!-- Tab 1: Manifest & Schema Health -->
-    <div id="tabManifest" class="tab-pane active" style="display: none;">
-        <div id="sheetsContainer"></div>
-    </div>
-
-    <!-- Tab 2: Environment & Quotas -->
-    <div id="tabEnvironment" class="tab-pane">
-        <div class="info-card">
-            <div class="info-card-title"><span>📊</span> Active Spreadsheet Details</div>
-            <div class="info-grid">
-                <div class="info-key">Document Name:</div>
-                <div class="info-val" id="envDocName">Loading...</div>
-                <div class="info-key">Document ID:</div>
-                <div class="info-val" id="envDocId">Loading...</div>
-                <div class="info-key">Active Timezone:</div>
-                <div class="info-val" id="envTimezone">Loading...</div>
-                <div class="info-key">Active User:</div>
-                <div class="info-val" id="envUser">Loading...</div>
+            <!-- Navigation Tabs with Quick Expand/Collapse Toggles -->
+            <div class="nav-tabs-wrapper">
+                <div class="nav-tabs">
+                    <div class="nav-tab active" id="tabBtnManifest" onclick="switchTab('tabManifest')">🔍 Manifest & Schema Health</div>
+                    <div class="nav-tab" id="tabBtnEnv" onclick="switchTab('tabEnvironment')">⚙️ Environment & Quotas</div>
+                    <div class="nav-tab" id="tabBtnAbout" onclick="switchTab('tabAbout')">📜 About & Attribution</div>
+                </div>
+                <div class="manifest-quick-toggles" id="manifestToggles">
+                    <button class="btn-mini-toggle" onclick="toggleAllCards(true)" title="Expand all sheet cards">Expand All</button>
+                    <button class="btn-mini-toggle" onclick="toggleAllCards(false)" title="Collapse all sheet cards">Collapse All</button>
+                </div>
             </div>
         </div>
 
-        <div class="info-card">
-            <div class="info-card-title"><span>⚡</span> Google Apps Script Runtime & Quotas</div>
-            <div class="info-grid">
-                <div class="info-key">Execution Limit:</div>
-                <div class="info-val">6 minutes max per synchronous trigger (TimeBudget enforced)</div>
-                <div class="info-key">Queue Daemon:</div>
-                <div class="info-val">Self-perpetuating 4.5-min chunking via QueueService</div>
-                <div class="info-key">Batch Formula Engine:</div>
-                <div class="info-val">Enabled (single round-trip setFormulas arrays)</div>
-                <div class="info-key">Resilience Primitives:</div>
-                <div class="info-val">Named Ranges, Soft Warning Guardrails, Proxy Header Maps</div>
+        <!-- Scrollable Middle Body -->
+        <div class="scrollable-content-area">
+            <!-- Loading State -->
+            <div id="loadingView" class="loading-spinner">
+                <div>⏳ Inspecting system manifest and active spreadsheet elements...</div>
+            </div>
+
+            <!-- Tab 1: Manifest & Schema Health -->
+            <div id="tabManifest" class="tab-pane active" style="display: none;">
+                <div id="sheetsContainer"></div>
+            </div>
+
+            <!-- Tab 2: Environment & Quotas -->
+            <div id="tabEnvironment" class="tab-pane">
+                <div class="info-card">
+                    <div class="info-card-title"><span>📊</span> Active Spreadsheet Details</div>
+                    <div class="info-grid">
+                        <div class="info-key">Document Name:</div>
+                        <div class="info-val" id="envDocName">Loading...</div>
+                        <div class="info-key">Document ID:</div>
+                        <div class="info-val" id="envDocId">Loading...</div>
+                        <div class="info-key">Active Timezone:</div>
+                        <div class="info-val" id="envTimezone">Loading...</div>
+                        <div class="info-key">Active User:</div>
+                        <div class="info-val" id="envUser">Loading...</div>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card-title"><span>⚡</span> Google Apps Script Runtime & Quotas</div>
+                    <div class="info-grid">
+                        <div class="info-key">Execution Limit:</div>
+                        <div class="info-val">6 minutes max per synchronous trigger (TimeBudget enforced)</div>
+                        <div class="info-key">Queue Daemon:</div>
+                        <div class="info-val">Self-perpetuating 4.5-min chunking via QueueService</div>
+                        <div class="info-key">Batch Formula Engine:</div>
+                        <div class="info-val">Enabled (single round-trip setFormulas arrays)</div>
+                        <div class="info-key">Resilience Primitives:</div>
+                        <div class="info-val">Named Ranges, Soft Warning Guardrails, Proxy Header Maps</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 3: About & Attribution -->
+            <div id="tabAbout" class="tab-pane">
+                <div class="info-card">
+                    <div class="info-card-title"><span>🪂</span> Paragliding Flight Log Engine</div>
+                    <div style="font-size: 12px; color: #424242; line-height: 1.6;">
+                        <p><strong>Paragliding Flight Log</strong> is a professional-grade personal flight telemetry, scoring, and analysis platform built natively for Google Sheets and Google Apps Script.</p>
+                        <p>Designed for thermal soaring, cross-country (XC), and hike-and-fly pilots, it combines instant IGC parsing, coordinate geo-enrichment, weather telemetry, deduplication scoring, and dynamic dashboards.</p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card-title"><span>📜</span> Open Source & Service Attribution</div>
+                    <div class="info-grid">
+                        <div class="info-key">IGC Parser:</div>
+                        <div class="info-val">Native GAS IGC B-Record and Header state engine</div>
+                        <div class="info-key">Scoring Engine:</div>
+                        <div class="info-val">Civl / XContest open-distance, out-and-return & FAI triangle scoring</div>
+                        <div class="info-key">Weather Telemetry:</div>
+                        <div class="info-val">Open-Meteo & Visual Crossing historical weather APIs</div>
+                        <div class="info-key">Geo Lookup:</div>
+                        <div class="info-val">Paragliding Earth & OpenStreetMap reverse geocoding</div>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
 
-    <!-- Tab 3: About & Attribution -->
-    <div id="tabAbout" class="tab-pane">
-        <div class="info-card">
-            <div class="info-card-title"><span>🪂</span> Paragliding Flight Log Engine</div>
-            <div style="font-size: 12px; color: #424242; line-height: 1.6;">
-                <p><strong>Paragliding Flight Log</strong> is a professional-grade personal flight telemetry, scoring, and analysis platform built natively for Google Sheets and Google Apps Script.</p>
-                <p>Designed for thermal soaring, cross-country (XC), and hike-and-fly pilots, it combines instant IGC parsing, coordinate geo-enrichment, weather telemetry, deduplication scoring, and dynamic dashboards.</p>
-            </div>
+        <!-- Fixed Footer -->
+        <div class="fixed-bottom-footer">
+            <button class="btn-secondary" onclick="google.script.host.close()">Close</button>
+            <button class="btn-launch-maint" id="footerMaintBtn" style="display: none;" onclick="launchSystemMaintenance()">
+                <span>🛠️</span> Open System Maintenance...
+            </button>
         </div>
-
-        <div class="info-card">
-            <div class="info-card-title"><span>📜</span> Open Source & Service Attribution</div>
-            <div class="info-grid">
-                <div class="info-key">IGC Parser:</div>
-                <div class="info-val">Native GAS IGC B-Record and Header state engine</div>
-                <div class="info-key">Scoring Engine:</div>
-                <div class="info-val">Civl / XContest open-distance, out-and-return & FAI triangle scoring</div>
-                <div class="info-key">Weather Telemetry:</div>
-                <div class="info-val">Open-Meteo & Visual Crossing historical weather APIs</div>
-                <div class="info-key">Geo Lookup:</div>
-                <div class="info-val">Paragliding Earth & OpenStreetMap reverse geocoding</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Footer -->
-    <div class="footer-bar">
-        <button class="btn-secondary" onclick="google.script.host.close()">Close</button>
-        <button class="btn-launch-maint" id="footerMaintBtn" style="display: none;" onclick="launchSystemMaintenance()">
-            <span>🛠️</span> Open System Maintenance...
-        </button>
     </div>
 
     <script>
@@ -459,6 +545,12 @@
                 target.classList.add('active');
                 target.style.display = 'block';
             }
+
+            // Show mini-toggles only on manifest tab
+            var toggles = document.getElementById('manifestToggles');
+            if (toggles) {
+                toggles.style.display = (tabId === 'tabManifest') ? 'flex' : 'none';
+            }
         }
 
         function toggleSheetCard(sName) {
@@ -471,6 +563,19 @@
                 content.classList.add('open');
                 icon.classList.add('open');
             }
+        }
+
+        function toggleAllCards(expand) {
+            var contents = document.querySelectorAll('.sheet-content');
+            var icons = document.querySelectorAll('.toggle-icon');
+            contents.forEach(function(c) {
+                if (expand) c.classList.add('open');
+                else c.classList.remove('open');
+            });
+            icons.forEach(function(i) {
+                if (expand) i.classList.add('open');
+                else i.classList.remove('open');
+            });
         }
 
         function renderSystemInfo(data) {

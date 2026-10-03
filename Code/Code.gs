@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-10-02 19:10:42
+ * Updated: 2026-10-02 19:33:18
  * Test access verification: Verified GAS write access on 2026-09-25 08:26:00.
  * 
  * CORE MODULE: Orchestration Only.
@@ -208,16 +208,16 @@ function showLoadConfigDialog() {
 function showSystemInfoDialog() {
   var html = HtmlService.createTemplateFromFile('SystemInfoDialog')
       .evaluate()
-      .setWidth(680)
-      .setHeight(620);
+      .setWidth(720)
+      .setHeight(660);
   SpreadsheetApp.getUi().showModalDialog(html, 'System Info & Manifest Inspector');
 }
 
 function showSystemMaintenanceDialog() {
   var html = HtmlService.createTemplateFromFile('SystemMaintenanceDialog')
       .evaluate()
-      .setWidth(780)
-      .setHeight(640);
+      .setWidth(800)
+      .setHeight(660);
   SpreadsheetApp.getUi().showModalDialog(html, 'System Maintenance Cockpit');
 }
 
