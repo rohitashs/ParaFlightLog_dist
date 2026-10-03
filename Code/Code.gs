@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-10-02 22:22:24
+ * Updated: 2026-10-02 23:47:08
  * Test access verification: Verified GAS write access on 2026-09-25 08:26:00.
  * 
  * CORE MODULE: Orchestration Only.
@@ -163,6 +163,7 @@ function showInspectorSidebar() {
 }
 
 function showFlightMaintenanceDialog() {
+  if (typeof removeFlightsHeaderProtections === 'function') removeFlightsHeaderProtections();
   var html = HtmlService.createTemplateFromFile('FlightMaintenanceDialog')
       .evaluate()
       .setWidth(560)
@@ -219,6 +220,7 @@ function showSystemInfoDialog() {
 }
 
 function showSystemMaintenanceDialog() {
+  if (typeof removeFlightsHeaderProtections === 'function') removeFlightsHeaderProtections();
   var html = HtmlService.createTemplateFromFile('SystemMaintenanceDialog')
       .evaluate()
       .setWidth(800)

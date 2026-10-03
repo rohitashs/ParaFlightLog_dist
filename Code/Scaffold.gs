@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-10-02 22:22:24
+ * Updated: 2026-10-02 23:47:08
  */
 /**
  * Paragliding Flight Log v2.0 - Scaffolding & Setup
@@ -1693,19 +1693,52 @@ function applySoftGuardrail_(sh, range, description) {
 }
 
 /**
- * Applies native soft guardrails across Flights tab header rows and formula sequence cells.
+ * Removes a native Google Sheets range protection matching a specific description.
+ */
+function removeSoftGuardrail_(sh, description) {
+  if (!sh) return;
+  try {
+    var protections = sh.getProtections(SpreadsheetApp.ProtectionType.RANGE);
+    for (var i = 0; i < protections.length; i++) {
+      if (protections[i].getDescription() === description) {
+        protections[i].remove();
+      }
+    }
+  } catch (e) {
+    console.warn('Error removing soft guardrail ' + description + ':', e.message);
+  }
+}
+
+/**
+ * Applies native soft guardrails across Flights tab formula sequence cells,
+ * while cleanly removing header row protections so that column grouping outline
+ * toggles (+/- buttons) can expand and collapse freely with zero warnings (Bug-UI-010).
  */
 function applyFlightsGuardrails_(sh) {
   if (!sh) return;
+  // Cleanly remove any existing header row protections to allow uninhibited column grouping
+  removeSoftGuardrail_(sh, 'Guardrail: Flights Headers (Rows 1-4)');
+
   var map = getColumnMap_(sh);
-  var lastCol = sh.getLastColumn();
-  if (lastCol > 0) {
-    applySoftGuardrail_(sh, sh.getRange(1, 1, 4, lastCol), 'Guardrail: Flights Headers (Rows 1-4)');
-  }
   var flightNoCol = map['Flight No'] || 3;
   var maxRows = sh.getMaxRows();
   if (maxRows >= 5) {
     applySoftGuardrail_(sh, sh.getRange(5, flightNoCol, maxRows - 4, 1), 'Guardrail: Flights Auto-Numbering Formulas');
+  }
+}
+
+/**
+ * Public helper to remove header row protections on the active Flights sheet.
+ */
+function removeFlightsHeaderProtections() {
+  try {
+    var ss = SpreadsheetApp.getActive();
+    var sh = ss.getSheetByName(TABS.FLIGHTS.name);
+    if (sh) {
+      removeSoftGuardrail_(sh, 'Guardrail: Flights Headers (Rows 1-4)');
+    }
+  } catch (e) {
+    console.warn('removeFlightsHeaderProtections:', e.message);
   }
 }
 
@@ -1895,7 +1928,7 @@ var SheetSpecialists = {
     }
     if (elements['Flights.guardrails']) {
       applyFlightsGuardrails_(sh);
-      logs.push('[Flights] Soft warning guardrails applied to headers and formula sequence.');
+      logs.push('[Flights] Soft warning guardrails applied to formula sequence (headers unprotected for free grouping).');
     }
   },
 
