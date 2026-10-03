@@ -19,11 +19,11 @@ The project follows a strict folder hierarchy. `Docs/Context.md` is the source o
 
 | Tier / Altitude | Focus & Target Audience | Core Files |
 | :--- | :--- | :--- |
-| **Tier 1: Strategic Vision** | Long-term intent, 5 Evolution Horizons, Open-Source roadmap & non-negotiable architectural tenets. *(Stakeholders, Community, AI)* | [`Roadmap.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Roadmap.md) |
-| **Tier 2: Public Manifesto** | High-level platform whitepaper, value proposition, Gemini AI advantage & "Why Sheets + Apps Script". *(World, Pilots, Clubs)* | [`Brochure.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Brochure.md) |
-| **Tier 3: Product & Operations** | Comprehensive functional capabilities catalog and complete pilot operational handbook. *(End-User Pilots, Flight Instructors)* | [`Features.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Features.md)<br>[`User_Guide.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/User_Guide.md) |
-| **Tier 4: Systems Architecture** | C4 serverless topology, global ERD model, 8-sheet unified data dictionary, math algorithms, and RFC design specs. *(Architects, Devs, AI)* | [`Architecture.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Architecture.md)<br>[`Technical_Specification.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Technical_Specification.md)<br>[`Patterns_and_Practices.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Patterns_and_Practices.md)<br>[`Design/`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Design/README.md) (`DSGN-*.md`) |
-| **Tier 5: Execution & Memory** | Tracked work units (`RQ`, `CR`, `Bug`), release history, and engineering memory / ways of working. *(Developers, AI Pair Programmers)* | [`Backlog.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Backlog.md)<br>[`ChangeLog.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/ChangeLog.md)<br>[`Context.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Context.md) |
+| **Tier 1: Strategic Vision** | Long-term intent, 5 Evolution Horizons, Open-Source roadmap & non-negotiable architectural tenets. *(Stakeholders, Community, AI)* | [`Roadmap.md`](./Roadmap.md) |
+| **Tier 2: Public Manifesto** | High-level platform whitepaper, value proposition, Gemini AI advantage & "Why Sheets + Apps Script". *(World, Pilots, Clubs)* | [`Brochure.md`](./Brochure.md) |
+| **Tier 3: Product & Operations** | Comprehensive functional capabilities catalog and complete pilot operational handbook. *(End-User Pilots, Flight Instructors)* | [`Features.md`](./Features.md)<br>[`User_Guide.md`](./User_Guide.md) |
+| **Tier 4: Systems Architecture** | C4 serverless topology, global ERD model, 8-sheet unified data dictionary, math algorithms, and RFC design specs. *(Architects, Devs, AI)* | [`Architecture.md`](./Architecture.md)<br>[`Technical_Specification.md`](./Technical_Specification.md)<br>[`Patterns_and_Practices.md`](./Patterns_and_Practices.md)<br>[`Design/`](./Design/README.md) (`DSGN-*.md`) |
+| **Tier 5: Execution & Memory** | Tracked work units (`RQ`, `CR`, `Bug`), release history, and engineering memory / ways of working. *(Developers, AI Pair Programmers)* | [`Backlog.md`](./Backlog.md)<br>[`ChangeLog.md`](./ChangeLog.md)<br>[`Context.md`](./) |
 
 *   **File Inventory**:
     *   **`Roadmap.md`**: Strategic Vision, 5 Evolution Horizons & Open-Source Roadmap.
@@ -47,7 +47,7 @@ The project follows a strict folder hierarchy. `Docs/Context.md` is the source o
     *   **`SessionSummary/`**: Session Summary Reports (`YYYY-MM-DD_SessionSummary.md`).
     *   **`CodeCheckReports/`**: Code Review Reports (`YYYY-MM-DD_CodeCheck.md`).
     *   **`DocCheckReports/`**: Documentation Audit Reports (`YYYY-MM-DD_DocCheck.md`).
-    *   **`AuditReports/`**: Architectural and Subsystem Audit Reports (`YYYY-MM-DD_<Topic>_Audit.md`), structured using [`Audit_Template.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Plans/AuditReports/Audit_Template.md).
+    *   **`AuditReports/`**: Architectural and Subsystem Audit Reports (`YYYY-MM-DD_<Topic>_Audit.md`), structured using [`Audit_Template.md`](../Plans/AuditReports/Audit_Template.md).
 
 ### 3. `Code/` (Production Runtime Implementation)
 *   **Status**: **Git Tracked & Clasp Deployed**.
@@ -141,7 +141,7 @@ The backlog has 5 strict sections:
 ### 8. Architectural & Subsystem Audit Reports (`Plans/AuditReports/`)
 *   **Naming**: `YYYY-MM-DD_<Topic>_Audit.md` (e.g. `2026-10-02_Dynamic_Formula_Resilience_Audit.md`).
 *   **Purpose**: Formal capture of in-depth architectural audits, schema inspections, UI resiliency scans, performance benchmarks, and subsystem investigations so findings are permanently preserved.
-*   **Standard Template**: [`Plans/AuditReports/Audit_Template.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Plans/AuditReports/Audit_Template.md).
+*   **Standard Template**: [`Plans/AuditReports/Audit_Template.md`](../Plans/AuditReports/Audit_Template.md).
 *   **Standard Structure**:
     1.  **Metadata**: Audit ID (`AUD-*`), Date, Auditor, Scope, Status.
     2.  **Executive Summary**: High-level problem statement and verdict.
@@ -153,7 +153,7 @@ The backlog has 5 strict sections:
     8.  **Test Strategy & Verification Criteria**: How fixes are validated offline and in-app.
 
 ### 9. Architectural Design Specifications (`Docs/Design/` & `/update_design`)
-*   **Standards**: All significant subsystems, engines, and features maintain formal design specifications following [`Docs/Design/Design_template.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Design/Design_template.md).
+*   **Standards**: All significant subsystems, engines, and features maintain formal design specifications following [`Docs/Design/Design_template.md`](./Design/Design_template.md).
 *   **Hierarchical Linking**: Header metadata explicitly establishes `Parent Design` and `Child Designs` links for bidirectional architectural navigation.
 *   **Revision Synchronization**: Every umbrella code file in `Code/` maintains matching `@design` and `@revision` JSDoc header tags. When a design's revision increments, the corresponding code header is stamped to prevent design-code drift.
 *   **Workflow (`/update_design`)**: Supports three operational modes: (1) New Design from template, (2) Sync / Delta Update from recent decisions or code edits, and (3) Reverse-Engineering designs from active working code.
@@ -172,16 +172,16 @@ The backlog has 5 strict sections:
 ### 12. Continuous Workflow & Meta-Process Evolution Protocol
 *   **Core Tenet**: Development workflows (`.agent/workflows/*.md`) and static audit tools (`tools/*.js`) are **living meta-specifications**, not static "write-once" documents. As the codebase matures, engineering patterns are formalized, or new documentation tiers are created, the workflows and automated audit tools must evolve in tandem to prevent verification decay and false-pass audits.
 *   **Code Check Re-Evaluation Trigger**:
-    *   Whenever a new engineering pattern, invariant, or anti-pattern is added to [`Docs/Patterns_and_Practices.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Patterns_and_Practices.md):
-        1. Add an automated assertion into [`tools/code_check_audit.js`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/tools/code_check_audit.js).
-        2. Update the corresponding dimension in [`.agent/workflows/code_check.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/.agent/workflows/code_check.md).
+    *   Whenever a new engineering pattern, invariant, or anti-pattern is added to [`Docs/Patterns_and_Practices.md`](./Patterns_and_Practices.md):
+        1. Add an automated assertion into [`tools/code_check_audit.js`](../tools/code_check_audit.js).
+        2. Update the corresponding dimension in [`.agent/workflows/code_check.md`](../.agent/workflows/code_check.md).
     *   Whenever identifiers, tabs, parameters, or vocabularies are retired or renamed:
         1. Add them to the `legacyBlacklist` in `tools/code_check_audit.js`.
         2. Verify zero active code uses the retired terms outside tagged migration bridges (`// Legacy migration bridge`).
     *   Whenever entity counts change (Pilot Profile fields, Parameters, Lookups): update baseline assertions in both `tools/code_check_audit.js` and `code_check.md`.
 *   **Doc Check Re-Evaluation Trigger**:
     *   Whenever documentation structure evolves (e.g. adding new Tier 1–5 files like `Roadmap.md`, `Brochure.md`, `User_Guide.md`, or the `Docs/Design/` subsystem folder, or new audit templates in `Plans/AuditReports/`):
-        1. Update the discovery scope and audit dimensions in [`.agent/workflows/doc_check.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/.agent/workflows/doc_check.md).
+        1. Update the discovery scope and audit dimensions in [`.agent/workflows/doc_check.md`](../.agent/workflows/doc_check.md).
         2. Ensure cross-doc consistency checks explicitly verify synchronization across all active documents.
 *   **Mandatory Automation Gate**: Code reviews (`/code_check`) must **never** claim `PASS` on subjective inspection alone. The automated scanner (`node tools/code_check_audit.js`) and offline test suite (`node tools/run_all_offline_tests.js`) must exit with code 0 before a report can be certified.
 
@@ -245,7 +245,7 @@ clasp show-authorized-user
 *Expected*: All commands resolve, and `show-authorized-user` outputs your Google account email.
 
 #### Step 2: Make a Test Code Change
-Edit the header of [`Code/Code.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Code.gs) to update the timestamp and test note:
+Edit the header of [`Code/Code.gs`](../Code/Code.gs) to update the timestamp and test note:
 ```javascript
 /**
  * Paragliding Flight Log v2.0

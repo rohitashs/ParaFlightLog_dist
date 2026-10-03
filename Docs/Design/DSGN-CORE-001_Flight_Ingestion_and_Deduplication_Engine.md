@@ -8,7 +8,7 @@
 * **Author / Contributors**: `Rohitashwa / Antigravity AI`
 * **Parent Design**: `None` (Core Subsystem)
 * **Child Designs**: `None`
-* **Umbrella Module / Primary Code**: [`Code/Ingestion.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Ingestion.gs), [`Code/FileHandling.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/FileHandling.gs)
+* **Umbrella Module / Primary Code**: [`Code/Ingestion.gs`](../../Code/Ingestion.gs), [`Code/FileHandling.gs`](../../Code/FileHandling.gs)
 * **Code Revision Stamp**: `Core v2.1.0 Implemented`
 * **Related Requirements / CRs**: `[RQ-ING-001]`, `[RQ-ING-002]`, `[CR-ING-008]`, `[CR-ING-009]`, `[Bug-ING-007]`, `[Bug-ING-008]`, `[Bug-ING-009]`
 
@@ -70,7 +70,7 @@ Evaluated strictly in memory via `scoreFlightQualityFromRow_`:
 
 ## 4. Implementation & Code Mapping
 
-* **Ingestion Pipeline**: [`Code/Ingestion.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Ingestion.gs)
-* **Google Drive Pipeline**: [`Code/FileHandling.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/FileHandling.gs)
-* **Modal Dialogs**: [`Code/BulkIngestDialog.html`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/BulkIngestDialog.html), [`Code/UploadDialog.html`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/UploadDialog.html), [`Code/URLDialog.html`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/URLDialog.html)
-* **Automated Unit Tests**: [`tests/Test.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/tests/Test.gs) (`testDedupeAndQualityScoring_`, `testDedupeEngineEnhancements_`)
+* **Ingestion Pipeline**: [`Code/Ingestion.gs`](../../Code/Ingestion.gs)
+* **Google Drive Pipeline**: [`Code/FileHandling.gs`](../../Code/FileHandling.gs)
+* **Modal Dialogs**: [`Code/BulkIngestDialog.html`](../../Code/BulkIngestDialog.html), [`Code/UploadDialog.html`](../../Code/UploadDialog.html), [`Code/URLDialog.html`](../../Code/URLDialog.html)
+* **Automated Unit Tests**: [`tests/Test.gs`](../../tests/Test.gs) (`testDedupeAndQualityScoring_`, `testDedupeEngineEnhancements_`)

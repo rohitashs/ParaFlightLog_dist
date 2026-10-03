@@ -1,7 +1,7 @@
 # Systems Architecture & Global Schemas (Source of Truth)
 
 > [!NOTE]
-> For code-level patterns, resilience practices, and engineering guardrails, see [`Patterns_and_Practices.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Patterns_and_Practices.md).
+> For code-level patterns, resilience practices, and engineering guardrails, see [`Patterns_and_Practices.md`](./Patterns_and_Practices.md).
 
 ---
 

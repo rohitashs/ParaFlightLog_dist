@@ -7,9 +7,9 @@
 * **Date Created**: `YYYY-MM-DD`
 * **Last Updated**: `YYYY-MM-DD`
 * **Author / Contributors**: `[Author Name] / Antigravity AI`
-* **Parent Design**: `None` <!-- If part of a larger subsystem, link to parent design: [DSGN-ING-000_Ingestion_Subsystem](file:///...) -->
-* **Child Designs**: `None` <!-- List child component designs if this is an umbrella design: [DSGN-ING-001_Watch_Folder](file:///...) -->
-* **Umbrella Module / Primary Code**: [`Code/[Module].gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/[Module].gs) <!-- Primary code file containing the @design and @revision tags -->
+* **Parent Design**: `None` <!-- If part of a larger subsystem, link to parent design: [DSGN-ING-000_Ingestion_Subsystem](path/to/target.md) -->
+* **Child Designs**: `None` <!-- List child component designs if this is an umbrella design: [DSGN-ING-001_Watch_Folder](path/to/target.md) -->
+* **Umbrella Module / Primary Code**: [`Code/[Module].gs`](../../Code/[Module].gs) <!-- Primary code file containing the @design and @revision tags -->
 * **Code Revision Stamp**: `Pending Implementation` <!-- Set to 'Rev X.Y' once implemented and stamped in code header -->
 * **Related Requirements / CRs**: `[RQ-XXX-000]`, `[CR-XXX-000]` <!-- Link to Backlog IDs -->
 
@@ -155,11 +155,11 @@ sequenceDiagram
 
 ## 9. Documentation Impacts
 <!-- INSTRUCTION: List which persistent documents in Docs/ must be updated when this design is implemented. -->
-* [`Docs/Technical_Specification.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Technical_Specification.md): [Specific sections]
-* [`Docs/Features.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Features.md): [Specific sections]
-* [`Docs/User_Guide.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/User_Guide.md): [Specific sections]
-* [`Docs/Backlog.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Backlog.md): [New CR or RQ status]
-* [`Docs/ChangeLog.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/ChangeLog.md): [Session log]
+* [`Docs/Technical_Specification.md`](../Technical_Specification.md): [Specific sections]
+* [`Docs/Features.md`](../Features.md): [Specific sections]
+* [`Docs/User_Guide.md`](../User_Guide.md): [Specific sections]
+* [`Docs/Backlog.md`](../Backlog.md): [New CR or RQ status]
+* [`Docs/ChangeLog.md`](../ChangeLog.md): [Session log]
 
 ---
 

@@ -8,7 +8,7 @@
 * **Author / Contributors**: `Rohitashwa / Antigravity AI`
 * **Parent Design**: `None` (Core Subsystem)
 * **Child Designs**: `None`
-* **Umbrella Module / Primary Code**: [`Code/Config.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Config.gs), [`Code/Scaffold.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Scaffold.gs)
+* **Umbrella Module / Primary Code**: [`Code/Config.gs`](../../Code/Config.gs), [`Code/Scaffold.gs`](../../Code/Scaffold.gs)
 * **Code Revision Stamp**: `Core v2.1.0 Implemented`
 * **Related Requirements / CRs**: `[RQ-SYS-001]`, `[RQ-SYS-002]`, `[RQ-SYS-005]`, `[CR-SYS-005]`, `[CR-SYS-009]`, `[Bug-SYS-006]`, `[Bug-SYS-007]`
 
@@ -74,6 +74,6 @@ function applySoftGuardrail_(range, description) {
 
 ## 4. Implementation & Code Mapping
 
-* **Configuration Maps**: [`Code/Config.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Config.gs)
-* **Scaffolding & Guardrails Engine**: [`Code/Scaffold.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Scaffold.gs)
-* **Automated Unit Tests**: [`tests/Test.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/tests/Test.gs) (`testDashboardAndSchema_`, `testDynamicFormulaResilience_`, `testNativeSheetsResilience_`)
+* **Configuration Maps**: [`Code/Config.gs`](../../Code/Config.gs)
+* **Scaffolding & Guardrails Engine**: [`Code/Scaffold.gs`](../../Code/Scaffold.gs)
+* **Automated Unit Tests**: [`tests/Test.gs`](../../tests/Test.gs) (`testDashboardAndSchema_`, `testDynamicFormulaResilience_`, `testNativeSheetsResilience_`)

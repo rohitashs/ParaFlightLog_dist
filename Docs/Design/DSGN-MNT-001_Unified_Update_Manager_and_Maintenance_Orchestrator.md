@@ -8,7 +8,7 @@
 * **Author / Contributors**: `Rohitashwa / Antigravity AI`
 * **Parent Design**: `None` (Root Maintenance Architecture)
 * **Child Designs**: `None`
-* **Umbrella Module / Primary Code**: [`Code/Scaffold.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Scaffold.gs), [`Code/SystemMaintenanceDialog.html`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/SystemMaintenanceDialog.html), [`Code/SystemInfoDialog.html`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/SystemInfoDialog.html), [`Code/Config.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Config.gs)
+* **Umbrella Module / Primary Code**: [`Code/Scaffold.gs`](../../Code/Scaffold.gs), [`Code/SystemMaintenanceDialog.html`](../../Code/SystemMaintenanceDialog.html), [`Code/SystemInfoDialog.html`](../../Code/SystemInfoDialog.html), [`Code/Config.gs`](../../Code/Config.gs)
 * **Code Revision Stamp**: `Core v2.1.0 Implemented`
 * **Related Requirements / CRs**: `[RQ-SYS-001]`, `[RQ-SYS-002]`, `[RQ-SYS-007]`, `[RQ-SYS-010]`, `[CR-SYS-006]`, `[CR-SCH-002]`
 

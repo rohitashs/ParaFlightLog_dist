@@ -2,8 +2,8 @@
 **Third-Party Web Services, Weather APIs, Reverse Geocoding & League Verification**
 
 * **Status**: `Living Specification`
-* **Parent Architecture**: [`Docs/Architecture/README.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Architecture/README.md)
-* **Governing Pattern**: [Pattern 8, 9, 10 (`Docs/Patterns_and_Practices.md`)](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Patterns_and_Practices.md)
+* **Parent Architecture**: [`Docs/Architecture/README.md`](../README.md)
+* **Governing Pattern**: [Pattern 8, 9, 10 (`Docs/Patterns_and_Practices.md`)](../../Patterns_and_Practices.md)
 
 ---
 
@@ -82,7 +82,7 @@ graph LR
 
 ## 3. Implementation & Code Mapping
 
-* **Weather Gateway**: [`Code/Weather.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Weather.gs)
-* **Geocoding & Takeoff Gateway**: [`Code/Geo.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Geo.gs)
-* **XContest Probing**: [`Code/XContest.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/XContest.gs)
-* **Automated Unit Tests**: [`tests/Test.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/tests/Test.gs) (`testXContest_`, `testWeather_`, `testGeo_`)
+* **Weather Gateway**: [`Code/Weather.gs`](../../../Code/Weather.gs)
+* **Geocoding & Takeoff Gateway**: [`Code/Geo.gs`](../../../Code/Geo.gs)
+* **XContest Probing**: [`Code/XContest.gs`](../../../Code/XContest.gs)
+* **Automated Unit Tests**: [`tests/Test.gs`](../../../tests/Test.gs) (`testXContest_`, `testWeather_`, `testGeo_`)

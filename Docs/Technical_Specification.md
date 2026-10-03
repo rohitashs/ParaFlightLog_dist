@@ -2,17 +2,17 @@
 
 ## 1. Overview
 This document defines the low-level **Code Organization**, **Algorithms**, and **Function-Level Technical References**.
-*   **Systems Architecture & Global Schemas**: See [`Architecture.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Architecture.md) for overarching topology, C4 models, ERD, and unified data dictionary.
-*   **Strategic Horizons**: See [`Roadmap.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Roadmap.md) for macro evolution milestones.
-*   **Feature Map**: See [`Features.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Features.md) for the functional capability view.
-*   **Requirements & Backlog**: See [`Backlog.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Backlog.md) (`RQ-*`, `CR-*`, `Bug-*`).
+*   **Systems Architecture & Global Schemas**: See [`Architecture.md`](./Architecture.md) for overarching topology, C4 models, ERD, and unified data dictionary.
+*   **Strategic Horizons**: See [`Roadmap.md`](./Roadmap.md) for macro evolution milestones.
+*   **Feature Map**: See [`Features.md`](./Features.md) for the functional capability view.
+*   **Requirements & Backlog**: See [`Backlog.md`](./Backlog.md) (`RQ-*`, `CR-*`, `Bug-*`).
 
 ---
 
 ## 2. System Architecture
 **Stack**: Google Apps Script (GAS) bound to Google Sheets.
 **Patterns**: Service-Oriented (Modules), MVC-lite (Sheet as View).
-*   **Engineering Patterns & Architectural Best Practices**: See [`Patterns_and_Practices.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Patterns_and_Practices.md) for dynamic schema resolution, native Google Sheets Named Ranges, modern array formulas, timeout prevention daemons, and forbidden anti-patterns.
+*   **Engineering Patterns & Architectural Best Practices**: See [`Patterns_and_Practices.md`](./Patterns_and_Practices.md) for dynamic schema resolution, native Google Sheets Named Ranges, modern array formulas, timeout prevention daemons, and forbidden anti-patterns.
 
 
 ### Modules (`Code/`)

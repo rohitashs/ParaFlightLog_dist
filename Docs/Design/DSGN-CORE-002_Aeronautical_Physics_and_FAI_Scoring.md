@@ -8,7 +8,7 @@
 * **Author / Contributors**: `Rohitashwa / Antigravity AI`
 * **Parent Design**: `None` (Core Subsystem)
 * **Child Designs**: `None`
-* **Umbrella Module / Primary Code**: [`Code/Analysis.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Analysis.gs), [`Code/Scoring.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Scoring.gs), [`Code/Parser.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Parser.gs)
+* **Umbrella Module / Primary Code**: [`Code/Analysis.gs`](../../Code/Analysis.gs), [`Code/Scoring.gs`](../../Code/Scoring.gs), [`Code/Parser.gs`](../../Code/Parser.gs)
 * **Code Revision Stamp**: `Core v2.1.0 Implemented`
 * **Related Requirements / CRs**: `[RQ-ANA-001]`, `[RQ-ANA-002]`, `[RQ-SCR-001]`, `[CR-CFG-002]`
 
@@ -60,8 +60,8 @@ Using sliding-window integration over consecutive GPS/baro fixes:
 
 ## 4. Implementation & Code Mapping
 
-* **IGC Parser**: [`Code/Parser.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Parser.gs)
-* **Physics & Thermals Engine**: [`Code/Analysis.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Analysis.gs)
-* **FAI Scoring Optimizer**: [`Code/Scoring.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Scoring.gs)
-* **Math & Geometry Helpers**: [`Code/Utils.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Utils.gs)
-* **Automated Unit Tests**: [`tests/Test.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/tests/Test.gs) (`testParser_`, `testAnalysis_`, `testScoring_`)
+* **IGC Parser**: [`Code/Parser.gs`](../../Code/Parser.gs)
+* **Physics & Thermals Engine**: [`Code/Analysis.gs`](../../Code/Analysis.gs)
+* **FAI Scoring Optimizer**: [`Code/Scoring.gs`](../../Code/Scoring.gs)
+* **Math & Geometry Helpers**: [`Code/Utils.gs`](../../Code/Utils.gs)
+* **Automated Unit Tests**: [`tests/Test.gs`](../../tests/Test.gs) (`testParser_`, `testAnalysis_`, `testScoring_`)

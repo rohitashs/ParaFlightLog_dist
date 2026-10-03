@@ -201,8 +201,8 @@ Developing on this hybrid stack presents unique constraints and capabilities:
 ### Pattern 18: Living Meta-Processes & Continuous Workflow Verification
 * **Problem**: Architectural rules, naming conventions, and anti-pattern checklists documented only in prose inevitably suffer from "verification drift." Over time, code and doc audits degrade into rubber-stamp "PASS" approvals because checks are performed manually, allowing legacy tokens and anti-patterns to silently re-enter the codebase.
 * **Pattern**: An architectural rule without an automated assertion is merely a suggestion that will decay over time.
-  1. **Automate the Check**: Whenever an architectural invariant or anti-pattern is added, immediately add a corresponding programmatic rule or regex scanner to [`tools/code_check_audit.js`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/tools/code_check_audit.js).
-  2. **Synchronize the Workflows**: Update [`.agent/workflows/code_check.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/.agent/workflows/code_check.md) and [`.agent/workflows/doc_check.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/.agent/workflows/doc_check.md).
+  1. **Automate the Check**: Whenever an architectural invariant or anti-pattern is added, immediately add a corresponding programmatic rule or regex scanner to [`tools/code_check_audit.js`](../tools/code_check_audit.js).
+  2. **Synchronize the Workflows**: Update [`.agent/workflows/code_check.md`](../.agent/workflows/code_check.md) and [`.agent/workflows/doc_check.md`](../.agent/workflows/doc_check.md).
   3. **Zero False-Pass Gate**: Require that `node tools/code_check_audit.js` exit with code 0 as a mandatory prerequisite for certifying `/code_check`.
 
 ### Pattern 19: Strict Separation of Production Runtime and Developer Tooling

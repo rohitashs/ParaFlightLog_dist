@@ -8,7 +8,7 @@
 * **Author / Contributors**: `Rohitashwa / Antigravity AI`
 * **Parent Design**: `None` (Core Subsystem)
 * **Child Designs**: `None`
-* **Umbrella Module / Primary Code**: [`Code/Weather.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Weather.gs), [`Code/Geo.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Geo.gs), [`Code/XContest.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/XContest.gs)
+* **Umbrella Module / Primary Code**: [`Code/Weather.gs`](../../Code/Weather.gs), [`Code/Geo.gs`](../../Code/Geo.gs), [`Code/XContest.gs`](../../Code/XContest.gs)
 * **Code Revision Stamp**: `Core v2.1.0 Implemented`
 * **Related Requirements / CRs**: `[RQ-SCR-002]`, `[RQ-SCR-003]`, `[RQ-SCR-004]`, `[Bug-SCR-002]`, `[Bug-GEO-001]`, `[Bug-GEO-002]`
 
@@ -68,7 +68,7 @@ graph TD
 
 ## 4. Implementation & Code Mapping
 
-* **Weather Gateway**: [`Code/Weather.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Weather.gs)
-* **Geocoding & Site Gateway**: [`Code/Geo.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Geo.gs)
-* **XContest Gateway**: [`Code/XContest.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/XContest.gs)
-* **Automated Unit Tests**: [`tests/Test.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/tests/Test.gs) (`testXContest_`, `testWeather_`, `testGeo_`)
+* **Weather Gateway**: [`Code/Weather.gs`](../../Code/Weather.gs)
+* **Geocoding & Site Gateway**: [`Code/Geo.gs`](../../Code/Geo.gs)
+* **XContest Gateway**: [`Code/XContest.gs`](../../Code/XContest.gs)
+* **Automated Unit Tests**: [`tests/Test.gs`](../../tests/Test.gs) (`testXContest_`, `testWeather_`, `testGeo_`)

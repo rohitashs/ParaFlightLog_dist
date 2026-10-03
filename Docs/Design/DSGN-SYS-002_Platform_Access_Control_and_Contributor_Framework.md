@@ -7,8 +7,8 @@
 * **Last Updated**: `2026-10-02`
 * **Author / Contributors**: `Rohitashwa / Antigravity AI`
 * **Parent Design**: `None` (Root Platform Architecture)
-* **Child Designs**: [`DSGN-SYS-003_Reverse_Schema_Extraction_and_Personalization.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Design/DSGN-SYS-003_Reverse_Schema_Extraction_and_Personalization.md)
-* **Umbrella Module / Primary Code**: [`Code/Access.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Access.gs) *(Proposed)*
+* **Child Designs**: [`DSGN-SYS-003_Reverse_Schema_Extraction_and_Personalization.md`](./DSGN-SYS-003_Reverse_Schema_Extraction_and_Personalization.md)
+* **Umbrella Module / Primary Code**: [`Code/Access.gs`](../../Code/Access.gs) *(Proposed)*
 * **Code Revision Stamp**: `Pending Implementation`
 * **Related Requirements / CRs**: `[RQ-SYS-001]`, `[RQ-SYS-002]`, `[RQ-SYS-011]`, `[CR-SYS-007]`
 
@@ -207,8 +207,8 @@ graph TD
 
 ## 5. Implementation Plan
 
-1. **Phase 1: Foundation**: Create [`Code/Access.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Access.gs) with `ACCESS_CONTROL` authority, role checking, and email sanitization.
-2. **Phase 2: Menu Integration**: Refactor `createCustomMenu_()` in [`Code/Code.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Code.gs) to conditionally append `Designer Tools` and `Developer Tools`.
+1. **Phase 1: Foundation**: Create [`Code/Access.gs`](../../Code/Access.gs) with `ACCESS_CONTROL` authority, role checking, and email sanitization.
+2. **Phase 2: Menu Integration**: Refactor `createCustomMenu_()` in [`Code/Code.gs`](../../Code/Code.gs) to conditionally append `Designer Tools` and `Developer Tools`.
 3. **Phase 3: Execution Gating**: Wrap privileged Admin and maintenance routines with `ACCESS_CONTROL.enforceRole()`.
 4. **Phase 4: Contributor Dialog**: Implement the `SubmitLayoutDialog.html` allowing in-sheet proposal packaging.
 

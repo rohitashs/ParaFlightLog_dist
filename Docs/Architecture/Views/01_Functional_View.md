@@ -2,8 +2,8 @@
 **Subsystem Decomposition, Business Rules & Operational Workflows**
 
 * **Status**: `Living Specification`
-* **Parent Architecture**: [`Docs/Architecture/README.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Architecture/README.md)
-* **Governing Pattern**: [Pattern 20 (`Docs/Patterns_and_Practices.md`)](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Patterns_and_Practices.md)
+* **Parent Architecture**: [`Docs/Architecture/README.md`](../README.md)
+* **Governing Pattern**: [Pattern 20 (`Docs/Patterns_and_Practices.md`)](../../Patterns_and_Practices.md)
 
 ---
 
@@ -42,7 +42,7 @@ graph LR
 * **Purpose**: Automated discovery, validation, and multi-source ingestion of flight tracklogs.
 * **Sources Supported**:
   1. *Watch Folder*: Background recursive traversal of up to 10 subfolder levels in Google Drive.
-  2. *Drag-and-Drop*: Client-side chunked upload via [`Code/UploadDialog.html`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/UploadDialog.html).
+  2. *Drag-and-Drop*: Client-side chunked upload via [`Code/UploadDialog.html`](../../../Code/UploadDialog.html).
   3. *Cloud Drive / Web URL*: Direct import from Google Drive links or remote HTTP endpoints.
   4. *High-Speed Bulk Batch Ingestion*: Multi-file batching (3, 5, 10 files per RPC) with atomic bottom-appending and deferred sort.
 * **Master Mirror & Isolation**: Every ingested file is mirrored into `MASTER_LOG_FOLDER_ID` for SeeYou Cloud integration, while corrupt files are safely quarantined in `ERROR_FOLDER_ID`.
@@ -103,10 +103,10 @@ graph LR
 
 | Subsystem | Primary Code Module | Supporting Files | Design Specification | Automated Tests |
 | :--- | :--- | :--- | :--- | :--- |
-| **1. Ingestion** | [`Code/Ingestion.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Ingestion.gs) | `FileHandling.gs`, `BulkIngestDialog.html`, `UploadDialog.html`, `URLDialog.html` | [`DSGN-CORE-001`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Design/DSGN-CORE-001_Flight_Ingestion_and_Deduplication_Engine.md) | `tests/Test.gs` (`testDedupeAndQualityScoring_`) |
-| **2. Physics** | [`Code/Analysis.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Analysis.gs) | `Parser.gs`, `Utils.gs` | [`DSGN-CORE-002`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Design/DSGN-CORE-002_Aeronautical_Physics_and_FAI_Scoring.md) | `tests/Test.gs` (`testParser_`, `testAnalysis_`) |
-| **3. Scoring** | [`Code/Scoring.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Scoring.gs) | `Utils.gs` | [`DSGN-CORE-002`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Design/DSGN-CORE-002_Aeronautical_Physics_and_FAI_Scoring.md) | `tests/Test.gs` (`testScoring_`) |
-| **4. Dedupe** | [`Code/Ingestion.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Ingestion.gs) | `PurgeDialog.html`, `MarkDuplicatesDialog.html`, `ScanDialog.html` | [`DSGN-CORE-001`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Design/DSGN-CORE-001_Flight_Ingestion_and_Deduplication_Engine.md) | `tests/Test.gs` (`testDedupeEngineEnhancements_`) |
-| **5. Enrichment** | [`Code/Weather.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Weather.gs) | `Geo.gs`, `XContest.gs` | [`DSGN-CORE-003`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Design/DSGN-CORE-003_Meteorological_and_Geocoding_Gateways.md) | `tests/Test.gs` (`testXContest_`, `testWeather_`, `testGeo_`) |
-| **6. Dashboard** | [`Code/Scaffold.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Scaffold.gs) | `Config.gs`, `Inspector.html` | [`DSGN-CORE-004`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Design/DSGN-CORE-004_Google_Sheets_Database_Substrate_and_Formula_Engine.md) | `tests/Test.gs` (`testDashboardAndSchema_`, `testDynamicFormulaResilience_`) |
-| **7. Maintenance** | [`Code/Scaffold.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Scaffold.gs) | `SystemMaintenanceDialog.html`, `SystemInfoDialog.html` | [`DSGN-MNT-001`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Design/DSGN-MNT-001_Unified_Update_Manager_and_Maintenance_Orchestrator.md) | `tests/Test.gs` (`testSystemMaintenanceAndManifest_`) |
+| **1. Ingestion** | [`Code/Ingestion.gs`](../../../Code/Ingestion.gs) | `FileHandling.gs`, `BulkIngestDialog.html`, `UploadDialog.html`, `URLDialog.html` | [`DSGN-CORE-001`](../../Design/DSGN-CORE-001_Flight_Ingestion_and_Deduplication_Engine.md) | `tests/Test.gs` (`testDedupeAndQualityScoring_`) |
+| **2. Physics** | [`Code/Analysis.gs`](../../../Code/Analysis.gs) | `Parser.gs`, `Utils.gs` | [`DSGN-CORE-002`](../../Design/DSGN-CORE-002_Aeronautical_Physics_and_FAI_Scoring.md) | `tests/Test.gs` (`testParser_`, `testAnalysis_`) |
+| **3. Scoring** | [`Code/Scoring.gs`](../../../Code/Scoring.gs) | `Utils.gs` | [`DSGN-CORE-002`](../../Design/DSGN-CORE-002_Aeronautical_Physics_and_FAI_Scoring.md) | `tests/Test.gs` (`testScoring_`) |
+| **4. Dedupe** | [`Code/Ingestion.gs`](../../../Code/Ingestion.gs) | `PurgeDialog.html`, `MarkDuplicatesDialog.html`, `ScanDialog.html` | [`DSGN-CORE-001`](../../Design/DSGN-CORE-001_Flight_Ingestion_and_Deduplication_Engine.md) | `tests/Test.gs` (`testDedupeEngineEnhancements_`) |
+| **5. Enrichment** | [`Code/Weather.gs`](../../../Code/Weather.gs) | `Geo.gs`, `XContest.gs` | [`DSGN-CORE-003`](../../Design/DSGN-CORE-003_Meteorological_and_Geocoding_Gateways.md) | `tests/Test.gs` (`testXContest_`, `testWeather_`, `testGeo_`) |
+| **6. Dashboard** | [`Code/Scaffold.gs`](../../../Code/Scaffold.gs) | `Config.gs`, `Inspector.html` | [`DSGN-CORE-004`](../../Design/DSGN-CORE-004_Google_Sheets_Database_Substrate_and_Formula_Engine.md) | `tests/Test.gs` (`testDashboardAndSchema_`, `testDynamicFormulaResilience_`) |
+| **7. Maintenance** | [`Code/Scaffold.gs`](../../../Code/Scaffold.gs) | `SystemMaintenanceDialog.html`, `SystemInfoDialog.html` | [`DSGN-MNT-001`](../../Design/DSGN-MNT-001_Unified_Update_Manager_and_Maintenance_Orchestrator.md) | `tests/Test.gs` (`testSystemMaintenanceAndManifest_`) |

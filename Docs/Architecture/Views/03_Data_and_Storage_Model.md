@@ -2,8 +2,8 @@
 **Tabular Database Engine, Global Schemas, Named Ranges & Drive Object Store**
 
 * **Status**: `Living Specification`
-* **Parent Architecture**: [`Docs/Architecture/README.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Architecture/README.md)
-* **Governing Pattern**: [Pattern 1, 2, 7, 8, 14 (`Docs/Patterns_and_Practices.md`)](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Patterns_and_Practices.md)
+* **Parent Architecture**: [`Docs/Architecture/README.md`](../README.md)
+* **Governing Pattern**: [Pattern 1, 2, 7, 8, 14 (`Docs/Patterns_and_Practices.md`)](../../Patterns_and_Practices.md)
 
 ---
 
@@ -86,7 +86,7 @@ The workbook enforces a strict 8-tab canonical structure:
 
 ## 4. Resilient Formulas & Named Ranges Infrastructure
 
-To prevent formula `#REF!` errors when users add, remove, or reorder columns, all dynamic lookups and dashboard cards rely on **Workbook Named Ranges** ([`CR-SYS-009`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Backlog.md)):
+To prevent formula `#REF!` errors when users add, remove, or reorder columns, all dynamic lookups and dashboard cards rely on **Workbook Named Ranges** ([`CR-SYS-009`](../../Backlog.md)):
 
 ### Registered Named Ranges:
 * **Dropdown Lookups**: `LOOKUP_EQUIPMENT_CATS`, `LOOKUP_FLIGHT_STATUSES`, `LOOKUP_FLIGHT_TYPES`, `LOOKUP_XC_CLASSES`.
@@ -120,7 +120,7 @@ Google Drive/
 
 ## 6. Implementation & Code Mapping
 
-* **Configuration & Schema Maps**: [`Code/Config.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Config.gs)
-* **Scaffolding & Named Ranges**: [`Code/Scaffold.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Scaffold.gs)
-* **Google Drive Pipeline**: [`Code/FileHandling.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/FileHandling.gs)
-* **Automated Unit Tests**: [`tests/Test.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/tests/Test.gs) (`testDashboardAndSchema_`, `testNativeSheetsResilience_`, `testDynamicFormulaResilience_`)
+* **Configuration & Schema Maps**: [`Code/Config.gs`](../../../Code/Config.gs)
+* **Scaffolding & Named Ranges**: [`Code/Scaffold.gs`](../../../Code/Scaffold.gs)
+* **Google Drive Pipeline**: [`Code/FileHandling.gs`](../../../Code/FileHandling.gs)
+* **Automated Unit Tests**: [`tests/Test.gs`](../../../tests/Test.gs) (`testDashboardAndSchema_`, `testNativeSheetsResilience_`, `testDynamicFormulaResilience_`)

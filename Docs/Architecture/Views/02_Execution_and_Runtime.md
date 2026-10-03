@@ -2,8 +2,8 @@
 **Google Apps Script V8 Engine, Concurrency, Quotas & Tri-Mode Execution**
 
 * **Status**: `Living Specification`
-* **Parent Architecture**: [`Docs/Architecture/README.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Architecture/README.md)
-* **Governing Pattern**: [Pattern 4, 13, 14 (`Docs/Patterns_and_Practices.md`)](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Patterns_and_Practices.md)
+* **Parent Architecture**: [`Docs/Architecture/README.md`](../README.md)
+* **Governing Pattern**: [Pattern 4, 13, 14 (`Docs/Patterns_and_Practices.md`)](../../Patterns_and_Practices.md)
 
 ---
 
@@ -23,7 +23,7 @@
 
 ## 2. Tri-Mode Execution Lifecycle
 
-To prevent long-running tasks from locking the Google Sheets user interface, all long-running processes implement the **Tri-Mode Execution Pattern** ([`DSGN-UI-001`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Design/DSGN-UI-001_Tri_Mode_Execution_and_Universal_Sidebar.md)):
+To prevent long-running tasks from locking the Google Sheets user interface, all long-running processes implement the **Tri-Mode Execution Pattern** ([`DSGN-UI-001`](../../Design/DSGN-UI-001_Tri_Mode_Execution_and_Universal_Sidebar.md)):
 
 ```mermaid
 graph TD
@@ -42,7 +42,7 @@ graph TD
 
 ## 3. Bounded 4.5-Minute Execution & Self-Continuation Engine
 
-To prevent catastrophic script termination at Google's 6-minute cutoff, all batch processors run under the supervision of `TimeBudgetService` ([`Code/TimeBudget.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/TimeBudget.gs)):
+To prevent catastrophic script termination at Google's 6-minute cutoff, all batch processors run under the supervision of `TimeBudgetService` ([`Code/TimeBudget.gs`](../../../Code/TimeBudget.gs)):
 
 ```javascript
 var budget = TimeBudgetService.create(270000); // 4.5 minutes safety threshold
@@ -92,7 +92,7 @@ Communication between HTML5 WebViews and Google Apps Script follows strict secur
 
 1. **Public vs. Private Convention**:
    * Functions ending in trailing underscore (`function getRows_()`) are **private** and cannot be invoked from client-side WebViews.
-   * Only explicit public wrapper functions in [`Code/Code.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Code.gs) are callable via `google.script.run`.
+   * Only explicit public wrapper functions in [`Code/Code.gs`](../../../Code/Code.gs) are callable via `google.script.run`.
 2. **Standardized Response Envelope**:
    Every RPC handler returns a structured JSON envelope:
    ```json
@@ -109,8 +109,8 @@ Communication between HTML5 WebViews and Google Apps Script follows strict secur
 
 ## 6. Implementation & Code Mapping
 
-* **Orchestration & RPC Dispatcher**: [`Code/Code.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Code.gs)
-* **Time Budget Engine**: [`Code/TimeBudget.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/TimeBudget.gs)
-* **Queue Service**: [`Code/QueueService.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/QueueService.gs)
-* **Universal Sidebar UI**: [`Code/ExecutionSidebar.html`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/ExecutionSidebar.html)
-* **Automated Unit Tests**: [`tests/Test.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/tests/Test.gs) (`testTimeBudget_`, `testQueueConstants_`, `testWorkerBatchRouting_`)
+* **Orchestration & RPC Dispatcher**: [`Code/Code.gs`](../../../Code/Code.gs)
+* **Time Budget Engine**: [`Code/TimeBudget.gs`](../../../Code/TimeBudget.gs)
+* **Queue Service**: [`Code/QueueService.gs`](../../../Code/QueueService.gs)
+* **Universal Sidebar UI**: [`Code/ExecutionSidebar.html`](../../../Code/ExecutionSidebar.html)
+* **Automated Unit Tests**: [`tests/Test.gs`](../../../tests/Test.gs) (`testTimeBudget_`, `testQueueConstants_`, `testWorkerBatchRouting_`)

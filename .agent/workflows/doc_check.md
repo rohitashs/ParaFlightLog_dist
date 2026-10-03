@@ -11,20 +11,20 @@ This workflow defines the systematic audit protocol for synchronizing all docume
 ## 1. Read & Discover (5-Tier Documentation Corpus)
 
 1. **Discover All Persistent Documentation in `Docs/` Across the 5 Tiers**:
-   - **Tier 1 (Strategic Vision)**: [`Docs/Roadmap.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Roadmap.md) (Horizons H1–H5, open-source strategy, core invariants).
-   - **Tier 2 (Public Manifesto)**: [`Docs/Brochure.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Brochure.md) (Value proposition, whitepaper, Gemini AI advantages).
-   - **Tier 3 (Product & Operations)**: [`Docs/Features.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Features.md) and [`Docs/User_Guide.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/User_Guide.md).
+   - **Tier 1 (Strategic Vision)**: [`Docs/Roadmap.md`](../../Docs/Roadmap.md) (Horizons H1–H5, open-source strategy, core invariants).
+   - **Tier 2 (Public Manifesto)**: [`Docs/Brochure.md`](../../Docs/Brochure.md) (Value proposition, whitepaper, Gemini AI advantages).
+   - **Tier 3 (Product & Operations)**: [`Docs/Features.md`](../../Docs/Features.md) and [`Docs/User_Guide.md`](../../Docs/User_Guide.md).
    - **Tier 4 (Systems Architecture & Design)**:
-     - [`Docs/Architecture.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Architecture.md) (C4 topology, global schemas, ERD, data dictionary).
-     - [`Docs/Technical_Specification.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Technical_Specification.md) (Math models, algorithms, code reference).
-     - [`Docs/Patterns_and_Practices.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Patterns_and_Practices.md) (17 engineering patterns, native Google Sheets optimizations, anti-patterns).
-     - [`Docs/Design/`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Design/README.md) (All subsystem specifications `DSGN-*.md`, index, and template).
+     - [`Docs/Architecture.md`](../../Docs/Architecture.md) (C4 topology, global schemas, ERD, data dictionary).
+     - [`Docs/Technical_Specification.md`](../../Docs/Technical_Specification.md) (Math models, algorithms, code reference).
+     - [`Docs/Patterns_and_Practices.md`](../../Docs/Patterns_and_Practices.md) (17 engineering patterns, native Google Sheets optimizations, anti-patterns).
+     - [`Docs/Design/`](../../Docs/Design/README.md) (All subsystem specifications `DSGN-*.md`, index, and template).
    - **Tier 5 (Execution & Memory)**:
-     - [`Docs/Backlog.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Backlog.md) (Source of truth for `RQ`, `CR`, `Bug`, `ToDo`).
-     - [`Docs/ChangeLog.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/ChangeLog.md) (Historical session records).
-     - [`Docs/Context.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Context.md) (Long-term memory & Ways of Working).
+     - [`Docs/Backlog.md`](../../Docs/Backlog.md) (Source of truth for `RQ`, `CR`, `Bug`, `ToDo`).
+     - [`Docs/ChangeLog.md`](../../Docs/ChangeLog.md) (Historical session records).
+     - [`Docs/Context.md`](../../Docs/Context.md) (Long-term memory & Ways of Working).
 2. **Discover Local Planning & Audit Artifacts in `Plans/`**:
-   - [`Plans/AuditReports/`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Plans/AuditReports/Audit_Template.md) (`AUD-*.md` architectural audit reports).
+   - [`Plans/AuditReports/`](../../Plans/AuditReports/Audit_Template.md) (`AUD-*.md` architectural audit reports).
    - `Plans/CodeCheckReports/` (`YYYY-MM-DD_CodeCheck.md`).
    - `Plans/DocCheckReports/` (`YYYY-MM-DD_DocCheck.md`).
    - `Plans/SessionSummary/` (`YYYY-MM-DD_SessionSummary.md`).
@@ -46,7 +46,7 @@ This workflow defines the systematic audit protocol for synchronizing all docume
 5. **Stale References & Legacy Nomenclature**:
    - Scan documentation for retired tab names (`App_Log`, `App Log`, standalone `Parameters`/`Lookups` tabs), obsolete cache actions (`Clear Dedupe Cache`), or old file names (`Setup_Guide.md`).
 6. **Link & Anchor Integrity**:
-   - Verify all file links (`file:///...`) point to existing files, valid headers, and correct markdown anchors.
+   - Verify all file links (`path/to/target.md) point to existing files, valid headers, and correct markdown anchors.
 
 ---
 

@@ -3,7 +3,7 @@
 
 * **Status**: `Living Standard`
 * **Authority**: Tier 4 Architecture Reference
-* **Governing Pattern**: [Pattern 20 (`Docs/Patterns_and_Practices.md`)](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Patterns_and_Practices.md)
+* **Governing Pattern**: [Pattern 20 (`Docs/Patterns_and_Practices.md`)](../Patterns_and_Practices.md)
 * **Target Audience**: Human Contributors, Core Maintainers, and AI Agents (Antigravity, Cursor, Claude Code)
 
 ---
@@ -100,12 +100,12 @@ Every architecture view and subsystem RFC must conclude with an explicit machine
 
 ```markdown
 ### 5. Implementation & Code Mapping
-* **Primary Service**: [`Code/Scoring.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Scoring.gs)
+* **Primary Service**: [`Code/Scoring.gs`](../../Code/Scoring.gs)
 * **Key Interfaces**:
   * `SCORING.calculateXCOptimization(fixes, config)`: Main graph search & RDP reduction.
   * `findBestTriangle_(fixes)`: 5-point FAI turnpoint permutation optimizer.
-* **Dependent Dialogs**: [`Code/FlightMaintenanceDialog.html`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/FlightMaintenanceDialog.html)
-* **Automated Unit Tests**: [`tests/Test.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/tests/Test.gs) (`testScoring_`)
+* **Dependent Dialogs**: [`Code/FlightMaintenanceDialog.html`](../../Code/FlightMaintenanceDialog.html)
+* **Automated Unit Tests**: [`tests/Test.gs`](../../tests/Test.gs) (`testScoring_`)
 ```
 
 ---
@@ -158,7 +158,7 @@ When collaborating with AI agents:
 3. **Reference the Anti-Patterns Checklist**:
    The **Forbidden Code Smells & Anti-Patterns Checklist** in `Patterns_and_Practices.md` acts as an authoritative negative constraint to keep generated code clean.
 4. **Use Clickable File Links**:
-   Always link files using github-style markdown links with forward slashes (`[Config.gs](file:///path/to/Code/Config.gs)`).
+   Always link files using github-style markdown links with forward slashes (`[Config.gs](../../Code/Config.gs)`).
 
 ---
 

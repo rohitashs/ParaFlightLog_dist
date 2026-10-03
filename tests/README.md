@@ -4,7 +4,7 @@ This directory contains offline unit tests, regression suites, and integration t
 
 ## Architectural Tenet: Runtime vs. Tooling Separation
 
-Per **Pattern 19** in [`Docs/Patterns_and_Practices.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Patterns_and_Practices.md), test code, fixtures, and audit tools are **strictly decoupled** from production runtime code:
+Per **Pattern 19** in [`Docs/Patterns_and_Practices.md`](../Docs/Patterns_and_Practices.md), test code, fixtures, and audit tools are **strictly decoupled** from production runtime code:
 * **Production Runtime (`Code/`)**: Strictly code required by the active Google Sheet, user dialogs, and cloud triggers. Deployed to Google Apps Script via `clasp push`.
 * **Developer Tooling (`tests/`, `tools/`)**: Standalone Node.js test runners, static analysis scripts, and simulation suites. Tracked in Git, but excluded from Google Apps Script deployment via `.claspignore`.
 

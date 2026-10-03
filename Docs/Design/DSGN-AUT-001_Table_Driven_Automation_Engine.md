@@ -7,8 +7,8 @@
 * **Last Updated**: `2026-10-01`
 * **Author / Contributors**: `Rohitash / Antigravity AI`
 * **Parent Design**: `None`
-* **Child / Sibling Designs**: [`DSGN-UI-001`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Design/DSGN-UI-001_Tri_Mode_Execution_and_Universal_Sidebar.md) (Sibling / Execution Substrate & QueueService)
-* **Umbrella Module / Primary Code**: [`Code/Automation.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Automation.gs)
+* **Child / Sibling Designs**: [`DSGN-UI-001`](./DSGN-UI-001_Tri_Mode_Execution_and_Universal_Sidebar.md) (Sibling / Execution Substrate & QueueService)
+* **Umbrella Module / Primary Code**: [`Code/Automation.gs`](../../Code/Automation.gs)
 * **Code Revision Stamp**: `Pending Implementation`
 * **Related Requirements / CRs**: `RQ-SYS-001`, `CR-AUT-001`
 
@@ -50,7 +50,7 @@ Implement a **Table-Driven Automation Engine** modeled on enterprise workflow ru
 * **REQ-6 (Multi-Line Key-Value Parameters)**: Clean parser converting multi-line or delimited text cells into typed JavaScript objects.
 * **REQ-7 (Test / Validate Rule Engine)**: Built-in syntax validator in the dialog and spreadsheet menu verifying trigger configurations, action compatibility, parameter keys, and calculating live matched scope row counts before execution.
 * **REQ-8 (6-Minute Timeout Guardrail)**: Implementation of `TimeBudget` and persistent continuation cursors for all batch actions.
-* **REQ-9 (Detailed Automation Guide)**: Publication of [`Docs/Automation_Guide.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Automation_Guide.md) synchronizing with `Automation.gs`.
+* **REQ-9 (Detailed Automation Guide)**: Publication of [`Docs/Automation_Guide.md`](../Automation_Guide.md) synchronizing with `Automation.gs`.
 
 ### Non-Goals (Out of Scope)
 * **NON-GOAL-1**: Real-time sub-second cron scheduling. All time-based rules evaluate at the resolution of the Master Heartbeat (5 to 15 minutes).
@@ -157,7 +157,7 @@ events: {
   }
 }
 ```
-* **Event & Job Queue Storage**: Durable queue lifecycle managed by `QueueService` on the `Automation_Queue` tab (defined in [`DSGN-UI-001`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Design/DSGN-UI-001_Tri_Mode_Execution_and_Universal_Sidebar.md)). Eliminates the fragile 9 KB property limits of `PropertiesService` and provides 100% human-in-the-loop visibility.
+* **Event & Job Queue Storage**: Durable queue lifecycle managed by `QueueService` on the `Automation_Queue` tab (defined in [`DSGN-UI-001`](./DSGN-UI-001_Tri_Mode_Execution_and_Universal_Sidebar.md)). Eliminates the fragile 9 KB property limits of `PropertiesService` and provides 100% human-in-the-loop visibility.
 * **Deprecation / TTL**: Events include a timestamp. Events older than 2 hours expire automatically, preventing accidental stale runs.
 
 #### 3. Action Registry
@@ -394,10 +394,10 @@ sequenceDiagram
 
 ### 6.2 Downstream Dependencies ("What This Uses")
 * **Internal Code Services**:
-  * [`Code/Logger.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Logger.gs): Records all execution milestones to `Activity Logs`.
-  * [`Code/Config.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Config.gs): Resolves environmental constants (Folder IDs, API keys).
-  * [`Code/FileHandling.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/FileHandling.gs): Invokes watch folder scanning and trash cleanup.
-  * [`Code/Geo.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Geo.gs) & [`Code/Weather.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Weather.gs): Invoked for deferred background enrichment.
+  * [`Code/Logger.gs`](../../Code/Logger.gs): Records all execution milestones to `Activity Logs`.
+  * [`Code/Config.gs`](../../Code/Config.gs): Resolves environmental constants (Folder IDs, API keys).
+  * [`Code/FileHandling.gs`](../../Code/FileHandling.gs): Invokes watch folder scanning and trash cleanup.
+  * [`Code/Geo.gs`](../../Code/Geo.gs) & [`Code/Weather.gs`](../../Code/Weather.gs): Invoked for deferred background enrichment.
 * **Google Workspace Services**:
   * `ScriptApp`: Manages the single master time-driven trigger.
   * `PropertiesService.getScriptProperties()`: Manages `AUTOMATION_EVENT_QUEUE` and continuation cursors.
@@ -460,11 +460,11 @@ sequenceDiagram
 
 ## 9. Documentation Impacts
 
-* [`Docs/Automation_Guide.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Automation_Guide.md): Dedicated pilot guide for no-code and advanced automation authoring.
-* [`Docs/Technical_Specification.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Technical_Specification.md): Document `Automation.gs` module and Single Heartbeat Dispatcher architecture.
-* [`Docs/Features.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Features.md): Add Section for Table-Driven Automation Engine.
-* [`Docs/Backlog.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Backlog.md): Track `CR-AUT-001` (Table-Driven Automation Engine).
-* [`Docs/Design/README.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Design/README.md): Register `DSGN-AUT-001`.
+* [`Docs/Automation_Guide.md`](../Automation_Guide.md): Dedicated pilot guide for no-code and advanced automation authoring.
+* [`Docs/Technical_Specification.md`](../Technical_Specification.md): Document `Automation.gs` module and Single Heartbeat Dispatcher architecture.
+* [`Docs/Features.md`](../Features.md): Add Section for Table-Driven Automation Engine.
+* [`Docs/Backlog.md`](../Backlog.md): Track `CR-AUT-001` (Table-Driven Automation Engine).
+* [`Docs/Design/README.md`](./README.md): Register `DSGN-AUT-001`.
 
 ---
 

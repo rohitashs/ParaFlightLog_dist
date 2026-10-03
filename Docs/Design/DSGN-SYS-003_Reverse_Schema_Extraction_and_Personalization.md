@@ -6,9 +6,9 @@
 * **Date Created**: `2026-10-02`
 * **Last Updated**: `2026-10-02`
 * **Author / Contributors**: `Rohitashwa / Antigravity AI`
-* **Parent Design**: [`DSGN-SYS-002_Platform_Access_Control_and_Contributor_Framework.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Design/DSGN-SYS-002_Platform_Access_Control_and_Contributor_Framework.md)
+* **Parent Design**: [`DSGN-SYS-002_Platform_Access_Control_and_Contributor_Framework.md`](./DSGN-SYS-002_Platform_Access_Control_and_Contributor_Framework.md)
 * **Child Designs**: `None`
-* **Umbrella Module / Primary Code**: [`Code/Config.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Config.gs), [`Code/Scaffold.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Scaffold.gs)
+* **Umbrella Module / Primary Code**: [`Code/Config.gs`](../../Code/Config.gs), [`Code/Scaffold.gs`](../../Code/Scaffold.gs)
 * **Code Revision Stamp**: `Pending Implementation`
 * **Related Requirements / CRs**: `[RQ-SYS-001]`, `[RQ-SYS-002]`, `[CR-SYS-005]`, `[CR-SYS-008]`, `[CR-SCH-002]`
 
@@ -106,7 +106,7 @@ flowchart TD
 
 ### 3.3 Dynamic Formula Resilience (Decoupling from Hardcoded Letters)
 
-Currently, [`Code/Scaffold.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Scaffold.gs) contains static column letter strings inside `INDIRECT()`:
+Currently, [`Code/Scaffold.gs`](../../Code/Scaffold.gs) contains static column letter strings inside `INDIRECT()`:
 ```javascript
 // FRAGILE: Breaks if Duration (Col L), Distance (Col M), or Status (Col B) move:
 var fTotalDist = '=SUMIF(INDIRECT("' + fSheet + '!B5:B"), "Valid", INDIRECT("' + fSheet + '!M5:M"))';

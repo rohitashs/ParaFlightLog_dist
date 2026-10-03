@@ -1,7 +1,7 @@
 # Architecture Cross-Cutting: Security & Pilot Data Privacy
 
 * **Status**: `Living Specification`
-* **Parent Architecture**: [`Docs/Architecture/README.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Architecture/README.md)
+* **Parent Architecture**: [`Docs/Architecture/README.md`](../README.md)
 * **Governing Tenet**: Tenet 1 (Single-Tenant Absolute Data Sovereignty)
 
 ---

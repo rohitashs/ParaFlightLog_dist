@@ -78,7 +78,7 @@ timeline
 *Focus: Seamless asynchronous execution, autonomous scheduling, and friction-free user interaction.*
 
 * **Target Milestone**: v2.0
-* **Core Design Specs**: [DSGN-AUT-001](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Design/DSGN-AUT-001_Table_Driven_Automation_Engine.md) & [DSGN-UI-001](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Design/DSGN-UI-001_Tri_Mode_Execution_and_Universal_Sidebar.md)
+* **Core Design Specs**: [DSGN-AUT-001](./Design/DSGN-AUT-001_Table_Driven_Automation_Engine.md) & [DSGN-UI-001](./Design/DSGN-UI-001_Tri_Mode_Execution_and_Universal_Sidebar.md)
 * **Key Milestones**:
   * **Tri-Mode Execution Subsystem**:
     * Universal front-end standard offering `[ Run Here ]` (Modal), `[ Run in Sidebar ]` (Modeless), and `[ Run in Background ]` (Headless).
@@ -132,7 +132,7 @@ timeline
     * One-click "Make a Copy" Google Sheet pre-configured with embedded Google Apps Script code and automated First-Time Setup Wizard.
     * Zero-developer onboarding: non-technical pilots can deploy and configure their own instance in under 3 minutes.
   * **Public Documentation Portal & Video Tutorials**:
-    * GitHub Pages documentation hub hosting the [Product Brochure](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Brochure.md), [Systems Architecture](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Architecture.md), and [User Guide](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/User_Guide.md).
+    * GitHub Pages documentation hub hosting the [Product Brochure](./Brochure.md), [Systems Architecture](./Architecture.md), and [User Guide](./User_Guide.md).
     * Step-by-step video walkthroughs covering initial setup, flight import, dashboard customization, and troubleshooting.
   * **Community Flight Parser Plugin System**:
     * Extensible adapter pattern allowing community developers to easily add new hardware parsers (e.g. Naviter Oudie N, Volirium, Fly-Master BLE live streams, proprietary CSV formats).
@@ -163,7 +163,7 @@ timeline
 
 ## 3. Strategic Initiatives & Backlog Traceability
 
-The following matrix connects our strategic horizons directly to tracked work units in [`Docs/Backlog.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Backlog.md) and formal design specifications in [`Docs/Design/`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Design/):
+The following matrix connects our strategic horizons directly to tracked work units in [`Docs/Backlog.md`](./Backlog.md) and formal design specifications in [`Docs/Design/`](./Design):
 
 | Horizon | Strategic Theme | Backlog Requirements / CRs | Design Specification | Status |
 | :--- | :--- | :--- | :--- | :--- |
@@ -172,8 +172,8 @@ The following matrix connects our strategic horizons directly to tracked work un
 | **H1** | Weather & Geo Enrichment | `RQ-SCR-002`, `RQ-SCR-004` | Existing Codebase | **Completed** |
 | **H1** | Resilient Dashboard & Views | `RQ-SYS-005`, `CR-SYS-001`, `CR-SYS-002` | Existing Codebase | **Completed** |
 | **H1** | Granular Config Export/Import | `CR-CFG-006`, `CR-CFG-007` | Existing Codebase | **Completed** |
-| **H2** | Tri-Mode Execution Subsystem | `CR-UI-019`, `CR-UI-020` | [`DSGN-UI-001`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Design/DSGN-UI-001_Tri_Mode_Execution_and_Universal_Sidebar.md) | **Designed / Ready** |
-| **H2** | Table-Driven Automation Engine | `RQ-AUT-001` – `RQ-AUT-005` | [`DSGN-AUT-001`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Design/DSGN-AUT-001_Table_Driven_Automation_Engine.md) | **Designed / Ready** |
+| **H2** | Tri-Mode Execution Subsystem | `CR-UI-019`, `CR-UI-020` | [`DSGN-UI-001`](./Design/DSGN-UI-001_Tri_Mode_Execution_and_Universal_Sidebar.md) | **Designed / Ready** |
+| **H2** | Table-Driven Automation Engine | `RQ-AUT-001` – `RQ-AUT-005` | [`DSGN-AUT-001`](./Design/DSGN-AUT-001_Table_Driven_Automation_Engine.md) | **Designed / Ready** |
 | **H2** | First-Time Setup Wizard | `RQ-SYS-008.2` | Planned RFC | **Backlogged** |
 | **H3** | Multi-Instance Distribution & Updater | `RQ-SYS-010`, `CR-SCH-002` | Planned RFC | **Backlogged** |
 | **H3** | Complex Task Wizards | `RQ-SYS-011` | Planned RFC | **Backlogged** |
@@ -197,9 +197,9 @@ ParaFlightLog will be released under the **MIT License** (or Apache 2.0). This p
 ### 4.2 Community Contribution Model
 To maintain our rigorous architectural standards, community development will follow a structured Request for Comments (RFC) process:
 1. **Idea / Proposal**: Discussed in GitHub Discussions or Issue tracker.
-2. **Design RFC**: Subsystem enhancements must follow [`Docs/Design/Design_template.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Design/Design_template.md).
+2. **Design RFC**: Subsystem enhancements must follow [`Docs/Design/Design_template.md`](./Design/Design_template.md).
 3. **Automated Verification**: All pull requests must pass the offline Node.js test harness (`CR-DEV-004`) and static linting before merge.
-4. **Documentation Invariant**: Code changes must be accompanied by synchronized updates to [`Docs/Features.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Features.md) and [`Docs/User_Guide.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/User_Guide.md).
+4. **Documentation Invariant**: Code changes must be accompanied by synchronized updates to [`Docs/Features.md`](./Features.md) and [`Docs/User_Guide.md`](./User_Guide.md).
 
 ### 4.3 Golden Starter Sheet & Distribution Model
 To eliminate the barrier of manual Google Apps Script deployment:

@@ -1,8 +1,8 @@
 # Architecture Cross-Cutting: Resilience & Schema Evolution
 
 * **Status**: `Living Specification`
-* **Parent Architecture**: [`Docs/Architecture/README.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Architecture/README.md)
-* **Governing Pattern**: [Pattern 7, 8, 16, 17 (`Docs/Patterns_and_Practices.md`)](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Patterns_and_Practices.md)
+* **Parent Architecture**: [`Docs/Architecture/README.md`](../README.md)
+* **Governing Pattern**: [Pattern 7, 8, 16, 17 (`Docs/Patterns_and_Practices.md`)](../../Patterns_and_Practices.md)
 
 ---
 

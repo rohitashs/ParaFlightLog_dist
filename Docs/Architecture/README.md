@@ -1,8 +1,8 @@
 # Systems Architecture & Global Topology
 
 > [!NOTE]
-> For authoring guidelines, two-way linking rules, and in-code commenting standards, see [`Documentation_Standards.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Architecture/Documentation_Standards.md).
-> For code-level patterns and guardrails, see [`Patterns_and_Practices.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Patterns_and_Practices.md).
+> For authoring guidelines, two-way linking rules, and in-code commenting standards, see [`Documentation_Standards.md`](./Documentation_Standards.md).
+> For code-level patterns and guardrails, see [`Patterns_and_Practices.md`](../Patterns_and_Practices.md).
 
 ---
 
@@ -102,15 +102,15 @@ Every subsystem in ParaFlightLog must adhere to five non-negotiable architectura
 To separate aeronautical problem domain logic from platform-specific technical constraints, the architecture is decomposed across four orthogonal views and three cross-cutting specifications:
 
 ### The 4 Architectural Views:
-* [`Views/01_Functional_View.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Architecture/Views/01_Functional_View.md): Subsystem functional decomposition, domain capabilities, and pilot operational workflows.
-* [`Views/02_Execution_and_Runtime.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Architecture/Views/02_Execution_and_Runtime.md): Google Apps Script V8 runtime, execution lifecycles, 4.5m TimeBudget, QueueService, triggers, and client-server RPC.
-* [`Views/03_Data_and_Storage_Model.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Architecture/Views/03_Data_and_Storage_Model.md): Tabular database model, ERD, 8-tab schema, Named Ranges, dynamic formula resolution, and Google Drive object storage.
-* [`Views/04_Integration_and_APIs.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Architecture/Views/04_Integration_and_APIs.md): External integration gateways (Open-Meteo, OpenStreetMap / Overpass, XContest, SeeYou Cloud).
+* [`Views/01_Functional_View.md`](./Views/01_Functional_View.md): Subsystem functional decomposition, domain capabilities, and pilot operational workflows.
+* [`Views/02_Execution_and_Runtime.md`](./Views/02_Execution_and_Runtime.md): Google Apps Script V8 runtime, execution lifecycles, 4.5m TimeBudget, QueueService, triggers, and client-server RPC.
+* [`Views/03_Data_and_Storage_Model.md`](./Views/03_Data_and_Storage_Model.md): Tabular database model, ERD, 8-tab schema, Named Ranges, dynamic formula resolution, and Google Drive object storage.
+* [`Views/04_Integration_and_APIs.md`](./Views/04_Integration_and_APIs.md): External integration gateways (Open-Meteo, OpenStreetMap / Overpass, XContest, SeeYou Cloud).
 
 ### Cross-Cutting System Specifications:
-* [`Cross_Cutting/Security_and_Privacy.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Architecture/Cross_Cutting/Security_and_Privacy.md): Pilot PII protection, single-tenant data sovereignty, OAuth scopes, token security.
-* [`Cross_Cutting/Resilience_and_Evolution.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Architecture/Cross_Cutting/Resilience_and_Evolution.md): Script-to-sheet decoupling, dual-state lag tolerance, soft guardrails (`setWarningOnly`), and safety backups.
-* [`Cross_Cutting/Quotas_and_Performance.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Architecture/Cross_Cutting/Quotas_and_Performance.md): Google Apps Script quota limits, in-memory quality scoring, batch array formulas, and cold-start optimization.
+* [`Cross_Cutting/Security_and_Privacy.md`](./Cross_Cutting/Security_and_Privacy.md): Pilot PII protection, single-tenant data sovereignty, OAuth scopes, token security.
+* [`Cross_Cutting/Resilience_and_Evolution.md`](./Cross_Cutting/Resilience_and_Evolution.md): Script-to-sheet decoupling, dual-state lag tolerance, soft guardrails (`setWarningOnly`), and safety backups.
+* [`Cross_Cutting/Quotas_and_Performance.md`](./Cross_Cutting/Quotas_and_Performance.md): Google Apps Script quota limits, in-memory quality scoring, batch array formulas, and cold-start optimization.
 
 ---
 

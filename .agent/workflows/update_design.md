@@ -16,7 +16,7 @@ Determine the user's intent and target scope from their request:
 
 ## 2. Directory & Template Setup
 * Ensure `Docs/Design/` exists.
-* Read [`Docs/Design/Design_template.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Design/Design_template.md) as the structural standard.
+* Read [`Docs/Design/Design_template.md`](../../Docs/Design/Design_template.md) as the structural standard.
 * File Naming Convention:
   `Docs/Design/DSGN-[MODULE]-[NUMBER]_[Feature_Name].md`
   * Examples:
@@ -50,7 +50,7 @@ Determine the user's intent and target scope from their request:
    * **Major Bump** (`Rev 1.0` $\to$ `Rev 2.0`): Fundamental architectural rewrite, schema overhaul, or breaking workflow changes.
 4. **Update Document Sections**: Apply modifications to Schema, Architecture, Implementation Plan, etc.
 5. **Append Revision History**: Add a row to the Revision History table with the new revision number, today's date, author, and a concise **Revision Note** summarizing the delta.
-6. **Code Stamp Synchronization**: Update the `@revision` tag in the umbrella code file's header (e.g. [`Code/Logger.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Logger.gs)) to match the new revision number.
+6. **Code Stamp Synchronization**: Update the `@revision` tag in the umbrella code file's header (e.g. [`Code/Logger.gs`](../../Code/Logger.gs)) to match the new revision number.
 
 ### Mode C: Reverse-Engineering (Documenting Existing Working Code)
 1. **Analyze Code Architecture**:
@@ -68,7 +68,7 @@ Determine the user's intent and target scope from their request:
 ---
 
 ## 4. Maintain the Design Index (`Docs/Design/README.md`)
-Whenever a design is created or updated, synchronize [`Docs/Design/README.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Design/README.md):
+Whenever a design is created or updated, synchronize [`Docs/Design/README.md`](../../Docs/Design/README.md):
 * Maintain a structured index table of all design documents:
   | Design ID | Title | Status | Revision | Parent | Umbrella Code | Description |
   | :--- | :--- | :---: | :---: | :--- | :--- | :--- |

@@ -7,8 +7,8 @@
 * **Last Updated**: `2026-10-01`
 * **Author / Contributors**: `Rohitash / Antigravity AI`
 * **Parent Design**: `None`
-* **Child / Sibling Designs**: [`DSGN-AUT-001`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Design/DSGN-AUT-001_Table_Driven_Automation_Engine.md) (Sibling / Automation Engine), [`DSGN-LOG-001`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Design/DSGN-LOG-001_Activity_Logging_System.md) (Sibling / Telemetry Sink)
-* **Umbrella Module / Primary Code**: [`Code/ExecutionSidebar.html`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/ExecutionSidebar.html), [`Code/QueueService.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/QueueService.gs), [`Code/TimeBudget.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/TimeBudget.gs)
+* **Child / Sibling Designs**: [`DSGN-AUT-001`](./DSGN-AUT-001_Table_Driven_Automation_Engine.md) (Sibling / Automation Engine), [`DSGN-LOG-001`](./DSGN-LOG-001_Activity_Logging_System.md) (Sibling / Telemetry Sink)
+* **Umbrella Module / Primary Code**: [`Code/ExecutionSidebar.html`](../../Code/ExecutionSidebar.html), [`Code/QueueService.gs`](../../Code/QueueService.gs), [`Code/TimeBudget.gs`](../../Code/TimeBudget.gs)
 * **Code Revision Stamp**: `Pending Implementation`
 * **Related Requirements / CRs**: `RQ-SYS-002`, `CR-UI-019`, `CR-AUT-001`
 

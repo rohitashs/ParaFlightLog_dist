@@ -8,7 +8,7 @@
 * **Author / Contributors**: `Rohitash / Antigravity AI`
 * **Parent Design**: `None`
 * **Child Designs**: `None`
-* **Umbrella Module / Primary Code**: [`Code/Logger.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Logger.gs)
+* **Umbrella Module / Primary Code**: [`Code/Logger.gs`](../../Code/Logger.gs)
 * **Code Revision Stamp**: `Rev 1.0`
 * **Related Requirements / CRs**: `RQ-ING-002`, `CR-LOG-004`
 
@@ -19,9 +19,9 @@
 ### Problem Statement
 The legacy logging tab (`App_Log`) was implemented early in Phase 1 as an ad-hoc, file-by-file debugging utility with a rigid 6-column schema: `['Timestamp', 'FileID', 'FileName', 'InnerName', 'Status', 'Info']`. This legacy approach suffers from critical limitations:
 1. **Ingestion Blindspot**: Columns like `FileID`, `FileName`, and `InnerName` are meaningless for 90% of system operations (Configuration backups, Sheet scaffolding, Re-sync, Purging, Dashboard refreshes, Maintenance backfills). Non-file operations were forced to stuff dummy strings into `InnerName` and leave `FileID` blank.
-2. **Disconnected Observability**: Modern modal dialogs ([`BulkIngestDialog.html`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/BulkIngestDialog.html), [`ResyncDialog.html`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/ResyncDialog.html), [`PurgeDialog.html`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/PurgeDialog.html), [`URLDialog.html`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/URLDialog.html)) display rich, human-readable real-time **Activity Log** consoles with clear lifecycle phases (Start, Discovery, Batch processing, Sorting, Completion). However, almost none of that high-level narrative is recorded in `App_Log`.
+2. **Disconnected Observability**: Modern modal dialogs ([`BulkIngestDialog.html`](../../Code/BulkIngestDialog.html), [`ResyncDialog.html`](../../Code/ResyncDialog.html), [`PurgeDialog.html`](../../Code/PurgeDialog.html), [`URLDialog.html`](../../Code/URLDialog.html)) display rich, human-readable real-time **Activity Log** consoles with clear lifecycle phases (Start, Discovery, Batch processing, Sorting, Completion). However, almost none of that high-level narrative is recorded in `App_Log`.
 3. **Silent Background Execution**: Automated watch folder triggers (`processWatchFolder`) run headlessly. If a scan finds zero files or experiences a folder access issue, nothing is recorded in `App_Log`, leaving pilots blind to background trigger health.
-4. **Scattered Architecture**: Logging functions (`logImport_` and `logImportBatch_`) are buried inside [`Code/Ingestion.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Ingestion.gs) rather than being accessible as a first-class, centralized system service.
+4. **Scattered Architecture**: Logging functions (`logImport_` and `logImportBatch_`) are buried inside [`Code/Ingestion.gs`](../../Code/Ingestion.gs) rather than being accessible as a first-class, centralized system service.
 
 ### Proposed Solution
 Overhaul the logging architecture into a clean, unified **Activity Logging Engine**:
@@ -30,7 +30,7 @@ Overhaul the logging architecture into a clean, unified **Activity Logging Engin
 * Implement **tiered logging levels** (`Brief`, `Normal`, `Debug`) allowing pilots to control spreadsheet log verbosity while transient dialog consoles always display full `Normal` stream visibility.
 * Implement a **conservative dual-threshold log retention guardrail** (`LOG_ROWS_TO_KEEP: 2000`, `LOG_TIME_TO_KEEP_DAYS: 90`) ensuring historical logs are preserved unless they violate *both* size and age limits.
 * Add a **📋 Copy Log** button to all dialog consoles so pilots can easily capture full diagnostic streams to their clipboard on demand.
-* Centralize all logging into an isolated, defensive service: [`Code/Logger.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Logger.gs).
+* Centralize all logging into an isolated, defensive service: [`Code/Logger.gs`](../../Code/Logger.gs).
 
 ---
 
@@ -210,7 +210,7 @@ flowchart TD
 
 ### 3.6 UI Dialog Integration: Copy Log Button
 
-In all dialogs containing an activity console ([`BulkIngestDialog.html`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/BulkIngestDialog.html), [`ResyncDialog.html`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/ResyncDialog.html), [`PurgeDialog.html`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/PurgeDialog.html), [`URLDialog.html`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/URLDialog.html), [`ScanDialog.html`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/ScanDialog.html)):
+In all dialogs containing an activity console ([`BulkIngestDialog.html`](../../Code/BulkIngestDialog.html), [`ResyncDialog.html`](../../Code/ResyncDialog.html), [`PurgeDialog.html`](../../Code/PurgeDialog.html), [`URLDialog.html`](../../Code/URLDialog.html), [`ScanDialog.html`](../../Code/ScanDialog.html)):
 * Add a secondary action button in the console header: `<button id="btn-copy-log" class="btn btn-secondary" onclick="copyConsoleLog()">📋 Copy Log</button>`.
 * JavaScript implementation:
   ```javascript
@@ -279,7 +279,7 @@ The Activity Logging System is a core foundational service designed to be consum
 
 ### 6.2 Downstream Dependencies ("What This Uses")
 * **Internal Code Services**:
-  * [`Code/Config.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Config.gs): Resolves `CFG.LOG_PROCESSES`, `CFG.LOG_PREFIXES`, `TABS.APP_LOG.name`, and runtime parameters (`LOG_LEVEL`, `LOG_AUTO_CLEAN`, etc.).
+  * [`Code/Config.gs`](../../Code/Config.gs): Resolves `CFG.LOG_PROCESSES`, `CFG.LOG_PREFIXES`, `TABS.APP_LOG.name`, and runtime parameters (`LOG_LEVEL`, `LOG_AUTO_CLEAN`, etc.).
 * **Google Workspace Services**:
   * `SpreadsheetApp`: Writes directly to `SpreadsheetApp.getActive().getSheetByName('Activity Logs')` using single-call `setValues()` batching and `deleteRows()`.
   * `PropertiesService.getScriptProperties()`: Stores timestamp of last automated maintenance run (`LOG_LAST_CLEAN_DATE`).
@@ -328,7 +328,7 @@ The Activity Logging System is a core foundational service designed to be consum
   - Add unit tests in `Code/Test.gs` verifying process resolution, log level filtering, and dual-threshold pruning calculations.
   - Execute offline test harness (`scratch/run_unit_tests.js`).
 - [ ] **Phase 7: Documentation Synchronization**:
-  - Log `CR-LOG-004` in [`Docs/Backlog.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Backlog.md), update [`Docs/Technical_Specification.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Technical_Specification.md), [`Docs/Features.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Features.md), [`Docs/User_Guide.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/User_Guide.md), [`Docs/ChangeLog.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/ChangeLog.md), and update [`Docs/Design/README.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Design/README.md).
+  - Log `CR-LOG-004` in [`Docs/Backlog.md`](../Backlog.md), update [`Docs/Technical_Specification.md`](../Technical_Specification.md), [`Docs/Features.md`](../Features.md), [`Docs/User_Guide.md`](../User_Guide.md), [`Docs/ChangeLog.md`](../ChangeLog.md), and update [`Docs/Design/README.md`](./README.md).
 
 ---
 
@@ -348,11 +348,11 @@ The Activity Logging System is a core foundational service designed to be consum
 
 ## 9. Documentation Impacts
 
-* [`Docs/Technical_Specification.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Technical_Specification.md): Update Section 2 (System Architecture: add `Logger.gs`), Section 3 (Data Schema: update `Activity Logs`), and Section 7 (Code Reference).
-* [`Docs/Features.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Features.md): Update Section 9 (Robust Logging) and Section 6 (UI dialog clipboard actions).
-* [`Docs/User_Guide.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/User_Guide.md): Update Tab descriptions and Maintenance operations (`Clean Activity Logs Now`).
-* [`Docs/Backlog.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Backlog.md): Track `CR-LOG-004` (Activity Logging System Redesign).
-* [`Docs/ChangeLog.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/ChangeLog.md): Document the overhaul upon implementation.
+* [`Docs/Technical_Specification.md`](../Technical_Specification.md): Update Section 2 (System Architecture: add `Logger.gs`), Section 3 (Data Schema: update `Activity Logs`), and Section 7 (Code Reference).
+* [`Docs/Features.md`](../Features.md): Update Section 9 (Robust Logging) and Section 6 (UI dialog clipboard actions).
+* [`Docs/User_Guide.md`](../User_Guide.md): Update Tab descriptions and Maintenance operations (`Clean Activity Logs Now`).
+* [`Docs/Backlog.md`](../Backlog.md): Track `CR-LOG-004` (Activity Logging System Redesign).
+* [`Docs/ChangeLog.md`](../ChangeLog.md): Document the overhaul upon implementation.
 
 ---
 
