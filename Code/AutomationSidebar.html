@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <?!= HtmlService.createTemplateFromFile('Style').evaluate().getContent(); ?>
+  <style>
+    :root {
+      --primary: #00897B;
+      --primary-dark: #004D40;
+      --primary-light: #E0F2F1;
+      --accent: #26A69A;
+      --surface: #FFFFFF;
+      --bg: #F4F6F8;
+      --border: #CFD8DC;
+      --text: #263238;
+      --text-muted: #607D8B;
+      --danger: #D32F2F;
+      --success: #2E7D32;
+    }
+
+    body {
+      background-color: var(--bg);
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+      color: var(--text);
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+      font-size: 12.5px;
+    }
+
+    /* Header */
+    .sidebar-header {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: white;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.12);
+      flex-shrink: 0;
+    }
+
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .header-title {
+      font-size: 14px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      letter-spacing: 0.3px;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-icon {
+      background: rgba(255,255,255,0.15);
+      border: none;
+      color: white;
+      border-radius: 4px;
+      padding: 3px 6px;
+      cursor: pointer;
+      font-size: 11px;
+      transition: background 0.15s ease;
+    }
+
+    .btn-icon:hover {
+      background: rgba(255,255,255,0.3);
+    }
+
+    .context-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+    }
+
+    .row-badge {
+      background: rgba(255,255,255,0.25);
+      padding: 2px 7px;
+      border-radius: 10px;
+      font-weight: 600;
+    }
+
+    /* Scrollable Body */
+    .sidebar-body {
+      flex: 1 1 auto;
+      overflow-y: auto;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    /* Notice Banner */
+    .sheet-notice {
+      background: #FFF3E0;
+      border: 1px solid #FFE0B2;
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-size: 11.5px;
+      color: #E65100;
+      line-height: 1.35;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .btn-switch-tab {
+      background: #FF9800;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 4px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      align-self: flex-start;
+    }
+
+    /* Top Controls */
+    .top-controls {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 10px;
+    }
+
+    .btn-new-rule {
+      background: #ECEFF1;
+      border: 1px solid #CFD8DC;
+      color: #37474F;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s ease;
+    }
+
+    .btn-new-rule:hover {
+      background: var(--primary-light);
+      border-color: var(--primary);
+      color: var(--primary-dark);
+    }
+
+    /* Toggle Switch */
+    .toggle-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 32px;
+      height: 18px;
+    }
+
+    .switch input { opacity: 0; width: 0; height: 0; }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #CFD8DC;
+      transition: .2s;
+      border-radius: 18px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 12px;
+      width: 12px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .2s;
+      border-radius: 50%;
+    }
+
+    input:checked + .slider { background-color: var(--primary); }
+    input:checked + .slider:before { transform: translateX(14px); }
+
+    .toggle-label {
+      font-weight: 600;
+      font-size: 11.5px;
+      color: var(--text);
+    }
+
+    /* Collapsible Sections (Accordions) */
+    .accordion-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+    }
+
+    .accordion-header {
+      background: #FAFAFA;
+      padding: 7px 10px;
+      cursor: pointer;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid transparent;
+      transition: background 0.15s ease;
+    }
+
+    .accordion-header:hover {
+      background: #F0F4F8;
+    }
+
+    .accordion-header.open {
+      border-bottom-color: #ECEFF1;
+      background: #FFFFFF;
+    }
+
+    .accordion-title {
+      font-weight: 700;
+      font-size: 11px;
+      color: var(--primary-dark);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .accordion-chevron {
+      font-size: 10px;
+      color: var(--text-muted);
+      transition: transform 0.2s ease;
+    }
+
+    .accordion-chevron.open {
+      transform: rotate(180deg);
+    }
+
+    .accordion-content {
+      display: none;
+      padding: 10px;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .accordion-content.open {
+      display: flex;
+    }
+
+    /* Chips */
+    .chips-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+
+    .chip-btn {
+      background: #ECEFF1;
+      border: 1px solid #CFD8DC;
+      color: #37474F;
+      padding: 3px 7px;
+      border-radius: 12px;
+      font-size: 10.5px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .chip-btn:hover {
+      background: var(--primary-light);
+      border-color: var(--primary);
+      color: var(--primary-dark);
+    }
+
+    /* Form Fields */
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .field-group label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #455A64;
+    }
+
+    .field-group .field-hint {
+      font-size: 10px;
+      color: var(--text-muted);
+      line-height: 1.25;
+    }
+
+    input[type="text"], input[type="number"], select, textarea {
+      padding: 5px 8px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 11.5px;
+      color: var(--text);
+      background-color: #FAFAFA;
+      transition: border-color 0.15s ease;
+      font-family: inherit;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      background-color: #FFFFFF;
+    }
+
+    /* Parameters */
+    .param-item {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      padding: 4px 0;
+      border-bottom: 1px dashed #ECEFF1;
+    }
+
+    .param-label {
+      font-weight: 600;
+      font-size: 11px;
+      color: #37474F;
+    }
+
+    .param-hint {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    .live-preview-box {
+      background: #ECEFF1;
+      border-radius: 4px;
+      padding: 5px 8px;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 10.5px;
+      color: #263238;
+      word-break: break-all;
+    }
+
+    /* Alert Banner */
+    .alert-banner {
+      display: none;
+      padding: 8px 10px;
+      border-radius: 5px;
+      font-size: 11px;
+      line-height: 1.35;
+      margin-bottom: 6px;
+    }
+
+    .alert-banner.error { display: block; background: #FFEBEE; color: #C62828; border: 1px solid #FFCDD2; }
+    .alert-banner.success { display: block; background: #E8F5E9; color: #2E7D32; border: 1px solid #C8E6C9; }
+
+    /* Footer Buttons */
+    .sidebar-footer {
+      background: #FFFFFF;
+      border-top: 1px solid var(--border);
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+      box-sizing: border-box;
+    }
+
+    .btn {
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 11.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      border: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      font-family: inherit;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+      flex: 1;
+    }
+
+    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-primary:disabled { background: #80CBC4; cursor: not-allowed; }
+
+    .btn-test {
+      background: #FFF3E0;
+      color: #E65100;
+      border: 1px solid #FFE0B2;
+    }
+
+    .btn-test:hover { background: #FFE0B2; }
+
+    .btn-delete {
+      background: #FFEBEE;
+      color: #C62828;
+      border: 1px solid #FFCDD2;
+      padding: 6px 8px;
+    }
+
+    .btn-delete:hover { background: #FFCDD2; }
+
+    .loading-spinner {
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top: 2px solid white;
+      border-radius: 50%;
+      width: 10px;
+      height: 10px;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="sidebar-header">
+    <div class="header-top">
+      <div class="header-title">
+        <span>⚡</span>
+        <span>Automation Assistant</span>
+      </div>
+      <div class="header-actions">
+        <button class="btn-icon" onclick="pollSelection(true)" title="Force Sync Selection">🔄 Sync</button>
+      </div>
+    </div>
+    <div class="context-bar">
+      <span id="sheetContextText">Checking sheet...</span>
+      <span class="row-badge" id="rowBadge">Loading</span>
+    </div>
+  </div>
+
+  <!-- Body -->
+  <div class="sidebar-body">
+
+    <!-- Notice if not on Automation_Rules -->
+    <div id="sheetNotice" class="sheet-notice" style="display:none;">
+      <span>You are currently viewing <strong id="otherSheetName">another sheet</strong>. Switch to <strong>Automation_Rules</strong> to inspect or edit rules.</span>
+      <button type="button" class="btn-switch-tab" onclick="switchToAutomationSheet()">Go to Automation_Rules</button>
+    </div>
+
+    <!-- Alert / Status -->
+    <div id="alertBanner" class="alert-banner"></div>
+
+    <!-- Top Action & Active Switch -->
+    <div class="top-controls">
+      <button type="button" class="btn-new-rule" onclick="startNewRule()">
+        <span>➕</span> New Rule
+      </button>
+
+      <label class="toggle-wrapper">
+        <div class="switch">
+          <input type="checkbox" id="ruleActive" checked onchange="markDirty()">
+          <span class="slider"></span>
+        </div>
+        <span class="toggle-label">Active</span>
+      </label>
+    </div>
+
+    <!-- Accordion 1: Quick Templates -->
+    <div class="accordion-card">
+      <div class="accordion-header open" id="hdrTemplates" onclick="toggleAccordion('Templates')">
+        <span class="accordion-title"><span>📋</span> Predefined Templates</span>
+        <span class="accordion-chevron open" id="chvTemplates">▼</span>
+      </div>
+      <div class="accordion-content open" id="cntTemplates">
+        <div class="chips-row" id="templateChips"></div>
+      </div>
+    </div>
+
+    <!-- Accordion 2: Rule Definition -->
+    <div class="accordion-card">
+      <div class="accordion-header open" id="hdrDetails" onclick="toggleAccordion('Details')">
+        <span class="accordion-title"><span>🏷️</span> Rule & Action</span>
+        <span class="accordion-chevron open" id="chvDetails">▼</span>
+      </div>
+      <div class="accordion-content open" id="cntDetails">
+        <div class="field-group">
+          <label for="ruleName">Automation Name *</label>
+          <input type="text" id="ruleName" placeholder="e.g. Scheduled Watch Folder Scan" oninput="markDirty()">
+        </div>
+
+        <div class="field-group">
+          <label for="ruleAction">Action *</label>
+          <select id="ruleAction" onchange="onActionChange()">
+            <option value="">-- Select an Action --</option>
+          </select>
+          <div class="field-hint" id="actionDesc">Select an action to view parameters.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Accordion 3: Trigger & Condition -->
+    <div class="accordion-card">
+      <div class="accordion-header open" id="hdrTrigger" onclick="toggleAccordion('Trigger')">
+        <span class="accordion-title"><span>⏱️</span> Trigger & Schedule</span>
+        <span class="accordion-chevron open" id="chvTrigger">▼</span>
+      </div>
+      <div class="accordion-content open" id="cntTrigger">
+        <div class="field-group">
+          <label for="triggerType">Trigger Type *</label>
+          <select id="triggerType" onchange="onTriggerTypeChange()">
+            <option value="Time (Minutes)">Time (Minutes)</option>
+            <option value="Time (Days)">Time (Days)</option>
+            <option value="Event (Lifecycle)">Event (Lifecycle)</option>
+            <option value="Manual Execution Only">Manual Execution Only</option>
+          </select>
+        </div>
+
+        <div class="field-group" id="triggerConfigGroup">
+          <label id="triggerConfigLabel" for="triggerConfig">Interval *</label>
+          <div id="triggerConfigContainer">
+            <input type="number" id="triggerConfig" min="5" value="15" oninput="markDirty()">
+          </div>
+          <div class="field-hint" id="triggerConfigHint">Pulse interval in minutes.</div>
+        </div>
+
+        <div class="field-group">
+          <label for="ruleCondition">Guard Condition (Optional)</label>
+          <input type="text" id="ruleCondition" placeholder="e.g. QUEUE_SIZE > 0" oninput="markDirty()">
+          <div class="field-hint">Optional expression. Blank = Unconditional.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Accordion 4: Parameters -->
+    <div class="accordion-card">
+      <div class="accordion-header open" id="hdrParams" onclick="toggleAccordion('Params')">
+        <span class="accordion-title"><span>⚙️</span> Parameters</span>
+        <span class="accordion-chevron open" id="chvParams">▼</span>
+      </div>
+      <div class="accordion-content open" id="cntParams">
+        <div id="parametersContainer">
+          <div style="font-size:11px; color:var(--text-muted); font-style:italic;">Select an action above to configure parameters.</div>
+        </div>
+
+        <div style="margin-top:6px;">
+          <div style="font-size:10px; font-weight:600; color:var(--text-muted);">SERIALIZED PREVIEW:</div>
+          <div class="live-preview-box" id="paramPreview">(No parameters)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Meta Card (Last Run / Result) -->
+    <div id="metaInfoCard" style="display:none; font-size:10.5px; color:var(--text-muted); padding:6px 8px; background:#ECEFF1; border-radius:4px;"></div>
+
+  </div>
+
+  <!-- Sticky Footer -->
+  <div class="sidebar-footer">
+    <button type="button" class="btn btn-delete" id="btnDelete" onclick="deleteCurrentRule()" title="Delete rule row" style="display:none;">
+      🗑
+    </button>
+    <button type="button" class="btn btn-test" id="btnRunNow" onclick="runCurrentRule()" title="Execute rule immediately" style="display:none;">
+      ▶ Run
+    </button>
+    <button type="button" class="btn btn-primary" id="btnSave" onclick="saveRule()">
+      <span id="saveBtnText">Save Rule</span>
+    </button>
+  </div>
+
+  <script>
+    var registryData = null;
+    var currentTargetRow = 3;
+    var nextAvailableBlankRow = 3;
+    var currentParamValues = {};
+    var isDirty = false;
+    var isSaving = false;
+    var isPolling = false;
+
+    window.onload = function() {
+      pollSelection(true);
+      setInterval(function() {
+        if (!isDirty && !isSaving) {
+          pollSelection(false);
+        }
+      }, 2000);
+    };
+
+    function markDirty() {
+      isDirty = true;
+    }
+
+    function toggleAccordion(name) {
+      var hdr = document.getElementById('hdr' + name);
+      var cnt = document.getElementById('cnt' + name);
+      var chv = document.getElementById('chv' + name);
+      var isOpen = cnt.classList.contains('open');
+
+      if (isOpen) {
+        cnt.classList.remove('open');
+        hdr.classList.remove('open');
+        chv.classList.remove('open');
+      } else {
+        cnt.classList.add('open');
+        hdr.classList.add('open');
+        chv.classList.add('open');
+      }
+    }
+
+    function pollSelection(force) {
+      if (isPolling && !force) return;
+      isPolling = true;
+
+      google.script.run
+        .withSuccessHandler(function(ctx) {
+          isPolling = false;
+          handleContextUpdate(ctx, force);
+        })
+        .withFailureHandler(function(err) {
+          isPolling = false;
+          console.warn('Selection poll error:', err);
+        })
+        .getActiveAutomationContext();
+    }
+
+    function handleContextUpdate(ctx, force) {
+      if (!ctx) return;
+      registryData = ctx;
+
+      var sheetNotice = document.getElementById('sheetNotice');
+      var sheetContextText = document.getElementById('sheetContextText');
+      var rowBadge = document.getElementById('rowBadge');
+      nextAvailableBlankRow = ctx.nextBlankRow || 3;
+
+      if (!ctx.isAutomationSheet) {
+        sheetNotice.style.display = 'flex';
+        document.getElementById('otherSheetName').textContent = ctx.currentSheet || 'Unknown';
+        sheetContextText.textContent = ctx.currentSheet;
+        rowBadge.textContent = 'Off Tab';
+        rowBadge.style.background = 'rgba(255,255,255,0.2)';
+        return;
+      }
+
+      sheetNotice.style.display = 'none';
+      sheetContextText.textContent = 'Automation_Rules';
+
+      // Render Templates once if empty
+      var chipsBox = document.getElementById('templateChips');
+      if (chipsBox.children.length === 0 && ctx.templates) {
+        ctx.templates.forEach(function(tpl) {
+          var chip = document.createElement('button');
+          chip.type = 'button';
+          chip.className = 'chip-btn';
+          chip.innerHTML = '📋 ' + tpl.name;
+          chip.onclick = function() { applyTemplate(tpl); };
+          chipsBox.appendChild(chip);
+        });
+      }
+
+      // Populate Actions dropdown once if empty
+      var actSel = document.getElementById('ruleAction');
+      if (actSel.children.length <= 1 && ctx.actions) {
+        for (var k in ctx.actions) {
+          var act = ctx.actions[k];
+          var opt = document.createElement('option');
+          opt.value = k;
+          opt.textContent = act.label;
+          actSel.appendChild(opt);
+        }
+      }
+
+      // Check if row changed
+      var activeRow = ctx.activeRow;
+      if (activeRow !== currentTargetRow || force) {
+        currentTargetRow = activeRow;
+
+        if (ctx.hasRule && ctx.rule) {
+          // Row has an existing rule
+          rowBadge.textContent = 'Row ' + activeRow + ' (Editing)';
+          rowBadge.style.background = '#004D40';
+          document.getElementById('saveBtnText').textContent = 'Update Rule';
+          document.getElementById('btnRunNow').style.display = 'inline-flex';
+          document.getElementById('btnDelete').style.display = 'inline-flex';
+
+          populateFormWithRule(ctx.rule);
+        } else {
+          // On a blank row -> Ready to create
+          rowBadge.textContent = 'Row ' + activeRow + ' (New)';
+          rowBadge.style.background = '#2E7D32';
+          document.getElementById('saveBtnText').textContent = 'Create Rule';
+          document.getElementById('btnRunNow').style.display = 'none';
+          document.getElementById('btnDelete').style.display = 'none';
+          document.getElementById('metaInfoCard').style.display = 'none';
+
+          if (force && !ctx.hasRule) {
+            clearForm();
+          }
+        }
+        isDirty = false;
+      }
+    }
+
+    function populateFormWithRule(rule) {
+      document.getElementById('ruleActive').checked = (rule.active !== false);
+      document.getElementById('ruleName').value = rule.name || '';
+      document.getElementById('ruleAction').value = rule.action || '';
+      document.getElementById('triggerType').value = rule.triggerType || 'Time (Minutes)';
+      document.getElementById('ruleCondition').value = rule.condition || '';
+
+      onActionChange();
+      onTriggerTypeChange();
+
+      var cfgInput = document.getElementById('triggerConfig');
+      if (cfgInput) cfgInput.value = rule.triggerConfig || 15;
+
+      parseAndSetParameters(rule.parameters, rule.action);
+
+      // Meta info
+      var metaCard = document.getElementById('metaInfoCard');
+      if (rule.lastRun) {
+        metaCard.style.display = 'block';
+        metaCard.innerHTML = '<strong>Last Run:</strong> ' + rule.lastRun + '<br><strong>Result:</strong> ' + (rule.lastResult || 'None');
+      } else {
+        metaCard.style.display = 'none';
+      }
+    }
+
+    function startNewRule() {
+      currentTargetRow = nextAvailableBlankRow;
+      document.getElementById('rowBadge').textContent = 'Row ' + currentTargetRow + ' (New)';
+      document.getElementById('rowBadge').style.background = '#2E7D32';
+      document.getElementById('saveBtnText').textContent = 'Create Rule';
+      document.getElementById('btnRunNow').style.display = 'none';
+      document.getElementById('btnDelete').style.display = 'none';
+      document.getElementById('metaInfoCard').style.display = 'none';
+
+      clearForm();
+      if (registryData && registryData.templates && registryData.templates.length > 0) {
+        applyTemplate(registryData.templates[0]);
+      }
+      isDirty = true;
+    }
+
+    function clearForm() {
+      document.getElementById('ruleActive').checked = true;
+      document.getElementById('ruleName').value = '';
+      document.getElementById('ruleAction').value = '';
+      document.getElementById('triggerType').value = 'Time (Minutes)';
+      document.getElementById('ruleCondition').value = '';
+      onActionChange();
+      onTriggerTypeChange();
+    }
+
+    function applyTemplate(tpl) {
+      document.getElementById('ruleName').value = tpl.name;
+      document.getElementById('ruleAction').value = tpl.action;
+      document.getElementById('triggerType').value = tpl.triggerType;
+      document.getElementById('ruleCondition').value = tpl.condition || '';
+      document.getElementById('ruleActive').checked = (tpl.active !== false);
+
+      onActionChange();
+      onTriggerTypeChange();
+
+      var cfgInput = document.getElementById('triggerConfig');
+      if (cfgInput) cfgInput.value = tpl.triggerConfig;
+
+      parseAndSetParameters(tpl.parameters, tpl.action);
+      markDirty();
+    }
+
+    function onActionChange() {
+      var actionKey = document.getElementById('ruleAction').value;
+      var actionDef = registryData && registryData.actions ? registryData.actions[actionKey] : null;
+      var descEl = document.getElementById('actionDesc');
+      var container = document.getElementById('parametersContainer');
+
+      if (!actionDef) {
+        descEl.textContent = 'Select an action to view parameters.';
+        container.innerHTML = '<div style="font-size:11px; color:var(--text-muted); font-style:italic;">Select an action above to configure parameters.</div>';
+        currentParamValues = {};
+        updateParamPreview();
+        return;
+      }
+
+      descEl.textContent = actionDef.description || '';
+      container.innerHTML = '';
+      currentParamValues = {};
+      var schema = actionDef.parametersSchema || {};
+
+      for (var paramId in schema) {
+        var pDef = schema[paramId];
+        currentParamValues[paramId] = pDef.defaultValue;
+
+        var item = document.createElement('div');
+        item.className = 'param-item';
+
+        var lbl = document.createElement('span');
+        lbl.className = 'param-label';
+        lbl.textContent = pDef.parameterLabel || paramId;
+        item.appendChild(lbl);
+
+        if (pDef.description) {
+          var hint = document.createElement('span');
+          hint.className = 'param-hint';
+          hint.textContent = pDef.description;
+          item.appendChild(hint);
+        }
+
+        if (pDef.valueType === 'Boolean') {
+          var sel = document.createElement('select');
+          sel.id = 'param_' + paramId;
+          sel.innerHTML = '<option value="Yes">Yes</option><option value="No">No</option>';
+          sel.value = pDef.defaultValue ? 'Yes' : 'No';
+          sel.onchange = (function(p) { return function() { onParamInput(p, this.value === 'Yes'); }; })(paramId);
+          item.appendChild(sel);
+        } else if (pDef.valueType === 'Number') {
+          var numIn = document.createElement('input');
+          numIn.type = 'number';
+          numIn.id = 'param_' + paramId;
+          numIn.value = pDef.defaultValue;
+          numIn.oninput = (function(p) { return function() { onParamInput(p, Number(this.value)); }; })(paramId);
+          item.appendChild(numIn);
+        } else {
+          var txt = document.createElement('input');
+          txt.type = 'text';
+          txt.id = 'param_' + paramId;
+          txt.value = Array.isArray(pDef.defaultValue) ? pDef.defaultValue.join(', ') : (pDef.defaultValue || '');
+          txt.oninput = (function(p) { return function() { onParamInput(p, this.value); }; })(paramId);
+          item.appendChild(txt);
+        }
+
+        container.appendChild(item);
+      }
+
+      updateParamPreview();
+      markDirty();
+    }
+
+    function onParamInput(paramId, value) {
+      currentParamValues[paramId] = value;
+      updateParamPreview();
+      markDirty();
+    }
+
+    function parseAndSetParameters(paramStr, actionKey) {
+      if (!registryData || !registryData.actions) return;
+      var actionDef = registryData.actions[actionKey];
+      if (!actionDef) return;
+
+      var schema = actionDef.parametersSchema || {};
+      currentParamValues = {};
+
+      for (var k in schema) {
+        currentParamValues[k] = schema[k].defaultValue;
+      }
+
+      if (paramStr && typeof paramStr === 'string') {
+        var pairs = paramStr.split(';');
+        pairs.forEach(function(pair) {
+          var delim = pair.indexOf('=');
+          if (delim === -1) delim = pair.indexOf(':');
+          if (delim !== -1) {
+            var key = pair.slice(0, delim).trim();
+            var val = pair.slice(delim + 1).trim();
+            if (schema[key]) {
+              if (schema[key].valueType === 'Boolean') {
+                currentParamValues[key] = (val.toLowerCase() === 'yes' || val.toLowerCase() === 'true');
+              } else if (schema[key].valueType === 'Number') {
+                currentParamValues[key] = Number(val);
+              } else {
+                currentParamValues[key] = val;
+              }
+            } else {
+              currentParamValues[key] = val;
+            }
+          }
+        });
+      }
+
+      for (var p in currentParamValues) {
+        var el = document.getElementById('param_' + p);
+        if (el) {
+          if (typeof currentParamValues[p] === 'boolean') {
+            el.value = currentParamValues[p] ? 'Yes' : 'No';
+          } else {
+            el.value = currentParamValues[p];
+          }
+        }
+      }
+
+      updateParamPreview();
+    }
+
+    function updateParamPreview() {
+      var parts = [];
+      for (var k in currentParamValues) {
+        var v = currentParamValues[k];
+        var s = (typeof v === 'boolean') ? (v ? 'Yes' : 'No') : String(v);
+        parts.push(k + '=' + s);
+      }
+      var str = parts.join('; ');
+      document.getElementById('paramPreview').textContent = str || '(None)';
+    }
+
+    function onTriggerTypeChange() {
+      var tType = document.getElementById('triggerType').value;
+      var container = document.getElementById('triggerConfigContainer');
+      var label = document.getElementById('triggerConfigLabel');
+      var hint = document.getElementById('triggerConfigHint');
+
+      if (tType === 'Time (Minutes)') {
+        label.textContent = 'Interval (Minutes) *';
+        container.innerHTML = '<input type="number" id="triggerConfig" min="5" max="1440" value="15" oninput="markDirty()">';
+        hint.textContent = 'Runs every X minutes via Heartbeat.';
+      } else if (tType === 'Time (Days)') {
+        label.textContent = 'Interval (Days) *';
+        container.innerHTML = '<input type="number" id="triggerConfig" min="1" max="365" value="3" oninput="markDirty()">';
+        hint.textContent = 'Runs every X days during maintenance.';
+      } else if (tType === 'Event (Lifecycle)') {
+        label.textContent = 'Lifecycle Event *';
+        var sel = document.createElement('select');
+        sel.id = 'triggerConfig';
+        sel.onchange = markDirty;
+        for (var eKey in registryData.events) {
+          var ev = registryData.events[eKey];
+          var opt = document.createElement('option');
+          opt.value = eKey;
+          opt.textContent = ev.label;
+          sel.appendChild(opt);
+        }
+        container.innerHTML = '';
+        container.appendChild(sel);
+        hint.textContent = 'Runs when lifecycle event finishes.';
+      } else {
+        label.textContent = 'Trigger Config';
+        container.innerHTML = '<input type="text" id="triggerConfig" value="MANUAL" disabled>';
+        hint.textContent = 'Runs manually via menu or Run button.';
+      }
+      markDirty();
+    }
+
+    function saveRule() {
+      clearAlert();
+      var btn = document.getElementById('btnSave');
+      btn.disabled = true;
+      btn.innerHTML = '<div class="loading-spinner"></div> Saving...';
+      isSaving = true;
+
+      var ruleData = {
+        name: document.getElementById('ruleName').value,
+        action: document.getElementById('ruleAction').value,
+        triggerType: document.getElementById('triggerType').value,
+        triggerConfig: document.getElementById('triggerConfig') ? document.getElementById('triggerConfig').value : '',
+        condition: document.getElementById('ruleCondition').value,
+        active: document.getElementById('ruleActive').checked,
+        parameters: currentParamValues
+      };
+
+      google.script.run
+        .withSuccessHandler(function(res) {
+          btn.disabled = false;
+          btn.innerHTML = '<span id="saveBtnText">' + (document.getElementById('saveBtnText').textContent) + '</span>';
+          isSaving = false;
+          if (res.success) {
+            showAlert('Rule saved to row ' + (res.rowIndex || currentTargetRow) + '!', 'success');
+            isDirty = false;
+            pollSelection(true);
+          } else {
+            showAlert((res.errors || [res.message]).join('<br>'), 'error');
+          }
+        })
+        .withFailureHandler(function(err) {
+          btn.disabled = false;
+          btn.innerHTML = '<span id="saveBtnText">Save Rule</span>';
+          isSaving = false;
+          showAlert('Failed to save rule: ' + err.message, 'error');
+        })
+        .saveAutomationRule(ruleData, currentTargetRow);
+    }
+
+    function runCurrentRule() {
+      if (!currentTargetRow) return;
+      var btn = document.getElementById('btnRunNow');
+      btn.disabled = true;
+      btn.textContent = 'Running...';
+
+      google.script.run
+        .withSuccessHandler(function(res) {
+          btn.disabled = false;
+          btn.textContent = '▶ Run';
+          if (res.success) {
+            showAlert('Execution Result: ' + res.result, 'success');
+            pollSelection(true);
+          } else {
+            showAlert('Execution Error: ' + res.result, 'error');
+          }
+        })
+        .withFailureHandler(function(err) {
+          btn.disabled = false;
+          btn.textContent = '▶ Run';
+          showAlert('Execution failed: ' + err.message, 'error');
+        })
+        .executeRuleNow(currentTargetRow);
+    }
+
+    function deleteCurrentRule() {
+      if (!currentTargetRow || currentTargetRow < 3) return;
+      if (!confirm('Are you sure you want to delete rule at Row ' + currentTargetRow + '?')) return;
+
+      var btn = document.getElementById('btnDelete');
+      btn.disabled = true;
+
+      google.script.run
+        .withSuccessHandler(function(res) {
+          btn.disabled = false;
+          if (res.success) {
+            showAlert('Rule deleted.', 'success');
+            startNewRule();
+            pollSelection(true);
+          } else {
+            showAlert('Delete failed: ' + res.error, 'error');
+          }
+        })
+        .withFailureHandler(function(err) {
+          btn.disabled = false;
+          showAlert('Delete failed: ' + err.message, 'error');
+        })
+        .deleteAutomationRule(currentTargetRow);
+    }
+
+    function switchToAutomationSheet() {
+      google.script.run
+        .withSuccessHandler(function() {
+          pollSelection(true);
+        })
+        .activateAutomationRulesSheet();
+    }
+
+    function showAlert(msg, type) {
+      var banner = document.getElementById('alertBanner');
+      banner.className = 'alert-banner ' + type;
+      banner.innerHTML = msg;
+    }
+
+    function clearAlert() {
+      var banner = document.getElementById('alertBanner');
+      banner.className = 'alert-banner';
+      banner.innerHTML = '';
+    }
+  </script>
+</body>
+</html>

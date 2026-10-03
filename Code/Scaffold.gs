@@ -843,15 +843,18 @@ function scaffoldAutomation_(ss) {
   sh.setTabColor(tabColor);
   ensureDimensions_(sh, 50, 9);
 
-  // Row 1: Title Banner
-  sh.getRange('A1:I1').merge()
-    .setValue('⚡ FLIGHT LOG - AUTOMATION RULES ENGINE')
+  // Row 1: Title Banner (Unmerged to prevent frozen column pane collision)
+  try {
+    sh.getRange('A1:I1').breakApart();
+  } catch (breakErr) {}
+
+  sh.getRange('A1:I1')
     .setBackground(tabColor)
     .setFontColor('#FFFFFF')
     .setFontWeight('bold')
     .setFontSize(11)
-    .setHorizontalAlignment('center')
     .setVerticalAlignment('middle');
+  sh.getRange('A1').setValue('⚡ FLIGHT LOG - AUTOMATION RULES ENGINE');
   sh.setRowHeight(1, 32);
 
   // Row 2: Headers

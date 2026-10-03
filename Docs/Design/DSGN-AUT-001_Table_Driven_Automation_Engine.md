@@ -549,23 +549,28 @@ sequenceDiagram
 
 ---
 
-### 3.8 Rule Builder Modal Dialog (`AutomationDialog.html`)
+### 3.8 Interactive Rule Builder: Sidebar & Modal Dialog
 
-An intuitive, interactive modal wizard:
+The Table-Driven Automation Engine provides two complementary user interfaces for creating and modifying rules:
 
-1. **Dual Operating Modes**:
-   * **Create Mode (Default)**: Opens blank or with a template selected. Appends a new row to `Automation_Rules`.
-   * **Edit Mode (Context-Aware)**: If opened while a rule row is selected on `Automation_Rules` (Row 3+), loads that rule's data and updates that row in place upon saving.
-2. **Template Preset Picker**:
-   * Top dropdown: `[ Select from Predefined Templates ▾ ]` populates fields instantly from `AUTOMATION_REGISTRY.templates`.
-3. **Dynamic Schema-Driven Form Generation**:
-   * Form fields under **Section 3 (Action Parameters)** are rendered dynamically via JavaScript based on the selected Action's `parametersSchema`.
-   * Filtered strictly to display actions where `actionAvailable === true`.
-4. **Live "Validate Rule" Engine**:
-   * Invokes `google.script.run.validateAutomationRule(ruleData)`.
-   * Checks parameter types and boundary ranges; displays green/red status banner with generated semicolon serialization.
-5. **Semicolon Serialization & Save**:
-   * Serializes inputs to `Key=Val;` string and writes to the sheet via `saveAutomationRule(ruleData, targetRowIndex)`.
+#### 1. Interactive Automation Sidebar (`AutomationSidebar.html`) — Recommended Workflow
+A docked 300px-wide sidebar on the right side of the screen that remains active alongside the spreadsheet:
+* **Active-Row Tracking**: Uses client-side selection polling (`getActiveAutomationContext_()`) to dynamically inspect the pilot's cursor in the `Automation_Rules` sheet:
+  * When on Row 3..N with an existing rule: Loads the rule's details for instant editing and testing (`Row N (Editing)`).
+  * When on a blank row or clicking `[ + New Rule ]`: Clears the form and targets the row for creation (`Row N (New)`).
+  * When navigating away from `Automation_Rules`: Shows a context notice prompting the pilot to switch to `Automation_Rules` (with a one-click tab activation shortcut).
+* **Single-Column Collapsible Accordions**:
+  1. **Predefined Templates**: Quick-pick chips (`[ 📋 Watch Folders ]`, `[ 📋 Clean Logs ]`, `[ 📋 Process Queue ]`).
+  2. **Rule & Action**: Name, action dropdown (filtered to `actionAvailable: true`), category badge, and description.
+  3. **Trigger & Schedule**: Dynamic interval/event selector, guard condition expression.
+  4. **Parameters**: Schema-driven inputs generated dynamically for the selected action + live serialized preview box.
+* **Sticky Bottom Action Bar**:
+  * `[ Save Rule ]`: Writes serialized parameters and rule settings directly to the target row.
+  * `[ ▶ Run ]`: Immediately triggers execution of the current rule for rapid validation.
+  * `[ 🗑 Delete ]`: Deletes the selected rule row.
+
+#### 2. Rule Builder Modal Dialog (`AutomationDialog.html`)
+An alternative centered modal wizard (760x680px) for dedicated configuration sessions with live validation previews.
 
 ---
 

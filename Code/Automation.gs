@@ -719,3 +719,97 @@ function deleteAutomationRule(rowIndex) {
   SpreadsheetApp.flush();
   return { success: true };
 }
+
+/**
+ * Retrieves the current selection and context for the Automation Sidebar.
+ * @return {Object} Sidebar context payload
+ */
+function getActiveAutomationContext_() {
+  var ss = SpreadsheetApp.getActive();
+  var sh = ss ? ss.getActiveSheet() : null;
+  var tabName = (typeof TABS !== 'undefined' && TABS.AUTOMATION_RULES) ? TABS.AUTOMATION_RULES.name : 'Automation_Rules';
+
+  var isAutomation = (sh && sh.getName() === tabName);
+  var currentSheet = sh ? sh.getName() : '';
+
+  var ruleSh = ss ? ss.getSheetByName(tabName) : null;
+  var nextBlankRow = 3;
+  if (ruleSh) {
+    var lastRow = ruleSh.getLastRow();
+    if (lastRow >= 3) {
+      var names = ruleSh.getRange(3, 2, lastRow - 2, 1).getValues();
+      var foundBlank = false;
+      for (var i = 0; i < names.length; i++) {
+        if (!names[i][0] || !String(names[i][0]).trim()) {
+          nextBlankRow = i + 3;
+          foundBlank = true;
+          break;
+        }
+      }
+      if (!foundBlank) {
+        nextBlankRow = lastRow + 1;
+      }
+    }
+  }
+
+  var activeRow = 3;
+  var ruleData = null;
+
+  if (isAutomation && sh) {
+    var activeCell = sh.getActiveCell();
+    activeRow = activeCell ? activeCell.getRow() : 3;
+
+    if (activeRow >= 3 && activeRow <= sh.getLastRow()) {
+      var row = sh.getRange(activeRow, 1, 1, 9).getValues()[0];
+      var nameVal = String(row[1] || '').trim();
+      if (nameVal) {
+        ruleData = {
+          rowIndex: activeRow,
+          active: String(row[0]).trim().toLowerCase() === 'yes',
+          name: nameVal,
+          action: String(row[2] || '').trim(),
+          triggerType: String(row[3] || 'Time (Minutes)').trim(),
+          triggerConfig: row[4],
+          condition: String(row[5] || '').trim(),
+          parameters: String(row[6] || '').trim(),
+          lastRun: row[7],
+          lastResult: row[8]
+        };
+      }
+    }
+  }
+
+  return {
+    isAutomationSheet: isAutomation,
+    currentSheet: currentSheet,
+    activeRow: activeRow,
+    hasRule: !!(ruleData && ruleData.name),
+    rule: ruleData,
+    nextBlankRow: nextBlankRow,
+    actions: AUTOMATION_REGISTRY.getAvailableActions(),
+    triggers: AUTOMATION_REGISTRY.triggers,
+    events: AUTOMATION_REGISTRY.events,
+    templates: AUTOMATION_REGISTRY.getTemplates()
+  };
+}
+
+/**
+ * Public RPC Gateway for the Automation Sidebar to inspect active row selection.
+ */
+function getActiveAutomationContext() {
+  return getActiveAutomationContext_();
+}
+
+/**
+ * Activates the Automation_Rules sheet tab in the active spreadsheet.
+ */
+function activateAutomationRulesSheet() {
+  var ss = SpreadsheetApp.getActive();
+  var tabName = (typeof TABS !== 'undefined' && TABS.AUTOMATION_RULES) ? TABS.AUTOMATION_RULES.name : 'Automation_Rules';
+  var sh = ss ? ss.getSheetByName(tabName) : null;
+  if (sh) {
+    sh.activate();
+  }
+}
+
+

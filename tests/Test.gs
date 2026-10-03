@@ -1293,6 +1293,14 @@ function testAutomationEngine_() {
     return { module: 'AutomationEngine', error: 'Automation_Rules components missing from SYSTEM_MANIFEST' };
   }
 
+  // 9. Sidebar RPC gateways
+  if (typeof getActiveAutomationContext !== 'function' || typeof activateAutomationRulesSheet !== 'function') {
+    return { module: 'AutomationEngine', error: 'Sidebar context RPCs missing' };
+  }
+  if (typeof showAutomationSidebar !== 'function') {
+    return { module: 'AutomationEngine', error: 'showAutomationSidebar missing from Code.gs' };
+  }
+
   return { module: 'AutomationEngine', idx: true };
 }
 

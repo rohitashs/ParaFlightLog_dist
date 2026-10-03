@@ -58,7 +58,9 @@ function onOpen(e) {
         .addSubMenu(ui.createMenu('Data Backup')
             .addItem('Backup System Sheets', 'backupSystemSheets'))
         .addSubMenu(ui.createMenu('Automation & Services')
-            .addItem('⚡ Automation Rule Builder...', 'showAutomationRuleBuilder')
+            .addItem('⚡ Automation Assistant (Sidebar)...', 'showAutomationSidebar')
+            .addItem('Automation Rule Builder (Modal)...', 'showAutomationRuleBuilder')
+            .addSeparator()
             .addItem('Toggle Master Heartbeat (Start/Stop)...', 'toggleMasterHeartbeat')
             .addItem('Run Master Heartbeat Now', 'runMasterHeartbeatNow')
             .addSeparator()
@@ -1240,6 +1242,16 @@ function showAutomationRuleBuilder() {
   }
 
   SpreadsheetApp.getUi().showModalDialog(html, '⚡ Automation Rule Builder');
+}
+
+/**
+ * Opens the Table-Driven Automation Assistant Sidebar.
+ */
+function showAutomationSidebar() {
+  var tmpl = HtmlService.createTemplateFromFile('AutomationSidebar');
+  var html = tmpl.evaluate()
+    .setTitle('⚡ Automation Assistant');
+  SpreadsheetApp.getUi().showSidebar(html);
 }
 
 
