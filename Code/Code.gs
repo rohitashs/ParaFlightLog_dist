@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-10-02 23:47:08
+ * Updated: 2026-10-03 00:44:24
  * Test access verification: Verified GAS write access on 2026-09-25 08:26:00.
  * 
  * CORE MODULE: Orchestration Only.
@@ -656,6 +656,87 @@ function executeFlightMaintenanceRow(rowNum, opConfig) {
   var updated = [];
   var config = getParameters_();
 
+  // 0. Update from Linked IGC (CR-MNT-005) - Executes FIRST to feed fresh GPS telemetry
+  if (opConfig.reTelemetry) {
+    try {
+      var igcVal = String(getV('IGC File') || '');
+      var masterFolderId = cleanDriveId_(config.MASTER_LOG_FOLDER_ID);
+      var mFile = null;
+
+      var fNameMatch = igcVal.match(/,\s*"([^"]+)"\)/);
+      var rawFName = fNameMatch ? fNameMatch[1] : igcVal;
+      var fileIdMatch = igcVal.match(/id=([a-zA-Z0-9_-]+)/);
+
+      if (fileIdMatch && fileIdMatch[1]) {
+        try { mFile = DriveApp.getFileById(fileIdMatch[1]); } catch(e) {}
+      }
+      if (!mFile && masterFolderId && rawFName) {
+        try {
+          var fld = DriveApp.getFolderById(masterFolderId);
+          var mFiles = fld.getFilesByName(rawFName);
+          if (mFiles.hasNext()) mFile = mFiles.next();
+        } catch(eFld) {}
+      }
+
+      if (mFile) {
+        var mBlob = mFile.getBlob();
+        var mParsed = PARSER.parseIgc(mBlob.getDataAsString(), mFile.getName());
+        if (mParsed && mParsed.fixes && mParsed.fixes.length > 5) {
+          if (mParsed.meta && mParsed.meta.dateIso) setV('Date', mParsed.meta.dateIso);
+          
+          var pTz = String(getV('Time Zone') || 'UTC');
+          var timeFmt = config.TIME_FORMAT || 'HH:mm';
+          var sTimeTz = GEO.formatInTimezone(new Date(mParsed.stats.startTime * 1000), pTz, timeFmt);
+          setV('Launch Time', sTimeTz);
+
+          var eTimeSec = mParsed.stats.endTime;
+          if (!eTimeSec || isNaN(eTimeSec)) eTimeSec = mParsed.stats.startTime + mParsed.stats.durationSec;
+          var eTimeTz = GEO.formatInTimezone(new Date(eTimeSec * 1000), pTz, timeFmt);
+          setV('Landing Time', eTimeTz);
+
+          var mDurMin = Math.round(mParsed.stats.durationSec / 60);
+          var mDurStr = Math.floor(mDurMin / 60) + ':' + ('0' + (mDurMin % 60)).slice(-2);
+          setV('Flight Duration', mDurStr);
+
+          if (mParsed.stats.totalDistance) setV('Track Length (km)', (mParsed.stats.totalDistance / 1000).toFixed(1));
+          if (mParsed.stats.straightDistance) setV('Straight Dist (km)', (mParsed.stats.straightDistance / 1000).toFixed(1));
+
+          if (mParsed.stats.maxAlt !== undefined) setV('Max Alt (m)', Math.round(mParsed.stats.maxAlt));
+          if (mParsed.stats.minAlt !== undefined) setV('Min Alt (m)', Math.round(mParsed.stats.minAlt));
+          if (mParsed.stats.altGain !== undefined) setV('Total Height Gain (m)', Math.round(mParsed.stats.altGain));
+          if (mParsed.stats.maxClimb !== undefined) setV('Max Ascent (m/s)', mParsed.stats.maxClimb.toFixed(1));
+          if (mParsed.stats.maxSink !== undefined) setV('Max Descent (m/s)', mParsed.stats.maxSink.toFixed(1));
+          if (mParsed.stats.maxSpeed !== undefined) setV('Max Groundspeed (km/h)', Math.round(mParsed.stats.maxSpeed));
+          if (mParsed.stats.avgSpeed !== undefined) setV('Avg Groundspeed (km/h)', Math.round(mParsed.stats.avgSpeed));
+
+          var firstFix = mParsed.fixes[0];
+          var lastFix = mParsed.fixes[mParsed.fixes.length - 1];
+          if (firstFix) {
+            setV('Launch Alt (m)', Math.round(firstFix.alt));
+            setV('Launch Lat', firstFix.lat.toFixed(5));
+            setV('Launch Lon', firstFix.lon.toFixed(5));
+          }
+          if (lastFix) {
+            setV('Landing Alt (m)', Math.round(lastFix.alt));
+            setV('Landing Lat', lastFix.lat.toFixed(5));
+            setV('Landing Lon', lastFix.lon.toFixed(5));
+          }
+
+          try {
+            var rawBytes = mBlob.getBytes();
+            var dBytes = Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, rawBytes);
+            var mHash = dBytes.map(function(b) { return ('0' + (b & 0xFF).toString(16)).slice(-2); }).join('');
+            setV('IGC Hash', mHash);
+          } catch(hErr) {}
+
+          updated.push('IGC Telemetry');
+        }
+      }
+    } catch (telErr) {
+      console.warn('Maintenance IGC Re-Telemetry error row ' + rowNum, telErr);
+    }
+  }
+
   // 1. Weather Backfill (RQ-SCR-004)
   if (opConfig.weather) {
     try {
@@ -902,7 +983,7 @@ function executeFlightMaintenanceRow(rowNum, opConfig) {
               setV('FAI Triangle (km)', (tri.valid && tri.dist) ? tri.dist.toFixed(1) : '');
               setV('Points (World)', best.pointsWorld ? best.pointsWorld.toFixed(1) : '');
               setV('Points (National)', best.score ? best.score.toFixed(1) : '');
-              setV('Closed?', tri.closed ? 'Yes' : 'No');
+              setV('Closed?', tri.closed ? 'Y' : 'N');
               updated.push('Scoring');
             }
           }
@@ -910,6 +991,24 @@ function executeFlightMaintenanceRow(rowNum, opConfig) {
       }
     } catch (pErr) {
       console.warn('Maintenance Physics/Scoring error row ' + rowNum, pErr);
+    }
+  }
+
+  // 5. Update Auto Summary (CR-MNT-005) - Executes LAST to capture all updated metrics
+  if (opConfig.summary) {
+    try {
+      var sSite = getV('Launch Site') || getV('Launch Town') || '';
+      var sDur = getV('Flight Duration');
+      var sDist = getV('Track Length (km)');
+      var sAlt = getV('Max Alt (m)');
+      var sType = getV('Flight Type') || 'Free Fly';
+      var newSummary = buildAutoSummary_(sSite, sDur, sDist, sAlt, sType);
+      if (newSummary) {
+        setV('Auto Summary', newSummary);
+        updated.push('Auto Summary');
+      }
+    } catch (sumErr) {
+      console.warn('Maintenance Auto Summary error row ' + rowNum, sumErr);
     }
   }
 
@@ -955,7 +1054,15 @@ function sortFlightsByDate_() {
     // Sort only actual flight rows (from minRow to maxRow)
     var numRows = maxRow - minRow + 1;
     var dataRange = sh.getRange(minRow, 1, numRows, lastCol);
-    dataRange.sort(sortSpecs);
+    try {
+      dataRange.sort(sortSpecs);
+    } catch (sErr) {
+      console.warn('Range sort warning, attempting filter sort:', sErr.message);
+      var flt = sh.getFilter();
+      if (flt) {
+        flt.sort(dateCol, false);
+      }
+    }
   }
 
   // Re-apply Flight No formula only to actual flight rows (Batch 2D array write - 1 API call instead of 500)
@@ -975,6 +1082,13 @@ function sortFlightsByDate_() {
     applyFlightsValidation_(sh);
   } catch (eVld) {
     console.warn('Validation expansion warning in sortFlightsByDate_:', eVld);
+  }
+
+  // Ensure native filter is anchored at Row 4
+  try {
+    if (typeof applyFlightsFilter_ === 'function') applyFlightsFilter_(sh);
+  } catch (eFlt) {
+    console.warn('Filter maintenance warning in sortFlightsByDate_:', eFlt);
   }
 
   LOG.write('SORT_LOGBOOK', '[COMPLETE] Logbook sorted chronologically and flight numbers re-indexed', actualFlights.length + ' flight(s) sequenced');

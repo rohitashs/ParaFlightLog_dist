@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-10-02 23:47:08
+ * Updated: 2026-10-03 00:44:24
  */
 /**
  * Paragliding Flight Log v2.0 - Scaffolding & Setup
@@ -644,10 +644,10 @@ function scaffoldConfig_(ss) {
   var rngCat = eqName + '!$' + cCat + '$3:$' + cCat;
   var rngRet = eqName + '!$' + cRet + '$3:$' + cRet;
 
-  sh.getRange('K3').setFormula('=IFERROR(SORT(FILTER(' + rngId + ', ' + rngCat + '="Wing", ' + rngRet + '=FALSE)), "")');
-  sh.getRange('L3').setFormula('=IFERROR(SORT(FILTER(' + rngId + ', ' + rngCat + '="Harness", ' + rngRet + '=FALSE)), "")');
-  sh.getRange('M3').setFormula('=IFERROR(SORT(FILTER(' + rngId + ', ' + rngCat + '="Reserve", ' + rngRet + '=FALSE)), "")');
-  sh.getRange('N3').setFormula('=IFERROR(SORT(FILTER(' + rngId + ', ' + rngCat + '="Other", ' + rngRet + '=FALSE)), "")');
+  sh.getRange('K3').setFormula('=IFERROR(SORT(FILTER(' + rngId + ', ' + rngCat + '="Wing", (' + rngRet + '<>"Y"))), "")');
+  sh.getRange('L3').setFormula('=IFERROR(SORT(FILTER(' + rngId + ', ' + rngCat + '="Harness", (' + rngRet + '<>"Y"))), "")');
+  sh.getRange('M3').setFormula('=IFERROR(SORT(FILTER(' + rngId + ', ' + rngCat + '="Reserve", (' + rngRet + '<>"Y"))), "")');
+  sh.getRange('N3').setFormula('=IFERROR(SORT(FILTER(' + rngId + ', ' + rngCat + '="Other", (' + rngRet + '<>"Y"))), "")');
 
   // Register Native Google Sheets Named Ranges for Lookups
   registerNamedRange_(ss, 'LOOKUP_EQUIPMENT_CATS', sh.getRange('E3:E'));
@@ -705,11 +705,12 @@ function scaffoldEquipment_(ss) {
     sh.getRange(2, 1, 1, head.length).setValues([head]);
     sh.getRange(2, 1, 1, head.length).setFontWeight('bold').setBackground('#E0F7FA').setBorder(true, true, true, true, true, true);
     
-    // Checkboxes (G=Default?, H=Retired?) - Limit to dataEndRow
+    // Y/N Dropdowns (G=Default?, H=Retired?) - Limit to dataEndRow
     var limit = TABS.EQUIPMENT.dataEndRow;
     var rows = limit - 2; 
     if (rows > 0) {
-       sh.getRange(3, 7, rows, 2).insertCheckboxes(); 
+       var ynRule = SpreadsheetApp.newDataValidation().requireValueInList(['Y', 'N'], true).setAllowInvalid(true).build();
+       sh.getRange(3, 7, rows, 2).setDataValidation(ynRule); 
     }
   
     sh.setFrozenRows(2);
@@ -922,6 +923,7 @@ function scaffoldFlights_(ss) {
   SpreadsheetApp.flush();
   applyFlightsValidation_(sh);
   applyFlightsGuardrails_(sh);
+  applyFlightsFilter_(sh);
   registerSheetId_(ss, 'FLIGHTS', sh);
 }
 
@@ -1037,9 +1039,9 @@ function applyFlightsValidation_(sh) {
     }
   }
   
-  // Closed? (Checkbox)
+  // Closed? (Dropdown)
   if (map['Closed?']) {
-     var rule = SpreadsheetApp.newDataValidation().requireValueInList(['Yes', 'No'], true).setAllowInvalid(true).build();
+     var rule = SpreadsheetApp.newDataValidation().requireValueInList(['Y', 'N'], true).setAllowInvalid(true).build();
      sh.getRange(startRow, map['Closed?'], valRows, 1).setDataValidation(rule);
   }
   
@@ -1063,9 +1065,10 @@ function applyEquipmentValidation_(sh) {
     var rule = SpreadsheetApp.newDataValidation().requireValueInRange(range, true).setAllowInvalid(true).build();
     sh.getRange(dataStart, 1, numRows, 1).setDataValidation(rule);
     
-    // Retired? Checkbox (Col H)
-    var retiredRule = SpreadsheetApp.newDataValidation().requireValueInList(['TRUE', 'FALSE'], true).setAllowInvalid(true).build();
-    sh.getRange(dataStart, 8, numRows, 1).setDataValidation(retiredRule);
+    // Default? (Col 7 / G) and Retired? (Col 8 / H) Y/N Dropdowns
+    var ynRule = SpreadsheetApp.newDataValidation().requireValueInList(['Y', 'N'], true).setAllowInvalid(true).build();
+    sh.getRange(dataStart, 7, numRows, 1).setDataValidation(ynRule);
+    sh.getRange(dataStart, 8, numRows, 1).setDataValidation(ynRule);
   }
 }
 
@@ -1725,6 +1728,35 @@ function applyFlightsGuardrails_(sh) {
   if (maxRows >= 5) {
     applySoftGuardrail_(sh, sh.getRange(5, flightNoCol, maxRows - 4, 1), 'Guardrail: Flights Auto-Numbering Formulas');
   }
+
+  // Ensure IGC Hash column is hidden and protected from accidental manual tampering
+  var hashCol = map['IGC Hash'];
+  if (hashCol) {
+    try { sh.hideColumns(hashCol); } catch (eH) {}
+    applySoftGuardrail_(sh, sh.getRange(1, hashCol, maxRows, 1), 'Guardrail: IGC Hash Deduplication Key');
+  }
+}
+
+/**
+ * Anchors a native Google Sheets filter on Row 4 of the Flights sheet.
+ */
+function applyFlightsFilter_(sh) {
+  if (!sh) return;
+  try {
+    var maxRows = Math.max(sh.getMaxRows(), 100);
+    var lastCol = sh.getLastColumn();
+    if (lastCol < 1) return;
+
+    var existingFilter = sh.getFilter();
+    if (existingFilter) {
+      var filterRange = existingFilter.getRange();
+      if (filterRange.getRow() === 4) return;
+      existingFilter.remove();
+    }
+    sh.getRange(4, 1, maxRows - 3, lastCol).createFilter();
+  } catch (e) {
+    console.warn('applyFlightsFilter_:', e.message);
+  }
 }
 
 /**
@@ -1880,10 +1912,10 @@ var AtomicUpdaters = {
     var rngCat = eqName + '!$' + cCat + '$3:$' + cCat;
     var rngRet = eqName + '!$' + cRet + '$3:$' + cRet;
 
-    sh.getRange('K3').setFormula('=IFERROR(SORT(FILTER(' + rngId + ', ' + rngCat + '="Wing", ' + rngRet + '=FALSE)), "")');
-    sh.getRange('L3').setFormula('=IFERROR(SORT(FILTER(' + rngId + ', ' + rngCat + '="Harness", ' + rngRet + '=FALSE)), "")');
-    sh.getRange('M3').setFormula('=IFERROR(SORT(FILTER(' + rngId + ', ' + rngCat + '="Reserve", ' + rngRet + '=FALSE)), "")');
-    sh.getRange('N3').setFormula('=IFERROR(SORT(FILTER(' + rngId + ', ' + rngCat + '="Other", ' + rngRet + '=FALSE)), "")');
+    sh.getRange('K3').setFormula('=IFERROR(SORT(FILTER(' + rngId + ', ' + rngCat + '="Wing", (' + rngRet + '<>"Y"))), "")');
+    sh.getRange('L3').setFormula('=IFERROR(SORT(FILTER(' + rngId + ', ' + rngCat + '="Harness", (' + rngRet + '<>"Y"))), "")');
+    sh.getRange('M3').setFormula('=IFERROR(SORT(FILTER(' + rngId + ', ' + rngCat + '="Reserve", (' + rngRet + '<>"Y"))), "")');
+    sh.getRange('N3').setFormula('=IFERROR(SORT(FILTER(' + rngId + ', ' + rngCat + '="Other", (' + rngRet + '<>"Y"))), "")');
 
     // Register Native Google Sheets Named Ranges
     registerNamedRange_(ss, 'LOOKUP_EQUIPMENT_CATS', sh.getRange('E3:E'));
@@ -1928,8 +1960,9 @@ var SheetSpecialists = {
     }
     if (elements['Flights.guardrails']) {
       applyFlightsGuardrails_(sh);
-      logs.push('[Flights] Soft warning guardrails applied to formula sequence (headers unprotected for free grouping).');
+      logs.push('[Flights] Soft warning guardrails applied to formula sequence & hidden IGC Hash.');
     }
+    applyFlightsFilter_(sh);
   },
 
   updateDashboard: function(elements, ss, logs) {

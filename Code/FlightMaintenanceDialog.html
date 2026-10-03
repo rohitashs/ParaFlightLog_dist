@@ -1,6 +1,6 @@
 <!--
  * Paragliding Flight Log v2.0
- * Updated: 2026-10-02 23:47:08
+ * Updated: 2026-10-03 00:44:24
  -->
 <!--
  * Paragliding Flight Log v2.0
@@ -151,6 +151,10 @@
         <div class="ops-card">
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 4px 12px;">
                 <label class="check-item">
+                    <input type="checkbox" id="op-retelemetry">
+                    <span><strong>Update from Linked IGC</strong> (Recalculate metrics)</span>
+                </label>
+                <label class="check-item">
                     <input type="checkbox" id="op-weather" checked>
                     <span><strong>Weather</strong> (Open-Meteo)</span>
                 </label>
@@ -169,6 +173,10 @@
                 <label class="check-item">
                     <input type="checkbox" id="op-scoring">
                     <span><strong>XC Scoring</strong> (Turnpoints, FAI)</span>
+                </label>
+                <label class="check-item">
+                    <input type="checkbox" id="op-summary" checked>
+                    <span><strong>Update Auto Summary</strong> (Title summary)</span>
                 </label>
                 <label class="check-item">
                     <input type="checkbox" id="op-sort">
@@ -304,18 +312,20 @@
 
         function getSelectedOps() {
             return {
+                reTelemetry: document.getElementById('op-retelemetry').checked,
                 weather: document.getElementById('op-weather').checked,
                 geo: document.getElementById('op-geo').checked,
                 xcontest: document.getElementById('op-xcontest').checked,
                 physics: document.getElementById('op-physics').checked,
                 scoring: document.getElementById('op-scoring').checked,
+                summary: document.getElementById('op-summary').checked,
                 sort: document.getElementById('op-sort').checked
             };
         }
 
         function startMaintenance(mode) {
             opConfig = getSelectedOps();
-            var hasAnyOp = opConfig.weather || opConfig.geo || opConfig.xcontest || opConfig.physics || opConfig.scoring || opConfig.sort;
+            var hasAnyOp = opConfig.reTelemetry || opConfig.weather || opConfig.geo || opConfig.xcontest || opConfig.physics || opConfig.scoring || opConfig.summary || opConfig.sort;
             if (!hasAnyOp) {
                 alert('Please select at least one operation to perform.');
                 return;

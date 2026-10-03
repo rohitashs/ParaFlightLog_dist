@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-10-02 23:47:08
+ * Updated: 2026-10-03 00:44:24
  * 
  * MODULE: Ingestion Service
  * Handles Flight Log Parsing, Analysis/Scoring Orchestration, Geo-enrichment,
@@ -840,7 +840,7 @@ function uiAddManualFlight_() {
   setVal('Auto Summary', 'Manual Entry');
   setVal('Notes', '');
   setVal('Flight Type', 'Free Fly');
-  setVal('Closed?', 'No');
+  setVal('Closed?', 'N');
   setVal('Date', dateObj);
   setVal('Time Zone', Session.getScriptTimeZone());
   setVal('Launch Time', formatTime_(dateObj.getTime()/1000));
@@ -904,11 +904,12 @@ function buildFlightRowArray_(data, fileId, outerName, status, notes, analysis, 
   var fNoColLetter = getColLetter_(map, 'Flight No', 'C');
   var flightNoFormula = '=IFERROR(MAX(INDIRECT("' + fNoColLetter + '" & (ROW()+1) & ":' + fNoColLetter + '")), 0) + 1';
   
-  // Auto Summary
+  // Auto Summary: "Site, Duration, Track Dist, Max Altitude, Flight Type"
   var site = geo.ls || (geo.l && geo.l.town) || '';
-  var durFriendly = friendlyDuration_(data.stats.durationSec);
-  var maxAlt = (analysis && analysis.stats && analysis.stats.maxAlt) ? analysis.stats.maxAlt.toFixed(0) + 'm' : '';
-  var autoSummary = durFriendly + ' ' + (scoring.flightType || 'Free Fly') + (site ? ' at ' + site : '') + ' ' + maxAlt;
+  var trackDistKm = (data.stats.totalDistance / 1000);
+  var maxAltM = (analysis && analysis.stats && analysis.stats.maxAlt);
+  var fType = scoring.flightType || 'Free Fly';
+  var autoSummary = buildAutoSummary_(site, data.stats.durationSec, trackDistKm, maxAltM, fType);
 
   // Times
   var timeFmt = (config && config.TIME_FORMAT) || 'HH:mm';
@@ -997,7 +998,7 @@ function buildFlightRowArray_(data, fileId, outerName, status, notes, analysis, 
   setVal('FAI Triangle (km)', (tri.valid && tri.dist) ? tri.dist.toFixed(1) : '');
   setVal('Points (World)', best.pointsWorld ? best.pointsWorld.toFixed(1) : '');
   setVal('Points (National)', best.score ? best.score.toFixed(1) : '');
-  setVal('Closed?', tri.closed ? 'Yes' : 'No');
+  setVal('Closed?', tri.closed ? 'Y' : 'N');
   
   var aStats = (analysis && analysis.stats) || {};
   setVal('Max Alt (m)', (aStats.maxAlt || 0).toFixed(1));

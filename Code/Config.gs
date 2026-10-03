@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-10-02 23:47:08
+ * Updated: 2026-10-03 00:44:24
  * 
  * MODULE: Configuration
  * 
@@ -159,9 +159,77 @@ var TABS = {
      * --------------------------------------------------------------------------------------
      */
     colNotes: {
-      'FlightID': 'Click to view flight',
-      'IGC File': 'Click to download igc',
-      'XContest': 'Click to view on XContest'
+      'FlightID': 'Unique flight identifier. Click to view 3D flight track in SeeYou Cloud.',
+      'Status': 'Flight validation state: Valid, Review?, Dup-Primary, Dup-Others, Invalid?, Remove. Dashboard KPIs count "Valid" flights.',
+      'Flight No': 'Sequential flight number from first flight to present. Automatically adjusts on sort.',
+      'Auto Summary': 'Concise human-readable flight summary: Site, Duration, Track Dist, Max Altitude, Flight Type.',
+      'IGC File': 'Click to download raw source IGC track file from Google Drive.',
+      'Notes': 'Pilot notes, manual observations, and paired duplicate cross-references [DupRef: ...].',
+      'Flight Type': 'Free Fly, XC, Soaring, Thermalling, Hike & Fly, Tandem, SIV/Acro, or Training.',
+      'Date': 'Local flight date (YYYY-MM-DD).',
+      'Time Zone': 'Local IANA timezone for takeoff location (e.g. America/Los_Angeles, Asia/Kolkata).',
+      'Launch Time': 'Local takeoff timestamp (HH:mm).',
+      'Landing Time': 'Local touchdown timestamp (HH:mm).',
+      'Flight Duration': 'Total airborne duration from takeoff to landing (HH:mm).',
+      'Track Length (km)': 'Cumulative distance flown through the air along the GPS track.',
+      'Straight Dist (km)': 'Direct straight-line distance from launch to landing.',
+      'Wing': 'Paraglider wing model used for this flight (managed in Equipment tab).',
+      'Harness': 'Harness model used for this flight (managed in Equipment tab).',
+      'Reserve 1': 'Primary reserve parachute (managed in Equipment tab).',
+      'Reserve 2': 'Secondary reserve parachute (managed in Equipment tab).',
+      'Other equipment': 'Instruments, cameras, or ballast used.',
+      'XContest': 'Direct flight link on XContest (e.g. XC#6952654) or claim deadline status ("Claim soon!" / "Expired").',
+      'XC Distance (km)': 'Optimized 3-turnpoint cross-country distance under league scoring rules.',
+      'XC Score': 'Competition score points: Distance * Multiplier (1.0x Free, 1.2x Flat/Out-and-Return, 1.4x FAI).',
+      'XC Flight Class': 'Geometric track classification: Free Flight, Flat Triangle, FAI Triangle, or Out-and-Return.',
+      'FAI Triangle (km)': 'Strict FAI triangle distance (shortest leg >= 28% total perimeter; 1.4x multiplier).',
+      'Points (World)': 'World contest scoring points.',
+      'Points (National)': 'National league contest scoring points.',
+      'Closed?': 'Triangle circuit closed back to launch within 20% gap (Y/N).',
+      'Max Alt (m)': 'Maximum altitude reached above mean sea level (MSL).',
+      'Min Alt (m)': 'Minimum altitude recorded during flight.',
+      'Total Height Gain (m)': 'Total cumulative altitude gained during climbs.',
+      'Max Ascent (m/s)': 'Maximum instantaneous vario climb rate.',
+      'Max Descent (m/s)': 'Maximum instantaneous vario sink rate.',
+      'Max Groundspeed (km/h)': 'Maximum GPS groundspeed.',
+      'Avg Groundspeed (km/h)': 'Average GPS groundspeed across the track.',
+      'Launch Alt (m)': 'Elevation of takeoff above mean sea level.',
+      'Launch Lat': 'Latitude coordinate of takeoff (decimal degrees).',
+      'Launch Lon': 'Longitude coordinate of takeoff (decimal degrees).',
+      'Launch Site': 'Nearest recognized paragliding takeoff site (Paragliding Earth / OSM).',
+      'Launch Town': 'Administrative town/city for launch location.',
+      'Launch Country': 'Country of launch location.',
+      'Launch Region': 'State/province/region of launch location.',
+      'Landing Alt (m)': 'Elevation of touchdown above mean sea level.',
+      'Landing Lat': 'Latitude coordinate of landing.',
+      'Landing Lon': 'Longitude coordinate of landing.',
+      'Landing Site': 'Nearest recognized paragliding landing site.',
+      'Landing Town': 'Administrative town/city for landing location.',
+      'Landing Country': 'Country of landing location.',
+      'Landing Region': 'State/province/region of landing location.',
+      'Wind@Launch': 'Surface 10m wind speed, cardinal direction, and gusts at takeoff.',
+      'Wind@Landing': 'Surface 10m wind speed, cardinal direction, and gusts at landing.',
+      'Cloud %': 'Total cloud cover percentage at flight time (0-100%).',
+      'Cloudbase': 'Estimated convective condensation level (MSL & AGL) via temperature/dewpoint spread.',
+      'Temp (C)': 'Ambient 2m air temperature in Celsius at launch.',
+      'Observations': 'WMO atmospheric condition description (e.g. Partly cloudy, Clear sky).',
+      'Thermal %': 'Percentage of flight time spent thermalling (turn rate > 8 deg/s and climb > 0.3 m/s).',
+      'Thermals Count': 'Total count of distinct thermal cores entered and climbed.',
+      'Thermal Avg (m/s)': 'Average climb rate inside thermal cores.',
+      'Thermal Best (m/s)': 'Best climb rate inside thermal cores.',
+      'Soar %': 'Percentage of flight time spent ridge soaring in figure-8 S-turns.',
+      'Efficiency': 'Height gain (m) per km of soaring track.',
+      'Glide %': 'Percentage of flight time spent in straight transitions between lift.',
+      'Glide L/D': 'Realized net lift-to-drag glide ratio during transitions.',
+      'Sink %': 'Percentage of flight time spent in heavy sink (< -2.5 m/s).',
+      'Sink Time': 'Total duration spent in heavy sink zones or rotor.',
+      'Validation Status': 'Automated heuristic check: Valid, Needs Review, or Invalid.',
+      'Val: Reason': 'Specific heuristic violation message explaining review flag.',
+      'Import File': 'Name of original source file imported.',
+      'Import ID': 'Drive file ID or transaction ID of import batch.',
+      'IGC Hash': 'MD5 content digest used for row-level duplicate detection (Internal System Key).',
+      'Timestamp': 'UTC timestamp when this flight record was created or modified.',
+      'Parser Ver': 'Version of IGC parser used to process telemetry.'
     },
     groups: [
       { 
@@ -233,7 +301,15 @@ var TABS = {
         visibleCols: 1, 
         collapsedRows: 1,
         color: '#CFD8DC', 
-        cols: ['Import File', 'Import ID', 'IGC Hash', 'Timestamp', 'Parser Ver'],
+        cols: ['Import File', 'Import ID', 'Timestamp', 'Parser Ver'],
+        editable: []
+      },
+      { 
+        name: 'System', 
+        visibleCols: 1, 
+        collapsedRows: 1,
+        color: '#CFD8DC', 
+        cols: ['IGC Hash'],
         editable: []
       }
     ]
@@ -390,8 +466,8 @@ var SYSTEM_MANIFEST = {
     // Flights
     'Flights.grid':        { version: 'v2.0-dim-2000x70',     tier: 'recommended' },
     'Flights.headers':     { version: 'v2.1-col-schema',       tier: 'mandatory' },
-    'Flights.notes':       { version: 'v2.1-col-tooltips',     tier: 'optional' },
-    'Flights.validations': { version: 'v2.1-soft-invalid',     tier: 'recommended' },
+    'Flights.notes':       { version: 'v2.2-comprehensive-tooltips', tier: 'optional' },
+    'Flights.validations': { version: 'v2.2-yn-closed-valid', tier: 'recommended' },
     'Flights.formulas':    { version: 'v2.1-flight-no-dynamic',tier: 'mandatory' },
     'Flights.guardrails':  { version: 'v2.2-formula-only',     tier: 'recommended' },
 
@@ -404,7 +480,7 @@ var SYSTEM_MANIFEST = {
     'Config.grid':         { version: 'v2.0-dim-60x14',        tier: 'recommended' },
     'Config.headers':      { version: 'v2.0-config-headers',   tier: 'optional' },
     'Config.parameters':   { version: 'v2.1-param-merge',      tier: 'mandatory' },
-    'Config.lookups':      { version: 'v2.1-native-sort-filter',tier: 'mandatory' },
+    'Config.lookups':      { version: 'v2.2-yn-filter',        tier: 'mandatory' },
     'Config.namedRanges':  { version: 'v2.1-lookup-ranges',    tier: 'mandatory' },
     'Config.validations':  { version: 'v2.0-config-validation',tier: 'recommended' },
     'Config.guardrails':   { version: 'v2.1-lookup-soft-warn', tier: 'recommended' },
@@ -412,7 +488,7 @@ var SYSTEM_MANIFEST = {
     // Equipment
     'Equipment.grid':      { version: 'v2.0-dim-100x13',       tier: 'recommended' },
     'Equipment.headers':   { version: 'v2.0-eq-schema',        tier: 'mandatory' },
-    'Equipment.validations':{ version: 'v2.0-eq-rules',        tier: 'recommended' },
+    'Equipment.validations':{ version: 'v2.1-yn-dropdowns',   tier: 'recommended' },
 
     // Reference Sheets
     'Pilot_Profile.keys':  { version: 'v2.0-profile-fields',   tier: 'recommended' },

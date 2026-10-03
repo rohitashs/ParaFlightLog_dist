@@ -1,6 +1,6 @@
 <!--
  * Paragliding Flight Log v2.0
- * Updated: 2026-10-02 23:47:08
+ * Updated: 2026-10-03 00:44:24
  -->
 <!--
  * Paragliding Flight Log v2.0
@@ -92,11 +92,11 @@
             margin-right: 6px;
         }
         .pill-valid { background-color: #4CAF50; }
-        .pill-review { background-color: #FDD835; }
+        .pill-review { background-color: #1E88E5; }
         .pill-dup-pri { background-color: #FFA000; }
         .pill-dup-oth { background-color: #FF7043; }
-        .pill-invalid { background-color: #9E9E9E; }
-        .pill-remove { background-color: #E53935; }
+        .pill-invalid { background-color: #E53935; }
+        .pill-remove { background-color: #757575; }
         .pill-blank { background-color: #FFFFFF; border: 1.5px dashed #9E9E9E; box-sizing: border-box; }
 
         .filter-grid {
@@ -278,12 +278,12 @@
             <div class="target-select-row">
                 <select id="target-status" class="target-select" onchange="onTargetStatusChange()">
                     <option value="" disabled selected>-- Select Target Status --</option>
-                    <option value="Valid">Valid (Green - Counted in Dashboard & Stats)</option>
-                    <option value="Review?">Review? (Yellow - Default for Unverified Logs)</option>
+                    <option value="Valid">Valid (Soft Green - Counted in Dashboard & Stats)</option>
+                    <option value="Review?">Review? (Soft Blue - Default for Unverified Logs)</option>
                     <option value="Dup-Primary">Dup-Primary (Gold - Preferred Duplicate)</option>
                     <option value="Dup-Others">Dup-Others (Orange - Backup Duplicate)</option>
-                    <option value="Invalid?">Invalid? (Gray - Problematic Track)</option>
-                    <option value="Remove">Remove (Red - Staged for Permanent Purge)</option>
+                    <option value="Invalid?">Invalid? (Soft Pink - Problematic Track)</option>
+                    <option value="Remove">Remove (Slate Gray - Staged for Permanent Purge)</option>
                 </select>
             </div>
         </div>

@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-10-02 23:47:08
+ * Updated: 2026-10-03 00:44:24
  * 
  * MODULE: Utilities (Math & Formatting)
  * Consolidated geospatial calculations (Haversine, Bearing, Angular Difference)
@@ -62,14 +62,58 @@ function angleDiff_(b1, b2) {
 }
 
 /**
- * Formats a duration in seconds into a human-friendly string (e.g. "45 min" or "1.5 hrs").
+ * Formats a duration in seconds into a human-friendly string (e.g. "45 min" or "1:30 hrs").
  * @param {number} sec Duration in seconds
  * @return {string} Friendly duration text
  */
 function friendlyDuration_(sec) {
   var m = Math.round(sec / 60);
   if (m < 60) return m + ' min';
-  return (m / 60).toFixed(1) + ' hrs';
+  return Math.floor(m / 60) + ':' + ('0' + (m % 60)).slice(-2) + ' hrs';
+}
+
+/**
+ * Synthesizes the concise flight title: "Site, Duration, Track Dist, Max Altitude, Flight Type"
+ * e.g. "Bir Billing, 1:30 hrs, 24.5 km, 3100 m, XC"
+ * Omits empty or missing components cleanly.
+ */
+function buildAutoSummary_(site, durationStrOrSec, trackDistKm, maxAltM, flightType) {
+  var parts = [];
+  if (site && String(site).trim()) parts.push(String(site).trim());
+  
+  var durStr = '';
+  if (typeof durationStrOrSec === 'number') {
+    durStr = friendlyDuration_(durationStrOrSec);
+  } else if (durationStrOrSec) {
+    durStr = String(durationStrOrSec).trim();
+    if (durStr.indexOf(':') !== -1) {
+      var p = durStr.split(':');
+      var h = parseInt(p[0], 10);
+      var m = parseInt(p[1], 10);
+      if (!isNaN(h) && !isNaN(m)) {
+        if (h > 0) {
+          durStr = h + ':' + ('0' + m).slice(-2) + ' hrs';
+        } else {
+          durStr = m + ' min';
+        }
+      }
+    }
+  }
+  if (durStr) parts.push(durStr);
+
+  if (trackDistKm !== undefined && trackDistKm !== null && trackDistKm !== '') {
+    var d = parseFloat(trackDistKm);
+    if (!isNaN(d) && d > 0) parts.push(d.toFixed(1) + ' km');
+  }
+
+  if (maxAltM !== undefined && maxAltM !== null && maxAltM !== '') {
+    var a = parseFloat(maxAltM);
+    if (!isNaN(a) && a > 0) parts.push(Math.round(a) + ' m');
+  }
+
+  if (flightType && String(flightType).trim()) parts.push(String(flightType).trim());
+
+  return parts.join(', ');
 }
 
 /**
@@ -176,6 +220,7 @@ UTILS.haversine = haversine_;
 UTILS.bearing = bearing_;
 UTILS.angleDiff = angleDiff_;
 UTILS.friendlyDuration = friendlyDuration_;
+UTILS.buildAutoSummary = buildAutoSummary_;
 UTILS.formatTime = formatTime_;
 UTILS.cleanDriveId = cleanDriveId_;
 UTILS.normalizeXcClass = normalizeXcClass_;
