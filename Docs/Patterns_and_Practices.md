@@ -205,6 +205,14 @@ Developing on this hybrid stack presents unique constraints and capabilities:
   2. **Synchronize the Workflows**: Update [`.agent/workflows/code_check.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/.agent/workflows/code_check.md) and [`.agent/workflows/doc_check.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/.agent/workflows/doc_check.md).
   3. **Zero False-Pass Gate**: Require that `node tools/code_check_audit.js` exit with code 0 as a mandatory prerequisite for certifying `/code_check`.
 
+### Pattern 19: Strict Separation of Production Runtime and Developer Tooling
+* **Problem**: Co-locating unit test suites, mock fixtures, static analyzers, and simulation scripts directly inside the production `Code/` directory causes them to be uploaded to Google Apps Script via `clasp push`. In Apps Script, all `.gs` files share a single, flat global scope without module encapsulation. Bloating the project with 50+ KB of synthetic fixtures and test runners wastes V8 container compilation time, slows down trigger cold starts, pollutes global namespaces, and exposes test endpoints to client-side RPC.
+* **Pattern**: Maintain a strict physical boundary between **Production Runtime Code** and **Developer Tooling**:
+  1. **Production Runtime (`Code/`)**: Strictly code required by the active Google Sheet, user dialogs, and automated triggers (`15 .gs`, `17 .html`, `1 appsscript.json`). Pushed via `clasp push`.
+  2. **Developer Testing & Simulation (`tests/`)**: Local and CI-only unit tests (`tests/Test.gs`), test fixtures, and mock assertions. Tracked in Git, never deployed to Google Apps Script.
+  3. **Audit & Build Scripts (`tools/`)**: Standalone Node.js analyzers (`tools/code_check_audit.js`), offline test runners (`tools/run_all_offline_tests.js`), and header updaters. Tracked in Git, never deployed to Google Apps Script.
+  4. **Defense-in-Depth Shield (`.claspignore`)**: Explicitly ignore test patterns (`**/*.test.*`, `**/Test.gs`, `tests/**`, `tools/**`, `Docs/**`, `Plans/**`), ensuring developer tooling can never be accidentally pushed.
+
 ---
 
 ## 7. Forbidden Code Smells & Anti-Patterns Checklist
@@ -222,5 +230,6 @@ Developing on this hybrid stack presents unique constraints and capabilities:
 | **Tightly Coupled Script-to-Sheet Assumptions** | Crashes production logbooks during dual-state lag. | Use tolerant fallbacks, lazy self-healing, and mandatory invariants. |
 | **Allowing Users to Disable Mandatory Invariants** | Leaves sheet with missing Named Ranges or broken formulas. | Enforce mandatory components automatically regardless of sheet gating. |
 | **Unverified Manual Audits (Rubber-Stamp PASS)** | Subjective review misses legacy names and manifest drift. | Enforce automated scanner (`tools/code_check_audit.js`) gate. |
+| **Co-locating Test/Audit Code in Production Runtime** | Pollutes global GAS scope, slows cold starts, bloats container. | Move test suites to `tests/` and tools to `tools/`; protect with `.claspignore`. |
 
 

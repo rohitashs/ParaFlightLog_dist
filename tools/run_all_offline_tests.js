@@ -45,7 +45,7 @@ eval(fs.readFileSync(path.join(codeDir, 'TimeBudget.gs'), 'utf8'));
 eval(fs.readFileSync(path.join(codeDir, 'QueueService.gs'), 'utf8'));
 eval(fs.readFileSync(path.join(codeDir, 'Scaffold.gs'), 'utf8'));
 eval(fs.readFileSync(path.join(codeDir, 'Code.gs'), 'utf8'));
-eval(fs.readFileSync(path.join(codeDir, 'Test.gs'), 'utf8'));
+eval(fs.readFileSync(path.join(rootDir, 'tests', 'Test.gs'), 'utf8'));
 
 function testTimeBudget_() {
   const budget = TimeBudgetService.create(5000);

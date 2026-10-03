@@ -40,7 +40,7 @@ This document defines the low-level **Code Organization**, **Algorithms**, and *
 9.  **Activity Logger (`Logger.gs`)**: Centralized Activity Logging engine (`DSGN-LOG-001`, `CR-LOG-004`). Provides tiered logging (`Brief`, `Normal`, `Debug`), conservative dual-threshold pruning, automated migration, and unified writes to the `Activity Logs` sheet.
 10. **Persistent Job Queue Service (`QueueService.gs`)**: Job manager operating on the `Automation_Queue` tab (`DSGN-UI-001`). Enqueues tasks, tracks progress, and saves serialized state without `PropertiesService` quota limits.
 11. **Time Budget Service (`TimeBudget.gs`)**: Universal 4.5-minute safety threshold manager (`TimeBudgetService`) preventing GAS 6-minute timeout aborts by committing data and scheduling self-continuation triggers.
-12. **Test Harness (`Test.gs`)**: Comprehensive offline and in-app automated unit test suite.
+12. **Test Harness (`tests/Test.gs`)**: Comprehensive offline unit test suite and regression runner (Pattern 19: Local & CI only, excluded from production GAS bundle via `.claspignore`).
 
 ---
 
@@ -326,8 +326,8 @@ Fixed Header Schema (Row 3=Category, Row 4=Name). Data starts Row 5.
 ### `XContest.gs` (XContest Verification)
 *   **`XContest.checkFlight(flightDateObj, flightDurationMin, flightStartTimeMin, config)`**: Probes direct flight URLs on XContest.org using UTC launch date and candidate start times (+/- 2 min tolerance). Extracts permanent database flight IDs (`fl=...`) to construct hyperlinked labels (`XC#...` or `XC-YYYYMMDD-HHMM`). If unmatched, evaluates against the 14-day competition deadline, returning `'Claim soon!'` (<= 14 days) or `'Expired'` (> 14 days).
 
-### `Test.gs`
-*   **`runAllTests()`**: Execution harness for unit tests.
+### `tests/Test.gs` (Developer Testing Harness)
+*   **`runAllTests()`**: Execution harness for unit and regression tests, executed locally via `node tools/run_all_offline_tests.js`. Excluded from Google Apps Script deployment per Pattern 19.
 
 ### `Weather.gs` (Historical & Forecast Weather Gateway)
 *   **`WEATHER.getEnrichment(launchFix, landFix, dateIso, startTimeSec, endTimeSec, config)`**: Main enrichment dispatcher using provider fallback chain (`WEATHER_PROVIDERS`).

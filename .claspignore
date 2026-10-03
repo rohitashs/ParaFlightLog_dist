@@ -1,0 +1,28 @@
+# Clasp Ignore - Enforce Strict Separation of Production Runtime & Developer Tooling
+# Only files in Code/ required by runtime Google Apps Script are pushed.
+
+# Test & Audit Artifacts (Local / Git Only)
+**/*.test.*
+**/*.spec.*
+**/test_*.gs
+**/test_*.js
+**/Test.gs
+**/*.md
+!Code/XContest.gs
+
+# Root Development Scripts
+package.json
+package-lock.json
+update_headers.ps1
+.claspignore
+.gitignore
+
+# Development, Documentation & Planning Folders
+tools/**
+tests/**
+Docs/**
+Plans/**
+External/**
+Other Files/**
+.agent/**
+node_modules/**

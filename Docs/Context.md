@@ -49,9 +49,20 @@ The project follows a strict folder hierarchy. `Docs/Context.md` is the source o
     *   **`DocCheckReports/`**: Documentation Audit Reports (`YYYY-MM-DD_DocCheck.md`).
     *   **`AuditReports/`**: Architectural and Subsystem Audit Reports (`YYYY-MM-DD_<Topic>_Audit.md`), structured using [`Audit_Template.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Plans/AuditReports/Audit_Template.md).
 
-### 3. `Code/` (Implementation)
-*   **Status**: **Git Tracked**.
-*   **Files**: All `.gs` files, `.html` dialog templates, `appsscript.json`, and deployment scripts (`update_headers.ps1`).
+### 3. `Code/` (Production Runtime Implementation)
+*   **Status**: **Git Tracked & Clasp Deployed**.
+*   **Purpose**: Strictly production code executed by the active Google Sheet, user dialogs, and automated triggers.
+*   **Files**: Exactly 33 production files (15 `.gs` controllers/services, 17 `.html` modals/sidebars, and `appsscript.json`).
+*   **Deployment**: Pushed directly to Google Apps Script via `clasp push -f`. Test and audit tooling are strictly excluded via `.claspignore`.
+
+### 4. `tests/` (Developer Testing & Simulation)
+*   **Status**: **Git Tracked (Local / CI Only - Excluded from Clasp)**.
+*   **Purpose**: Local unit test suites, regression tests, and simulation fixtures (`tests/Test.gs`).
+*   **Execution**: Run locally via Node.js offline runners (`node tools/run_all_offline_tests.js`) in milliseconds with zero quota consumption.
+
+### 5. `tools/` (Developer & CI Tooling)
+*   **Status**: **Git Tracked (Local / CI Only - Excluded from Clasp)**.
+*   **Purpose**: Automated code verification tools, static analysis scanners (`tools/code_check_audit.js`), test runners (`tools/run_all_offline_tests.js`), and maintenance utilities.
 
 
 ---
@@ -250,7 +261,7 @@ Edit the header of [`Code/Code.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFl
 clasp status
 clasp push
 ```
-*Expected*: `Pushed 31 files.` with zero errors.
+*Expected*: `Pushed 33 files.` with zero errors.
 
 #### Step 4: Verify & Commit to Git
 ```powershell
