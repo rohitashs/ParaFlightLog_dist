@@ -177,7 +177,19 @@ Developing on this hybrid stack presents unique constraints and capabilities:
 
 ---
 
-## 6. Forbidden Code Smells & Anti-Patterns Checklist
+## 6. System Distribution & Update Patterns
+
+### Pattern 16: Script-to-Sheet Decoupling & Dual-State Lag Resilience
+* **Problem**: Apps Script code and Google Sheets physical layout evolve **asynchronously**. Code is pushed instantly (via `clasp` or git), while the active spreadsheet remains on the previous schema until the user explicitly runs an update. If newly pushed code assumes that a new sheet element exists (a new column, a new Named Range, or an updated formula), the script crashes with fatal runtime errors (`Cannot find range`, `TypeError`, `#REF!`).
+* **Pattern**: Enforce loose coupling and backward-compatible tolerance between script and sheet:
+  1. **Tolerant Element Lookup**: Operational code (Ingestion, Scoring, Maintenance) must never crash if a newly introduced Named Range or column is absent; it must fall back gracefully to canonical coordinates or null.
+  2. **Lazy Self-Healing on Demand**: If an operational function requires a critical prerequisite (such as a missing Named Range), it should lazily auto-register or repair the element on-the-fly rather than throwing an exception.
+  3. **Non-Intrusive Schema Lag Notification**: Detect schema lag on `onOpen()` and show an informative status badge (`Update Available ⚡`) nudging the pilot to run `System Maintenance...` without interrupting normal flight logging.
+  4. **Strict Zero-Loss Invariant**: All maintenance and update routines must treat user data (Rows 5:N on `Flights`, custom equipment inventory, and user parameter values) as strictly read-only.
+
+---
+
+## 7. Forbidden Code Smells & Anti-Patterns Checklist
 
 | Anti-Pattern | Why It Is Dangerous | Prescribed Replacement |
 | :--- | :--- | :--- |
@@ -189,3 +201,4 @@ Developing on this hybrid stack presents unique constraints and capabilities:
 | **Trailing Underscore on RPC Handlers** | Breaks `google.script.run` from HTML dialogs. | Provide public wrapper without underscore. |
 | **`DriveApp` calls inside tight row loops** | Hits Apps Script rate limits and timeout. | Score quality from sheet telemetry in memory. |
 | **`getValues()` for Date/Time comparison** | Causes timezone rollover and date drift. | Use `getDisplayValues()` for text fidelity. |
+| **Tightly Coupled Script-to-Sheet Assumptions** | Crashes production logbooks during dual-state lag. | Use tolerant fallbacks and lazy self-healing. |
