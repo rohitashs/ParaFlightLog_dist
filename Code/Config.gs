@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-10-02 20:14:13
+ * Updated: 2026-10-02 20:48:43
  */
 /**
  * Paragliding Flight Log v2.0 - Configuration
@@ -312,7 +312,8 @@ CFG.LOG_PROCESSES = {
   SYSTEM_SETUP:   'System Setup',
   LOG_CLEAN:      'Log Maintenance',
   BACKGROUND_QUEUE: 'Background Queue',
-  STATUS_CHANGE:  'Status Change'
+  STATUS_CHANGE:  'Status Change',
+  SYSTEM_MAINTENANCE: 'System Maintenance'
 };
 
 CFG.LOG_PREFIXES = {
@@ -414,7 +415,7 @@ var SYSTEM_MANIFEST = {
     // Reference Sheets
     'Pilot_Profile.keys':  { version: 'v2.0-profile-fields',   tier: 'recommended' },
     'Automation_Queue.headers': { version: 'v2.0-queue-schema', tier: 'mandatory' },
-    'App_Log.headers':     { version: 'v2.0-log-schema',       tier: 'optional' },
+    'Activity_Logs.headers':    { version: 'v2.0-log-schema',   tier: 'recommended' },
     'User_Guide.content':  { version: 'v2.0-guide-content',    tier: 'optional' }
   }
 };
@@ -444,6 +445,7 @@ var MANIFEST_COMPONENT_LABELS = {
   'Equipment.validations': 'Category Dropdown Validation Rule',
   'Pilot_Profile.keys': 'Pilot Profile Fields & Descriptions',
   'Automation_Queue.headers': 'Background Automation Queue Schema',
+  'Activity_Logs.headers': 'Activity Logs Schema & Header Formatting',
   'App_Log.headers': 'Activity Logs Schema & Header Formatting',
   'User_Guide.content': 'Documentation, Metric Dictionary & Instructions'
 };
@@ -455,8 +457,9 @@ var MANIFEST_SHEET_METADATA = {
   'Equipment': { key: 'EQUIPMENT', name: TABS.EQUIPMENT ? TABS.EQUIPMENT.name : 'Equipment', icon: '🪂', color: '#00BCD4' },
   'Pilot_Profile': { key: 'PILOT_PROFILE', name: TABS.PILOT_PROFILE ? TABS.PILOT_PROFILE.name : 'Pilot_Profile', icon: '👤', color: '#9C27B0' },
   'Automation_Queue': { key: 'QUEUE', name: TABS.QUEUE ? TABS.QUEUE.name : 'Automation_Queue', icon: '📋', color: '#455A64' },
-  'App_Log': { key: 'APP_LOG', name: TABS.APP_LOG ? TABS.APP_LOG.name : 'App_Log', icon: '📜', color: '#D32F2F' },
-  'User_Guide': { key: 'USER_GUIDE', name: TABS.USER_GUIDE ? TABS.USER_GUIDE.name : 'User_Guide', icon: '📖', color: '#607D8B' }
+  'Activity_Logs': { key: 'ACTIVITY_LOGS', name: TABS.APP_LOG ? TABS.APP_LOG.name : 'Activity Logs', icon: '📜', color: '#D32F2F' },
+  'App_Log': { key: 'ACTIVITY_LOGS', name: TABS.APP_LOG ? TABS.APP_LOG.name : 'Activity Logs', icon: '📜', color: '#D32F2F' },
+  'User_Guide': { key: 'USER_GUIDE', name: TABS.USER_GUIDE ? TABS.USER_GUIDE.name : 'User Guide', icon: '📖', color: '#607D8B' }
 };
 
 /**
@@ -466,7 +469,13 @@ var MANIFEST_SHEET_METADATA = {
 function getAppliedManifest_() {
   try {
     var raw = PropertiesService.getDocumentProperties().getProperty('APPLIED_MANIFEST');
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      var parsed = JSON.parse(raw);
+      if (parsed['App_Log.headers'] && !parsed['Activity_Logs.headers']) {
+        parsed['Activity_Logs.headers'] = parsed['App_Log.headers'];
+      }
+      return parsed;
+    }
   } catch (e) {
     console.warn('Error reading APPLIED_MANIFEST:', e);
   }
@@ -493,13 +502,17 @@ function setAppliedManifest_(manifest) {
  */
 function diffManifests_(optApplied) {
   var applied = optApplied || getAppliedManifest_();
+  // Bridge legacy App_Log.headers in optApplied
+  if (applied['App_Log.headers'] && !applied['Activity_Logs.headers']) {
+    applied['Activity_Logs.headers'] = applied['App_Log.headers'];
+  }
   var sheetsMap = {};
-  var order = ['Flights', 'Dashboard', 'Config', 'Equipment', 'Pilot_Profile', 'Automation_Queue', 'App_Log', 'User_Guide'];
+  var order = ['Flights', 'Dashboard', 'Config', 'Equipment', 'Pilot_Profile', 'Automation_Queue', 'Activity_Logs', 'User_Guide'];
   
   order.forEach(function(sName) {
-    var meta = MANIFEST_SHEET_METADATA[sName] || { key: sName, name: sName, icon: '📄', color: '#757575' };
+    var meta = MANIFEST_SHEET_METADATA[sName] || { key: sName, name: sName.replace('_', ' '), icon: '📄', color: '#757575' };
     sheetsMap[sName] = {
-      sheetKey: meta.key,
+      sheetKey: sName,
       sheetName: meta.name,
       icon: meta.icon,
       color: meta.color,

@@ -1,7 +1,7 @@
 <!--
  * Paragliding Flight Log v2.0
  * System Maintenance Cockpit
- * Updated: 2026-10-02 20:14:13
+ * Updated: 2026-10-02 20:48:43
  -->
 <!DOCTYPE html>
 <html>
@@ -188,6 +188,8 @@
             overflow-y: auto;
             padding: 4px 16px 14px 16px;
             min-height: 0;
+            display: flex;
+            flex-direction: column;
         }
 
         .scrollable-content-area::-webkit-scrollbar {
@@ -349,36 +351,81 @@
             line-height: 1.5;
         }
 
-        /* Log / Execution Console */
-        .console-card {
+        /* Full Execution View (Replaces matrix during updates) */
+        .execution-view {
             display: none;
-            background: #212121;
-            color: #E0E0E0;
+            flex-direction: column;
+            flex: 1 1 auto;
+            min-height: 0;
+            padding-top: 4px;
+        }
+
+        .console-header-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+
+        .console-header-title {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #616161;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-copy-log {
+            background: #FFFFFF;
+            border: 1px solid #BDBDBD;
+            color: #424242;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .btn-copy-log:hover {
+            background: #EEEEEE;
+        }
+
+        /* Clean Monospace Activity Console */
+        .activity-log-console {
+            flex: 1 1 auto;
+            background: #F8F9FA;
+            border: 1px solid #E0E0E0;
             border-radius: 6px;
             padding: 10px 12px;
-            margin-bottom: 12px;
-            font-family: 'Consolas', 'Menlo', monospace;
+            margin-bottom: 8px;
+            font-family: 'Consolas', 'Menlo', 'Monaco', monospace;
             font-size: 11px;
-            max-height: 180px;
+            line-height: 1.5;
+            color: #37474F;
             overflow-y: auto;
+            min-height: 250px;
+            white-space: pre-wrap;
+            word-break: break-word;
         }
 
         .log-entry {
             margin-bottom: 3px;
-            line-height: 1.4;
         }
 
-        .log-entry.ok { color: #81C784; }
-        .log-entry.warn { color: #FFB74D; }
-        .log-entry.start { color: #64B5F6; }
+        .log-entry.ok { color: #2E7D32; font-weight: 600; }
+        .log-entry.warn { color: #D32F2F; font-weight: 600; }
+        .log-entry.start { color: #1565C0; font-weight: 600; }
 
         .progress-bar-container {
-            display: none;
             background: #E0E0E0;
             border-radius: 4px;
             height: 6px;
             overflow: hidden;
-            margin-bottom: 10px;
+            margin-bottom: 4px;
         }
 
         .progress-bar-fill {
@@ -469,6 +516,15 @@
             cursor: not-allowed;
         }
 
+        .btn-apply.done {
+            background: #2E7D32 !important;
+            color: #FFFFFF !important;
+        }
+
+        .btn-apply.done:hover {
+            background: #1B5E20 !important;
+        }
+
         .loading-view {
             text-align: center;
             padding: 40px;
@@ -479,49 +535,51 @@
 
 <body>
     <div class="dialog-shell">
-        <!-- Fixed Header & Presets -->
-        <div class="fixed-top-section">
-            <div class="header-bar">
-                <div class="header-title">
-                    <span>🛠️</span> System Maintenance Cockpit
+        <!-- Setup View Container (Top Controls + Matrix) -->
+        <div id="setupView">
+            <div class="fixed-top-section">
+                <div class="header-bar">
+                    <div class="header-title">
+                        <span>🛠️</span> System Maintenance Cockpit
+                    </div>
+                    <div class="version-badge" id="appVersionBadge">Core v2.1.0</div>
                 </div>
-                <div class="version-badge" id="appVersionBadge">Core v2.1.0</div>
-            </div>
 
-            <!-- Pre-Flight Safety Backup -->
-            <div class="backup-card">
-                <div class="backup-title">
-                    <span>🛡️</span> Pre-Flight Safety Backups (Recommended)
+                <!-- Pre-Flight Safety Backup -->
+                <div class="backup-card">
+                    <div class="backup-title">
+                        <span>🛡️</span> Pre-Flight Safety Backups (Recommended)
+                    </div>
+                    <div class="backup-options">
+                        <label title="Creates clones of system sheets prefixed with _MNT_BAK_">
+                            <input type="checkbox" id="chkBackupSheets" checked>
+                            <span>Create In-Workbook Sheet Clones (_MNT_BAK_*)</span>
+                        </label>
+                        <label title="Downloads active configuration parameters and layout preferences as a local JSON file">
+                            <input type="checkbox" id="chkExportConfig" checked>
+                            <span>Download Config JSON Snapshot (.json file)</span>
+                        </label>
+                    </div>
                 </div>
-                <div class="backup-options">
-                    <label title="Creates clones of system sheets prefixed with _MNT_BAK_">
-                        <input type="checkbox" id="chkBackupSheets" checked>
-                        <span>Create In-Workbook Sheet Clones (_MNT_BAK_*)</span>
-                    </label>
-                    <label title="Downloads active configuration parameters and layout preferences as a local JSON file">
-                        <input type="checkbox" id="chkExportConfig" checked>
-                        <span>Download Config JSON Snapshot (.json file)</span>
-                    </label>
+
+                <!-- Legend Bar -->
+                <div class="legend-bar">
+                    <span class="legend-title">Legend:</span>
+                    <span class="legend-item"><span class="legend-dot mandatory"></span> Mandatory (Core Invariant)</span>
+                    <span class="legend-item"><span class="legend-dot recommended"></span> Recommended</span>
+                    <span class="legend-item"><span class="legend-dot optional"></span> Optional</span>
+                    <span class="legend-item"><span class="legend-dot uptodate"></span> Up-to-Date</span>
+                    <span class="legend-item"><span class="legend-dash">───</span> N/A</span>
                 </div>
-            </div>
 
-            <!-- Legend Bar -->
-            <div class="legend-bar">
-                <span class="legend-title">Legend:</span>
-                <span class="legend-item"><span class="legend-dot mandatory"></span> Mandatory (Core Invariant)</span>
-                <span class="legend-item"><span class="legend-dot recommended"></span> Recommended</span>
-                <span class="legend-item"><span class="legend-dot optional"></span> Optional</span>
-                <span class="legend-item"><span class="legend-dot uptodate"></span> Up-to-Date</span>
-                <span class="legend-item"><span class="legend-dash">───</span> N/A</span>
-            </div>
-
-            <!-- Presets Bar -->
-            <div class="preset-bar">
-                <div class="preset-title">Update Scope & Target Elements:</div>
-                <div class="preset-btns">
-                    <button class="btn-preset recommended" onclick="applyPreset('recommended')">🎯 Select Recommended Only</button>
-                    <button class="btn-preset" onclick="applyPreset('all')">🗹 Select All</button>
-                    <button class="btn-preset" onclick="applyPreset('clear')">🗵 Clear All</button>
+                <!-- Presets Bar -->
+                <div class="preset-bar">
+                    <div class="preset-title">Update Scope & Target Elements:</div>
+                    <div class="preset-btns">
+                        <button class="btn-preset recommended" onclick="applyPreset('recommended')">🎯 Select Recommended Only</button>
+                        <button class="btn-preset" onclick="applyPreset('all')">🗹 Select All</button>
+                        <button class="btn-preset" onclick="applyPreset('clear')">🗵 Clear All</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -533,64 +591,72 @@
                 <div>⏳ Inspecting system manifest and spreadsheet schema...</div>
             </div>
 
-            <!-- Matrix Table Container -->
-            <div id="matrixContainer" class="matrix-wrapper" style="display: none;">
-                <table class="matrix-table" id="matrixTable">
-                    <thead>
-                        <tr id="headerRowSheets">
-                            <th>Element Type / System Tab</th>
-                            <!-- Populated dynamically -->
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr class="sheet-master-row" id="rowMasterSheets">
-                            <td class="row-label"><strong>[x] Gate Sheet Updates</strong></td>
-                            <!-- Populated dynamically -->
-                        </tr>
-                        <tr id="rowGrid">
-                            <td class="row-label">Grid Dimensions & Frozen Panes</td>
-                        </tr>
-                        <tr id="rowHeaders">
-                            <td class="row-label">Headers & Category Groupings</td>
-                        </tr>
-                        <tr id="rowNotes">
-                            <td class="row-label">Column Tooltips & Cell Notes</td>
-                        </tr>
-                        <tr id="rowValidations">
-                            <td class="row-label">Dropdown Validations & Rules</td>
-                        </tr>
-                        <tr id="rowFormulas">
-                            <td class="row-label">Formulas, Named Ranges & Queries</td>
-                        </tr>
-                        <tr id="rowParameters">
-                            <td class="row-label">Parameters & Key Definitions</td>
-                        </tr>
-                        <tr id="rowGuardrails">
-                            <td class="row-label">Soft Guardrails (setWarningOnly)</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Progress Bar -->
-            <div class="progress-bar-container" id="progressBar">
-                <div class="progress-bar-fill" id="progressFill"></div>
-            </div>
-
-            <!-- Console Log Window -->
-            <div class="console-card" id="consoleLogs"></div>
-
-            <!-- Impact Preview -->
-            <div class="impact-box" id="impactBox">
-                <div class="impact-title">
-                    <span>ℹ️</span> Non-Destructive Update Guarantee:
+            <!-- Setup View Middle: Matrix Table Container & Impact Box -->
+            <div id="matrixSection" style="display: none;">
+                <div id="matrixContainer" class="matrix-wrapper">
+                    <table class="matrix-table" id="matrixTable">
+                        <thead>
+                            <tr id="headerRowSheets">
+                                <th>Element Type / System Tab</th>
+                                <!-- Populated dynamically -->
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="sheet-master-row" id="rowMasterSheets">
+                                <td class="row-label"><strong>[x] Gate Sheet Updates</strong></td>
+                                <!-- Populated dynamically -->
+                            </tr>
+                            <tr id="rowGrid">
+                                <td class="row-label">Grid Dimensions & Frozen Panes</td>
+                            </tr>
+                            <tr id="rowHeaders">
+                                <td class="row-label">Headers & Category Groupings</td>
+                            </tr>
+                            <tr id="rowNotes">
+                                <td class="row-label">Column Tooltips, Content & Notes</td>
+                            </tr>
+                            <tr id="rowValidations">
+                                <td class="row-label">Dropdown Validations & Rules</td>
+                            </tr>
+                            <tr id="rowFormulas">
+                                <td class="row-label">Formulas, Named Ranges & Queries</td>
+                            </tr>
+                            <tr id="rowParameters">
+                                <td class="row-label">Parameters & Key Definitions</td>
+                            </tr>
+                            <tr id="rowGuardrails">
+                                <td class="row-label">Soft Guardrails (setWarningOnly)</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
-                <ul class="impact-bullets">
-                    <li><strong id="impactCount">0 elements</strong> selected across <strong id="impactSheets">0 sheets</strong>.</li>
-                    <li id="impactBreakdown">0 Mandatory, 0 Recommended, 0 Optional.</li>
-                    <li><strong>Mandatory Invariant Rule:</strong> Mandatory updates are structural prerequisites and execute regardless of sheet gating to prevent broken formulas or missing Named Ranges.</li>
-                    <li><strong>Zero-Loss Contract:</strong> Flight rows 5:N and custom equipment inventory remain 100% UNTOUCHED (read-only).</li>
-                </ul>
+
+                <!-- Impact Preview -->
+                <div class="impact-box" id="impactBox">
+                    <div class="impact-title">
+                        <span>ℹ️</span> Non-Destructive Update Guarantee:
+                    </div>
+                    <ul class="impact-bullets">
+                        <li><strong id="impactCount">0 elements</strong> selected across <strong id="impactSheets">0 sheets</strong>.</li>
+                        <li id="impactBreakdown">0 Mandatory, 0 Recommended, 0 Optional.</li>
+                        <li><strong>Mandatory Invariant Rule:</strong> Mandatory updates are structural prerequisites and execute regardless of sheet gating to prevent broken formulas or missing Named Ranges.</li>
+                        <li><strong>Zero-Loss Contract:</strong> Flight rows 5:N and custom equipment inventory remain 100% UNTOUCHED (read-only).</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Full Execution View (Replaces matrix table during execution) -->
+            <div class="execution-view" id="executionView">
+                <div class="console-header-bar">
+                    <div class="console-header-title">
+                        <span>📋</span> Activity Log:
+                    </div>
+                    <button type="button" class="btn-copy-log" onclick="copyConsoleLog()">📋 Copy Log</button>
+                </div>
+                <div class="activity-log-console" id="log-console">Starting System Maintenance orchestration...</div>
+                <div class="progress-bar-container">
+                    <div class="progress-bar-fill" id="progressFill"></div>
+                </div>
             </div>
         </div>
 
@@ -611,7 +677,7 @@
 
     <script>
         var systemStatus = null;
-        var sheetOrder = ['Flights', 'Dashboard', 'Config', 'Equipment', 'Pilot_Profile', 'Automation_Queue', 'App_Log', 'User_Guide'];
+        var sheetOrder = ['Flights', 'Dashboard', 'Config', 'Equipment', 'Pilot_Profile', 'Automation_Queue', 'Activity_Logs', 'User_Guide'];
         var elementRows = [
             { id: 'rowGrid', key: 'grid' },
             { id: 'rowHeaders', key: 'headers' },
@@ -633,7 +699,7 @@
 
         function renderMatrix(data) {
             document.getElementById('loadingView').style.display = 'none';
-            document.getElementById('matrixContainer').style.display = 'block';
+            document.getElementById('matrixSection').style.display = 'block';
 
             if (!data || !data.diff) return;
             systemStatus = data;
@@ -646,8 +712,9 @@
             sheetOrder.forEach(function(sName) {
                 var sData = null;
                 for (var i = 0; i < data.diff.sheets.length; i++) {
-                    if (data.diff.sheets[i].sheetName === sName) {
-                        sData = data.diff.sheets[i];
+                    var curS = data.diff.sheets[i];
+                    if (curS.sheetKey === sName || curS.sheetName === sName || (sName === 'Activity_Logs' && curS.sheetName === 'Activity Logs')) {
+                        sData = curS;
                         break;
                     }
                 }
@@ -655,12 +722,13 @@
                 // Sheet Header Col
                 var th = document.createElement('th');
                 var icon = sData ? sData.icon : '📄';
-                th.innerHTML = '<div>' + icon + '</div><div>' + sName.replace('_', ' ') + '</div>';
+                var displayName = sData ? sData.sheetName : sName.replace('_', ' ');
+                th.innerHTML = '<div>' + icon + '</div><div>' + displayName + '</div>';
                 thead.appendChild(th);
 
                 // Authoritative Sheet Master Gating Checkbox (checked by default)
                 var tdMaster = document.createElement('td');
-                tdMaster.innerHTML = '<input type="checkbox" class="matrix-check sheet-master-check" data-sheet="' + sName + '" checked onchange="toggleEntireSheet(\'' + sName + '\', this.checked)" title="Gates Recommended and Optional updates for ' + sName + '">';
+                tdMaster.innerHTML = '<input type="checkbox" class="matrix-check sheet-master-check" data-sheet="' + sName + '" checked onchange="toggleEntireSheet(\'' + sName + '\', this.checked)" title="Gates Recommended and Optional updates for ' + displayName + '">';
                 masterRow.appendChild(tdMaster);
             });
 
@@ -676,17 +744,19 @@
                     if (rowDef.key === 'parameters' && sName === 'Pilot_Profile') fullKey = 'Pilot_Profile.keys';
                     if (rowDef.key === 'formulas' && sName === 'Config') fullKey = 'Config.lookups';
                     if (rowDef.key === 'formulas' && sName === 'Flights') fullKey = 'Flights.formulas';
-                    if (rowDef.key === 'notes' && sName === 'User_Guide') fullKey = 'User_Guide.content';
+                    if (rowDef.key === 'notes' && (sName === 'User_Guide' || sName === 'User Guide')) fullKey = 'User_Guide.content';
+                    if (rowDef.key === 'headers' && (sName === 'Activity_Logs' || sName === 'App_Log')) fullKey = 'Activity_Logs.headers';
 
                     var comp = null;
-                    if (data.matrix && data.matrix[sName] && data.matrix[sName][rowDef.key]) {
-                        comp = data.matrix[sName][rowDef.key];
-                    } else {
-                        for (var sk in data.diff.sheets) {
+                    if (data.matrix && data.matrix[sName]) {
+                        comp = data.matrix[sName][rowDef.key] || data.matrix[sName][fullKey.split('.')[1]];
+                    }
+                    if (!comp && data.diff && data.diff.sheets) {
+                        for (var sk = 0; sk < data.diff.sheets.length; sk++) {
                             var sheet = data.diff.sheets[sk];
-                            if (sheet.sheetName === sName) {
-                                for (var ck in sheet.components) {
-                                    if (sheet.components[ck].key === fullKey) {
+                            if (sheet.sheetKey === sName || sheet.sheetName === sName || sheet.sheetName.replace(/\s+/g, '_') === sName) {
+                                for (var ck = 0; ck < sheet.components.length; ck++) {
+                                    if (sheet.components[ck].key === fullKey || (fullKey === 'Activity_Logs.headers' && sheet.components[ck].key === 'App_Log.headers')) {
                                         comp = sheet.components[ck];
                                         break;
                                     }
@@ -768,7 +838,6 @@
                 compBoxes.forEach(function(b) {
                     var tier = b.getAttribute('data-tier');
                     if (tier === 'mandatory') {
-                        // Invariant: Mandatory remains checked
                         b.checked = true;
                     } else {
                         b.checked = false;
@@ -840,6 +909,24 @@
             document.getElementById('btnApply').disabled = (count === 0);
         }
 
+        function copyConsoleLog() {
+            var logEl = document.getElementById('log-console');
+            var text = logEl.innerText || logEl.textContent;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(function() {
+                    alert('Activity log copied to clipboard.');
+                });
+            } else {
+                var ta = document.createElement('textarea');
+                ta.value = text;
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+                alert('Activity log copied to clipboard.');
+            }
+        }
+
         function executeAllUpdates() {
             applyPreset('all');
             executeSelectedUpdates();
@@ -860,15 +947,18 @@
                 exportConfig: document.getElementById('chkExportConfig').checked
             };
 
-            // Switch to progress view
+            // Switch to full execution view (hiding setup panel & matrix)
+            document.getElementById('setupView').style.display = 'none';
+            document.getElementById('matrixSection').style.display = 'none';
+            var execView = document.getElementById('executionView');
+            execView.style.display = 'flex';
+
             document.getElementById('btnApply').disabled = true;
             document.getElementById('btnApplyAll').disabled = true;
             document.getElementById('btnCancel').disabled = true;
-            document.getElementById('progressBar').style.display = 'block';
             document.getElementById('progressFill').style.width = '30%';
 
-            var consoleDiv = document.getElementById('consoleLogs');
-            consoleDiv.style.display = 'block';
+            var consoleDiv = document.getElementById('log-console');
             consoleDiv.innerHTML = '<div class="log-entry start">🚀 Starting System Maintenance execution...</div>';
 
             google.script.run
@@ -877,7 +967,10 @@
                     if (res && res.logs) {
                         res.logs.forEach(function(l) {
                             var entry = document.createElement('div');
-                            entry.className = 'log-entry' + (l.indexOf('[OK]') !== -1 || l.indexOf('[SUCCESS]') !== -1 ? ' ok' : '');
+                            var isOk = (l.indexOf('[OK]') !== -1 || l.indexOf('[COMPLETE]') !== -1 || l.indexOf('[SUCCESS]') !== -1);
+                            var isWarn = (l.indexOf('[WARN]') !== -1 || l.indexOf('[ERR]') !== -1);
+                            var isStart = (l.indexOf('[START]') !== -1 || l.indexOf('[BACKUP]') !== -1 || l.indexOf('[COMMIT]') !== -1 || l.indexOf('[INVARIANT]') !== -1);
+                            entry.className = 'log-entry' + (isOk ? ' ok' : isWarn ? ' warn' : isStart ? ' start' : '');
                             entry.textContent = l;
                             consoleDiv.appendChild(entry);
                         });
@@ -909,6 +1002,7 @@
                     document.getElementById('footerSummary').textContent = '✅ Maintenance complete! Applied ' + res.appliedCount + ' components.';
                     var btnApply = document.getElementById('btnApply');
                     btnApply.disabled = false;
+                    btnApply.className = 'btn-apply done';
                     btnApply.innerHTML = '<span>✅</span> Done (Close)';
                     btnApply.onclick = function() { google.script.host.close(); };
                     document.getElementById('btnApplyAll').style.display = 'none';

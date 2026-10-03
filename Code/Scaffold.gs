@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-10-02 20:14:13
+ * Updated: 2026-10-02 20:48:43
  */
 /**
  * Paragliding Flight Log v2.0 - Scaffolding & Setup
@@ -1965,14 +1965,14 @@ var SheetSpecialists = {
   },
 
   updateAppLog: function(elements, ss, logs) {
-    if (elements['App_Log.headers']) {
+    if (elements['Activity_Logs.headers'] || elements['App_Log.headers']) {
       scaffoldAppLog_(ss);
-      logs.push('[App_Log] Activity Logs schema & formatting verified.');
+      logs.push('[Activity_Logs] Activity Logs schema & formatting verified.');
     }
   },
 
   updateUserGuide: function(elements, ss, logs) {
-    if (elements['User_Guide.content']) {
+    if (elements['User_Guide.content'] || elements['User_Guide.notes']) {
       scaffoldUserGuide_(ss);
       logs.push('[User_Guide] Metric dictionary and documentation refreshed.');
     }
@@ -1985,6 +1985,14 @@ var SheetSpecialists = {
 var SystemMaintenanceOrchestrator = {
   getStatus: function() {
     var diff = diffManifests_();
+    var compLookup = {};
+    for (var s = 0; s < diff.sheets.length; s++) {
+      for (var c = 0; c < diff.sheets[s].components.length; c++) {
+        var cp = diff.sheets[s].components[c];
+        compLookup[cp.key] = cp;
+      }
+    }
+
     var matrix = {};
     for (var key in SYSTEM_MANIFEST.components) {
       if (SYSTEM_MANIFEST.components.hasOwnProperty(key)) {
@@ -1993,24 +2001,12 @@ var SystemMaintenanceOrchestrator = {
         var cType = parts[1];
         if (!matrix[sName]) matrix[sName] = {};
         
-        var comp = null;
-        for (var s = 0; s < diff.sheets.length; s++) {
-          if (diff.sheets[s].sheetName === sName) {
-            for (var c = 0; c < diff.sheets[s].components.length; c++) {
-              if (diff.sheets[s].components[c].key === key) {
-                comp = diff.sheets[s].components[c];
-                break;
-              }
-            }
-            break;
-          }
-        }
-        
+        var comp = compLookup[key];
         var compDef = SYSTEM_MANIFEST.components[key];
         var latest = (typeof compDef === 'object' && compDef.version) ? compDef.version : compDef;
         var tier = (typeof compDef === 'object' && compDef.tier) ? compDef.tier : 'recommended';
 
-        matrix[sName][cType] = {
+        var item = {
           key: key,
           label: comp ? comp.label : key,
           applied: comp ? comp.applied : 'Not Applied',
@@ -2019,7 +2015,18 @@ var SystemMaintenanceOrchestrator = {
           isUpToDate: comp ? comp.isUpToDate : false,
           isPending: comp ? !comp.isUpToDate : true
         };
+
+        matrix[sName][cType] = item;
+        // Aliases for friendly matrix row mappings
+        if (cType === 'content') matrix[sName]['notes'] = item;
+        if (cType === 'keys') matrix[sName]['parameters'] = item;
+        if (cType === 'lookups') matrix[sName]['formulas'] = item;
       }
+    }
+
+    // Compatibility bridge: mirror Activity_Logs to App_Log in matrix if needed
+    if (matrix['Activity_Logs'] && !matrix['App_Log']) {
+      matrix['App_Log'] = matrix['Activity_Logs'];
     }
 
     return {
@@ -2101,10 +2108,38 @@ var SystemMaintenanceOrchestrator = {
         appliedCount++;
       }
     }
+    // Handle alias commitments
+    if ((effectiveComponents['App_Log.headers'] || effectiveComponents['Activity_Logs.headers']) && SYSTEM_MANIFEST.components['Activity_Logs.headers']) {
+      var alDef = SYSTEM_MANIFEST.components['Activity_Logs.headers'];
+      applied['Activity_Logs.headers'] = (typeof alDef === 'object' && alDef.version) ? alDef.version : alDef;
+    }
+    if ((effectiveComponents['User_Guide.notes'] || effectiveComponents['User_Guide.content']) && SYSTEM_MANIFEST.components['User_Guide.content']) {
+      var ugDef = SYSTEM_MANIFEST.components['User_Guide.content'];
+      applied['User_Guide.content'] = (typeof ugDef === 'object' && ugDef.version) ? ugDef.version : ugDef;
+    }
     setAppliedManifest_(applied);
 
     logs.push('[COMMIT] Committed ' + appliedCount + ' updated components to APPLIED_MANIFEST.');
     logs.push('[COMPLETE] System Maintenance execution finished successfully.');
+
+    // Persist all maintenance logs in one atomic batch to the Activity Logs sheet
+    try {
+      if (typeof LOG !== 'undefined' && typeof LOG.writeBatch === 'function') {
+        var logRows = [];
+        var now = new Date();
+        for (var li = 0; li < logs.length; li++) {
+          logRows.push([
+            'System Maintenance',
+            now,
+            logs[li],
+            'Applied ' + appliedCount + ' components'
+          ]);
+        }
+        LOG.writeBatch(logRows);
+      }
+    } catch (logErr) {
+      console.warn('[LOG WARN] Failed to write maintenance logs to Activity Logs: ' + logErr.message);
+    }
 
     var exportPayload = null;
     if (options.exportConfig) {
