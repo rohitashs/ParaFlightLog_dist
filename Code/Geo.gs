@@ -1,9 +1,12 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-10-02 21:52:07
+ * Updated: 2026-10-02 22:22:24
  * 
  * MODULE: Geo Service
  * Handles Reverse Geocoding (Nominatim) and Site Detection (Overpass API).
+ * 
+ * @design Docs/Design/DSGN-CORE-003_Meteorological_and_Geocoding_Gateways.md
+ * @architecture Docs/Architecture/Views/04_Integration_and_APIs.md#22-open-meteo--osm-nominatimoverpass-gateways-dsgn-core-003
  */
 
 var GEO = {};

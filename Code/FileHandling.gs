@@ -1,10 +1,14 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-10-02 21:52:07
+ * Updated: 2026-10-02 22:22:24
  * 
  * MODULE: File Handling Service
  * Handles Google Drive I/O, Watch Folder scanning, File Uploads, URL Fetching,
  * Archive extraction (.zip, .gz), File Cleanup, and Master Log copying.
+ * 
+ * @design Docs/Design/DSGN-CORE-001_Flight_Ingestion_and_Deduplication_Engine.md
+ * @architecture Docs/Architecture/Views/03_Data_and_Storage_Model.md#5-google-drive-object-store-taxonomy
+ * @revision Rev 2.1
  */
 
 var FILE_HANDLING = FILE_HANDLING || {};

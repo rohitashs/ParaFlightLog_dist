@@ -1,11 +1,13 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-10-02 21:52:07
+ * Updated: 2026-10-02 22:22:24
  */
 /**
  * Paragliding Flight Log v2.0 - Scaffolding & Setup
  * 
  * @design Docs/Design/DSGN-MNT-001_Unified_Update_Manager_and_Maintenance_Orchestrator.md
+ * @architecture Docs/Architecture/Views/03_Data_and_Storage_Model.md
+ * @architecture Docs/Architecture/Cross_Cutting/Resilience_and_Evolution.md#2-schema-evolution-protocol
  * @revision Rev 2.1
  * 
  * Contains:

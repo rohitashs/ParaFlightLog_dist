@@ -1,13 +1,15 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-10-02 21:52:07
- */
-/**
- * Paragliding Flight Log v2.0 - Configuration
+ * Updated: 2026-10-02 22:22:24
+ * 
+ * MODULE: Configuration
  * 
  * Contains:
  * 1. Global Configuration (CFG)
  * 2. Tab & Column Definitions (TABS)
+ * 
+ * @design Docs/Design/DSGN-CORE-004_Google_Sheets_Database_Substrate_and_Formula_Engine.md
+ * @architecture Docs/Architecture/Views/03_Data_and_Storage_Model.md
  */
 
 /* ==========================================================================================

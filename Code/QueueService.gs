@@ -1,10 +1,11 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-10-02 21:52:07
+ * Updated: 2026-10-02 22:22:24
  */
 /**
  * Paragliding Flight Log - Persistent Job Queue Service
- * Implementation of DSGN-UI-001 Section 3.3
+ * @design Docs/Design/DSGN-UI-001_Tri_Mode_Execution_and_Universal_Sidebar.md#33-the-persistent-job-queue-service-queueservice
+ * @architecture Docs/Architecture/Views/02_Execution_and_Runtime.md#4-persistent-job-queue-runtime-queueservice
  * 
  * Manages persistent job states, batch cursors, and progress tracking in the
  * 'Automation_Queue' sheet tab. Provides the execution substrate for both

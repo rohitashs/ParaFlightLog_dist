@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-10-02 21:52:07
+ * Updated: 2026-10-02 22:22:24
  * 
  * WEATHER MODULE: Automated Historical & Forecast Weather Enrichment (RQ-SCR-004)
  * Supports:
@@ -8,6 +8,10 @@
  * - Visual Crossing Timeline API (Backup)
  * - Convective Cloudbase Estimation: MSL & AGL (Lawrence Formula)
  * - Cardinal Wind Direction & Gust Formatting
+ * 
+ * @design Docs/Design/DSGN-CORE-003_Meteorological_and_Geocoding_Gateways.md
+ * @architecture Docs/Architecture/Views/04_Integration_and_APIs.md#21-open-meteo-weather-gateway-weathergs
+ * @revision Rev 2.1
  */
 
 var WEATHER = {

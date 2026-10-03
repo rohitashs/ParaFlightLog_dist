@@ -1,12 +1,17 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-10-02 21:52:07
+ * Updated: 2026-10-02 22:22:24
  * Test access verification: Verified GAS write access on 2026-09-25 08:26:00.
  * 
  * CORE MODULE: Orchestration Only.
  * Configuration -> Config.gs
  * Scaffolding -> Scaffold.gs
  * Logic -> Ingestion.gs, Parser.gs, Analysis.gs, Scoring.gs, Geo.gs
+ * 
+ * @design Docs/Design/DSGN-MNT-001_Unified_Update_Manager_and_Maintenance_Orchestrator.md
+ * @design Docs/Design/DSGN-UI-001_Tri_Mode_Execution_and_Universal_Sidebar.md
+ * @architecture Docs/Architecture/Views/01_Functional_View.md#26-flight-maintenance--audit-engine-dsgn-mnt-001
+ * @architecture Docs/Architecture/Views/02_Execution_and_Runtime.md#5-ui-modal--sidebar-runtime
  */
 
 /* ==========================================================================================

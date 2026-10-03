@@ -303,6 +303,56 @@ if (defaultParamsMatch) {
   }
 }
 
+// 9. Dimension: Tier 4 Documentation & Two-Way Code Linking Verification (Pattern 20)
+console.log(`\n[DIMENSION 6] Tier 4 Documentation & Two-Way Code Linking Verification (Pattern 20):`);
+let docLinkErrors = 0;
+let totalDesignTags = 0;
+let totalArchTags = 0;
+
+gsFiles.forEach(f => {
+  const content = allGsContent[f] || '';
+  const designMatches = [...content.matchAll(/@design\s+([^\s\r\n]+)/g)];
+  const archMatches = [...content.matchAll(/@architecture\s+([^\s\r\n]+)/g)];
+
+  if (designMatches.length === 0) {
+    console.error(`  [FAIL] ${f}: Missing @design JSDoc tag. Must link to a valid Docs/Design/DSGN-*.md specification.`);
+    docLinkErrors++;
+    totalErrors++;
+  } else {
+    designMatches.forEach(m => {
+      totalDesignTags++;
+      const target = m[1].split('#')[0];
+      const targetAbs = path.isAbsolute(target) ? target : path.join(rootDir, target);
+      if (!fs.existsSync(targetAbs)) {
+        console.error(`  [FAIL] ${f}: @design target does not exist on disk: '${target}'`);
+        docLinkErrors++;
+        totalErrors++;
+      }
+    });
+  }
+
+  if (archMatches.length === 0) {
+    console.error(`  [FAIL] ${f}: Missing @architecture JSDoc tag. Must link to Docs/Architecture/ view.`);
+    docLinkErrors++;
+    totalErrors++;
+  } else {
+    archMatches.forEach(m => {
+      totalArchTags++;
+      const target = m[1].split('#')[0];
+      const targetAbs = path.isAbsolute(target) ? target : path.join(rootDir, target);
+      if (!fs.existsSync(targetAbs)) {
+        console.error(`  [FAIL] ${f}: @architecture target does not exist on disk: '${target}'`);
+        docLinkErrors++;
+        totalErrors++;
+      }
+    });
+  }
+});
+
+if (docLinkErrors === 0) {
+  console.log(`  [PASS] All ${gsFiles.length} .gs files verified for Pattern 20 compliance (${totalDesignTags} @design tags, ${totalArchTags} @architecture tags resolved on disk).`);
+}
+
 // Summary Report
 console.log('\n' + '='.repeat(70));
 console.log(`  AUDIT SUMMARY: ${totalErrors} Critical Errors, ${totalWarnings} Warnings`);
@@ -312,6 +362,7 @@ if (totalErrors > 0) {
   console.error(`\n>>> AUDIT FAILED with ${totalErrors} critical errors. Review details above. <<<\n`);
   process.exit(1);
 } else {
-  console.log(`\n>>> AUDIT PASSED: All architectural, naming, and pattern invariants satisfied. <<<\n`);
+  console.log(`\n>>> AUDIT PASSED: All architectural, naming, pattern, and documentation invariants satisfied. <<<\n`);
   process.exit(0);
 }
+

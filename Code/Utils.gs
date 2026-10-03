@@ -1,10 +1,13 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-10-02 21:52:07
+ * Updated: 2026-10-02 22:22:24
  * 
  * MODULE: Utilities (Math & Formatting)
  * Consolidated geospatial calculations (Haversine, Bearing, Angular Difference)
  * and time/duration formatting helpers.
+ * 
+ * @design Docs/Design/DSGN-CORE-002_Aeronautical_Physics_and_FAI_Scoring.md
+ * @architecture Docs/Architecture/Views/01_Functional_View.md#23-fai-cross-country-scoring-engine-dsgn-core-002
  */
 
 var UTILS = UTILS || {};

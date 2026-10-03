@@ -1,10 +1,11 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-10-02 21:52:07
+ * Updated: 2026-10-02 22:22:24
  */
 /**
  * Paragliding Flight Log - Time Budget & Safety Checkpoint Service
- * Implementation of DSGN-UI-001 Section 3.4
+ * @design Docs/Design/DSGN-UI-001_Tri_Mode_Execution_and_Universal_Sidebar.md#34-the-timebudgetservice
+ * @architecture Docs/Architecture/Views/02_Execution_and_Runtime.md#3-time-budgeting--checkpointing-engine
  * 
  * Provides deterministic wall-clock time monitoring for Google Apps Script
  * long-running processes to prevent unhandled 6-minute script execution timeouts.

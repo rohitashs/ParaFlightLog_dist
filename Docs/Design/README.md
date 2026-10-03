@@ -8,6 +8,15 @@ Every significant subsystem, engine, and feature follows the standardized templa
 
 ## Design Registry Index
 
+### Core Foundation Subsystems
+| Design ID | Title | Status | Revision | Parent Design | Umbrella Code | Description |
+| :--- | :--- | :--- | :---: | :--- | :--- | :--- |
+| [`DSGN-CORE-001`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Design/DSGN-CORE-001_Flight_Ingestion_and_Deduplication_Engine.md) | Flight Ingestion & Intelligent Dedupe | `Implemented` | `Rev 2.1` | None (Core) | [`Code/Ingestion.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Ingestion.gs) | Multi-source ingestion pipeline, MD5 hard dedupe, in-memory quality scoring (0–100), and reciprocal candidate tagging. |
+| [`DSGN-CORE-002`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Design/DSGN-CORE-002_Aeronautical_Physics_and_FAI_Scoring.md) | Aero Physics & FAI XC Scoring | `Implemented` | `Rev 2.1` | None (Core) | [`Code/Scoring.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Scoring.gs) | B/H record extraction, thermal/soaring/glide mode detection, RDP trajectory reduction, and FAI 5-point turnpoint optimization. |
+| [`DSGN-CORE-003`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Design/DSGN-CORE-003_Meteorological_and_Geocoding_Gateways.md) | Weather, Geocoding & League Gateways | `Implemented` | `Rev 2.1` | None (Core) | [`Code/Weather.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Weather.gs) | Open-Meteo archive/forecast fallback chain, Lawrence cloudbase formula, OSM Nominatim geocoding, and XContest direct probing. |
+| [`DSGN-CORE-004`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Design/DSGN-CORE-004_Google_Sheets_Database_Substrate_and_Formula_Engine.md) | Google Sheets DB Substrate & Formulas | `Implemented` | `Rev 2.1` | None (Core) | [`Code/Scaffold.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Scaffold.gs) | Dynamic column letter resolution, workbook Named Ranges, native `FILTER` lookups, batch formula application, and soft guardrails. |
+
+### Feature & Evolution RFCs
 | Design ID | Title | Status | Revision | Parent Design | Umbrella Code | Description |
 | :--- | :--- | :--- | :---: | :--- | :--- | :--- |
 | [`DSGN-LOG-001`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Design/DSGN-LOG-001_Activity_Logging_System.md) | Activity Logging System | `Implemented` | `Rev 1.0` | None (Root) | [`Code/Logger.gs`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Code/Logger.gs) | Extensible 4-column Activity Logs tab, tiered levels (Brief/Normal/Debug), conservative retention guardrails, and dialog clipboard sync. |

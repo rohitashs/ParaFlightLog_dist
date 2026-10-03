@@ -1,12 +1,14 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-10-02 21:52:07
+ * Updated: 2026-10-02 22:22:24
  */
 /**
- * Paragliding Flight Log v2.0 - XContest Integration
- * 
+ * MODULE: XContest Integration
  * Logic to verify if a flight exists on XContest.org using direct flight URL probing,
  * extract permanent internal flight IDs, and evaluate the 14-day competition claim deadline.
+ * 
+ * @design Docs/Design/DSGN-CORE-003_Meteorological_and_Geocoding_Gateways.md
+ * @architecture Docs/Architecture/Views/04_Integration_and_APIs.md#23-xcontestorg-and-seeyou-cloud-3d-integrations
  */
 
 var XContest = {};

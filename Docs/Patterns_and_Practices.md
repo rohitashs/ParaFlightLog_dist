@@ -213,6 +213,17 @@ Developing on this hybrid stack presents unique constraints and capabilities:
   3. **Audit & Build Scripts (`tools/`)**: Standalone Node.js analyzers (`tools/code_check_audit.js`), offline test runners (`tools/run_all_offline_tests.js`), and header updaters. Tracked in Git, never deployed to Google Apps Script.
   4. **Defense-in-Depth Shield (`.claspignore`)**: Explicitly ignore test patterns (`**/*.test.*`, `**/Test.gs`, `tests/**`, `tools/**`, `Docs/**`, `Plans/**`), ensuring developer tooling can never be accidentally pushed.
 
+### Pattern 20: Dual-Track Architectural Documentation & Two-Way Code Linking
+* **Problem**: In open-source and AI-collaborative ("vibe coding") projects, documentation easily drifts from code. Developers and AI agents cannot easily determine which architectural specifications govern a code file, what invariants protect it, or which files implement a design. In-code comments often either devolve into trivial syntax echoes (`// loop through rows`) that rot, or disappear entirely into blackbox code that human and AI contributors break during refactoring.
+* **Pattern**: Maintain a strict **Two-Way Linking Contract** and **Three-Tier In-Code Commenting Standard**:
+  1. **Top-Down Code Header Contract**: Every production `.gs` file must begin with a standardized JSDoc metadata header declaring `@design`, `@architecture`, `@tenet`, `@pattern`, and `@revision`.
+  2. **Bottom-Up Implementation Map Contract**: Every architecture view and subsystem RFC must conclude with an explicit machine-readable Implementation Map listing primary services, key interfaces, dependent dialogs, and automated tests.
+  3. **High-Signal "Why & Invariants" In-Code Commenting**:
+     * Never comment obvious JavaScript syntax.
+     * Document non-negotiable invariants (`// INVARIANT: ...`), design patterns (`// PATTERN X: ...`), and platform traps (`// GAS QUOTA LIMIT: ...`).
+     * Use comprehensive JSDoc (`@param`, `@returns`) on all public interface functions so AI agents infer correct types and boundaries zero-shot.
+  4. **Dual-Track View Separation**: Keep Functional Problem Space (what flight capabilities exist) strictly decoupled from Cross-Cutting Technical Concerns (how Apps Script execution limits, quotas, and Google Sheets storage behave).
+
 ---
 
 ## 7. Forbidden Code Smells & Anti-Patterns Checklist

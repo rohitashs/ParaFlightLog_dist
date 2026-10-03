@@ -1,12 +1,16 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-10-02 21:52:07
+ * Updated: 2026-10-02 22:22:24
  */
 /**
  * Paragliding Flight Log v2.0
  * 
  * MODULE: IGC Parser
  * Responsible for parsing raw IGC text into a structured object with fixes.
+ * 
+ * @design Docs/Design/DSGN-CORE-002_Aeronautical_Physics_and_FAI_Scoring.md
+ * @architecture Docs/Architecture/Views/01_Functional_View.md#22-subsystem-2-aeronautical-physics--mode-detection
+ * @revision Rev 2.1
  */
 
 var PARSER = {

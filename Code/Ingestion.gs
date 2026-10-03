@@ -1,12 +1,16 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-10-02 21:52:07
+ * Updated: 2026-10-02 22:22:24
  * 
  * MODULE: Ingestion Service
  * Handles Flight Log Parsing, Analysis/Scoring Orchestration, Geo-enrichment,
  * Deduplication (MD5), and Spreadsheet Row Insertion.
  * 
  * Note: File uploads, Watch Folder scanning, and Drive I/O are handled in FileHandling.gs.
+ * 
+ * @design Docs/Design/DSGN-CORE-001_Flight_Ingestion_and_Deduplication_Engine.md
+ * @architecture Docs/Architecture/Views/01_Functional_View.md#21-subsystem-1-intelligent-flight-ingestion--extraction
+ * @revision Rev 2.1
  */
 
 var INGESTION = INGESTION || {};
