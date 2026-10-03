@@ -89,7 +89,7 @@ The dialog interface and the underlying execution payload are structured around 
 │ Update Scope & Target Elements:                                                                         │
 │   [ 🎯 Select Recommended Only ]   [ 🗹 Select All ]   [ 🗵 Clear All ]                                   │
 │                                                                                                         │
-│  Element / System Tab     Flights     Dashboard   Equipment    Config    Pilot_Prof    Queue    App_Log │
+│  Element / System Tab     Flights     Dashboard   Equipment    Config    Pilot_Prof    Queue    Act_Logs│
 │ ─────────────────────────────────────────────────────────────────────────────────────────────────────── │
 │  [x] Gate Sheet Updates     [x]          [x]         [x]         [x]        [x]         [x]       [x]   │
 │ ─────────────────────────────────────────────────────────────────────────────────────────────────────── │
@@ -137,7 +137,7 @@ Every component declared in `SYSTEM_MANIFEST.components` is assigned an explicit
   * `Equipment.validations`
   * `Pilot_Profile.keys`
   * `Automation_Queue.headers`
-  * `App_Log.headers`
+  * `Activity_Logs.headers`
 * **Optional (4 Components)**:
   * `User_Guide.grid`, `User_Guide.headers`, `User_Guide.notes`, `User_Guide.guardrails`
 

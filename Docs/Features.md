@@ -202,19 +202,19 @@ Transforms the Google Sheets visual grid into a live visual design surface while
 *   **Native Non-Destructive Column Movement**: Robust wrapper around native `sheet.moveColumns(columnSpec, destinationIndex)` that temporarily unmerges Row 3 and removes column groups, repositions entire columns intact (preserving formatting, dropdowns, validations, and notes), and re-establishes groupings.
 *   **Dynamic Formula Resilience**: Decouples formula generators from hardcoded column letter literals (`!B`, `!C`, `!L`, `!M`), resolving column letters dynamically at runtime (`getColLetter_(map, colName)`) to guarantee zero formula breakage when columns are moved.
 
-## 15. 🔄 Unified System Update Manager & Maintenance Orchestrator
-*Maps to `RQ-SYS-001`, `RQ-SYS-007`, `CR-SYS-006`, `DSGN-MNT-001`*
+## 15. 🔄 Unified System Maintenance Cockpit & Manifest Inspector
+*Maps to `RQ-SYS-001`, `RQ-SYS-002`, `RQ-SYS-007`, `RQ-SYS-010`, `CR-SYS-006`, `CR-SYS-010`, `DSGN-MNT-001`*
 
 A centralized update and sheet maintenance cockpit replacing fragmented Admin menu items:
-*   **Single Entry Point (`Flight Log > Admin > System Update & Maintenance...`)**: Replaces scattered formatting and scaffolding commands with an intuitive, two-stage interactive update dialog (`SystemUpdateDialog.html`).
-*   **5-Tier Hierarchical Execution Architecture**: Modularizes maintenance into strictly ordered dependency layers:
-    1.  *Tier 1 (Dimensions & Tabs)*: Verifies sheet tabs, ensures 2,000 x 70 dimensions, and sets frozen panes.
-    2.  *Tier 2 (Column Schema & Layout)*: Synchronizes column headers, cell notes, pastel categories, and column groups.
-    3.  *Tier 3 (Validations & Dropdown Ranges)*: Re-binds data validation rules, dropdowns, and idempotent conditional formatting.
-    4.  *Tier 4 (Formula & Dependency Resilience)*: Dynamically re-links Dashboard formulas, sequence counters, and status filters.
-    5.  *Tier 5 (Reference Data & Documentation)*: Synchronizes `Pilot_Profile` fields and re-scaffolds the `User Guide` tab.
-*   **Automated Pre-Flight Safety Backup**: Automatically writes timestamped backup snapshots of active configuration and layout manifests to the Master Log folder before executing structural changes.
-*   **Preset Profiles & Tri-Mode Execution**: Offers Quick Fix (validations only), Standard Update (Tiers 2–4), and Full Overhaul (Tiers 1–5) profiles with execution in modal, modeless Universal Sidebar, or headless background queue.
+*   **Single Unified Cockpit (`Flight Log > Admin > System Maintenance...`)**: Replaces scattered formatting and scaffolding commands with an intuitive, interactive update cockpit (`SystemMaintenanceDialog.html`).
+*   **Visual 2D Matrix Scope (8 Sheets $\times$ 7 Element Types)**: Renders a comprehensive matrix allowing granular selection of target components across system sheets (`Flights`, `Dashboard`, `Equipment`, `Config`, `Pilot_Profile`, `Automation_Queue`, `Activity_Logs`, `User_Guide`) and element types (Grid & Dimensions, Headers & Groupings, Notes & Tooltips, Validations & Dropdowns, Formulas & Named Ranges, Parameters & Values, Soft Guardrails).
+*   **Three-Tier Invariant Enforcement**:
+    1.  *Mandatory (`🔴`)*: Core system invariants (e.g. dynamic formulas, named ranges, lookup substrate) are locked and auto-enforced by the orchestrator even if the parent sheet master checkbox is unchecked, guaranteeing zero broken formulas or missing lookups.
+    2.  *Recommended (`🟢`)*: Standard schema, validations, and headers enabled by default and gated by sheet master checkboxes.
+    3.  *Optional (`🔵`)*: Non-critical documentation and reference updates (`User_Guide` content).
+*   **Cumulative Drift Detection & Manifest Engine**: Compares declared `SYSTEM_MANIFEST` against `APPLIED_MANIFEST` in `DocumentProperties`; automatically pre-checks and highlights only drifted or unapplied components.
+*   **Dual Pre-Flight Safety Backups**: Provides one-click In-Workbook System Sheet Clones (`Backup Flights`, `Backup Config`, etc.) and a browser-side Config JSON snapshot download before executing updates.
+*   **System Info & Manifest Inspector (`Flight Log > Admin > System Info...`)**: Diagnostic inspector (`SystemInfoDialog.html`) displaying real-time component version tags (`v2.1.0`), sheet accordions with Green/Amber health status rollups, environment quota stats, and a 1-click jump into the Maintenance Cockpit with pending updates pre-selected.
 
 
 

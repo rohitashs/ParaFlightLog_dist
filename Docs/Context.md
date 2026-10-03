@@ -1,9 +1,9 @@
 # Project Context & Ways of Working (Source of Truth)
 
 ## 🧠 Agent Memory & Context
-**Status**: Active Development (v0.8.21)
-**Last Session Focus**: Dedupe Engine Overhaul, In-Memory Row Quality Scoring, Discovery Metrics, Queue Progress Checkpoint Preservation, Logbook Duplicate Scanner ([`CR-ING-009`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Backlog.md), [`Bug-ING-007`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Backlog.md), [`Bug-AUT-001`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Backlog.md), [`Bug-ING-008`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Backlog.md), [`Bug-ING-009`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Backlog.md)), Configurable RDP Tolerance ([`CR-CFG-002`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Backlog.md)), Bulk Flight Status Change Utility with Blank Filter ([`CR-MNT-004`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Backlog.md)), and Dropdown & Validation Auto-Expansion ([`Bug-ING-010`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Backlog.md)).
-**Next Focus**: Guided Task Wizards ([`CR-UI-020`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Backlog.md)) and Distributed Multi-Instance Update & Lifecycle Manager ([`RQ-SYS-010`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Backlog.md)).
+**Status**: Active Production & Continuous Evolution (v2.1.0)
+**Last Session Focus**: Unified System Maintenance Cockpit (`CR-SYS-006` / `DSGN-MNT-001`), System Info & Manifest Inspector (`CR-SYS-010`), Dynamic Formula Resilience (`CR-SYS-005`), Automated Code Check & Verification Engine (`tools/code_check_audit.js`), Legacy Blacklist Scrubbing, Meta-Process Evolution Protocol (`SOP 12` / `Pattern 18`), and Native Google Sheets Resilience (`CR-SYS-009`).
+**Next Focus**: Header Row 4 Native Filter Capability (`CR-UI-022`), Pilot Resources Directory (`CR-SYS-012`), Checkbox Dropdown Replacement (`CR-SYS-013`), Flight Data Export Utility (`CR-EXP-001`), and CSV Flight Import (`CR-ING-010`).
 
 This file is the **long-term memory** for the project. Read this first to understand *how* we work and *where* we are.
 

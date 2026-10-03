@@ -17,12 +17,15 @@ This document defines the low-level **Code Organization**, **Algorithms**, and *
 
 ### Modules (`Code/`)
 1.  **Orchestrator (`Code.gs`)**: Entry point. Maps Triggers/Menus to Controllers.
-2.  **Config (`Config.gs`)**: Static Definitions (`TABS`, `CFG`).
+2.  **Config (`Config.gs`)**: Static Definitions (`TABS`, `CFG`, `SYSTEM_MANIFEST`).
     *   *Rule*: Never hardcode column indices. Use `Config` maps.
-    *   Defines `TABS.CONFIG` (Amber `#FF9800`, index 6) combining Parameters and Lookups into a single sheet. Backwards compatibility aliases `TABS.PARAMETERS` and `TABS.LOOKUPS` map directly to `TABS.CONFIG`.
-3.  **Scaffold (`Scaffold.gs`)**: View Controller. Creates Sheets/Validations.
+    *   Defines `TABS.CONFIG` (Amber `#FF9800`, index 6) combining Parameters and Lookups into a single sheet.
+    *   Defines `SYSTEM_MANIFEST`: The authoritative 23-component registry declaring versions, dependencies, and operational tiers (`MANDATORY`, `RECOMMENDED`, `OPTIONAL`).
+3.  **Scaffold & Maintenance Orchestrator (`Scaffold.gs`)**: View Controller & Atomic Maintenance Engine (`DSGN-MNT-001`, `CR-SYS-006`, `CR-SYS-010`).
     *   `scaffoldConfig_`: Unifies Parameters (Cols A:C) and Lookups (Cols E:N, spacer Col D) into 8 core tabs.
-    *   *Map*: `RQ-SYS-002`.
+    *   `SYSTEM_ORCHESTRATOR`: Atomic 3-tier maintenance orchestrator executing granular sheet updates (Grid, Headers, Notes, Validations, Formulas, Parameters, Guardrails) with mandatory invariant enforcement, dual pre-flight backups, and manifest synchronization.
+    *   Supports `SystemMaintenanceDialog.html` (2D Matrix update cockpit) and `SystemInfoDialog.html` (Manifest & health inspector).
+    *   *Map*: `RQ-SYS-001`, `RQ-SYS-002`, `RQ-SYS-007`, `RQ-SYS-010`.
 4.  **File Handling Service (`FileHandling.gs`)**: Drive I/O, Watch Folder scanning, Staged Uploads, ZIP extractions, File cleanup, and Master Log copying.
 5.  **Ingestion Service (`Ingestion.gs`)**: Pipeline Controller. Parse/Score orchestration, deduplication, and row mapping.
     *   *Map*: `RQ-ING-001`, `RQ-ING-001.4`, `CR-ING-008`.
