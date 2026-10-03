@@ -1,9 +1,30 @@
 # Project Change Log
 
-## Session: Unified System Maintenance Cockpit (CR-SYS-006 / DSGN-MNT-001 Rev 2.1), 3-Tier Execution Invariants, 4-State Matrix UI & System Info Inspector (CR-SYS-010)
-**Date**: 2026-10-02
-**Versions**: Core v2.1.0
-**Focus**: Unified System Maintenance Cockpit (`CR-SYS-006` / `DSGN-MNT-001 Rev 2.1`), Three-Tier Component Classification (`mandatory`, `recommended`, `optional`), Mandatory Auto-Enforcement as a Universal System Invariant, Authoritative Sheet Gating, 4-State Visual Matrix UI, Dual Pre-Flight Safety Backups (In-Workbook Sheet Clones + Client-Side Config JSON Snapshot Download), System Info & Manifest Inspector (`CR-SYS-010` / `SystemInfoDialog.html`), Script-to-Sheet Decoupling & Dual-State Lag Resilience, and Automated Test Suite Expansion (13/13 suites passed).
+## Session: Operational Ergonomics Bundle, Modal Layout Standardization, Real-Time Progress Streaming, and Vocabularies Restoration
+**Date**: 2026-10-03
+**Versions**: Core v2.2.0 (Flights.formulas v2.2-max-sequence, Config.lookups v2.3-flight-types-restore)
+**Focus**: Operational Ergonomics Bundle (`CR-MNT-005`, `CR-UI-021`, `CR-UI-022`, `CR-SYS-013`), Header Row Protections Removal (`Bug-UI-010`), Dynamic Flight No Sequence Restoration (`Bug-SYS-008`), System Maintenance Modal Layout Standardization & Real-Time Progress Streaming (`Bug-UI-011`), Config Controlled Vocabularies Restoration (`Bug-CFG-003`), AutoSummary format overhaul, and IGC Hash deduplication group isolation.
+
+*   `[Feat]` **Operational Ergonomics Bundle (`CR-MNT-005`, `CR-UI-021`, `CR-UI-022`, `CR-SYS-013`)**:
+    *   **CR-MNT-005 (Flight Updates: Update from Linked IGC & Regenerate Auto Summary)**: Added "Update from Linked IGC" (re-extracts telemetry while strictly preserving pilot notes and status) and "Regenerate Auto Summary" to `FlightMaintenanceDialog.html` and row execution pipeline.
+    *   **CR-UI-021 (Bulk Status Change Dialog Color Harmonization)**: Harmonized status dot and badge colors in `ChangeFlightStatusDialog.html` to identically match Google Sheets conditional formatting (`Review?` soft blue `#1E88E5`, `Invalid?` soft red `#E53935`, `Remove` slate gray `#757575`, `Dup-Primary` gold, `Dup-Others` orange, `Valid` soft green).
+    *   **CR-UI-022 (Header Row 4 Native Filters)**: Implemented native filter anchor on Row 4 of `Flights` sheet for operational columns without disrupting column headers or frozen panes.
+    *   **CR-SYS-013 (In-Sheet Binary Dropdown Replacement)**: Replaced fragile native checkboxes with resilient `Y / N` data validation dropdowns in `Closed?` and system parameters (`.setAllowInvalid(true)`).
+    *   **AutoSummary Format Overhaul**: Standardized Auto Summary string synthesis to `"Site, Duration, Track Dist, Max Altitude, Flight Type"` (e.g. `"Bir Billing, 1:30 hrs, 24.5 km, 3100 m, XC"`) with formatted hours/minutes (`1:30 hrs` instead of decimal `1.5 hrs`).
+    *   **IGC Hash Column Group Isolation**: Moved the critical `IGC Hash` deduplication column into a dedicated Technical Group, collapsed and protected, preventing accidental pilot corruption.
+*   `[Fix]` **Bug-UI-010 (Header Soft Guardrails Removal for Group Toggling)**:
+    *   Removed native range protections from `Flights` header rows 1–4 that triggered intrusive Google Sheets warnings when clicking `+` or `-` to expand/collapse column groups. Preserved formula guardrail strictly on `Flight No` (Row 5+).
+*   `[Fix]` **Bug-SYS-008 (Dynamic Flight No Sequence Formula Restoration)**:
+    *   Restored dynamic sequence formula `=IFERROR(MAX(INDIRECT("C" & (ROW()+1) & ":C")), 0) + 1` in `Code/Scaffold.gs` and `Code/Config.gs`, fixing inversion where newest flight had been assigned #1. Earliest flight at bottom evaluates to 1 and newest at top receives the highest number.
+*   `[Fix]` **Bug-UI-011 (System Maintenance Dialog Layout & Real-Time Progress Streaming)**:
+    *   Standardized `SystemMaintenanceDialog.html` to match the standard modal layout: docked action buttons directly above a fixed bottom `.footer` containing `.status-line` and `#progress-bar`.
+    *   Expanded `#log-console` to 100% height (`height: 100% !important; max-height: none !important`) eliminating whitespace.
+    *   Implemented 7-step execution loop (`prepareSystemMaintenance` and `runSystemMaintenanceStep` RPCs) streaming activity logs in real-time with auto-scrolling and smooth progress bar animation.
+*   `[Fix]` **Bug-CFG-003 (Free Fly & Canonical Controlled Vocabularies Restoration)**:
+    *   Restored `Free Fly` and canonical flight types (`Free Fly`, `XC`, `Thermal XC`, `Ridge Soaring`, `Hike & Fly`, `Tandem`, `SIV / Maneuvers`, `Comp`, `Training`, `Other`) in `Config!G3:G` (`LOOKUP_FLIGHT_TYPES`).
+    *   Restored geometric XC Classes (`Free Flight`, `Flat Triangle`, `FAI Triangle`, `Out-and-Return`) in `Config!H3:H` (`LOOKUP_XC_CLASSES`).
+    *   Implemented safe merge in `AtomicUpdaters.updateConfigLookupsAndNamedRanges` to preserve pilot-added custom types. Bumped manifest version `Config.lookups` to `v2.3-flight-types-restore`.
+
 
 *   `[Imp]` **CR-SYS-006 (Unified System Maintenance Cockpit, 3-Tier Classification & Mandatory Invariants)**:
     *   **Consolidated Admin Menu**: Replaced fragmented `Sheet Maintenance & Views` submenus with a single modern entry: `Flight Log > Admin > System Maintenance...` (`showSystemMaintenanceDialog`).
