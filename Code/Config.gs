@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-10-03 00:44:24
+ * Updated: 2026-10-03 01:10:55
  * 
  * MODULE: Configuration
  * 
@@ -468,7 +468,7 @@ var SYSTEM_MANIFEST = {
     'Flights.headers':     { version: 'v2.1-col-schema',       tier: 'mandatory' },
     'Flights.notes':       { version: 'v2.2-comprehensive-tooltips', tier: 'optional' },
     'Flights.validations': { version: 'v2.2-yn-closed-valid', tier: 'recommended' },
-    'Flights.formulas':    { version: 'v2.1-flight-no-dynamic',tier: 'mandatory' },
+    'Flights.formulas':    { version: 'v2.2-max-sequence',tier: 'mandatory' },
     'Flights.guardrails':  { version: 'v2.2-formula-only',     tier: 'recommended' },
 
     // Dashboard
@@ -506,7 +506,7 @@ var MANIFEST_COMPONENT_LABELS = {
   'Flights.headers': 'Row 3 Category Groupings & Row 4 Column Headers',
   'Flights.notes': 'Row 4 Column Tooltips & Field Notes',
   'Flights.validations': 'Dropdown Validations & Conditional Formatting',
-  'Flights.formulas': 'Dynamic Flight No Formula Sequence (=ROW()-4)',
+  'Flights.formulas': 'Dynamic Flight No Sequence (=MAX(C(row+1):C)+1)',
   'Flights.guardrails': 'Soft Guardrail Protections (Formula Sequence Only)',
   'Dashboard.grid': 'Grid Bounds & Clean Layout (6 Cols, 70 Rows)',
   'Dashboard.formulas': 'Dynamic Formulas, Queries & DASHBOARD_REVIEW_FILTER',

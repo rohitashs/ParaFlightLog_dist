@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-10-03 00:44:24
+ * Updated: 2026-10-03 01:10:55
  */
 /**
  * Paragliding Flight Log v2.0 - Scaffolding & Setup
@@ -1862,12 +1862,13 @@ var AtomicUpdaters = {
     if (!sh) return;
     var map = getColumnMap_(sh);
     var flightNoCol = map['Flight No'] || 3;
+    var fNoColLetter = columnToLetter_(flightNoCol);
     var lastRow = Math.max(sh.getLastRow(), 5);
     var numRows = lastRow - 4;
     if (numRows > 0) {
       var formulas = [];
       for (var r = 0; r < numRows; r++) {
-        formulas.push(['=ROW()-4']);
+        formulas.push(['=IFERROR(MAX(INDIRECT("' + fNoColLetter + '" & (ROW()+1) & ":' + fNoColLetter + '")), 0) + 1']);
       }
       sh.getRange(5, flightNoCol, numRows, 1).setFormulas(formulas);
     }
@@ -2116,18 +2117,11 @@ var SystemMaintenanceOrchestrator = {
     };
   },
 
-  execute: function(selectedComponents, options) {
-    var logs = [];
-    var ss = SpreadsheetApp.getActive();
-    options = options || {};
+  prepare: function(selectedComponents) {
     selectedComponents = selectedComponents || {};
-
-    logs.push('[START] Beginning System Maintenance orchestration...');
-
-    // Guarantee that any pending Mandatory updates are ALWAYS included
-    // as system invariants, protecting spreadsheet integrity.
     var currentApplied = getAppliedManifest_();
     var effectiveComponents = {};
+    var mandatoryAutoEnforced = [];
     for (var k in selectedComponents) {
       if (selectedComponents[k]) effectiveComponents[k] = true;
     }
@@ -2140,103 +2134,146 @@ var SystemMaintenanceOrchestrator = {
         var mCurr = (typeof mCurrRaw === 'object' && mCurrRaw !== null && mCurrRaw.version) ? mCurrRaw.version : (mCurrRaw || 'Not Applied');
         if (mTier === 'mandatory' && mCurr !== mLatest) {
           if (!effectiveComponents[mKey]) {
-            logs.push('[INVARIANT] Auto-enforcing mandatory system component: ' + mKey);
+            mandatoryAutoEnforced.push(mKey);
           }
           effectiveComponents[mKey] = true;
         }
       }
     }
+    return {
+      success: true,
+      effectiveComponents: effectiveComponents,
+      mandatoryAutoEnforced: mandatoryAutoEnforced
+    };
+  },
 
-    // Step 0: Pre-Flight Safety Backup
-    if (options.backupSheets !== false) {
-      logs.push('[BACKUP] Creating pre-update safety backup of system sheets...');
-      try {
-        backupSystemSheets_();
-        logs.push('[BACKUP OK] In-workbook sheet clones created successfully.');
-      } catch (e) {
-        logs.push('[BACKUP WARN] Backup warning: ' + e.message);
-      }
-    }
+  executePhase: function(phase, effectiveComponents, options) {
+    var logs = [];
+    var ss = SpreadsheetApp.getActive();
+    options = options || {};
+    effectiveComponents = effectiveComponents || {};
 
-    // Topological Execution Order:
-    // 1. Equipment (Substrate for lookups)
-    SheetSpecialists.updateEquipment(effectiveComponents, ss, logs);
-
-    // 2. Config (Parameters, Lookups & Named Ranges)
-    SheetSpecialists.updateConfig(effectiveComponents, ss, logs);
-
-    // 3. Flights (Headers, Notes, Validations, Formulas, Guardrails)
-    SheetSpecialists.updateFlights(effectiveComponents, ss, logs);
-
-    // 4. Dashboard (Bounds, Formulas bound to DASHBOARD_REVIEW_FILTER, Guardrails)
-    SheetSpecialists.updateDashboard(effectiveComponents, ss, logs);
-
-    // 5. Reference & Auxiliary Sheets
-    SheetSpecialists.updatePilotProfile(effectiveComponents, ss, logs);
-    SheetSpecialists.updateQueue(effectiveComponents, ss, logs);
-    SheetSpecialists.updateAppLog(effectiveComponents, ss, logs);
-    SheetSpecialists.updateUserGuide(effectiveComponents, ss, logs);
-
-    // Commit applied manifest
-    var applied = getAppliedManifest_();
-    var appliedCount = 0;
-    for (var key in effectiveComponents) {
-      if (effectiveComponents.hasOwnProperty(key) && effectiveComponents[key] && SYSTEM_MANIFEST.components[key]) {
-        var cDef = SYSTEM_MANIFEST.components[key];
-        applied[key] = (typeof cDef === 'object' && cDef.version) ? cDef.version : cDef;
-        appliedCount++;
-      }
-    }
-    // Handle alias commitments (migration bridges)
-    if ((effectiveComponents['App_Log.headers'] || effectiveComponents['Activity_Logs.headers']) && SYSTEM_MANIFEST.components['Activity_Logs.headers']) { // Legacy alias migration bridge
-      var alDef = SYSTEM_MANIFEST.components['Activity_Logs.headers'];
-      applied['Activity_Logs.headers'] = (typeof alDef === 'object' && alDef.version) ? alDef.version : alDef;
-    }
-    if ((effectiveComponents['User_Guide.notes'] || effectiveComponents['User_Guide.content']) && SYSTEM_MANIFEST.components['User_Guide.content']) {
-      var ugDef = SYSTEM_MANIFEST.components['User_Guide.content'];
-      applied['User_Guide.content'] = (typeof ugDef === 'object' && ugDef.version) ? ugDef.version : ugDef;
-    }
-    setAppliedManifest_(applied);
-
-    logs.push('[COMMIT] Committed ' + appliedCount + ' updated components to APPLIED_MANIFEST.');
-    logs.push('[COMPLETE] System Maintenance execution finished successfully.');
-
-    // Persist all maintenance logs in one atomic batch to the Activity Logs sheet
-    try {
-      if (typeof LOG !== 'undefined' && typeof LOG.writeBatch === 'function') {
-        var logRows = [];
-        var now = new Date();
-        for (var li = 0; li < logs.length; li++) {
-          logRows.push([
-            'System Maintenance',
-            now,
-            logs[li],
-            'Applied ' + appliedCount + ' components'
-          ]);
+    if (phase === 'init') {
+      logs.push('[START] Beginning System Maintenance orchestration...');
+      if (options.backupSheets !== false) {
+        logs.push('[BACKUP] Creating pre-update safety backup of system sheets...');
+        try {
+          backupSystemSheets_();
+          logs.push('[BACKUP OK] In-workbook sheet clones created successfully.');
+        } catch (e) {
+          logs.push('[BACKUP WARN] Backup warning: ' + e.message);
         }
-        LOG.writeBatch(logRows);
       }
-    } catch (logErr) {
-      console.warn('[LOG WARN] Failed to write maintenance logs to Activity Logs: ' + logErr.message);
-    }
+    } else if (phase === 'equipment') {
+      SheetSpecialists.updateEquipment(effectiveComponents, ss, logs);
+    } else if (phase === 'config') {
+      SheetSpecialists.updateConfig(effectiveComponents, ss, logs);
+    } else if (phase === 'flights') {
+      SheetSpecialists.updateFlights(effectiveComponents, ss, logs);
+    } else if (phase === 'dashboard') {
+      SheetSpecialists.updateDashboard(effectiveComponents, ss, logs);
+    } else if (phase === 'reference') {
+      SheetSpecialists.updatePilotProfile(effectiveComponents, ss, logs);
+      SheetSpecialists.updateQueue(effectiveComponents, ss, logs);
+      SheetSpecialists.updateAppLog(effectiveComponents, ss, logs);
+      SheetSpecialists.updateUserGuide(effectiveComponents, ss, logs);
+    } else if (phase === 'finalize') {
+      var applied = getAppliedManifest_();
+      var appliedCount = 0;
+      for (var key in effectiveComponents) {
+        if (effectiveComponents.hasOwnProperty(key) && effectiveComponents[key] && SYSTEM_MANIFEST.components[key]) {
+          var cDef = SYSTEM_MANIFEST.components[key];
+          applied[key] = (typeof cDef === 'object' && cDef.version) ? cDef.version : cDef;
+          appliedCount++;
+        }
+      }
+      if ((effectiveComponents['App_Log.headers'] || effectiveComponents['Activity_Logs.headers']) && SYSTEM_MANIFEST.components['Activity_Logs.headers']) { // Legacy migration bridge
+        var alDef = SYSTEM_MANIFEST.components['Activity_Logs.headers'];
+        applied['Activity_Logs.headers'] = (typeof alDef === 'object' && alDef.version) ? alDef.version : alDef;
+      }
+      if ((effectiveComponents['User_Guide.notes'] || effectiveComponents['User_Guide.content']) && SYSTEM_MANIFEST.components['User_Guide.content']) {
+        var ugDef = SYSTEM_MANIFEST.components['User_Guide.content'];
+        applied['User_Guide.content'] = (typeof ugDef === 'object' && ugDef.version) ? ugDef.version : ugDef;
+      }
+      setAppliedManifest_(applied);
 
-    var exportPayload = null;
-    if (options.exportConfig) {
+      logs.push('[COMMIT] Committed ' + appliedCount + ' updated components to APPLIED_MANIFEST.');
+      logs.push('[COMPLETE] System Maintenance execution finished successfully.');
+
       try {
-        exportPayload = getConfigExportPayload_();
-        logs.push('[EXPORT] Prepared configuration JSON backup for download.');
-      } catch (e) {
-        logs.push('[EXPORT WARN] Config export warning: ' + e.message);
+        if (typeof LOG !== 'undefined' && typeof LOG.writeBatch === 'function') {
+          var logRows = [];
+          var now = new Date();
+          for (var li = 0; li < logs.length; li++) {
+            logRows.push([
+              'System Maintenance',
+              now,
+              logs[li],
+              'Applied ' + appliedCount + ' components'
+            ]);
+          }
+          LOG.writeBatch(logRows);
+        }
+      } catch (logErr) {
+        console.warn('[LOG WARN] Failed to write maintenance logs to Activity Logs: ' + logErr.message);
       }
+
+      var exportPayload = null;
+      if (options.exportConfig) {
+        try {
+          exportPayload = getConfigExportPayload_();
+          logs.push('[EXPORT] Prepared configuration JSON backup for download.');
+        } catch (e) {
+          logs.push('[EXPORT WARN] Config export warning: ' + e.message);
+        }
+      }
+
+      return {
+        success: true,
+        phase: phase,
+        logs: logs,
+        appliedCount: appliedCount,
+        exportPayload: exportPayload
+      };
     }
 
     return {
       success: true,
-      logs: logs,
+      phase: phase,
+      logs: logs
+    };
+  },
+
+  execute: function(selectedComponents, options) {
+    options = options || {};
+    var prep = this.prepare(selectedComponents);
+    var eff = prep.effectiveComponents;
+    var allLogs = [];
+    
+    if (prep.mandatoryAutoEnforced && prep.mandatoryAutoEnforced.length > 0) {
+      prep.mandatoryAutoEnforced.forEach(function(m) {
+        allLogs.push('[INVARIANT] Auto-enforcing mandatory system component: ' + m);
+      });
+    }
+
+    var phases = ['init', 'equipment', 'config', 'flights', 'dashboard', 'reference', 'finalize'];
+    var appliedCount = 0;
+    var exportPayload = null;
+
+    for (var i = 0; i < phases.length; i++) {
+      var res = this.executePhase(phases[i], eff, options);
+      if (res.logs) allLogs = allLogs.concat(res.logs);
+      if (res.appliedCount !== undefined) appliedCount = res.appliedCount;
+      if (res.exportPayload) exportPayload = res.exportPayload;
+    }
+
+    return {
+      success: true,
+      logs: allLogs,
       appliedCount: appliedCount,
-      exportPayload: exportPayload,
-      diff: diffManifests_(applied)
+      exportPayload: exportPayload
     };
   }
 };
+
 

@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-10-03 00:44:24
+ * Updated: 2026-10-03 01:10:55
  * Test access verification: Verified GAS write access on 2026-09-25 08:26:00.
  * 
  * CORE MODULE: Orchestration Only.
@@ -2793,9 +2793,26 @@ function getSystemMaintenanceStatus() {
 }
 
 /**
- * Public RPC gateway for executing selected system maintenance operations.
+ * Public RPC gateway for preparing system maintenance plan.
+ * Returns effective components and planned phases.
+ */
+function prepareSystemMaintenance(selectedComponents) {
+  return SystemMaintenanceOrchestrator.prepare(selectedComponents);
+}
+
+/**
+ * Public RPC gateway for executing an individual phase of system maintenance.
+ * Enables live progress updates and incremental activity streaming.
+ */
+function runSystemMaintenanceStep(phase, effectiveComponents, options) {
+  return SystemMaintenanceOrchestrator.executePhase(phase, effectiveComponents, options);
+}
+
+/**
+ * Public RPC gateway for executing selected system maintenance operations (all-in-one).
  */
 function runSystemMaintenance(selectedComponents, options) {
   return SystemMaintenanceOrchestrator.execute(selectedComponents, options);
 }
+
 

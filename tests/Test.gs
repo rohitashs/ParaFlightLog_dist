@@ -1151,11 +1151,29 @@ function testSystemMaintenanceAndManifest_() {
   if (typeof SystemMaintenanceOrchestrator.getStatus !== 'function' || typeof SystemMaintenanceOrchestrator.execute !== 'function') {
     return { module: 'SystemMaintenanceAndManifest', error: 'SystemMaintenanceOrchestrator missing getStatus or execute methods' };
   }
+  if (typeof SystemMaintenanceOrchestrator.prepare !== 'function' || typeof SystemMaintenanceOrchestrator.executePhase !== 'function') {
+    return { module: 'SystemMaintenanceAndManifest', error: 'SystemMaintenanceOrchestrator missing prepare or executePhase methods' };
+  }
   if (typeof AtomicUpdaters === 'undefined' || typeof SheetSpecialists === 'undefined') {
     return { module: 'SystemMaintenanceAndManifest', error: 'AtomicUpdaters or SheetSpecialists missing' };
   }
 
+  // 6. Test prepare and invariant auto-enforcement
+  var prep = SystemMaintenanceOrchestrator.prepare({});
+  if (!prep || !prep.success || !prep.effectiveComponents) {
+    return { module: 'SystemMaintenanceAndManifest', error: 'prepare() failed to return effectiveComponents' };
+  }
+  if (!prep.effectiveComponents['Flights.headers'] || !prep.effectiveComponents['Flights.formulas']) {
+    return { module: 'SystemMaintenanceAndManifest', error: 'prepare() did not auto-enforce mandatory Flights invariants' };
+  }
+
+  // 7. Verify RPC endpoints exported in Code.gs
+  if (typeof prepareSystemMaintenance !== 'function' || typeof runSystemMaintenanceStep !== 'function') {
+    return { module: 'SystemMaintenanceAndManifest', error: 'prepareSystemMaintenance or runSystemMaintenanceStep RPC missing' };
+  }
+
   return { module: 'SystemMaintenanceAndManifest', idx: true };
 }
+
 
 

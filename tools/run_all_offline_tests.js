@@ -18,7 +18,16 @@ global.SpreadsheetApp = {
     })
   })
 };
+global.PropertiesService = {
+  _store: {},
+  getDocumentProperties: () => ({
+    getProperty: (k) => global.PropertiesService._store[k] || null,
+    setProperty: (k, v) => { global.PropertiesService._store[k] = v; },
+    deleteProperty: (k) => { delete global.PropertiesService._store[k]; }
+  })
+};
 global.Session = {
+
   getScriptTimeZone: () => 'UTC'
 };
 global.Utilities = {
@@ -93,6 +102,7 @@ results.push(testWorkerBatchRouting_());
 results.push(testDedupeEngineEnhancements_());
 results.push(testStatusChangeUtility_());
 results.push(testDynamicFormulaResilience_());
+results.push(testSystemMaintenanceAndManifest_());
 
 const failures = results.filter(r => !r.idx || r.error);
 console.log('Results summary: Total=' + results.length + ', Passed=' + (results.length - failures.length) + ', Failed=' + failures.length);
