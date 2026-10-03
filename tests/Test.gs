@@ -1087,8 +1087,8 @@ function testSystemMaintenanceAndManifest_() {
   if (typeof SYSTEM_MANIFEST === 'undefined' || !SYSTEM_MANIFEST.version || !SYSTEM_MANIFEST.components) {
     return { module: 'SystemMaintenanceAndManifest', error: 'SYSTEM_MANIFEST missing or invalid' };
   }
-  if (SYSTEM_MANIFEST.version !== '2.1.0') {
-    return { module: 'SystemMaintenanceAndManifest', error: 'SYSTEM_MANIFEST version expected 2.1.0, got ' + SYSTEM_MANIFEST.version };
+  if (SYSTEM_MANIFEST.version !== '2.2.0') {
+    return { module: 'SystemMaintenanceAndManifest', error: 'SYSTEM_MANIFEST version expected 2.2.0, got ' + SYSTEM_MANIFEST.version };
   }
 
   // 2. Test diffManifests_ with empty applied manifest (Clean / Unapplied Sheet)

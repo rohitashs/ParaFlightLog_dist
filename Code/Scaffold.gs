@@ -674,12 +674,14 @@ function scaffoldConfig_(ss) {
 
   var logLevelRule = SpreadsheetApp.newDataValidation().requireValueInList(['Brief', 'Normal', 'Debug'], true).build();
   var yesNoRule = SpreadsheetApp.newDataValidation().requireValueInList(['Yes', 'No'], true).build();
+  var intervalRule = SpreadsheetApp.newDataValidation().requireValueInList(['5', '10', '15', '30', '60'], true).build();
 
   for (var i = 0; i < rows.length; i++) {
     if (rows[i][0] === 'DATE_FORMAT') sh.getRange(i + 3, 2).setNumberFormat('@').setDataValidation(dateRule);
     if (rows[i][0] === 'TIME_FORMAT') sh.getRange(i + 3, 2).setNumberFormat('@').setDataValidation(timeRule);
     if (rows[i][0] === 'LOG_LEVEL') sh.getRange(i + 3, 2).setDataValidation(logLevelRule);
-    if (rows[i][0] === 'LOG_AUTO_CLEAN') sh.getRange(i + 3, 2).setDataValidation(yesNoRule);
+    if (rows[i][0] === 'LOG_AUTO_CLEAN' || rows[i][0] === 'HEARTBEAT_ENABLED') sh.getRange(i + 3, 2).setDataValidation(yesNoRule);
+    if (rows[i][0] === 'HEARTBEAT_INTERVAL_MIN') sh.getRange(i + 3, 2).setDataValidation(intervalRule);
     if (['ENABLE_WATCH_FOLDER', 'MOVE_FROM_WATCH_FOLDER'].indexOf(rows[i][0]) > -1) {
       var boolRule = SpreadsheetApp.newDataValidation().requireValueInList(['TRUE', 'FALSE'], true).build();
       sh.getRange(i + 3, 2).setDataValidation(boolRule);

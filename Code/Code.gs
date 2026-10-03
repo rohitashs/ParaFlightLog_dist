@@ -43,7 +43,9 @@ function onOpen(e) {
         .addSeparator()
         .addSubMenu(ui.createMenu('Configuration Management')
             .addItem('Save Config (Export JSON)...', 'showSaveConfigDialog')
-            .addItem('Load Config (Import JSON)...', 'showLoadConfigDialog'))
+            .addItem('Load Config (Import JSON)...', 'showLoadConfigDialog')
+            .addSeparator()
+            .addItem('Sync Config Tab (Parameters & Lookups)', 'syncConfigParameters'))
         .addSeparator()
         .addItem('System Info & Health...', 'showSystemInfoDialog')
         .addItem('System Maintenance...', 'showSystemMaintenanceDialog')
@@ -64,7 +66,7 @@ function onOpen(e) {
             .addItem('Toggle Master Heartbeat (Start/Stop)...', 'toggleMasterHeartbeat')
             .addItem('Run Master Heartbeat Now', 'runMasterHeartbeatNow')
             .addSeparator()
-            .addItem('Setup / Reset 5-min Watcher Trigger (Legacy)', 'setupWatcherTrigger'))
+            .addItem('Remove Legacy Watcher Triggers', 'setupWatcherTrigger'))
         .addSeparator()
         .addSubMenu(ui.createMenu('System Setup & Reset (Danger Zone)')
             .addItem('First Time Setup (Full Scaffold)', 'scaffoldAll')
@@ -1106,24 +1108,32 @@ function sortFlightsByDate_() {
 /**
  * Public trigger entry point for automated Watch Folder background scans.
  * Must not have a trailing underscore so GAS time-based triggers can dispatch it.
+ * @deprecated Scheduled scans are now governed by Automation_Rules and Master Heartbeat.
  */
 function scanWatchFolderTrigger() {
-  scanWatchFolderNow_();
+  console.warn('scanWatchFolderTrigger called. Note: Scheduled scans are now governed by Automation_Rules and Master Heartbeat.');
+  scanWatchFolderNow_({ force: true });
 }
 
+/**
+ * Removes legacy standalone Watcher triggers to avoid conflicting duplicate scans.
+ */
 function setupWatcherTrigger_() {
+  var ui = SpreadsheetApp.getUi();
   var triggers = ScriptApp.getProjectTriggers();
+  var removed = 0;
   for (var i = 0; i < triggers.length; i++) {
     var handler = triggers[i].getHandlerFunction();
     if (handler === 'scanWatchFolderNow_' || handler === 'scanWatchFolderTrigger') {
       ScriptApp.deleteTrigger(triggers[i]);
+      removed++;
     }
   }
-  ScriptApp.newTrigger('scanWatchFolderTrigger')
-    .timeBased()
-    .everyMinutes(5)
-    .create();
-  SpreadsheetApp.getUi().alert('Trigger set for every 5 minutes.');
+  ui.alert(
+    'Watch Folder Trigger Deprecated',
+    'Standalone Watcher triggers are deprecated.\n\nWatch Folder scanning is now governed by the "Scan Watch Folder" rule in the Automation_Rules tab and pulsed by the Master Heartbeat.\n\nLegacy standalone triggers removed: ' + removed + '.\n\nPlease use "Toggle Master Heartbeat" under Automation & Services to control automated background operations.',
+    ui.ButtonSet.OK
+  );
 }
 
 /**
@@ -1182,7 +1192,15 @@ function toggleMasterHeartbeat_() {
     interval = 5;
   }
 
-  // 4. Create single project-level timer trigger
+  // 4. Clean up any legacy watch folder triggers to avoid duplicate parallel executions
+  for (var j = 0; j < triggers.length; j++) {
+    var h = triggers[j].getHandlerFunction();
+    if (h === 'scanWatchFolderNow_' || h === 'scanWatchFolderTrigger') {
+      ScriptApp.deleteTrigger(triggers[j]);
+    }
+  }
+
+  // 5. Create single project-level timer trigger
   var builder = ScriptApp.newTrigger('masterHeartbeatDispatcher').timeBased();
   if (interval === 60) {
     builder.everyHours(1);
@@ -2950,5 +2968,25 @@ function runSystemMaintenanceStep(phase, effectiveComponents, options) {
 function runSystemMaintenance(selectedComponents, options) {
   return SystemMaintenanceOrchestrator.execute(selectedComponents, options);
 }
+
+/**
+ * Standalone helper to immediately synchronize Config parameters and lookups
+ * without executing full multi-sheet maintenance.
+ */
+function syncConfigParameters() {
+  var ss = SpreadsheetApp.getActive();
+  scaffoldConfig_(ss);
+  try {
+    var applied = getAppliedManifest_();
+    applied['Config.parameters'] = SYSTEM_MANIFEST.components['Config.parameters'].version;
+    setAppliedManifest_(applied);
+  } catch (e) {
+    console.warn('Could not update APPLIED_MANIFEST for Config.parameters:', e);
+  }
+  if (ss.toast) {
+    ss.toast('Config parameters synchronized successfully.', 'Config', 4);
+  }
+}
+
 
 

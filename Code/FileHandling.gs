@@ -25,23 +25,18 @@ function scanWatchFolderNow_(options) {
   options = options || {};
   var stats = { processed: 0, skipped: 0, errors: 0, flights: 0, log: [] };
   
-  console.log('Starting Watch Folder Scan...');
+  console.log('Starting Watch Folder Scan (driven by Automation_Rules or manual action)...');
   var config = getParameters_();
   var rawFolderIds = config.WATCH_FOLDER_ID || '';
   
-  // Check Enable Switch (Handle boolean or string, bypass if options.force === true)
-  var enabled = String(config.ENABLE_WATCH_FOLDER).toUpperCase();
-  console.log('Watch Config: Enable=' + enabled + ', FolderIDs=' + rawFolderIds);
-
-  if (!options.force && enabled !== 'TRUE' && enabled !== 'YES') {
-     var msg = 'Watch Folder is DISABLED in Config. Skipping.';
-     console.warn(msg);
-     stats.log.push(msg);
-     return stats;
-  }
+  // Note: Scanning is driven strictly by Automation_Rules or manual execution.
+  // The legacy ENABLE_WATCH_FOLDER parameter is deprecated and no longer blocks execution.
   
+  // Move to trash configuration: precedence given to options.moveToTrash (from Automation Rule), otherwise default TRUE
   if (options.moveToTrash !== undefined) {
-    config.MOVE_FROM_WATCH_FOLDER = options.moveToTrash ? 'TRUE' : 'FALSE';
+    config.MOVE_FROM_WATCH_FOLDER = (options.moveToTrash === true || String(options.moveToTrash).toUpperCase() === 'YES' || String(options.moveToTrash).toUpperCase() === 'TRUE') ? 'TRUE' : 'FALSE';
+  } else if (!config.MOVE_FROM_WATCH_FOLDER) {
+    config.MOVE_FROM_WATCH_FOLDER = 'TRUE';
   }
   
   var folderCheck = validateRequiredFolders_(['WATCH_FOLDER_ID', 'MASTER_LOG_FOLDER_ID', 'ERROR_FOLDER_ID'], config);

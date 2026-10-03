@@ -42,9 +42,9 @@ var CFG = {
     { section: 'Ingestion & Automation', key: 'TRASH_FOLDER_ID', val: '', desc: 'Google Drive Trash/Discard folder for purged and duplicate files', input: true },
     { section: 'Ingestion & Automation', key: 'HEARTBEAT_ENABLED', val: 'Yes', desc: 'Enable autonomous background processing? (Yes/No)' },
     { section: 'Ingestion & Automation', key: 'HEARTBEAT_INTERVAL_MIN', val: 15, desc: 'Master heartbeat pulse interval in minutes (5, 10, 15, 30, 60)' },
-    { section: 'Ingestion & Automation', key: 'ENABLE_WATCH_FOLDER', val: 'FALSE', desc: '[Legacy Fallback] Enable automated scanning? (TRUE/FALSE)' },
-    { section: 'Ingestion & Automation', key: 'MOVE_FROM_WATCH_FOLDER', val: 'TRUE', desc: '[Legacy Fallback] Move files from Watch Folder after success? (TRUE/FALSE)' },
-    { section: 'Ingestion & Automation', key: 'WATCH_PERIOD_MIN', val: 15, desc: '[Legacy Fallback] How often (mins) the trigger runs' },
+    { section: 'Ingestion & Automation', key: 'ENABLE_WATCH_FOLDER', val: 'FALSE', desc: '[Legacy - Driven by Automation Rules] Enable automated scanning? (Deprecated; managed in Automation_Rules)' },
+    { section: 'Ingestion & Automation', key: 'MOVE_FROM_WATCH_FOLDER', val: 'TRUE', desc: '[Legacy - Driven by Automation Rules] Move files to Trash after success? (Deprecated; managed in Automation_Rules)' },
+    { section: 'Ingestion & Automation', key: 'WATCH_PERIOD_MIN', val: 15, desc: '[Legacy - Driven by Automation Rules] Scan frequency minutes (Deprecated; managed in Automation_Rules)' },
     
     // Integrations
     { section: 'Integrations', key: 'WEATHER_PROVIDERS', val: 'open_meteo, visual_crossing', desc: 'Weather Providers (comma-sep: open_meteo, visual_crossing)' },
@@ -478,7 +478,7 @@ function getSheetByIdOrName_(ss, tabKey, defaultName) {
    ========================================================================================== */
 
 var SYSTEM_MANIFEST = {
-  version: '2.1.0',
+  version: '2.2.0',
   components: {
     // Flights
     'Flights.grid':        { version: 'v2.0-dim-2000x70',     tier: 'recommended' },
@@ -496,7 +496,7 @@ var SYSTEM_MANIFEST = {
     // Config
     'Config.grid':         { version: 'v2.0-dim-60x14',        tier: 'recommended' },
     'Config.headers':      { version: 'v2.0-config-headers',   tier: 'optional' },
-    'Config.parameters':   { version: 'v2.1-param-merge',      tier: 'mandatory' },
+    'Config.parameters':   { version: 'v2.2-heartbeat-params', tier: 'mandatory' },
     'Config.lookups':      { version: 'v2.3-flight-types-restore', tier: 'mandatory' },
     'Config.namedRanges':  { version: 'v2.1-lookup-ranges',    tier: 'mandatory' },
     'Config.validations':  { version: 'v2.0-config-validation',tier: 'recommended' },
@@ -534,7 +534,7 @@ var MANIFEST_COMPONENT_LABELS = {
   'Dashboard.guardrails': 'Soft Guardrail Protections (KPI Cards & Lists)',
   'Config.grid': 'Grid Dimensions & Column Widths (60 Rows, 14 Cols)',
   'Config.headers': 'Header Banners & Section Separators',
-  'Config.parameters': 'System Parameters (Preserving User Values)',
+  'Config.parameters': 'System Parameters (Heartbeat & Automation Config)',
   'Config.lookups': 'Native Equipment Auto-Lookups & Restored Flight Types Vocabulary',
   'Config.namedRanges': 'Workbook-Scoped Named Ranges (LOOKUP_*)',
   'Config.validations': 'Format & Setting Input Validations',
