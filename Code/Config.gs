@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-10-02 17:25:41
+ * Updated: 2026-10-02 19:10:42
  */
 /**
  * Paragliding Flight Log v2.0 - Configuration
@@ -375,6 +375,185 @@ function getSheetByIdOrName_(ss, tabKey, defaultName) {
     registerSheetId_(ss, tabKey, sh);
   }
   return sh;
+}
+
+/* ==========================================================================================
+   SYSTEM MANIFEST & DECOUPLED UPDATE PIPELINE (DSGN-MNT-001 Rev 2.0 / CR-SYS-006)
+   ========================================================================================== */
+
+var SYSTEM_MANIFEST = {
+  version: '2.1.0',
+  components: {
+    // Flights
+    'Flights.grid': 'v2.0-dim-2000x70',
+    'Flights.headers': 'v2.1-col-schema',
+    'Flights.notes': 'v2.1-col-tooltips',
+    'Flights.validations': 'v2.1-soft-invalid',
+    'Flights.formulas': 'v2.1-flight-no-dynamic',
+    'Flights.guardrails': 'v2.1-header-soft-warn',
+    // Dashboard
+    'Dashboard.grid': 'v2.0-clean-bounds',
+    'Dashboard.formulas': 'v2.1-named-range-filter',
+    'Dashboard.guardrails': 'v2.1-card-soft-warn',
+    // Config
+    'Config.grid': 'v2.0-dim-60x14',
+    'Config.headers': 'v2.0-config-headers',
+    'Config.parameters': 'v2.1-param-merge',
+    'Config.lookups': 'v2.1-native-sort-filter',
+    'Config.namedRanges': 'v2.1-lookup-ranges',
+    'Config.validations': 'v2.0-config-validation',
+    'Config.guardrails': 'v2.1-lookup-soft-warn',
+    // Equipment
+    'Equipment.grid': 'v2.0-dim-100x13',
+    'Equipment.headers': 'v2.0-eq-schema',
+    'Equipment.validations': 'v2.0-eq-rules',
+    // Pilot Profile
+    'Pilot_Profile.keys': 'v2.0-profile-fields',
+    // Automation Queue
+    'Automation_Queue.headers': 'v2.0-queue-schema',
+    // App Log
+    'App_Log.headers': 'v2.0-log-schema',
+    // User Guide
+    'User_Guide.content': 'v2.0-guide-content'
+  }
+};
+
+/**
+ * Friendly display labels for manifest components
+ */
+var MANIFEST_COMPONENT_LABELS = {
+  'Flights.grid': 'Grid Dimensions & Frozen Panes (2000x70, 4x4)',
+  'Flights.headers': 'Row 3 Category Groupings & Row 4 Column Headers',
+  'Flights.notes': 'Row 4 Column Tooltips & Field Notes',
+  'Flights.validations': 'Dropdown Validations & Conditional Formatting',
+  'Flights.formulas': 'Dynamic Flight No Formula Sequence (=ROW()-4)',
+  'Flights.guardrails': 'Soft Guardrail Protections (Headers & Sequence)',
+  'Dashboard.grid': 'Grid Bounds & Clean Layout (6 Cols, 70 Rows)',
+  'Dashboard.formulas': 'Dynamic Formulas, Queries & DASHBOARD_REVIEW_FILTER',
+  'Dashboard.guardrails': 'Soft Guardrail Protections (KPI Cards & Lists)',
+  'Config.grid': 'Grid Dimensions & Column Widths (60 Rows, 14 Cols)',
+  'Config.headers': 'Header Banners & Section Separators',
+  'Config.parameters': 'System Parameters (Preserving User Values)',
+  'Config.lookups': 'Native Equipment Auto-Lookups (=SORT(FILTER()))',
+  'Config.namedRanges': 'Workbook-Scoped Named Ranges (LOOKUP_*)',
+  'Config.validations': 'Format & Setting Input Validations',
+  'Config.guardrails': 'Soft Guardrail Protections (Lookups K3:N3)',
+  'Equipment.grid': 'Grid Dimensions & Palette (100 Rows, 13 Cols)',
+  'Equipment.headers': 'Equipment Schema Headers (Row 2)',
+  'Equipment.validations': 'Category Dropdown Validation Rule',
+  'Pilot_Profile.keys': 'Pilot Profile Fields & Descriptions',
+  'Automation_Queue.headers': 'Background Automation Queue Schema',
+  'App_Log.headers': 'Activity Logs Schema & Header Formatting',
+  'User_Guide.content': 'Documentation, Metric Dictionary & Instructions'
+};
+
+var MANIFEST_SHEET_METADATA = {
+  'Flights': { key: 'FLIGHTS', name: TABS.FLIGHTS ? TABS.FLIGHTS.name : 'Flights', icon: '🛫', color: '#4CAF50' },
+  'Dashboard': { key: 'DASHBOARD', name: TABS.DASHBOARD ? TABS.DASHBOARD.name : 'Dashboard', icon: '📊', color: '#2196F3' },
+  'Config': { key: 'CONFIG', name: TABS.CONFIG ? TABS.CONFIG.name : 'Config', icon: '⚙️', color: '#FF9800' },
+  'Equipment': { key: 'EQUIPMENT', name: TABS.EQUIPMENT ? TABS.EQUIPMENT.name : 'Equipment', icon: '🪂', color: '#00BCD4' },
+  'Pilot_Profile': { key: 'PILOT_PROFILE', name: TABS.PILOT_PROFILE ? TABS.PILOT_PROFILE.name : 'Pilot_Profile', icon: '👤', color: '#9C27B0' },
+  'Automation_Queue': { key: 'QUEUE', name: TABS.QUEUE ? TABS.QUEUE.name : 'Automation_Queue', icon: '📋', color: '#455A64' },
+  'App_Log': { key: 'APP_LOG', name: TABS.APP_LOG ? TABS.APP_LOG.name : 'App_Log', icon: '📜', color: '#D32F2F' },
+  'User_Guide': { key: 'USER_GUIDE', name: TABS.USER_GUIDE ? TABS.USER_GUIDE.name : 'User_Guide', icon: '📖', color: '#607D8B' }
+};
+
+/**
+ * Retrieves the applied manifest state from DocumentProperties.
+ * @return {Object} Dictionary of componentKey -> appliedVersionTag
+ */
+function getAppliedManifest_() {
+  try {
+    var raw = PropertiesService.getDocumentProperties().getProperty('APPLIED_MANIFEST');
+    if (raw) return JSON.parse(raw);
+  } catch (e) {
+    console.warn('Error reading APPLIED_MANIFEST:', e);
+  }
+  return {};
+}
+
+/**
+ * Persists the applied manifest state into DocumentProperties.
+ * @param {Object} manifest - Dictionary of componentKey -> appliedVersionTag
+ */
+function setAppliedManifest_(manifest) {
+  try {
+    PropertiesService.getDocumentProperties().setProperty('APPLIED_MANIFEST', JSON.stringify(manifest || {}));
+  } catch (e) {
+    console.warn('Error saving APPLIED_MANIFEST:', e);
+  }
+}
+
+/**
+ * Compares SYSTEM_MANIFEST against APPLIED_MANIFEST and generates
+ * a hierarchical diff structure grouped by Sheet with rollup status.
+ * @param {Object} [optApplied] - Optional custom applied manifest override for testing
+ * @return {Object} Detailed diff analysis
+ */
+function diffManifests_(optApplied) {
+  var applied = optApplied || getAppliedManifest_();
+  var sheetsMap = {};
+  var order = ['Flights', 'Dashboard', 'Config', 'Equipment', 'Pilot_Profile', 'Automation_Queue', 'App_Log', 'User_Guide'];
+  
+  order.forEach(function(sName) {
+    var meta = MANIFEST_SHEET_METADATA[sName] || { key: sName, name: sName, icon: '📄', color: '#757575' };
+    sheetsMap[sName] = {
+      sheetKey: meta.key,
+      sheetName: meta.name,
+      icon: meta.icon,
+      color: meta.color,
+      allUpToDate: true,
+      pendingCount: 0,
+      totalCount: 0,
+      components: []
+    };
+  });
+
+  var totalComponents = 0;
+  var totalPending = 0;
+
+  for (var key in SYSTEM_MANIFEST.components) {
+    if (!SYSTEM_MANIFEST.components.hasOwnProperty(key)) continue;
+    totalComponents++;
+    var parts = key.split('.');
+    var sName = parts[0];
+    var cType = parts[1];
+    var latest = SYSTEM_MANIFEST.components[key];
+    var curr = applied[key] || 'Not Applied';
+    var isUpToDate = (curr === latest);
+
+    if (!isUpToDate) {
+      totalPending++;
+    }
+
+    if (sheetsMap[sName]) {
+      sheetsMap[sName].totalCount++;
+      if (!isUpToDate) {
+        sheetsMap[sName].allUpToDate = false;
+        sheetsMap[sName].pendingCount++;
+      }
+      sheetsMap[sName].components.push({
+        key: key,
+        type: cType,
+        label: MANIFEST_COMPONENT_LABELS[key] || (sName + ' ' + cType),
+        applied: curr,
+        latest: latest,
+        isUpToDate: isUpToDate
+      });
+    }
+  }
+
+  var sheetsList = order.map(function(sName) {
+    return sheetsMap[sName];
+  });
+
+  return {
+    systemVersion: SYSTEM_MANIFEST.version,
+    totalComponents: totalComponents,
+    pendingCount: totalPending,
+    allUpToDate: (totalPending === 0),
+    sheets: sheetsList
+  };
 }
 
 

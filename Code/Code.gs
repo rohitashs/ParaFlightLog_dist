@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-10-02 17:25:41
+ * Updated: 2026-10-02 19:10:42
  * Test access verification: Verified GAS write access on 2026-09-25 08:26:00.
  * 
  * CORE MODULE: Orchestration Only.
@@ -39,12 +39,11 @@ function onOpen(e) {
         .addSubMenu(ui.createMenu('Configuration Management')
             .addItem('Save Config (Export JSON)...', 'showSaveConfigDialog')
             .addItem('Load Config (Import JSON)...', 'showLoadConfigDialog'))
-        .addSubMenu(ui.createMenu('Sheet Maintenance & Views')
-            .addItem('Refresh Dashboard (KPIs & Cards)', 'uiRefreshDashboard')
-            .addItem('Refresh User Guide & Metric Dictionary', 'uiRefreshUserGuide')
-            .addItem('Update Dropdowns, Parameters & Notes', 'updateValidationOnly')
-            .addItem('Repair Sheet Schema & Formatting (Safe)', 'reapplyFormatting')
-            .addItem('Clean Activity Logs Now...', 'cleanActivityLogs'))
+        .addSeparator()
+        .addItem('System Info & Health...', 'showSystemInfoDialog')
+        .addItem('System Maintenance...', 'showSystemMaintenanceDialog')
+        .addItem('Clean Activity Logs Now...', 'cleanActivityLogs')
+        .addSeparator()
         .addSubMenu(ui.createMenu('Folder Configuration')
             .addItem('Set Watch Folder(s)...', 'uiUpdateWatchFolder')
             .addItem('Set Upload Folder...', 'uiUpdateUploadFolder')
@@ -204,6 +203,22 @@ function showLoadConfigDialog() {
       .setWidth(580)
       .setHeight(620);
   SpreadsheetApp.getUi().showModalDialog(html, 'Load Configuration');
+}
+
+function showSystemInfoDialog() {
+  var html = HtmlService.createTemplateFromFile('SystemInfoDialog')
+      .evaluate()
+      .setWidth(680)
+      .setHeight(620);
+  SpreadsheetApp.getUi().showModalDialog(html, 'System Info & Manifest Inspector');
+}
+
+function showSystemMaintenanceDialog() {
+  var html = HtmlService.createTemplateFromFile('SystemMaintenanceDialog')
+      .evaluate()
+      .setWidth(780)
+      .setHeight(640);
+  SpreadsheetApp.getUi().showModalDialog(html, 'System Maintenance Cockpit');
 }
 
 function showScanDialog() {
@@ -2621,5 +2636,45 @@ function uiScanAndFlagLogbookDuplicates_() {
       ui.ButtonSet.OK
     );
   }
+}
+
+/* ==========================================================================================
+   SYSTEM MAINTENANCE & INFO RPC GATEWAYS (DSGN-MNT-001 Rev 2.0 / CR-SYS-006)
+   ========================================================================================== */
+
+/**
+ * Public RPC gateway for System Info dialog.
+ * Returns manifest diff, component statuses, and environment metadata.
+ */
+function getSystemInfoData() {
+  var ss = SpreadsheetApp.getActive();
+  var diff = diffManifests_();
+  var userEmail = '';
+  try { userEmail = Session.getActiveUser().getEmail(); } catch (e) {}
+  return {
+    success: true,
+    diff: diff,
+    env: {
+      name: ss ? ss.getName() : 'Paragliding Flight Log',
+      id: ss ? ss.getId() : '',
+      timezone: ss ? ss.getSpreadsheetTimeZone() : 'UTC',
+      user: userEmail || 'Active Google User'
+    }
+  };
+}
+
+/**
+ * Public RPC gateway for System Maintenance cockpit.
+ * Returns matrix representation of system sheets and pending components.
+ */
+function getSystemMaintenanceStatus() {
+  return SystemMaintenanceOrchestrator.getStatus();
+}
+
+/**
+ * Public RPC gateway for executing selected system maintenance operations.
+ */
+function runSystemMaintenance(selectedComponents, options) {
+  return SystemMaintenanceOrchestrator.execute(selectedComponents, options);
 }
 

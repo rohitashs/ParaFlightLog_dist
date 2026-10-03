@@ -1,0 +1,652 @@
+<!--
+ * Paragliding Flight Log v2.0
+ * Updated: 2026-10-02 19:10:42
+ -->
+<!DOCTYPE html>
+<html>
+
+<head>
+    <base target="_top">
+    <?!= HtmlService.createTemplateFromFile('Style').evaluate().getContent(); ?>
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 16px;
+            color: #212121;
+            background: #FAFAFA;
+            font-size: 12px;
+        }
+
+        .header-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #E0E0E0;
+        }
+
+        .header-title {
+            font-size: 15px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #1A237E;
+        }
+
+        .version-badge {
+            background: #E8EAF6;
+            color: #283593;
+            font-weight: 600;
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            border: 1px solid #C5CAE9;
+        }
+
+        /* Safety Backup Card */
+        .backup-card {
+            background: #FFFFFF;
+            border: 1px solid #C8E6C9;
+            border-left: 4px solid #4CAF50;
+            border-radius: 6px;
+            padding: 10px 14px;
+            margin-bottom: 12px;
+        }
+
+        .backup-title {
+            font-weight: 700;
+            color: #2E7D32;
+            font-size: 12px;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .backup-options {
+            display: flex;
+            gap: 20px;
+            font-size: 12px;
+            color: #333;
+        }
+
+        .backup-options label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+        }
+
+        /* Preset Controls */
+        .preset-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .preset-title {
+            font-weight: 700;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #616161;
+        }
+
+        .preset-btns {
+            display: flex;
+            gap: 6px;
+        }
+
+        .btn-preset {
+            background: #FFFFFF;
+            border: 1px solid #BDBDBD;
+            color: #424242;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .btn-preset:hover {
+            background: #F5F5F5;
+            border-color: #9E9E9E;
+        }
+
+        .btn-preset.recommended {
+            background: #E3F2FD;
+            color: #1565C0;
+            border-color: #90CAF9;
+        }
+
+        .btn-preset.recommended:hover {
+            background: #BBDEFB;
+        }
+
+        /* Matrix Table */
+        .matrix-wrapper {
+            background: #FFFFFF;
+            border: 1px solid #E0E0E0;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin-bottom: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+        }
+
+        .matrix-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+        }
+
+        .matrix-table th, .matrix-table td {
+            padding: 7px 8px;
+            text-align: center;
+            border-bottom: 1px solid #EEEEEE;
+            border-right: 1px solid #EEEEEE;
+            vertical-align: middle;
+        }
+
+        .matrix-table th:last-child, .matrix-table td:last-child {
+            border-right: none;
+        }
+
+        .matrix-table thead th {
+            background: #F5F5F5;
+            color: #37474F;
+            font-weight: 700;
+            font-size: 11px;
+        }
+
+        .matrix-table thead tr:first-child th:first-child {
+            text-align: left;
+            padding-left: 12px;
+            min-width: 170px;
+        }
+
+        .row-label {
+            text-align: left !important;
+            padding-left: 12px !important;
+            font-weight: 600;
+            color: #424242;
+            background: #FAFAFA;
+            white-space: nowrap;
+        }
+
+        .sheet-master-row {
+            background: #ECEFF1;
+            font-weight: 600;
+        }
+
+        .sheet-master-row td {
+            background: #ECEFF1;
+            padding: 5px 8px;
+        }
+
+        .cell-na {
+            color: #BDBDBD;
+            font-weight: 400;
+            user-select: none;
+        }
+
+        .cell-check {
+            cursor: pointer;
+            transition: background 0.15s ease;
+        }
+
+        .cell-check:hover {
+            background: #F0F4C3;
+        }
+
+        .cell-check.is-pending {
+            background: #FFF9C4;
+        }
+
+        .matrix-check {
+            cursor: pointer;
+            width: 15px;
+            height: 15px;
+            accent-color: #1976D2;
+            vertical-align: middle;
+            margin: 0;
+        }
+
+        /* Impact Summary */
+        .impact-box {
+            background: #E8F5E9;
+            border: 1px solid #C8E6C9;
+            border-radius: 6px;
+            padding: 10px 14px;
+            margin-bottom: 14px;
+            font-size: 11px;
+            color: #2E7D32;
+        }
+
+        .impact-title {
+            font-weight: 700;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .impact-bullets {
+            margin: 0;
+            padding-left: 18px;
+            color: #388E3C;
+            line-height: 1.5;
+        }
+
+        /* Log / Execution Console */
+        .console-card {
+            display: none;
+            background: #212121;
+            color: #E0E0E0;
+            border-radius: 6px;
+            padding: 10px 12px;
+            margin-bottom: 14px;
+            font-family: 'Consolas', 'Menlo', monospace;
+            font-size: 11px;
+            max-height: 180px;
+            overflow-y: auto;
+        }
+
+        .log-entry {
+            margin-bottom: 3px;
+            line-height: 1.4;
+        }
+
+        .log-entry.ok { color: #81C784; }
+        .log-entry.warn { color: #FFB74D; }
+        .log-entry.start { color: #64B5F6; }
+
+        .progress-bar-container {
+            display: none;
+            background: #E0E0E0;
+            border-radius: 4px;
+            height: 6px;
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+
+        .progress-bar-fill {
+            background: #1976D2;
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        /* Footer */
+        .footer-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-top: 10px;
+            border-top: 1px solid #E0E0E0;
+        }
+
+        .footer-left {
+            font-size: 11px;
+            color: #757575;
+        }
+
+        .footer-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-cancel {
+            background: #EEEEEE;
+            color: #424242;
+            border: 1px solid #BDBDBD;
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-apply {
+            background: #1976D2;
+            color: #FFFFFF;
+            border: none;
+            padding: 6px 16px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: background 0.15s ease;
+        }
+
+        .btn-apply:hover:not(:disabled) {
+            background: #1565C0;
+        }
+
+        .btn-apply:disabled {
+            background: #BDBDBD;
+            cursor: not-allowed;
+        }
+
+        .loading-view {
+            text-align: center;
+            padding: 40px;
+            color: #757575;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header-bar">
+        <div class="header-title">
+            <span>🛠️</span> System Maintenance Cockpit
+        </div>
+        <div class="version-badge" id="appVersionBadge">Core v2.1.0</div>
+    </div>
+
+    <!-- Pre-Flight Safety Backup -->
+    <div class="backup-card">
+        <div class="backup-title">
+            <span>🛡️</span> Pre-Flight Safety Backups (Recommended)
+        </div>
+        <div class="backup-options">
+            <label>
+                <input type="checkbox" id="chkBackupSheets" checked>
+                <span>Create In-Workbook Sheet Clones (Backup Flights, Backup Config)</span>
+            </label>
+        </div>
+    </div>
+
+    <!-- Presets Bar -->
+    <div class="preset-bar">
+        <div class="preset-title">Update Scope & Target Elements:</div>
+        <div class="preset-btns">
+            <button class="btn-preset recommended" onclick="applyPreset('recommended')">🎯 Select Recommended Updates</button>
+            <button class="btn-preset" onclick="applyPreset('all')">🗹 Select All</button>
+            <button class="btn-preset" onclick="applyPreset('clear')">🗵 Clear All</button>
+        </div>
+    </div>
+
+    <!-- Loading State -->
+    <div id="loadingView" class="loading-view">
+        <div>⏳ Inspecting system manifest and spreadsheet schema...</div>
+    </div>
+
+    <!-- Matrix Table Container -->
+    <div id="matrixContainer" class="matrix-wrapper" style="display: none;">
+        <table class="matrix-table" id="matrixTable">
+            <thead>
+                <tr id="headerRowSheets">
+                    <th>Element Type / System Tab</th>
+                    <!-- Populated dynamically -->
+                </tr>
+            </thead>
+            <tbody>
+                <tr class="sheet-master-row" id="rowMasterSheets">
+                    <td class="row-label"><strong>[x] Toggle Entire Sheet</strong></td>
+                    <!-- Populated dynamically -->
+                </tr>
+                <tr id="rowGrid">
+                    <td class="row-label">Grid Dimensions & Frozen Panes</td>
+                </tr>
+                <tr id="rowHeaders">
+                    <td class="row-label">Headers & Category Groupings</td>
+                </tr>
+                <tr id="rowNotes">
+                    <td class="row-label">Column Tooltips & Cell Notes</td>
+                </tr>
+                <tr id="rowValidations">
+                    <td class="row-label">Dropdown Validations & Rules</td>
+                </tr>
+                <tr id="rowFormulas">
+                    <td class="row-label">Formulas, Named Ranges & Queries</td>
+                </tr>
+                <tr id="rowParameters">
+                    <td class="row-label">Parameters & Key Definitions</td>
+                </tr>
+                <tr id="rowGuardrails">
+                    <td class="row-label">Soft Guardrails (setWarningOnly)</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="progress-bar-container" id="progressBar">
+        <div class="progress-bar-fill" id="progressFill"></div>
+    </div>
+
+    <!-- Console Log Window -->
+    <div class="console-card" id="consoleLogs"></div>
+
+    <!-- Impact Preview -->
+    <div class="impact-box" id="impactBox">
+        <div class="impact-title">
+            <span>ℹ️</span> Non-Destructive Update Guarantee:
+        </div>
+        <ul class="impact-bullets">
+            <li><strong id="impactCount">0 elements</strong> selected across <strong id="impactSheets">0 sheets</strong>.</li>
+            <li><strong>Zero-Loss Contract:</strong> Flight rows 5:N and custom equipment inventory remain 100% UNTOUCHED (read-only).</li>
+            <li>Config parameters are read into memory and preserved; only missing defaults are added.</li>
+        </ul>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer-bar">
+        <div class="footer-left" id="footerSummary">Ready to inspect and apply updates.</div>
+        <div class="footer-actions">
+            <button class="btn-cancel" id="btnCancel" onclick="google.script.host.close()">Cancel</button>
+            <button class="btn-apply" id="btnApply" onclick="executeMaintenance()">
+                <span>🚀</span> Apply Selected Maintenance
+            </button>
+        </div>
+    </div>
+
+    <script>
+        var systemStatus = null;
+        var sheetOrder = ['Flights', 'Dashboard', 'Config', 'Equipment', 'Pilot_Profile', 'Automation_Queue', 'App_Log', 'User_Guide'];
+        var elementRows = [
+            { id: 'rowGrid', key: 'grid' },
+            { id: 'rowHeaders', key: 'headers' },
+            { id: 'rowNotes', key: 'notes' },
+            { id: 'rowValidations', key: 'validations' },
+            { id: 'rowFormulas', key: 'formulas' },
+            { id: 'rowParameters', key: 'parameters' },
+            { id: 'rowGuardrails', key: 'guardrails' }
+        ];
+
+        window.onload = function() {
+            google.script.run
+                .withSuccessHandler(renderMatrix)
+                .withFailureHandler(function(err) {
+                    document.getElementById('loadingView').innerHTML = '<div style="color: #D32F2F;">⚠️ Error: ' + err.message + '</div>';
+                })
+                .getSystemMaintenanceStatus();
+        };
+
+        function renderMatrix(data) {
+            document.getElementById('loadingView').style.display = 'none';
+            document.getElementById('matrixContainer').style.display = 'block';
+
+            if (!data || !data.diff) return;
+            systemStatus = data;
+
+            document.getElementById('appVersionBadge').textContent = 'Core v' + data.systemVersion;
+
+            var thead = document.getElementById('headerRowSheets');
+            var masterRow = document.getElementById('rowMasterSheets');
+
+            sheetOrder.forEach(function(sName) {
+                var sData = null;
+                for (var i = 0; i < data.diff.sheets.length; i++) {
+                    if (data.diff.sheets[i].sheetName === sName) {
+                        sData = data.diff.sheets[i];
+                        break;
+                    }
+                }
+
+                // Sheet Header Col
+                var th = document.createElement('th');
+                var icon = sData ? sData.icon : '📄';
+                th.innerHTML = '<div>' + icon + '</div><div>' + sName.replace('_', ' ') + '</div>';
+                thead.appendChild(th);
+
+                // Master Sheet Toggle Checkbox
+                var tdMaster = document.createElement('td');
+                tdMaster.innerHTML = '<input type="checkbox" class="matrix-check" onchange="toggleEntireSheet(\'' + sName + '\', this.checked)">';
+                masterRow.appendChild(tdMaster);
+            });
+
+            // Populate Element Rows
+            elementRows.forEach(function(rowDef) {
+                var tr = document.getElementById(rowDef.id);
+
+                sheetOrder.forEach(function(sName) {
+                    var td = document.createElement('td');
+                    var fullKey = sName + '.' + rowDef.key;
+                    
+                    // Special alias mappings
+                    if (rowDef.key === 'parameters' && sName === 'Pilot_Profile') fullKey = 'Pilot_Profile.keys';
+                    if (rowDef.key === 'formulas' && sName === 'Config') fullKey = 'Config.lookups';
+                    if (rowDef.key === 'formulas' && sName === 'Flights') fullKey = 'Flights.formulas';
+                    if (rowDef.key === 'notes' && sName === 'User_Guide') fullKey = 'User_Guide.content';
+
+                    var comp = null;
+                    if (data.matrix && data.matrix[sName] && data.matrix[sName][rowDef.key]) {
+                        comp = data.matrix[sName][rowDef.key];
+                    } else {
+                        // Check if key exists in system components
+                        for (var sk in data.diff.sheets) {
+                            var sheet = data.diff.sheets[sk];
+                            if (sheet.sheetName === sName) {
+                                for (var ck in sheet.components) {
+                                    if (sheet.components[ck].key === fullKey) {
+                                        comp = sheet.components[ck];
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if (comp) {
+                        td.className = 'cell-check' + (comp.isPending ? ' is-pending' : '');
+                        var isChecked = comp.isPending ? ' checked' : '';
+                        td.innerHTML = '<input type="checkbox" class="matrix-check comp-box" data-sheet="' + sName + '" data-key="' + fullKey + '"' + isChecked + ' onchange="updateImpactCounts()">';
+                        td.title = comp.label + ' (Applied: ' + comp.applied + ' | Latest: ' + comp.latest + ')';
+                    } else {
+                        td.className = 'cell-na';
+                        td.textContent = '───';
+                    }
+                    tr.appendChild(td);
+                });
+            });
+
+            updateImpactCounts();
+        }
+
+        function toggleEntireSheet(sName, isChecked) {
+            var boxes = document.querySelectorAll('.comp-box[data-sheet="' + sName + '"]');
+            boxes.forEach(function(b) { b.checked = isChecked; });
+            updateImpactCounts();
+        }
+
+        function applyPreset(preset) {
+            var boxes = document.querySelectorAll('.comp-box');
+            if (preset === 'clear') {
+                boxes.forEach(function(b) { b.checked = false; });
+            } else if (preset === 'all') {
+                boxes.forEach(function(b) { b.checked = true; });
+            } else if (preset === 'recommended') {
+                boxes.forEach(function(b) {
+                    var td = b.closest('td');
+                    b.checked = td ? td.classList.contains('is-pending') : false;
+                });
+            }
+            updateImpactCounts();
+        }
+
+        function updateImpactCounts() {
+            var checked = document.querySelectorAll('.comp-box:checked');
+            var sheets = {};
+            checked.forEach(function(b) {
+                var s = b.getAttribute('data-sheet');
+                if (s) sheets[s] = true;
+            });
+
+            var count = checked.length;
+            var numSheets = Object.keys(sheets).length;
+
+            document.getElementById('impactCount').textContent = count + ' element' + (count !== 1 ? 's' : '');
+            document.getElementById('impactSheets').textContent = numSheets + ' sheet' + (numSheets !== 1 ? 's' : '');
+            document.getElementById('footerSummary').textContent = count + ' element' + (count !== 1 ? 's' : '') + ' selected across ' + numSheets + ' sheet' + (numSheets !== 1 ? 's' : '') + '.';
+            document.getElementById('btnApply').disabled = (count === 0);
+        }
+
+        function executeMaintenance() {
+            var checked = document.querySelectorAll('.comp-box:checked');
+            if (checked.length === 0) return;
+
+            var selectedComponents = {};
+            checked.forEach(function(b) {
+                var key = b.getAttribute('data-key');
+                if (key) selectedComponents[key] = true;
+            });
+
+            var options = {
+                backupSheets: document.getElementById('chkBackupSheets').checked
+            };
+
+            // Switch to progress view
+            document.getElementById('btnApply').disabled = true;
+            document.getElementById('btnCancel').disabled = true;
+            document.getElementById('progressBar').style.display = 'block';
+            document.getElementById('progressFill').style.width = '30%';
+
+            var consoleDiv = document.getElementById('consoleLogs');
+            consoleDiv.style.display = 'block';
+            consoleDiv.innerHTML = '<div class="log-entry start">🚀 Starting System Maintenance execution...</div>';
+
+            google.script.run
+                .withSuccessHandler(function(res) {
+                    document.getElementById('progressFill').style.width = '100%';
+                    if (res && res.logs) {
+                        res.logs.forEach(function(l) {
+                            var entry = document.createElement('div');
+                            entry.className = 'log-entry' + (l.indexOf('[OK]') !== -1 || l.indexOf('[SUCCESS]') !== -1 ? ' ok' : '');
+                            entry.textContent = l;
+                            consoleDiv.appendChild(entry);
+                        });
+                        consoleDiv.scrollTop = consoleDiv.scrollHeight;
+                    }
+
+                    document.getElementById('footerSummary').textContent = '✅ Maintenance complete! Applied ' + res.appliedCount + ' components.';
+                    var btnApply = document.getElementById('btnApply');
+                    btnApply.disabled = false;
+                    btnApply.innerHTML = '<span>✅</span> Done (Close)';
+                    btnApply.onclick = function() { google.script.host.close(); };
+                    document.getElementById('btnCancel').style.display = 'none';
+                })
+                .withFailureHandler(function(err) {
+                    document.getElementById('progressFill').style.width = '100%';
+                    document.getElementById('progressFill').style.background = '#D32F2F';
+                    var entry = document.createElement('div');
+                    entry.className = 'log-entry warn';
+                    entry.textContent = '❌ Execution Error: ' + err.message;
+                    consoleDiv.appendChild(entry);
+                    document.getElementById('footerSummary').textContent = '⚠️ Execution failed: ' + err.message;
+                    document.getElementById('btnCancel').disabled = false;
+                })
+                .runSystemMaintenance(selectedComponents, options);
+        }
+    </script>
+</body>
+
+</html>

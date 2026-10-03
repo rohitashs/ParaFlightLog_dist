@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-10-02 17:25:41
+ * Updated: 2026-10-02 19:10:42
  */
 /**
  * Paragliding Flight Log v2.0
@@ -32,6 +32,7 @@ function runAllTests() {
   results.push(testStatusChangeUtility_());
   results.push(testDynamicFormulaResilience_());
   results.push(testNativeSheetsResilience_());
+  results.push(testSystemMaintenanceAndManifest_());
   
   var failures = results.filter(function(r) { return !r.idx || r.error; });
   if (failures.length > 0) {
@@ -1078,6 +1079,83 @@ function testNativeSheetsResilience_() {
   }
 
   return { module: 'NativeSheetsResilience', idx: true };
+}
+
+function testSystemMaintenanceAndManifest_() {
+  // 1. Verify SYSTEM_MANIFEST exists and has version and components
+  if (typeof SYSTEM_MANIFEST === 'undefined' || !SYSTEM_MANIFEST.version || !SYSTEM_MANIFEST.components) {
+    return { module: 'SystemMaintenanceAndManifest', error: 'SYSTEM_MANIFEST missing or invalid' };
+  }
+  if (SYSTEM_MANIFEST.version !== '2.1.0') {
+    return { module: 'SystemMaintenanceAndManifest', error: 'SYSTEM_MANIFEST version expected 2.1.0, got ' + SYSTEM_MANIFEST.version };
+  }
+
+  // 2. Test diffManifests_ with empty applied manifest (Clean / Unapplied Sheet)
+  var diffEmpty = diffManifests_({});
+  if (diffEmpty.allUpToDate !== false) {
+    return { module: 'SystemMaintenanceAndManifest', error: 'Empty applied manifest should have allUpToDate = false' };
+  }
+  if (diffEmpty.pendingCount !== diffEmpty.totalComponents || diffEmpty.pendingCount <= 0) {
+    return { module: 'SystemMaintenanceAndManifest', error: 'Empty applied manifest should have pendingCount equal to totalComponents (' + diffEmpty.totalComponents + '), got ' + diffEmpty.pendingCount };
+  }
+  // All sheets should be not up to date
+  for (var i = 0; i < diffEmpty.sheets.length; i++) {
+    if (diffEmpty.sheets[i].allUpToDate !== false) {
+      return { module: 'SystemMaintenanceAndManifest', error: 'Sheet ' + diffEmpty.sheets[i].sheetName + ' should have allUpToDate = false on empty applied' };
+    }
+  }
+
+  // 3. Test diffManifests_ with fully up-to-date applied manifest
+  var diffFull = diffManifests_(SYSTEM_MANIFEST.components);
+  if (diffFull.allUpToDate !== true) {
+    return { module: 'SystemMaintenanceAndManifest', error: 'Fully matched applied manifest should have allUpToDate = true' };
+  }
+  if (diffFull.pendingCount !== 0) {
+    return { module: 'SystemMaintenanceAndManifest', error: 'Fully matched applied manifest should have pendingCount = 0, got ' + diffFull.pendingCount };
+  }
+  // All sheets should be up to date
+  for (var j = 0; j < diffFull.sheets.length; j++) {
+    if (diffFull.sheets[j].allUpToDate !== true || diffFull.sheets[j].pendingCount !== 0) {
+      return { module: 'SystemMaintenanceAndManifest', error: 'Sheet ' + diffFull.sheets[j].sheetName + ' should have allUpToDate = true on full applied' };
+    }
+  }
+
+  // 4. Test diffManifests_ with partially applied manifest (Only Flights up-to-date)
+  var partialApplied = {};
+  for (var key in SYSTEM_MANIFEST.components) {
+    if (key.indexOf('Flights.') === 0) {
+      partialApplied[key] = SYSTEM_MANIFEST.components[key];
+    }
+  }
+  var diffPartial = diffManifests_(partialApplied);
+  if (diffPartial.allUpToDate !== false) {
+    return { module: 'SystemMaintenanceAndManifest', error: 'Partially matched manifest should have overall allUpToDate = false' };
+  }
+  var flightsSheet = null;
+  var configSheet = null;
+  for (var k = 0; k < diffPartial.sheets.length; k++) {
+    if (diffPartial.sheets[k].sheetName === 'Flights') flightsSheet = diffPartial.sheets[k];
+    if (diffPartial.sheets[k].sheetName === 'Config') configSheet = diffPartial.sheets[k];
+  }
+  if (!flightsSheet || flightsSheet.allUpToDate !== true || flightsSheet.pendingCount !== 0) {
+    return { module: 'SystemMaintenanceAndManifest', error: 'Flights sheet rollup expected allUpToDate = true, got ' + (flightsSheet ? flightsSheet.allUpToDate : 'null') };
+  }
+  if (!configSheet || configSheet.allUpToDate !== false || configSheet.pendingCount === 0) {
+    return { module: 'SystemMaintenanceAndManifest', error: 'Config sheet rollup expected allUpToDate = false, got ' + (configSheet ? configSheet.allUpToDate : 'null') };
+  }
+
+  // 5. Test SystemMaintenanceOrchestrator and AtomicUpdaters existence
+  if (typeof SystemMaintenanceOrchestrator === 'undefined') {
+    return { module: 'SystemMaintenanceAndManifest', error: 'SystemMaintenanceOrchestrator missing' };
+  }
+  if (typeof SystemMaintenanceOrchestrator.getStatus !== 'function' || typeof SystemMaintenanceOrchestrator.execute !== 'function') {
+    return { module: 'SystemMaintenanceAndManifest', error: 'SystemMaintenanceOrchestrator missing getStatus or execute methods' };
+  }
+  if (typeof AtomicUpdaters === 'undefined' || typeof SheetSpecialists === 'undefined') {
+    return { module: 'SystemMaintenanceAndManifest', error: 'AtomicUpdaters or SheetSpecialists missing' };
+  }
+
+  return { module: 'SystemMaintenanceAndManifest', idx: true };
 }
 
 

@@ -1,0 +1,585 @@
+<!--
+ * Paragliding Flight Log v2.0
+ * Updated: 2026-10-02 19:10:42
+ -->
+<!DOCTYPE html>
+<html>
+
+<head>
+    <base target="_top">
+    <?!= HtmlService.createTemplateFromFile('Style').evaluate().getContent(); ?>
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 16px;
+            color: #212121;
+            background: #FAFAFA;
+            font-size: 13px;
+        }
+
+        .header-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #E0E0E0;
+        }
+
+        .header-title {
+            font-size: 16px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #1A237E;
+        }
+
+        .version-badge {
+            background: #E8EAF6;
+            color: #283593;
+            font-weight: 600;
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 12px;
+            border: 1px solid #C5CAE9;
+        }
+
+        .status-banner {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .status-banner.amber {
+            background: #FFF8E1;
+            border: 1px solid #FFE082;
+            color: #B78103;
+        }
+
+        .status-banner.green {
+            background: #E8F5E9;
+            border: 1px solid #A5D6A7;
+            color: #2E7D32;
+        }
+
+        .banner-text {
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .banner-sub {
+            font-size: 11px;
+            font-weight: 400;
+            color: #616161;
+            margin-top: 2px;
+        }
+
+        .btn-launch-maint {
+            background: #1976D2;
+            color: #FFFFFF;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 12px;
+            cursor: pointer;
+            white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: background 0.15s ease;
+        }
+
+        .btn-launch-maint:hover {
+            background: #1565C0;
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 6px;
+            border-bottom: 1px solid #E0E0E0;
+            margin-bottom: 12px;
+        }
+
+        .nav-tab {
+            padding: 8px 14px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #757575;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.15s ease;
+        }
+
+        .nav-tab.active {
+            color: #1976D2;
+            border-bottom-color: #1976D2;
+        }
+
+        .tab-pane {
+            display: none;
+        }
+
+        .tab-pane.active {
+            display: block;
+        }
+
+        /* Sheet Accordion Cards */
+        .sheet-card {
+            background: #FFFFFF;
+            border: 1px solid #E0E0E0;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            transition: border-color 0.15s ease;
+        }
+
+        .sheet-card.has-pending {
+            border-color: #FFE082;
+        }
+
+        .sheet-header {
+            padding: 10px 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            background: #FAFAFA;
+            user-select: none;
+            transition: background 0.15s ease;
+        }
+
+        .sheet-header:hover {
+            background: #F5F5F5;
+        }
+
+        .sheet-title-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .sheet-status-pill {
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .pill-green {
+            background: #E8F5E9;
+            color: #2E7D32;
+            border: 1px solid #C8E6C9;
+        }
+
+        .pill-amber {
+            background: #FFF3E0;
+            color: #E65100;
+            border: 1px solid #FFE0B2;
+        }
+
+        .toggle-icon {
+            font-size: 10px;
+            color: #757575;
+            transition: transform 0.2s ease;
+        }
+
+        .toggle-icon.open {
+            transform: rotate(180deg);
+        }
+
+        .sheet-content {
+            display: none;
+            padding: 0;
+            border-top: 1px solid #F0F0F0;
+        }
+
+        .sheet-content.open {
+            display: block;
+        }
+
+        .comp-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+
+        .comp-table th {
+            background: #F8F9FA;
+            color: #616161;
+            font-weight: 600;
+            padding: 8px 12px;
+            text-align: left;
+            border-bottom: 1px solid #E0E0E0;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .comp-table td {
+            padding: 8px 12px;
+            border-bottom: 1px solid #F0F0F0;
+            vertical-align: middle;
+        }
+
+        .comp-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .comp-row.pending {
+            background: #FFFDE7;
+        }
+
+        .code-tag {
+            font-family: 'Consolas', 'Menlo', monospace;
+            background: #F5F5F5;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            color: #424242;
+            border: 1px solid #E0E0E0;
+        }
+
+        .code-tag.pending {
+            background: #FFF9C4;
+            color: #F57F17;
+            border-color: #FFF59D;
+        }
+
+        .code-tag.latest {
+            background: #E8F5E9;
+            color: #2E7D32;
+            border-color: #C8E6C9;
+        }
+
+        /* Environment & About Cards */
+        .info-card {
+            background: #FFFFFF;
+            border: 1px solid #E0E0E0;
+            border-radius: 8px;
+            padding: 14px;
+            margin-bottom: 10px;
+        }
+
+        .info-card-title {
+            font-weight: 600;
+            font-size: 13px;
+            margin-bottom: 8px;
+            color: #37474F;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 140px 1fr;
+            row-gap: 6px;
+            font-size: 12px;
+        }
+
+        .info-key {
+            color: #757575;
+            font-weight: 500;
+        }
+
+        .info-val {
+            color: #212121;
+            word-break: break-all;
+        }
+
+        .footer-bar {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 14px;
+            padding-top: 10px;
+            border-top: 1px solid #E0E0E0;
+        }
+
+        .btn-secondary {
+            background: #EEEEEE;
+            color: #424242;
+            border: 1px solid #BDBDBD;
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-secondary:hover {
+            background: #E0E0E0;
+        }
+
+        .loading-spinner {
+            text-align: center;
+            padding: 40px;
+            color: #757575;
+            font-size: 13px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header-bar">
+        <div class="header-title">
+            <span>ℹ️</span> System Info & Manifest Inspector
+        </div>
+        <div class="version-badge" id="appVersionBadge">Core v2.1.0</div>
+    </div>
+
+    <!-- Live Status Banner -->
+    <div id="statusBanner" class="status-banner green" style="display: none;">
+        <div>
+            <div class="banner-text" id="bannerTitle">All System Components Up-to-Date</div>
+            <div class="banner-sub" id="bannerSub">Spreadsheet elements are 100% synchronized with core code.</div>
+        </div>
+        <button class="btn-launch-maint" id="btnLaunchMaint" style="display: none;" onclick="launchSystemMaintenance()">
+            <span>🛠️</span> Open System Maintenance...
+        </button>
+    </div>
+
+    <!-- Tabs -->
+    <div class="nav-tabs">
+        <div class="nav-tab active" onclick="switchTab('tabManifest')">🔍 Manifest & Schema Health</div>
+        <div class="nav-tab" onclick="switchTab('tabEnvironment')">⚙️ Environment & Quotas</div>
+        <div class="nav-tab" onclick="switchTab('tabAbout')">📜 About & Attribution</div>
+    </div>
+
+    <!-- Loading State -->
+    <div id="loadingView" class="loading-spinner">
+        <div>⏳ Inspecting system manifest and active spreadsheet elements...</div>
+    </div>
+
+    <!-- Tab 1: Manifest & Schema Health -->
+    <div id="tabManifest" class="tab-pane active" style="display: none;">
+        <div id="sheetsContainer"></div>
+    </div>
+
+    <!-- Tab 2: Environment & Quotas -->
+    <div id="tabEnvironment" class="tab-pane">
+        <div class="info-card">
+            <div class="info-card-title"><span>📊</span> Active Spreadsheet Details</div>
+            <div class="info-grid">
+                <div class="info-key">Document Name:</div>
+                <div class="info-val" id="envDocName">Loading...</div>
+                <div class="info-key">Document ID:</div>
+                <div class="info-val" id="envDocId">Loading...</div>
+                <div class="info-key">Active Timezone:</div>
+                <div class="info-val" id="envTimezone">Loading...</div>
+                <div class="info-key">Active User:</div>
+                <div class="info-val" id="envUser">Loading...</div>
+            </div>
+        </div>
+
+        <div class="info-card">
+            <div class="info-card-title"><span>⚡</span> Google Apps Script Runtime & Quotas</div>
+            <div class="info-grid">
+                <div class="info-key">Execution Limit:</div>
+                <div class="info-val">6 minutes max per synchronous trigger (TimeBudget enforced)</div>
+                <div class="info-key">Queue Daemon:</div>
+                <div class="info-val">Self-perpetuating 4.5-min chunking via QueueService</div>
+                <div class="info-key">Batch Formula Engine:</div>
+                <div class="info-val">Enabled (single round-trip setFormulas arrays)</div>
+                <div class="info-key">Resilience Primitives:</div>
+                <div class="info-val">Named Ranges, Soft Warning Guardrails, Proxy Header Maps</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab 3: About & Attribution -->
+    <div id="tabAbout" class="tab-pane">
+        <div class="info-card">
+            <div class="info-card-title"><span>🪂</span> Paragliding Flight Log Engine</div>
+            <div style="font-size: 12px; color: #424242; line-height: 1.6;">
+                <p><strong>Paragliding Flight Log</strong> is a professional-grade personal flight telemetry, scoring, and analysis platform built natively for Google Sheets and Google Apps Script.</p>
+                <p>Designed for thermal soaring, cross-country (XC), and hike-and-fly pilots, it combines instant IGC parsing, coordinate geo-enrichment, weather telemetry, deduplication scoring, and dynamic dashboards.</p>
+            </div>
+        </div>
+
+        <div class="info-card">
+            <div class="info-card-title"><span>📜</span> Open Source & Service Attribution</div>
+            <div class="info-grid">
+                <div class="info-key">IGC Parser:</div>
+                <div class="info-val">Native GAS IGC B-Record and Header state engine</div>
+                <div class="info-key">Scoring Engine:</div>
+                <div class="info-val">Civl / XContest open-distance, out-and-return & FAI triangle scoring</div>
+                <div class="info-key">Weather Telemetry:</div>
+                <div class="info-val">Open-Meteo & Visual Crossing historical weather APIs</div>
+                <div class="info-key">Geo Lookup:</div>
+                <div class="info-val">Paragliding Earth & OpenStreetMap reverse geocoding</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer-bar">
+        <button class="btn-secondary" onclick="google.script.host.close()">Close</button>
+        <button class="btn-launch-maint" id="footerMaintBtn" style="display: none;" onclick="launchSystemMaintenance()">
+            <span>🛠️</span> Open System Maintenance...
+        </button>
+    </div>
+
+    <script>
+        var currentDiff = null;
+
+        window.onload = function() {
+            google.script.run
+                .withSuccessHandler(renderSystemInfo)
+                .withFailureHandler(function(err) {
+                    document.getElementById('loadingView').innerHTML = '<div style="color: #D32F2F;">⚠️ Error loading system info: ' + err.message + '</div>';
+                })
+                .getSystemInfoData();
+        };
+
+        function switchTab(tabId) {
+            var tabs = document.querySelectorAll('.nav-tab');
+            tabs.forEach(function(t) { t.classList.remove('active'); });
+            event.target.classList.add('active');
+
+            var panes = document.querySelectorAll('.tab-pane');
+            panes.forEach(function(p) { p.classList.remove('active'); p.style.display = 'none'; });
+
+            var target = document.getElementById(tabId);
+            if (target) {
+                target.classList.add('active');
+                target.style.display = 'block';
+            }
+        }
+
+        function toggleSheetCard(sName) {
+            var content = document.getElementById('sheetContent_' + sName);
+            var icon = document.getElementById('toggleIcon_' + sName);
+            if (content.classList.contains('open')) {
+                content.classList.remove('open');
+                icon.classList.remove('open');
+            } else {
+                content.classList.add('open');
+                icon.classList.add('open');
+            }
+        }
+
+        function renderSystemInfo(data) {
+            document.getElementById('loadingView').style.display = 'none';
+            document.getElementById('tabManifest').style.display = 'block';
+
+            if (!data || !data.diff) return;
+            currentDiff = data.diff;
+
+            // Environment info
+            if (data.env) {
+                document.getElementById('envDocName').textContent = data.env.name || '';
+                document.getElementById('envDocId').textContent = data.env.id || '';
+                document.getElementById('envTimezone').textContent = data.env.timezone || '';
+                document.getElementById('envUser').textContent = data.env.user || '';
+            }
+
+            document.getElementById('appVersionBadge').textContent = 'Core v' + currentDiff.systemVersion;
+
+            // Status Banner
+            var banner = document.getElementById('statusBanner');
+            var bannerTitle = document.getElementById('bannerTitle');
+            var bannerSub = document.getElementById('bannerSub');
+            var btnLaunch = document.getElementById('btnLaunchMaint');
+            var footerBtn = document.getElementById('footerMaintBtn');
+
+            banner.style.display = 'flex';
+            if (currentDiff.pendingCount > 0) {
+                banner.className = 'status-banner amber';
+                bannerTitle.textContent = '⚡ ' + currentDiff.pendingCount + ' System Update' + (currentDiff.pendingCount > 1 ? 's' : '') + ' Pending Application';
+                bannerSub.textContent = 'Active sheet elements are on earlier versions. Run System Maintenance to apply updates non-destructively.';
+                btnLaunch.style.display = 'inline-flex';
+                footerBtn.style.display = 'inline-flex';
+            } else {
+                banner.className = 'status-banner green';
+                bannerTitle.textContent = '✅ All System Components are Up-to-Date';
+                bannerSub.textContent = 'Spreadsheet layout, Named Ranges, and formulas are 100% synchronized with v' + currentDiff.systemVersion + '.';
+                btnLaunch.style.display = 'none';
+                footerBtn.style.display = 'none';
+            }
+
+            // Render Accordion
+            var container = document.getElementById('sheetsContainer');
+            container.innerHTML = '';
+
+            currentDiff.sheets.forEach(function(s) {
+                var card = document.createElement('div');
+                card.className = 'sheet-card' + (s.allUpToDate ? '' : ' has-pending');
+
+                var pillClass = s.allUpToDate ? 'pill-green' : 'pill-amber';
+                var pillText = s.allUpToDate ? '✅ All Up-to-Date' : ('⚡ Update Available (' + s.pendingCount + ' pending)');
+
+                var rowsHtml = '';
+                s.components.forEach(function(c) {
+                    var rowClass = c.isUpToDate ? '' : 'pending';
+                    var statusHtml = c.isUpToDate
+                        ? '<span style="color: #2E7D32; font-weight: 600;">✅ Up-to-Date</span>'
+                        : '<span style="color: #E65100; font-weight: 600;">⚡ Update Pending</span>';
+
+                    var appliedClass = c.isUpToDate ? 'code-tag' : 'code-tag pending';
+                    var latestClass = 'code-tag latest';
+
+                    rowsHtml += '<tr class="comp-row ' + rowClass + '">' +
+                        '<td style="font-weight: 500;">' + c.label + '</td>' +
+                        '<td><span class="' + appliedClass + '">' + c.applied + '</span></td>' +
+                        '<td><span class="' + latestClass + '">' + c.latest + '</span></td>' +
+                        '<td>' + statusHtml + '</td>' +
+                        '</tr>';
+                });
+
+                // Auto-expand sheets with pending updates
+                var isOpen = !s.allUpToDate;
+                var openClass = isOpen ? ' open' : '';
+
+                card.innerHTML = 
+                    '<div class="sheet-header" onclick="toggleSheetCard(\'' + s.sheetKey + '\')">' +
+                        '<div class="sheet-title-group">' +
+                            '<span>' + s.icon + '</span>' +
+                            '<span>' + s.sheetName + '</span>' +
+                            '<span style="font-size: 11px; color: #757575; font-weight: 400;">(' + s.components.length + ' components)</span>' +
+                        '</div>' +
+                        '<div style="display: flex; align-items: center; gap: 8px;">' +
+                            '<div class="sheet-status-pill ' + pillClass + '">' + pillText + '</div>' +
+                            '<span class="toggle-icon' + openClass + '" id="toggleIcon_' + s.sheetKey + '">▼</span>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="sheet-content' + openClass + '" id="sheetContent_' + s.sheetKey + '">' +
+                        '<table class="comp-table">' +
+                            '<thead>' +
+                                '<tr>' +
+                                    '<th>Element / Component</th>' +
+                                    '<th style="width: 140px;">Applied in Sheet</th>' +
+                                    '<th style="width: 140px;">Latest in Code</th>' +
+                                    '<th style="width: 130px;">Status</th>' +
+                                '</tr>' +
+                            '</thead>' +
+                            '<tbody>' + rowsHtml + '</tbody>' +
+                        '</table>' +
+                    '</div>';
+
+                container.appendChild(card);
+            });
+        }
+
+        function launchSystemMaintenance() {
+            google.script.host.close();
+            google.script.run.showSystemMaintenanceDialog();
+        }
+    </script>
+</body>
+
+</html>

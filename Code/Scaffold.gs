@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-10-02 17:25:41
+ * Updated: 2026-10-02 19:10:42
  */
 /**
  * Paragliding Flight Log v2.0 - Scaffolding & Setup
@@ -1699,4 +1699,390 @@ function applyFlightsGuardrails_(sh) {
     applySoftGuardrail_(sh, sh.getRange(5, flightNoCol, maxRows - 4, 1), 'Guardrail: Flights Auto-Numbering Formulas');
   }
 }
+
+/* ==========================================================================================
+   THREE-TIER SYSTEM MAINTENANCE ENGINE (DSGN-MNT-001 Rev 2.0 / CR-SYS-006)
+   ========================================================================================== */
+
+/**
+ * TIER 1: ATOMIC ELEMENT UPDATERS
+ */
+var AtomicUpdaters = {
+  updateDimensions: function(sh, rows, cols, frozenRows, frozenCols, tabColor) {
+    if (!sh) return;
+    if (rows && cols) ensureDimensions_(sh, rows, cols);
+    if (frozenRows !== undefined) sh.setFrozenRows(frozenRows);
+    if (frozenCols !== undefined) sh.setFrozenColumns(frozenCols);
+    if (tabColor) sh.setTabColor(tabColor);
+  },
+
+  updateFlightsHeadersAndNotes: function(sh) {
+    if (!sh) return;
+    sh.setTabColor(TABS.FLIGHTS.color);
+    sh.getRange('A1:Z1').setBackground(TABS.FLIGHTS.color).setFontColor('white').setFontWeight('bold');
+
+    // Remove deprecated columns safely (right-to-left)
+    var colsToDelete = ['GlideRatio_LD (snap)', 'Trim_kmh (snap)', 'FullBar_kmh (snap)', 'Launch-Landing Dist (km)'];
+    var lastCol = sh.getLastColumn();
+    if (lastCol > 0) {
+      var currentHeaders = sh.getRange(4, 1, 1, lastCol).getValues()[0];
+      var toDelete = [];
+      for (var c = 0; c < currentHeaders.length; c++) {
+        if (colsToDelete.indexOf(currentHeaders[c]) !== -1) toDelete.push(c + 1);
+      }
+      toDelete.sort(function(a, b) { return b - a; });
+      toDelete.forEach(function(colIdx) { sh.deleteColumn(colIdx); });
+    }
+
+    // Unmerge Row 3 before applying new category merges
+    sh.getRange(3, 1, 1, sh.getMaxColumns()).breakApart();
+
+    // Flatten and rewrite Headers (Row 4)
+    var groups = TABS.FLIGHTS.groups;
+    var flatHeaders = [];
+    groups.forEach(function(g) { flatHeaders = flatHeaders.concat(g.cols); });
+    ensureDimensions_(sh, 2000, flatHeaders.length);
+    sh.getRange(4, 1, 1, flatHeaders.length).setValues([flatHeaders]);
+    sh.getRange(4, 1, 1, flatHeaders.length).setFontWeight('bold').setBorder(true, true, true, true, true, true).setWrapStrategy(SpreadsheetApp.WrapStrategy.WRAP).setVerticalAlignment('top');
+
+    // Apply Column Notes / Tooltips (Row 4)
+    var colNotes = TABS.FLIGHTS.colNotes || {};
+    for (var c = 0; c < flatHeaders.length; c++) {
+      var colName = flatHeaders[c];
+      var cell = sh.getRange(4, c + 1);
+      if (colNotes[colName]) {
+        cell.setNote(colNotes[colName]);
+      } else {
+        cell.clearNote();
+      }
+    }
+
+    // Clear leftover header cells beyond flatHeaders
+    var newLastCol = sh.getLastColumn();
+    if (newLastCol > flatHeaders.length) {
+      sh.getRange(3, flatHeaders.length + 1, 2, newLastCol - flatHeaders.length).clear();
+    }
+
+    // Rescaffold groupings (Row 3 & 4)
+    var colIndex = 1;
+    groups.forEach(function(g) {
+      var groupLen = g.cols.length;
+      try {
+        if (colIndex === 1 && TABS.FLIGHTS.frozenCols && TABS.FLIGHTS.frozenCols < groupLen) {
+          var frozenCount = TABS.FLIGHTS.frozenCols;
+          sh.getRange(3, 1, 1, frozenCount).setValue('').setBackground(g.color).setBorder(true, true, true, true, false, false, 'medium', null);
+          var unmergedCount = groupLen - frozenCount;
+          sh.getRange(3, frozenCount + 1, 1, unmergedCount).merge().setValue(g.name).setBackground(g.color).setHorizontalAlignment('center').setFontWeight('bold').setBorder(true, true, true, true, false, false, 'medium', null);
+        } else {
+          sh.getRange(3, colIndex, 1, groupLen).merge().setValue(g.name).setBackground(g.color).setHorizontalAlignment('center').setFontWeight('bold').setBorder(true, true, true, true, false, false, 'medium', null);
+        }
+        sh.getRange(4, colIndex, 1, groupLen).setBackground(g.color).setFontWeight('bold');
+      } catch (e) {}
+      colIndex += groupLen;
+    });
+    sh.setFrozenRows(4);
+    sh.setFrozenColumns(4);
+  },
+
+  updateFlightsFormulas: function(sh) {
+    if (!sh) return;
+    var map = getColumnMap_(sh);
+    var flightNoCol = map['Flight No'] || 3;
+    var lastRow = Math.max(sh.getLastRow(), 5);
+    var numRows = lastRow - 4;
+    if (numRows > 0) {
+      var formulas = [];
+      for (var r = 0; r < numRows; r++) {
+        formulas.push(['=ROW()-4']);
+      }
+      sh.getRange(5, flightNoCol, numRows, 1).setFormulas(formulas);
+    }
+  },
+
+  updateConfigLookupsAndNamedRanges: function(ss, sh) {
+    if (!sh) return;
+    var lookupCols = [
+      'Equipment Categories',
+      'Flight Status',
+      'Flight Type',
+      'XC Classes',
+      'Date Formats',
+      'Time Formats',
+      'Active Wings',
+      'Active Harnesses',
+      'Active Reserves',
+      'Active Other'
+    ];
+    sh.getRange(2, 5, 1, lookupCols.length).setValues([lookupCols]);
+    sh.getRange(2, 5, 1, lookupCols.length).setFontWeight('bold').setBackground('#5D4037').setFontColor('white');
+
+    // Static controlled vocabularies
+    sh.getRange('E3:E7').setValues([['Wing'], ['Harness'], ['Reserve'], ['Instrument'], ['Other']]);
+    sh.getRange('F3:F8').setValues([['Valid'], ['Review?'], ['Dup-Primary'], ['Dup-Others'], ['Invalid?'], ['Remove']]);
+    sh.getRange('G3:G7').setValues([['Thermal XC'], ['Ridge Soaring'], ['Hike & Fly'], ['Tandem'], ['SIV / Acro']]);
+    sh.getRange('H3:H8').setValues([['Standard (Paraglider)'], ['Sport (Up to EN C)'], ['Performance (Up to EN D)'], ['Competition (Open / CCC)'], ['Tandem (Tandem Class)'], ['Unknown']]);
+    sh.getRange('I3:I7').setValues([['yyyy-MM-dd'], ['dd/MM/yyyy'], ['MM/dd/yyyy'], ['yyyy.MM.dd'], ['d MMM yyyy']]);
+    sh.getRange('J3:J4').setValues([['h:mm a'], ['HH:mm']]);
+
+    // Native Equipment Auto-Lookups (=SORT(FILTER(...)))
+    var eqName = TABS.EQUIPMENT ? TABS.EQUIPMENT.name : 'Equipment';
+    var eqCols = (TABS.EQUIPMENT && TABS.EQUIPMENT.columns) ? TABS.EQUIPMENT.columns : [];
+    var colCatIdx = eqCols.indexOf('Category') + 1;
+    var colIdIdx = eqCols.indexOf('EquipmentID') + 1;
+    var colRetIdx = eqCols.indexOf('Retired?') + 1;
+    var cCat = columnToLetter_(colCatIdx > 0 ? colCatIdx : 1);
+    var cId = columnToLetter_(colIdIdx > 0 ? colIdIdx : 2);
+    var cRet = columnToLetter_(colRetIdx > 0 ? colRetIdx : 8);
+
+    var rngId = eqName + '!$' + cId + '$3:$' + cId;
+    var rngCat = eqName + '!$' + cCat + '$3:$' + cCat;
+    var rngRet = eqName + '!$' + cRet + '$3:$' + cRet;
+
+    sh.getRange('K3').setFormula('=IFERROR(SORT(FILTER(' + rngId + ', ' + rngCat + '="Wing", ' + rngRet + '=FALSE)), "")');
+    sh.getRange('L3').setFormula('=IFERROR(SORT(FILTER(' + rngId + ', ' + rngCat + '="Harness", ' + rngRet + '=FALSE)), "")');
+    sh.getRange('M3').setFormula('=IFERROR(SORT(FILTER(' + rngId + ', ' + rngCat + '="Reserve", ' + rngRet + '=FALSE)), "")');
+    sh.getRange('N3').setFormula('=IFERROR(SORT(FILTER(' + rngId + ', ' + rngCat + '="Other", ' + rngRet + '=FALSE)), "")');
+
+    // Register Native Google Sheets Named Ranges
+    registerNamedRange_(ss, 'LOOKUP_EQUIPMENT_CATS', sh.getRange('E3:E'));
+    registerNamedRange_(ss, 'LOOKUP_FLIGHT_STATUSES', sh.getRange('F3:F'));
+    registerNamedRange_(ss, 'LOOKUP_FLIGHT_TYPES', sh.getRange('G3:G'));
+    registerNamedRange_(ss, 'LOOKUP_XC_CLASSES', sh.getRange('H3:H'));
+    registerNamedRange_(ss, 'LOOKUP_ACTIVE_WINGS', sh.getRange('K3:K'));
+    registerNamedRange_(ss, 'LOOKUP_ACTIVE_HARNESSES', sh.getRange('L3:L'));
+    registerNamedRange_(ss, 'LOOKUP_ACTIVE_RESERVES', sh.getRange('M3:M'));
+    registerNamedRange_(ss, 'LOOKUP_ACTIVE_OTHER', sh.getRange('N3:N'));
+    registerSheetId_(ss, 'CONFIG', sh);
+  }
+};
+
+/**
+ * TIER 2: SHEET SPECIALISTS (Zero-Loss Contract Enforced)
+ */
+var SheetSpecialists = {
+  updateFlights: function(elements, ss, logs) {
+    var sh = ss.getSheetByName(TABS.FLIGHTS.name);
+    if (!sh) {
+      sh = ensureSheet_(ss, TABS.FLIGHTS.name);
+      logs.push('[Flights] Created missing Flights tab.');
+    }
+    registerSheetId_(ss, 'FLIGHTS', sh);
+
+    if (elements['Flights.grid']) {
+      AtomicUpdaters.updateDimensions(sh, 2000, 70, 4, 4, TABS.FLIGHTS.color);
+      logs.push('[Flights] Grid dimensions (2000x70) & frozen panes (4x4) verified.');
+    }
+    if (elements['Flights.headers'] || elements['Flights.notes']) {
+      AtomicUpdaters.updateFlightsHeadersAndNotes(sh);
+      logs.push('[Flights] Row 3 groupings, Row 4 column headers & tooltips updated.');
+    }
+    if (elements['Flights.validations']) {
+      applyFlightsValidation_(sh);
+      logs.push('[Flights] Validations with soft warnings (.setAllowInvalid) & conditional formatting updated.');
+    }
+    if (elements['Flights.formulas']) {
+      AtomicUpdaters.updateFlightsFormulas(sh);
+      logs.push('[Flights] Dynamic Flight No sequence batch formulas updated.');
+    }
+    if (elements['Flights.guardrails']) {
+      applyFlightsGuardrails_(sh);
+      logs.push('[Flights] Soft warning guardrails applied to headers and formula sequence.');
+    }
+  },
+
+  updateDashboard: function(elements, ss, logs) {
+    var sh = ss.getSheetByName(TABS.DASHBOARD.name);
+    if (!sh) {
+      sh = ensureSheet_(ss, TABS.DASHBOARD.name);
+      logs.push('[Dashboard] Created missing Dashboard tab.');
+    }
+    registerSheetId_(ss, 'DASHBOARD', sh);
+
+    if (elements['Dashboard.grid'] || elements['Dashboard.formulas'] || elements['Dashboard.guardrails']) {
+      scaffoldDashboard_(ss);
+      logs.push('[Dashboard] Re-linked formulas, DASHBOARD_REVIEW_FILTER named range, clean bounds & guardrails.');
+    }
+  },
+
+  updateConfig: function(elements, ss, logs) {
+    var sh = ss.getSheetByName(TABS.CONFIG.name);
+    if (!sh) {
+      sh = ensureSheet_(ss, TABS.CONFIG.name);
+      logs.push('[Config] Created missing Config tab.');
+    }
+    registerSheetId_(ss, 'CONFIG', sh);
+
+    if (elements['Config.parameters'] || elements['Config.grid'] || elements['Config.headers'] || elements['Config.validations']) {
+      scaffoldConfig_(ss);
+      logs.push('[Config] System parameters merged (preserving user values), lookups & validations updated.');
+    } else {
+      if (elements['Config.lookups'] || elements['Config.namedRanges']) {
+        AtomicUpdaters.updateConfigLookupsAndNamedRanges(ss, sh);
+        logs.push('[Config] Native =SORT(FILTER()) lookups and LOOKUP_* Named Ranges registered.');
+      }
+      if (elements['Config.guardrails']) {
+        applySoftGuardrail_(sh, sh.getRange('K3:N3'), 'Guardrail: Equipment Auto-Lookup Formulas');
+        logs.push('[Config] Soft guardrails applied to lookup formulas K3:N3.');
+      }
+    }
+  },
+
+  updateEquipment: function(elements, ss, logs) {
+    var sh = ss.getSheetByName(TABS.EQUIPMENT.name);
+    if (!sh) {
+      sh = ensureSheet_(ss, TABS.EQUIPMENT.name);
+      logs.push('[Equipment] Created missing Equipment tab.');
+    }
+    registerSheetId_(ss, 'EQUIPMENT', sh);
+
+    if (elements['Equipment.grid']) {
+      AtomicUpdaters.updateDimensions(sh, 100, 13, 2, 0, TABS.EQUIPMENT.color);
+      logs.push('[Equipment] Grid dimensions (100x13) verified.');
+    }
+    if (elements['Equipment.headers']) {
+      sh.getRange('A1:M1').setBackground(TABS.EQUIPMENT.color).setFontColor('white');
+      sh.getRange(2, 1, 1, TABS.EQUIPMENT.columns.length).setValues([TABS.EQUIPMENT.columns]).setBackground('#E0F7FA').setFontWeight('bold');
+      logs.push('[Equipment] Headers synchronized.');
+    }
+    if (elements['Equipment.validations']) {
+      applyEquipmentValidation_(sh);
+      logs.push('[Equipment] Category validation bound to LOOKUP_EQUIPMENT_CATS.');
+    }
+  },
+
+  updatePilotProfile: function(elements, ss, logs) {
+    if (elements['Pilot_Profile.keys']) {
+      scaffoldPilotProfile_(ss);
+      logs.push('[Pilot_Profile] Fields synchronized while strictly preserving pilot personal values.');
+    }
+  },
+
+  updateQueue: function(elements, ss, logs) {
+    if (elements['Automation_Queue.headers']) {
+      scaffoldQueue_(ss);
+      logs.push('[Automation_Queue] Automation Queue schema verified.');
+    }
+  },
+
+  updateAppLog: function(elements, ss, logs) {
+    if (elements['App_Log.headers']) {
+      scaffoldAppLog_(ss);
+      logs.push('[App_Log] Activity Logs schema & formatting verified.');
+    }
+  },
+
+  updateUserGuide: function(elements, ss, logs) {
+    if (elements['User_Guide.content']) {
+      scaffoldUserGuide_(ss);
+      logs.push('[User_Guide] Metric dictionary and documentation refreshed.');
+    }
+  }
+};
+
+/**
+ * TIER 3: SYSTEM MAINTENANCE ORCHESTRATOR
+ */
+var SystemMaintenanceOrchestrator = {
+  getStatus: function() {
+    var diff = diffManifests_();
+    var matrix = {};
+    for (var key in SYSTEM_MANIFEST.components) {
+      if (SYSTEM_MANIFEST.components.hasOwnProperty(key)) {
+        var parts = key.split('.');
+        var sName = parts[0];
+        var cType = parts[1];
+        if (!matrix[sName]) matrix[sName] = {};
+        
+        var comp = null;
+        for (var s = 0; s < diff.sheets.length; s++) {
+          if (diff.sheets[s].sheetName === sName) {
+            for (var c = 0; c < diff.sheets[s].components.length; c++) {
+              if (diff.sheets[s].components[c].key === key) {
+                comp = diff.sheets[s].components[c];
+                break;
+              }
+            }
+            break;
+          }
+        }
+        
+        matrix[sName][cType] = {
+          key: key,
+          label: comp ? comp.label : key,
+          applied: comp ? comp.applied : 'Not Applied',
+          latest: comp ? comp.latest : SYSTEM_MANIFEST.components[key],
+          isUpToDate: comp ? comp.isUpToDate : false,
+          isPending: comp ? !comp.isUpToDate : true
+        };
+      }
+    }
+
+    return {
+      success: true,
+      systemVersion: SYSTEM_MANIFEST.version,
+      diff: diff,
+      matrix: matrix
+    };
+  },
+
+  execute: function(selectedComponents, options) {
+    var logs = [];
+    var ss = SpreadsheetApp.getActive();
+    options = options || {};
+    selectedComponents = selectedComponents || {};
+
+    logs.push('[START] Beginning System Maintenance orchestration...');
+
+    // Step 0: Pre-Flight Safety Backup
+    if (options.backupSheets !== false) {
+      logs.push('[BACKUP] Creating pre-update safety backup of system sheets...');
+      try {
+        backupSystemSheets_();
+        logs.push('[BACKUP OK] In-workbook sheet clones created successfully.');
+      } catch (e) {
+        logs.push('[BACKUP WARN] Backup warning: ' + e.message);
+      }
+    }
+
+    // Topological Execution Order:
+    // 1. Equipment (Substrate for lookups)
+    SheetSpecialists.updateEquipment(selectedComponents, ss, logs);
+
+    // 2. Config (Parameters, Lookups & Named Ranges)
+    SheetSpecialists.updateConfig(selectedComponents, ss, logs);
+
+    // 3. Flights (Headers, Notes, Validations, Formulas, Guardrails)
+    SheetSpecialists.updateFlights(selectedComponents, ss, logs);
+
+    // 4. Dashboard (Bounds, Formulas bound to DASHBOARD_REVIEW_FILTER, Guardrails)
+    SheetSpecialists.updateDashboard(selectedComponents, ss, logs);
+
+    // 5. Reference & Auxiliary Sheets
+    SheetSpecialists.updatePilotProfile(selectedComponents, ss, logs);
+    SheetSpecialists.updateQueue(selectedComponents, ss, logs);
+    SheetSpecialists.updateAppLog(selectedComponents, ss, logs);
+    SheetSpecialists.updateUserGuide(selectedComponents, ss, logs);
+
+    // Commit applied manifest
+    var applied = getAppliedManifest_();
+    var appliedCount = 0;
+    for (var key in selectedComponents) {
+      if (selectedComponents.hasOwnProperty(key) && selectedComponents[key] && SYSTEM_MANIFEST.components[key]) {
+        applied[key] = SYSTEM_MANIFEST.components[key];
+        appliedCount++;
+      }
+    }
+    setAppliedManifest_(applied);
+
+    logs.push('[COMMIT] Committed ' + appliedCount + ' updated components to APPLIED_MANIFEST.');
+    logs.push('[COMPLETE] System Maintenance execution finished successfully.');
+
+    return {
+      success: true,
+      logs: logs,
+      appliedCount: appliedCount,
+      diff: diffManifests_(applied)
+    };
+  }
+};
 
