@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-10-03 01:10:55
+ * Updated: 2026-10-03 01:40:27
  */
 /**
  * Paragliding Flight Log v2.0 - Scaffolding & Setup
@@ -618,7 +618,7 @@ function scaffoldConfig_(ss) {
 
   // Status & Types from CFG (Manual Lookups: Cols F=6, G=7, H=8, I=9, J=10)
   var statuses = ['Valid', 'Review?', 'Dup-Primary', 'Dup-Others', 'Invalid?', 'Remove'];
-  var types = ['Free Fly', 'XC', 'Soaring', 'Comp', 'SIV / Maneuvers', 'Training', 'Other'];
+  var types = ['Free Fly', 'XC', 'Thermal XC', 'Ridge Soaring', 'Hike & Fly', 'Tandem', 'SIV / Maneuvers', 'Comp', 'Training', 'Other'];
   var xcClasses = ['Free Flight', 'Flat Triangle', 'FAI Triangle', 'Out-and-Return'];
   var dateFormats = ['yyyy-MM-dd', 'MM/dd/yyyy', 'dd/MM/yyyy', 'MMM dd, yyyy', 'ddd, MMM dd'];
   var timeFormats = ['HH:mm', 'h:mm a'];
@@ -1894,8 +1894,34 @@ var AtomicUpdaters = {
     // Static controlled vocabularies
     sh.getRange('E3:E7').setValues([['Wing'], ['Harness'], ['Reserve'], ['Instrument'], ['Other']]);
     sh.getRange('F3:F8').setValues([['Valid'], ['Review?'], ['Dup-Primary'], ['Dup-Others'], ['Invalid?'], ['Remove']]);
-    sh.getRange('G3:G7').setValues([['Thermal XC'], ['Ridge Soaring'], ['Hike & Fly'], ['Tandem'], ['SIV / Acro']]);
-    sh.getRange('H3:H8').setValues([['Standard (Paraglider)'], ['Sport (Up to EN C)'], ['Performance (Up to EN D)'], ['Competition (Open / CCC)'], ['Tandem (Tandem Class)'], ['Unknown']]);
+
+    // Canonical Flight Types (Col G) - Guarantees 'Free Fly' is always first and preserved
+    var canonicalTypes = ['Free Fly', 'XC', 'Thermal XC', 'Ridge Soaring', 'Hike & Fly', 'Tandem', 'SIV / Maneuvers', 'Comp', 'Training', 'Other'];
+    var existingTypes = [];
+    if (sh.getLastRow() >= 3) {
+      var rawG = sh.getRange('G3:G25').getValues();
+      for (var gi = 0; gi < rawG.length; gi++) {
+        var gVal = String(rawG[gi][0] || '').trim();
+        if (gVal && existingTypes.indexOf(gVal) === -1) {
+          existingTypes.push(gVal);
+        }
+      }
+    }
+    // Merge: ensure all canonical types are present, preserving any custom user types
+    var mergedTypes = canonicalTypes.slice();
+    for (var ei = 0; ei < existingTypes.length; ei++) {
+      if (mergedTypes.indexOf(existingTypes[ei]) === -1) {
+        mergedTypes.push(existingTypes[ei]);
+      }
+    }
+    sh.getRange('G3:G30').clearContent();
+    sh.getRange(3, 7, mergedTypes.length, 1).setValues(mergedTypes.map(function(t) { return [t]; }));
+
+    // XC Classes (Col H) - Correct geometric track taxonomy (NOT wing certification classes!)
+    var canonicalXcClasses = ['Free Flight', 'Flat Triangle', 'FAI Triangle', 'Out-and-Return'];
+    sh.getRange('H3:H20').clearContent();
+    sh.getRange(3, 8, canonicalXcClasses.length, 1).setValues(canonicalXcClasses.map(function(c) { return [c]; }));
+
     sh.getRange('I3:I7').setValues([['yyyy-MM-dd'], ['dd/MM/yyyy'], ['MM/dd/yyyy'], ['yyyy.MM.dd'], ['d MMM yyyy']]);
     sh.getRange('J3:J4').setValues([['h:mm a'], ['HH:mm']]);
 

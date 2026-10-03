@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-10-03 01:10:55
+ * Updated: 2026-10-03 01:40:27
  * 
  * MODULE: Configuration
  * 
@@ -480,7 +480,7 @@ var SYSTEM_MANIFEST = {
     'Config.grid':         { version: 'v2.0-dim-60x14',        tier: 'recommended' },
     'Config.headers':      { version: 'v2.0-config-headers',   tier: 'optional' },
     'Config.parameters':   { version: 'v2.1-param-merge',      tier: 'mandatory' },
-    'Config.lookups':      { version: 'v2.2-yn-filter',        tier: 'mandatory' },
+    'Config.lookups':      { version: 'v2.3-flight-types-restore', tier: 'mandatory' },
     'Config.namedRanges':  { version: 'v2.1-lookup-ranges',    tier: 'mandatory' },
     'Config.validations':  { version: 'v2.0-config-validation',tier: 'recommended' },
     'Config.guardrails':   { version: 'v2.1-lookup-soft-warn', tier: 'recommended' },
@@ -514,7 +514,7 @@ var MANIFEST_COMPONENT_LABELS = {
   'Config.grid': 'Grid Dimensions & Column Widths (60 Rows, 14 Cols)',
   'Config.headers': 'Header Banners & Section Separators',
   'Config.parameters': 'System Parameters (Preserving User Values)',
-  'Config.lookups': 'Native Equipment Auto-Lookups (=SORT(FILTER()))',
+  'Config.lookups': 'Native Equipment Auto-Lookups & Restored Flight Types Vocabulary',
   'Config.namedRanges': 'Workbook-Scoped Named Ranges (LOOKUP_*)',
   'Config.validations': 'Format & Setting Input Validations',
   'Config.guardrails': 'Soft Guardrail Protections (Lookups K3:N3)',
