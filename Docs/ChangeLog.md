@@ -1,18 +1,39 @@
 # Project Change Log
 
-## Session: Dedupe Engine Overhaul, In-Memory Row Scoring, Logbook Duplicate Scanner (CR-ING-009), Configurable RDP Tolerance (CR-CFG-002) & Bulk Flight Status Change (CR-MNT-004)
+## Session: Unified System Maintenance Cockpit (CR-SYS-006 / DSGN-MNT-001 Rev 2.1), 3-Tier Execution Invariants, 4-State Matrix UI & System Info Inspector (CR-SYS-010)
 **Date**: 2026-10-02
-**Versions**: v0.8.21
-**Focus**: Dedupe Engine Overhaul (`CR-ING-009`), In-Memory Row Quality Scoring (`scoreFlightQualityFromRow_`), Elimination of Compounding Drive Round-Trips (`Bug-ING-007`), Automation Queue Checkpoint Progress Preservation (`Bug-AUT-001`), Timezone-Immune String Extraction (`Bug-ING-008`), Short Throwaway Tags (`D01`, `D02`, ...) & Reciprocal Notes, Intra-Batch Duplicate Pairing (`Bug-ING-009`), Folder Crawl Discovery Metrics, End-of-Run Summary Formatting, Logbook Duplicate Scanner (`Flight maintenance > Scan & Flag Duplicates in Logbook...`), Configurable RDP Simplification Tolerance (`CR-CFG-002`), and Bulk Flight Status Change Utility (`CR-MNT-004`).
+**Versions**: Core v2.1.0
+**Focus**: Unified System Maintenance Cockpit (`CR-SYS-006` / `DSGN-MNT-001 Rev 2.1`), Three-Tier Component Classification (`mandatory`, `recommended`, `optional`), Mandatory Auto-Enforcement as a Universal System Invariant, Authoritative Sheet Gating, 4-State Visual Matrix UI, Dual Pre-Flight Safety Backups (In-Workbook Sheet Clones + Client-Side Config JSON Snapshot Download), System Info & Manifest Inspector (`CR-SYS-010` / `SystemInfoDialog.html`), Script-to-Sheet Decoupling & Dual-State Lag Resilience, and Automated Test Suite Expansion (13/13 suites passed).
 
-*   `[Imp]` **CR-SYS-006 (Unified System Maintenance Cockpit, 2D Matrix Scope & Decoupled Update Architecture)**:
-    *   **Consolidated Admin Menu**: Replaced cluttered, cryptic `Sheet Maintenance & Views` submenu with a clean entry under `Flight Log > Admin > System Maintenance...` (`showSystemMaintenanceDialog`).
-    *   **Visual 2D Matrix Scope (`Code/SystemMaintenanceDialog.html`)**: Interactive modal rendering an 8-sheet column $\times$ 7-element row matrix (`Flights`, `Dashboard`, `Config`, `Equipment`, `Pilot_Profile`, `Automation_Queue`, `App_Log`, `User_Guide` across Grid, Headers, Notes, Validations, Formulas/Named Ranges, Parameters, Guardrails). Includes sparse non-applicable indicators (`───`), column/row master toggles, and preset buttons (`Select Recommended Updates`, `Select All`, `Clear All`).
-    *   **Three-Tier Maintenance Engine (`Code/Scaffold.gs`)**: Decomposed monolithic scaffolding into Tier 1 Atomic Updaters (`AtomicUpdaters`), Tier 2 Sheet Specialists (`SheetSpecialists` enforcing the Zero-Loss Contract on Rows 5:N and merging `Config` parameters), and Tier 3 System Orchestrator (`SystemMaintenanceOrchestrator`) executing in strict topological dependency order.
-    *   **Cumulative Manifest & State Persistence**: Defined `SYSTEM_MANIFEST` in `Code/Config.gs` tracking version tags for all 22 system components against `APPLIED_MANIFEST` in `DocumentProperties`. Diffs state automatically, pre-selecting pending updates across multiple skipped releases and clearing them upon commit.
-    *   **Pre-Flight Safety Backups**: Automated in-workbook sheet clones (`Backup Flights`, `Backup Config`, etc.) created before structural updates.
-    *   **Automated Testing (`Code/Test.gs`)**: Added `testSystemMaintenanceAndManifest_()` verifying manifest diffing, pending count accuracy, sheet rollups, and engine method contracts.
+*   `[Imp]` **CR-SYS-006 (Unified System Maintenance Cockpit, 3-Tier Classification & Mandatory Invariants)**:
+    *   **Consolidated Admin Menu**: Replaced fragmented `Sheet Maintenance & Views` submenus with a single modern entry: `Flight Log > Admin > System Maintenance...` (`showSystemMaintenanceDialog`).
+    *   **Three-Tier Component Classification**: Classified all 22 system manifest components in `Code/Config.gs` into explicit operational tiers:
+        *   **Mandatory (6 Components)**: Structural prerequisites for backend Apps Script code (`Flights.formulas`, `Dashboard.formulas`, `Config.lookups`, `Config.namedRanges`, `Config.parameters`, `Equipment.headers`).
+        *   **Recommended (12 Components)**: Core functional elements (`Flights.grid`, `Flights.headers`, `Flights.notes`, `Flights.validations`, `Flights.guardrails`, `Dashboard.grid`, `Dashboard.guardrails`, `Config.guardrails`, `Equipment.validations`, `Pilot_Profile.keys`, `Automation_Queue.headers`, `App_Log.headers`).
+        *   **Optional (4 Components)**: Non-critical documentation and tutorial elements (`User_Guide.grid`, `User_Guide.headers`, `User_Guide.notes`, `User_Guide.guardrails`).
+    *   **Mandatory Auto-Enforcement Invariant**: Hardened `SystemMaintenanceOrchestrator.execute()` in `Code/Scaffold.gs` so that any pending Mandatory update is **always auto-enforced as a system invariant**, even if the user unchecked that sheet in the UI. This eliminates fatal runtime `#REF!` or missing Named Range errors caused by asynchronous script-to-sheet lag.
+    *   **4-State Visual Matrix Table (`Code/SystemMaintenanceDialog.html`)**: Interactive modal rendering an 8-sheet column $\times$ 7-element row matrix with 5 visual cell states:
+        *   `───`: Non-applicable element for that sheet.
+        *   Disabled unchecked box: Applicable element, but already synchronized with code.
+        *   Light Red (`#FFEBEE`) locked box: Mandatory update available (permanently checked & disabled).
+        *   Light Green (`#E8F5E9`) box: Recommended update available (checked & enabled by default).
+        *   Light Blue (`#E1F5FE`) box: Optional update available (checked & enabled by default).
+    *   **Authoritative Sheet-Level Gatekeeper**: Checkboxes in Row 1 gate Recommended and Optional components for that sheet (dimming them with `opacity: 0.35` and unchecking them), while Mandatory components remain vibrantly active and locked as system invariants.
+    *   **Preset Controls**: Added `[ 🎯 Select Recommended Only ]` (unchecks optional components while preserving recommended and mandatory), `[ 🗹 Select All ]`, and `[ 🗵 Clear All ]` (unchecks all sheet master boxes and optional/recommended components while strictly retaining mandatory invariants).
+    *   **Action Buttons**: Added red `[ ⚡ Apply All Updates ]` (`#D32F2F`) alongside blue `[ 🚀 Apply Selected Updates ]` and `[ Cancel ]`.
+    *   **Dual Pre-Flight Safety Backups & Client-Side JSON Download**:
+        *   `chkBackupSheets` (Create In-Workbook Sheet Clones `_MNT_BAK_*`) - checked by default.
+        *   `chkExportConfig` (Download Config JSON Snapshot) - checked by default. Triggers an automatic browser download of `paraflightlog_config_backup_<timestamp>.json` upon completion via `getConfigExportPayload_()`.
 *   `[Imp]` **CR-SYS-010 (System Info & Manifest Inspector Dialog)**:
+    *   **Dedicated Inspector Modal (`Code/SystemInfoDialog.html`)**: Added `Flight Log > System Info...` (`showSystemInfoDialog`) providing real-time transparency into core code version (`v2.1.0`) vs active spreadsheet schema.
+    *   **Operational Tier Badges**: Displays explicit badges (`🔴 Mandatory`, `🟢 Recommended`, `🔵 Optional`) in the component table alongside Applied vs. Latest versions.
+    *   **Dynamic Status Banner**: Shows green banner (`✅ All System Components are Up-to-Date`) when synchronized, or amber banner (`⚡ N Updates Pending Application (M Mandatory, R Recommended, O Optional)`) with direct `[ 🛠️ Open System Maintenance... ]` hand-off.
+    *   **Full Vertical Scrolling**: Refactored CSS flex layout with `min-height: 0` and custom webkit scrollbar, ensuring cards and tables never overflow or get cut off when expanded.
+    *   **Multi-Tab Architecture**: Manifest & Schema Health, Active Spreadsheet Environment & Quotas, and Open Source Attribution.
+*   `[Test]` **Automated Testing Suite Expansion (`Code/Test.gs`)**:
+    *   Updated `testSystemMaintenanceAndManifest_()` in `Code/Test.gs`: validates manifest tier definitions, string and object version extraction in `diffManifests_()`, full match rollup, partial match rollup, and `SystemMaintenanceOrchestrator` methods.
+    *   Verified 13/13 offline test suites pass with 0 failures across `scratch/run_all_offline_tests.js`.
+
     *   **Diagnostic Inspector Modal (`Code/SystemInfoDialog.html`)**: Added `Flight Log > Admin > System Info & Health...` (`showSystemInfoDialog`) providing real-time transparency into core code version (`v2.1.0`) vs active spreadsheet schema.
     *   **Sheet Accordion with Green/Amber Status Rollups**: Displays expandable cards per sheet. Shows Green pill (`✅ All Up-to-Date`) if all child components match latest code, or Amber pill (`⚡ Update Available (N pending)`) if any component has drifted or remains unapplied. Auto-expands pending sheets.
     *   **Direct Maintenance Hand-off**: Banner provides a prominent `[ 🚀 Open System Maintenance... ]` button that jumps directly from the diagnostic view into the maintenance cockpit with pending updates pre-selected.

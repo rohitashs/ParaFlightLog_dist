@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-10-02 19:33:18
+ * Updated: 2026-10-02 20:14:13
  */
 /**
  * Paragliding Flight Log v2.0 - Configuration
@@ -385,36 +385,37 @@ var SYSTEM_MANIFEST = {
   version: '2.1.0',
   components: {
     // Flights
-    'Flights.grid': 'v2.0-dim-2000x70',
-    'Flights.headers': 'v2.1-col-schema',
-    'Flights.notes': 'v2.1-col-tooltips',
-    'Flights.validations': 'v2.1-soft-invalid',
-    'Flights.formulas': 'v2.1-flight-no-dynamic',
-    'Flights.guardrails': 'v2.1-header-soft-warn',
+    'Flights.grid':        { version: 'v2.0-dim-2000x70',     tier: 'recommended' },
+    'Flights.headers':     { version: 'v2.1-col-schema',       tier: 'mandatory' },
+    'Flights.notes':       { version: 'v2.1-col-tooltips',     tier: 'optional' },
+    'Flights.validations': { version: 'v2.1-soft-invalid',     tier: 'recommended' },
+    'Flights.formulas':    { version: 'v2.1-flight-no-dynamic',tier: 'mandatory' },
+    'Flights.guardrails':  { version: 'v2.1-header-soft-warn', tier: 'recommended' },
+
     // Dashboard
-    'Dashboard.grid': 'v2.0-clean-bounds',
-    'Dashboard.formulas': 'v2.1-named-range-filter',
-    'Dashboard.guardrails': 'v2.1-card-soft-warn',
+    'Dashboard.grid':      { version: 'v2.0-clean-bounds',     tier: 'recommended' },
+    'Dashboard.formulas':  { version: 'v2.1-named-range-filter',tier: 'mandatory' },
+    'Dashboard.guardrails':{ version: 'v2.1-card-soft-warn',   tier: 'recommended' },
+
     // Config
-    'Config.grid': 'v2.0-dim-60x14',
-    'Config.headers': 'v2.0-config-headers',
-    'Config.parameters': 'v2.1-param-merge',
-    'Config.lookups': 'v2.1-native-sort-filter',
-    'Config.namedRanges': 'v2.1-lookup-ranges',
-    'Config.validations': 'v2.0-config-validation',
-    'Config.guardrails': 'v2.1-lookup-soft-warn',
+    'Config.grid':         { version: 'v2.0-dim-60x14',        tier: 'recommended' },
+    'Config.headers':      { version: 'v2.0-config-headers',   tier: 'optional' },
+    'Config.parameters':   { version: 'v2.1-param-merge',      tier: 'mandatory' },
+    'Config.lookups':      { version: 'v2.1-native-sort-filter',tier: 'mandatory' },
+    'Config.namedRanges':  { version: 'v2.1-lookup-ranges',    tier: 'mandatory' },
+    'Config.validations':  { version: 'v2.0-config-validation',tier: 'recommended' },
+    'Config.guardrails':   { version: 'v2.1-lookup-soft-warn', tier: 'recommended' },
+
     // Equipment
-    'Equipment.grid': 'v2.0-dim-100x13',
-    'Equipment.headers': 'v2.0-eq-schema',
-    'Equipment.validations': 'v2.0-eq-rules',
-    // Pilot Profile
-    'Pilot_Profile.keys': 'v2.0-profile-fields',
-    // Automation Queue
-    'Automation_Queue.headers': 'v2.0-queue-schema',
-    // App Log
-    'App_Log.headers': 'v2.0-log-schema',
-    // User Guide
-    'User_Guide.content': 'v2.0-guide-content'
+    'Equipment.grid':      { version: 'v2.0-dim-100x13',       tier: 'recommended' },
+    'Equipment.headers':   { version: 'v2.0-eq-schema',        tier: 'mandatory' },
+    'Equipment.validations':{ version: 'v2.0-eq-rules',        tier: 'recommended' },
+
+    // Reference Sheets
+    'Pilot_Profile.keys':  { version: 'v2.0-profile-fields',   tier: 'recommended' },
+    'Automation_Queue.headers': { version: 'v2.0-queue-schema', tier: 'mandatory' },
+    'App_Log.headers':     { version: 'v2.0-log-schema',       tier: 'optional' },
+    'User_Guide.content':  { version: 'v2.0-guide-content',    tier: 'optional' }
   }
 };
 
@@ -486,7 +487,7 @@ function setAppliedManifest_(manifest) {
 
 /**
  * Compares SYSTEM_MANIFEST against APPLIED_MANIFEST and generates
- * a hierarchical diff structure grouped by Sheet with rollup status.
+ * a hierarchical diff structure grouped by Sheet with rollup status and criticality tiers.
  * @param {Object} [optApplied] - Optional custom applied manifest override for testing
  * @return {Object} Detailed diff analysis
  */
@@ -511,6 +512,9 @@ function diffManifests_(optApplied) {
 
   var totalComponents = 0;
   var totalPending = 0;
+  var mandatoryPending = 0;
+  var recommendedPending = 0;
+  var optionalPending = 0;
 
   for (var key in SYSTEM_MANIFEST.components) {
     if (!SYSTEM_MANIFEST.components.hasOwnProperty(key)) continue;
@@ -518,12 +522,18 @@ function diffManifests_(optApplied) {
     var parts = key.split('.');
     var sName = parts[0];
     var cType = parts[1];
-    var latest = SYSTEM_MANIFEST.components[key];
-    var curr = applied[key] || 'Not Applied';
+    var compDef = SYSTEM_MANIFEST.components[key];
+    var latest = (typeof compDef === 'object' && compDef.version) ? compDef.version : compDef;
+    var tier = (typeof compDef === 'object' && compDef.tier) ? compDef.tier : 'recommended';
+    var currRaw = applied[key];
+    var curr = (typeof currRaw === 'object' && currRaw !== null && currRaw.version) ? currRaw.version : (currRaw || 'Not Applied');
     var isUpToDate = (curr === latest);
 
     if (!isUpToDate) {
       totalPending++;
+      if (tier === 'mandatory') mandatoryPending++;
+      else if (tier === 'optional') optionalPending++;
+      else recommendedPending++;
     }
 
     if (sheetsMap[sName]) {
@@ -535,6 +545,7 @@ function diffManifests_(optApplied) {
       sheetsMap[sName].components.push({
         key: key,
         type: cType,
+        tier: tier,
         label: MANIFEST_COMPONENT_LABELS[key] || (sName + ' ' + cType),
         applied: curr,
         latest: latest,
@@ -551,8 +562,25 @@ function diffManifests_(optApplied) {
     systemVersion: SYSTEM_MANIFEST.version,
     totalComponents: totalComponents,
     pendingCount: totalPending,
+    mandatoryPending: mandatoryPending,
+    recommendedPending: recommendedPending,
+    optionalPending: optionalPending,
     allUpToDate: (totalPending === 0),
     sheets: sheetsList
+  };
+}
+
+/**
+ * Returns active configuration parameters and layout preferences for JSON download.
+ */
+function getConfigExportPayload_() {
+  var ss = SpreadsheetApp.getActive();
+  var params = getParameters_();
+  return {
+    exportedAt: new Date().toISOString(),
+    spreadsheetName: ss ? ss.getName() : 'Flight Log',
+    version: SYSTEM_MANIFEST.version,
+    parameters: params
   };
 }
 

@@ -1,6 +1,7 @@
 <!--
  * Paragliding Flight Log v2.0
- * Updated: 2026-10-02 19:33:18
+ * System Maintenance Cockpit
+ * Updated: 2026-10-02 20:14:13
  -->
 <!DOCTYPE html>
 <html>
@@ -29,7 +30,7 @@
 
         .fixed-top-section {
             flex-shrink: 0;
-            padding: 14px 16px 6px 16px;
+            padding: 12px 16px 6px 16px;
             background: #FAFAFA;
         }
 
@@ -38,7 +39,7 @@
             align-items: center;
             justify-content: space-between;
             margin-bottom: 8px;
-            padding-bottom: 8px;
+            padding-bottom: 6px;
             border-bottom: 1px solid #E0E0E0;
         }
 
@@ -86,6 +87,7 @@
             gap: 20px;
             font-size: 11px;
             color: #333;
+            flex-wrap: wrap;
         }
 
         .backup-options label {
@@ -93,7 +95,44 @@
             align-items: center;
             gap: 6px;
             cursor: pointer;
+            font-weight: 500;
         }
+
+        /* Legend Strip */
+        .legend-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 11px;
+            color: #616161;
+            margin-bottom: 6px;
+            flex-wrap: wrap;
+            padding: 3px 0;
+        }
+
+        .legend-title {
+            font-weight: 700;
+            color: #424242;
+        }
+
+        .legend-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .legend-dot.mandatory { background: #E53935; border: 1px solid #B71C1C; }
+        .legend-dot.recommended { background: #43A047; border: 1px solid #2E7D32; }
+        .legend-dot.optional { background: #039BE5; border: 1px solid #0277BD; }
+        .legend-dot.uptodate { background: #BDBDBD; border: 1px solid #9E9E9E; }
+        .legend-dash { font-weight: bold; color: #9E9E9E; }
 
         /* Preset Controls */
         .preset-bar {
@@ -134,21 +173,21 @@
         }
 
         .btn-preset.recommended {
-            background: #E3F2FD;
-            color: #1565C0;
-            border-color: #90CAF9;
+            background: #E8F5E9;
+            color: #2E7D32;
+            border-color: #A5D6A7;
         }
 
         .btn-preset.recommended:hover {
-            background: #BBDEFB;
+            background: #C8E6C9;
         }
 
         /* Scrollable Middle Body */
         .scrollable-content-area {
             flex: 1 1 auto;
             overflow-y: auto;
-            padding: 6px 16px 14px 16px;
-            min-height: 0; /* Crucial for CSS flex scrolling */
+            padding: 4px 16px 14px 16px;
+            min-height: 0;
         }
 
         .scrollable-content-area::-webkit-scrollbar {
@@ -186,7 +225,7 @@
         }
 
         .matrix-table th, .matrix-table td {
-            padding: 7px 8px;
+            padding: 6px 8px;
             text-align: center;
             border-bottom: 1px solid #EEEEEE;
             border-right: 1px solid #EEEEEE;
@@ -207,7 +246,7 @@
         .matrix-table thead tr:first-child th:first-child {
             text-align: left;
             padding-left: 12px;
-            min-width: 170px;
+            min-width: 180px;
         }
 
         .row-label {
@@ -229,32 +268,59 @@
             padding: 5px 8px;
         }
 
+        /* 4-State Cell Styling */
         .cell-na {
             color: #BDBDBD;
             font-weight: 400;
             user-select: none;
+            background: #FFFFFF;
         }
 
-        .cell-check {
-            cursor: pointer;
-            transition: background 0.15s ease;
+        .cell-uptodate {
+            background: #FAFAFA;
+            color: #9E9E9E;
         }
 
-        .cell-check:hover {
-            background: #F0F4C3;
+        .cell-mandatory {
+            background: #FFEBEE !important;
+            border-color: #FFCDD2;
         }
 
-        .cell-check.is-pending {
-            background: #FFF9C4;
+        .cell-recommended {
+            background: #E8F5E9 !important;
+            border-color: #C8E6C9;
+        }
+
+        .cell-optional {
+            background: #E1F5FE !important;
+            border-color: #B3E5FC;
+        }
+
+        .cell-recommended.gated-by-sheet,
+        .cell-optional.gated-by-sheet {
+            opacity: 0.35;
+            filter: grayscale(80%);
         }
 
         .matrix-check {
             cursor: pointer;
             width: 15px;
             height: 15px;
-            accent-color: #1976D2;
             vertical-align: middle;
             margin: 0;
+        }
+
+        .matrix-check.is-mandatory {
+            accent-color: #D32F2F;
+            cursor: not-allowed;
+        }
+
+        .matrix-check.is-recommended {
+            accent-color: #2E7D32;
+        }
+
+        .matrix-check.is-optional {
+            accent-color: #0288D1;
         }
 
         /* Impact Summary */
@@ -335,7 +401,8 @@
 
         .footer-left {
             font-size: 11px;
-            color: #757575;
+            color: #616161;
+            font-weight: 500;
         }
 
         .footer-actions {
@@ -352,6 +419,30 @@
             font-size: 12px;
             font-weight: 600;
             cursor: pointer;
+        }
+
+        .btn-apply-all {
+            background: #D32F2F;
+            color: #FFFFFF;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: background 0.15s ease;
+        }
+
+        .btn-apply-all:hover:not(:disabled) {
+            background: #B71C1C;
+        }
+
+        .btn-apply-all:disabled {
+            background: #BDBDBD;
+            cursor: not-allowed;
         }
 
         .btn-apply {
@@ -403,18 +494,32 @@
                     <span>🛡️</span> Pre-Flight Safety Backups (Recommended)
                 </div>
                 <div class="backup-options">
-                    <label>
+                    <label title="Creates clones of system sheets prefixed with _MNT_BAK_">
                         <input type="checkbox" id="chkBackupSheets" checked>
-                        <span>Create In-Workbook Sheet Clones (Backup Flights, Backup Config)</span>
+                        <span>Create In-Workbook Sheet Clones (_MNT_BAK_*)</span>
+                    </label>
+                    <label title="Downloads active configuration parameters and layout preferences as a local JSON file">
+                        <input type="checkbox" id="chkExportConfig" checked>
+                        <span>Download Config JSON Snapshot (.json file)</span>
                     </label>
                 </div>
+            </div>
+
+            <!-- Legend Bar -->
+            <div class="legend-bar">
+                <span class="legend-title">Legend:</span>
+                <span class="legend-item"><span class="legend-dot mandatory"></span> Mandatory (Core Invariant)</span>
+                <span class="legend-item"><span class="legend-dot recommended"></span> Recommended</span>
+                <span class="legend-item"><span class="legend-dot optional"></span> Optional</span>
+                <span class="legend-item"><span class="legend-dot uptodate"></span> Up-to-Date</span>
+                <span class="legend-item"><span class="legend-dash">───</span> N/A</span>
             </div>
 
             <!-- Presets Bar -->
             <div class="preset-bar">
                 <div class="preset-title">Update Scope & Target Elements:</div>
                 <div class="preset-btns">
-                    <button class="btn-preset recommended" onclick="applyPreset('recommended')">🎯 Select Recommended Updates</button>
+                    <button class="btn-preset recommended" onclick="applyPreset('recommended')">🎯 Select Recommended Only</button>
                     <button class="btn-preset" onclick="applyPreset('all')">🗹 Select All</button>
                     <button class="btn-preset" onclick="applyPreset('clear')">🗵 Clear All</button>
                 </div>
@@ -439,7 +544,7 @@
                     </thead>
                     <tbody>
                         <tr class="sheet-master-row" id="rowMasterSheets">
-                            <td class="row-label"><strong>[x] Toggle Entire Sheet</strong></td>
+                            <td class="row-label"><strong>[x] Gate Sheet Updates</strong></td>
                             <!-- Populated dynamically -->
                         </tr>
                         <tr id="rowGrid">
@@ -482,8 +587,9 @@
                 </div>
                 <ul class="impact-bullets">
                     <li><strong id="impactCount">0 elements</strong> selected across <strong id="impactSheets">0 sheets</strong>.</li>
+                    <li id="impactBreakdown">0 Mandatory, 0 Recommended, 0 Optional.</li>
+                    <li><strong>Mandatory Invariant Rule:</strong> Mandatory updates are structural prerequisites and execute regardless of sheet gating to prevent broken formulas or missing Named Ranges.</li>
                     <li><strong>Zero-Loss Contract:</strong> Flight rows 5:N and custom equipment inventory remain 100% UNTOUCHED (read-only).</li>
-                    <li>Config parameters are read into memory and preserved; only missing defaults are added.</li>
                 </ul>
             </div>
         </div>
@@ -493,8 +599,11 @@
             <div class="footer-left" id="footerSummary">Ready to inspect and apply updates.</div>
             <div class="footer-actions">
                 <button class="btn-cancel" id="btnCancel" onclick="google.script.host.close()">Cancel</button>
-                <button class="btn-apply" id="btnApply" onclick="executeMaintenance()">
-                    <span>🚀</span> Apply Selected Maintenance
+                <button class="btn-apply-all" id="btnApplyAll" onclick="executeAllUpdates()">
+                    <span>⚡</span> Apply All Updates
+                </button>
+                <button class="btn-apply" id="btnApply" onclick="executeSelectedUpdates()">
+                    <span>🚀</span> Apply Selected Updates
                 </button>
             </div>
         </div>
@@ -549,9 +658,9 @@
                 th.innerHTML = '<div>' + icon + '</div><div>' + sName.replace('_', ' ') + '</div>';
                 thead.appendChild(th);
 
-                // Master Sheet Toggle Checkbox
+                // Authoritative Sheet Master Gating Checkbox (checked by default)
                 var tdMaster = document.createElement('td');
-                tdMaster.innerHTML = '<input type="checkbox" class="matrix-check" onchange="toggleEntireSheet(\'' + sName + '\', this.checked)">';
+                tdMaster.innerHTML = '<input type="checkbox" class="matrix-check sheet-master-check" data-sheet="' + sName + '" checked onchange="toggleEntireSheet(\'' + sName + '\', this.checked)" title="Gates Recommended and Optional updates for ' + sName + '">';
                 masterRow.appendChild(tdMaster);
             });
 
@@ -586,14 +695,37 @@
                         }
                     }
 
-                    if (comp) {
-                        td.className = 'cell-check' + (comp.isPending ? ' is-pending' : '');
-                        var isChecked = comp.isPending ? ' checked' : '';
-                        td.innerHTML = '<input type="checkbox" class="matrix-check comp-box" data-sheet="' + sName + '" data-key="' + fullKey + '"' + isChecked + ' onchange="updateImpactCounts()">';
-                        td.title = comp.label + ' (Applied: ' + comp.applied + ' | Latest: ' + comp.latest + ')';
-                    } else {
+                    if (!comp) {
+                        // State 1: Non-Applicable
                         td.className = 'cell-na';
                         td.textContent = '───';
+                    } else if (comp.isUpToDate) {
+                        // State 2: Up-to-Date (Applicable element, no update available)
+                        td.className = 'cell-uptodate';
+                        td.innerHTML = '<input type="checkbox" class="matrix-check" disabled title="' + comp.label + ' is up-to-date (v' + comp.latest + ')">';
+                        td.title = comp.label + ' is up-to-date (v' + comp.latest + ')';
+                    } else {
+                        // Pending update available: Check Tier
+                        var tier = comp.tier || 'recommended';
+                        if (tier === 'mandatory') {
+                            // State 3: Mandatory (Auto-applied invariant, locked)
+                            td.className = 'cell-mandatory';
+                            td.innerHTML = '<input type="checkbox" class="matrix-check comp-box is-mandatory" checked disabled ' +
+                                'data-sheet="' + sName + '" data-key="' + fullKey + '" data-tier="mandatory">';
+                            td.title = '🔴 Mandatory: ' + comp.label + ' (v' + comp.applied + ' → v' + comp.latest + ')\nSystem Invariant: Always applied to protect sheet schema.';
+                        } else if (tier === 'optional') {
+                            // State 4: Optional (Light blue, checked by default, gated by sheet)
+                            td.className = 'cell-optional is-pending';
+                            td.innerHTML = '<input type="checkbox" class="matrix-check comp-box is-optional" checked ' +
+                                'data-sheet="' + sName + '" data-key="' + fullKey + '" data-tier="optional" onchange="updateImpactCounts()">';
+                            td.title = '🔵 Optional: ' + comp.label + ' (v' + comp.applied + ' → v' + comp.latest + ')';
+                        } else {
+                            // State 5: Recommended (Light green, checked by default, gated by sheet)
+                            td.className = 'cell-recommended is-pending';
+                            td.innerHTML = '<input type="checkbox" class="matrix-check comp-box is-recommended" checked ' +
+                                'data-sheet="' + sName + '" data-key="' + fullKey + '" data-tier="recommended" onchange="updateImpactCounts()">';
+                            td.title = '🟢 Recommended: ' + comp.label + ' (v' + comp.applied + ' → v' + comp.latest + ')';
+                        }
                     }
                     tr.appendChild(td);
                 });
@@ -602,22 +734,78 @@
             updateImpactCounts();
         }
 
+        /**
+         * Authoritative sheet-level gatekeeper toggle.
+         * Gates Recommended and Optional components for that sheet.
+         * Mandatory components remain CHECKED and ACTIVE as system invariants.
+         */
         function toggleEntireSheet(sName, isChecked) {
-            var boxes = document.querySelectorAll('.comp-box[data-sheet="' + sName + '"]');
-            boxes.forEach(function(b) { b.checked = isChecked; });
+            var optAndRecBoxes = document.querySelectorAll('.comp-box[data-sheet="' + sName + '"]:not(.is-mandatory)');
+            optAndRecBoxes.forEach(function(b) {
+                b.disabled = !isChecked;
+                b.checked = isChecked;
+                var td = b.closest('td');
+                if (td) {
+                    if (!isChecked) {
+                        td.classList.add('gated-by-sheet');
+                    } else {
+                        td.classList.remove('gated-by-sheet');
+                    }
+                }
+            });
             updateImpactCounts();
         }
 
+        /**
+         * Preset Handlers
+         */
         function applyPreset(preset) {
-            var boxes = document.querySelectorAll('.comp-box');
+            var masterBoxes = document.querySelectorAll('.sheet-master-check');
+            var compBoxes = document.querySelectorAll('.comp-box');
+
             if (preset === 'clear') {
-                boxes.forEach(function(b) { b.checked = false; });
+                masterBoxes.forEach(function(m) { m.checked = false; });
+                compBoxes.forEach(function(b) {
+                    var tier = b.getAttribute('data-tier');
+                    if (tier === 'mandatory') {
+                        // Invariant: Mandatory remains checked
+                        b.checked = true;
+                    } else {
+                        b.checked = false;
+                        b.disabled = true;
+                        var td = b.closest('td');
+                        if (td) td.classList.add('gated-by-sheet');
+                    }
+                });
             } else if (preset === 'all') {
-                boxes.forEach(function(b) { b.checked = true; });
+                masterBoxes.forEach(function(m) { m.checked = true; });
+                compBoxes.forEach(function(b) {
+                    var tier = b.getAttribute('data-tier');
+                    if (tier === 'mandatory') {
+                        b.checked = true;
+                    } else {
+                        b.disabled = false;
+                        b.checked = true;
+                        var td = b.closest('td');
+                        if (td) td.classList.remove('gated-by-sheet');
+                    }
+                });
             } else if (preset === 'recommended') {
-                boxes.forEach(function(b) {
+                masterBoxes.forEach(function(m) { m.checked = true; });
+                compBoxes.forEach(function(b) {
+                    var tier = b.getAttribute('data-tier');
                     var td = b.closest('td');
-                    b.checked = td ? td.classList.contains('is-pending') : false;
+                    if (tier === 'mandatory') {
+                        b.checked = true;
+                    } else if (tier === 'recommended') {
+                        b.disabled = false;
+                        b.checked = true;
+                        if (td) td.classList.remove('gated-by-sheet');
+                    } else if (tier === 'optional') {
+                        b.disabled = false;
+                        b.checked = false;
+                        if (td) td.classList.remove('gated-by-sheet');
+                    }
                 });
             }
             updateImpactCounts();
@@ -626,9 +814,17 @@
         function updateImpactCounts() {
             var checked = document.querySelectorAll('.comp-box:checked');
             var sheets = {};
+            var mandCount = 0;
+            var recCount = 0;
+            var optCount = 0;
+
             checked.forEach(function(b) {
                 var s = b.getAttribute('data-sheet');
+                var tier = b.getAttribute('data-tier');
                 if (s) sheets[s] = true;
+                if (tier === 'mandatory') mandCount++;
+                else if (tier === 'optional') optCount++;
+                else recCount++;
             });
 
             var count = checked.length;
@@ -636,11 +832,20 @@
 
             document.getElementById('impactCount').textContent = count + ' element' + (count !== 1 ? 's' : '');
             document.getElementById('impactSheets').textContent = numSheets + ' sheet' + (numSheets !== 1 ? 's' : '');
-            document.getElementById('footerSummary').textContent = count + ' element' + (count !== 1 ? 's' : '') + ' selected across ' + numSheets + ' sheet' + (numSheets !== 1 ? 's' : '') + '.';
+            document.getElementById('impactBreakdown').textContent = 
+                mandCount + ' Mandatory 🔴, ' + recCount + ' Recommended 🟢, ' + optCount + ' Optional 🔵.';
+
+            document.getElementById('footerSummary').textContent = 
+                count + ' element' + (count !== 1 ? 's' : '') + ' selected across ' + numSheets + ' sheet' + (numSheets !== 1 ? 's' : '') + '.';
             document.getElementById('btnApply').disabled = (count === 0);
         }
 
-        function executeMaintenance() {
+        function executeAllUpdates() {
+            applyPreset('all');
+            executeSelectedUpdates();
+        }
+
+        function executeSelectedUpdates() {
             var checked = document.querySelectorAll('.comp-box:checked');
             if (checked.length === 0) return;
 
@@ -651,11 +856,13 @@
             });
 
             var options = {
-                backupSheets: document.getElementById('chkBackupSheets').checked
+                backupSheets: document.getElementById('chkBackupSheets').checked,
+                exportConfig: document.getElementById('chkExportConfig').checked
             };
 
             // Switch to progress view
             document.getElementById('btnApply').disabled = true;
+            document.getElementById('btnApplyAll').disabled = true;
             document.getElementById('btnCancel').disabled = true;
             document.getElementById('progressBar').style.display = 'block';
             document.getElementById('progressFill').style.width = '30%';
@@ -677,11 +884,34 @@
                         consoleDiv.scrollTop = consoleDiv.scrollHeight;
                     }
 
+                    // Client-Side Config JSON Download Trigger
+                    if (res && res.exportPayload && options.exportConfig) {
+                        try {
+                            var blob = new Blob([JSON.stringify(res.exportPayload, null, 2)], { type: 'application/json' });
+                            var url = URL.createObjectURL(blob);
+                            var a = document.createElement('a');
+                            var ts = new Date().toISOString().replace(/[:.]/g, '-');
+                            a.href = url;
+                            a.download = 'paraflightlog_config_backup_' + ts + '.json';
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            URL.revokeObjectURL(url);
+                            var dlEntry = document.createElement('div');
+                            dlEntry.className = 'log-entry ok';
+                            dlEntry.textContent = '[DOWNLOAD OK] Config JSON backup downloaded to your browser.';
+                            consoleDiv.appendChild(dlEntry);
+                        } catch (ex) {
+                            console.error('Download error:', ex);
+                        }
+                    }
+
                     document.getElementById('footerSummary').textContent = '✅ Maintenance complete! Applied ' + res.appliedCount + ' components.';
                     var btnApply = document.getElementById('btnApply');
                     btnApply.disabled = false;
                     btnApply.innerHTML = '<span>✅</span> Done (Close)';
                     btnApply.onclick = function() { google.script.host.close(); };
+                    document.getElementById('btnApplyAll').style.display = 'none';
                     document.getElementById('btnCancel').style.display = 'none';
                 })
                 .withFailureHandler(function(err) {

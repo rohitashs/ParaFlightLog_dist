@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-10-02 19:33:18
+ * Updated: 2026-10-02 20:14:13
  */
 /**
  * Paragliding Flight Log v2.0 - Scaffolding & Setup
@@ -2006,11 +2006,16 @@ var SystemMaintenanceOrchestrator = {
           }
         }
         
+        var compDef = SYSTEM_MANIFEST.components[key];
+        var latest = (typeof compDef === 'object' && compDef.version) ? compDef.version : compDef;
+        var tier = (typeof compDef === 'object' && compDef.tier) ? compDef.tier : 'recommended';
+
         matrix[sName][cType] = {
           key: key,
           label: comp ? comp.label : key,
           applied: comp ? comp.applied : 'Not Applied',
-          latest: comp ? comp.latest : SYSTEM_MANIFEST.components[key],
+          latest: latest,
+          tier: tier,
           isUpToDate: comp ? comp.isUpToDate : false,
           isPending: comp ? !comp.isUpToDate : true
         };
@@ -2033,6 +2038,29 @@ var SystemMaintenanceOrchestrator = {
 
     logs.push('[START] Beginning System Maintenance orchestration...');
 
+    // Guarantee that any pending Mandatory updates are ALWAYS included
+    // as system invariants, protecting spreadsheet integrity.
+    var currentApplied = getAppliedManifest_();
+    var effectiveComponents = {};
+    for (var k in selectedComponents) {
+      if (selectedComponents[k]) effectiveComponents[k] = true;
+    }
+    for (var mKey in SYSTEM_MANIFEST.components) {
+      if (SYSTEM_MANIFEST.components.hasOwnProperty(mKey)) {
+        var mDef = SYSTEM_MANIFEST.components[mKey];
+        var mLatest = (typeof mDef === 'object' && mDef.version) ? mDef.version : mDef;
+        var mTier = (typeof mDef === 'object' && mDef.tier) ? mDef.tier : 'recommended';
+        var mCurrRaw = currentApplied[mKey];
+        var mCurr = (typeof mCurrRaw === 'object' && mCurrRaw !== null && mCurrRaw.version) ? mCurrRaw.version : (mCurrRaw || 'Not Applied');
+        if (mTier === 'mandatory' && mCurr !== mLatest) {
+          if (!effectiveComponents[mKey]) {
+            logs.push('[INVARIANT] Auto-enforcing mandatory system component: ' + mKey);
+          }
+          effectiveComponents[mKey] = true;
+        }
+      }
+    }
+
     // Step 0: Pre-Flight Safety Backup
     if (options.backupSheets !== false) {
       logs.push('[BACKUP] Creating pre-update safety backup of system sheets...');
@@ -2046,29 +2074,30 @@ var SystemMaintenanceOrchestrator = {
 
     // Topological Execution Order:
     // 1. Equipment (Substrate for lookups)
-    SheetSpecialists.updateEquipment(selectedComponents, ss, logs);
+    SheetSpecialists.updateEquipment(effectiveComponents, ss, logs);
 
     // 2. Config (Parameters, Lookups & Named Ranges)
-    SheetSpecialists.updateConfig(selectedComponents, ss, logs);
+    SheetSpecialists.updateConfig(effectiveComponents, ss, logs);
 
     // 3. Flights (Headers, Notes, Validations, Formulas, Guardrails)
-    SheetSpecialists.updateFlights(selectedComponents, ss, logs);
+    SheetSpecialists.updateFlights(effectiveComponents, ss, logs);
 
     // 4. Dashboard (Bounds, Formulas bound to DASHBOARD_REVIEW_FILTER, Guardrails)
-    SheetSpecialists.updateDashboard(selectedComponents, ss, logs);
+    SheetSpecialists.updateDashboard(effectiveComponents, ss, logs);
 
     // 5. Reference & Auxiliary Sheets
-    SheetSpecialists.updatePilotProfile(selectedComponents, ss, logs);
-    SheetSpecialists.updateQueue(selectedComponents, ss, logs);
-    SheetSpecialists.updateAppLog(selectedComponents, ss, logs);
-    SheetSpecialists.updateUserGuide(selectedComponents, ss, logs);
+    SheetSpecialists.updatePilotProfile(effectiveComponents, ss, logs);
+    SheetSpecialists.updateQueue(effectiveComponents, ss, logs);
+    SheetSpecialists.updateAppLog(effectiveComponents, ss, logs);
+    SheetSpecialists.updateUserGuide(effectiveComponents, ss, logs);
 
     // Commit applied manifest
     var applied = getAppliedManifest_();
     var appliedCount = 0;
-    for (var key in selectedComponents) {
-      if (selectedComponents.hasOwnProperty(key) && selectedComponents[key] && SYSTEM_MANIFEST.components[key]) {
-        applied[key] = SYSTEM_MANIFEST.components[key];
+    for (var key in effectiveComponents) {
+      if (effectiveComponents.hasOwnProperty(key) && effectiveComponents[key] && SYSTEM_MANIFEST.components[key]) {
+        var cDef = SYSTEM_MANIFEST.components[key];
+        applied[key] = (typeof cDef === 'object' && cDef.version) ? cDef.version : cDef;
         appliedCount++;
       }
     }
@@ -2077,10 +2106,21 @@ var SystemMaintenanceOrchestrator = {
     logs.push('[COMMIT] Committed ' + appliedCount + ' updated components to APPLIED_MANIFEST.');
     logs.push('[COMPLETE] System Maintenance execution finished successfully.');
 
+    var exportPayload = null;
+    if (options.exportConfig) {
+      try {
+        exportPayload = getConfigExportPayload_();
+        logs.push('[EXPORT] Prepared configuration JSON backup for download.');
+      } catch (e) {
+        logs.push('[EXPORT WARN] Config export warning: ' + e.message);
+      }
+    }
+
     return {
       success: true,
       logs: logs,
       appliedCount: appliedCount,
+      exportPayload: exportPayload,
       diff: diffManifests_(applied)
     };
   }

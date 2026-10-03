@@ -179,13 +179,24 @@ Developing on this hybrid stack presents unique constraints and capabilities:
 
 ## 6. System Distribution & Update Patterns
 
-### Pattern 16: Script-to-Sheet Decoupling & Dual-State Lag Resilience
+### Pattern 16: Script-to-Sheet Decoupling, Manifest Pipeline & 3-Tier Execution Invariants
 * **Problem**: Apps Script code and Google Sheets physical layout evolve **asynchronously**. Code is pushed instantly (via `clasp` or git), while the active spreadsheet remains on the previous schema until the user explicitly runs an update. If newly pushed code assumes that a new sheet element exists (a new column, a new Named Range, or an updated formula), the script crashes with fatal runtime errors (`Cannot find range`, `TypeError`, `#REF!`).
-* **Pattern**: Enforce loose coupling and backward-compatible tolerance between script and sheet:
+* **Pattern**: Enforce loose coupling, declarative manifests, and strict execution invariants:
   1. **Tolerant Element Lookup**: Operational code (Ingestion, Scoring, Maintenance) must never crash if a newly introduced Named Range or column is absent; it must fall back gracefully to canonical coordinates or null.
   2. **Lazy Self-Healing on Demand**: If an operational function requires a critical prerequisite (such as a missing Named Range), it should lazily auto-register or repair the element on-the-fly rather than throwing an exception.
-  3. **Non-Intrusive Schema Lag Notification**: Detect schema lag on `onOpen()` and show an informative status badge (`Update Available ⚡`) nudging the pilot to run `System Maintenance...` without interrupting normal flight logging.
-  4. **Strict Zero-Loss Invariant**: All maintenance and update routines must treat user data (Rows 5:N on `Flights`, custom equipment inventory, and user parameter values) as strictly read-only.
+  3. **Declarative Cumulative Manifest (`SYSTEM_MANIFEST`)**: Track every schema element with an explicit version string and tier (`mandatory`, `recommended`, `optional`). Persist applied state in `DocumentProperties.APPLIED_MANIFEST` to detect exact pending deltas across multiple skipped releases.
+  4. **Mandatory Invariant Rule**: Mandatory components (e.g. core formulas, Named Ranges, dynamic lookups) represent non-negotiable structural prerequisites for backend Apps Script execution. If a mandatory component is pending, the orchestrator **always auto-enforces it**, even if the user unchecked that sheet in the maintenance cockpit!
+  5. **4-State Visual Matrix UI**: In the System Maintenance Cockpit, render cells in 5 unambiguous states: `───` (non-applicable), disabled unchecked box (already up-to-date), light red `#FFEBEE` locked box (mandatory invariant), light green `#E8F5E9` (recommended), and light blue `#E1F5FE` (optional). Sheet master checkboxes gate recommended and optional updates while keeping mandatory invariants active.
+  6. **Dual Pre-Flight Safety Backups**: Always create in-workbook sheet clones (`_MNT_BAK_*`) and offer an automatic client-side Config JSON snapshot download before applying structural mutations.
+  7. **Strict Zero-Loss Invariant**: All maintenance routines treat user data (Rows 5:N on `Flights`, custom equipment inventory, and user parameter values) as strictly read-only.
+
+### Pattern 17: Transparent Manifest Inspection & Schema Auditing
+* **Problem**: Users and developers lack visibility into which components are currently running on their spreadsheet versus what code has been deployed, making bug reproduction and upgrade planning difficult.
+* **Pattern**: Expose a non-destructive System Info Inspector (`SystemInfoDialog.html`) showing:
+  1. Real-time diff between `APPLIED_MANIFEST` and `SYSTEM_MANIFEST`.
+  2. Sheet-by-sheet accordion health cards with operational tier badges (`[Mandatory]`, `[Recommended]`, `[Optional]`).
+  3. Spreadsheet environment metadata (document ID, active timezone, user, GAS execution limits).
+  4. Third-party engine attribution and direct hand-off to the maintenance cockpit when updates are pending.
 
 ---
 
@@ -201,4 +212,6 @@ Developing on this hybrid stack presents unique constraints and capabilities:
 | **Trailing Underscore on RPC Handlers** | Breaks `google.script.run` from HTML dialogs. | Provide public wrapper without underscore. |
 | **`DriveApp` calls inside tight row loops** | Hits Apps Script rate limits and timeout. | Score quality from sheet telemetry in memory. |
 | **`getValues()` for Date/Time comparison** | Causes timezone rollover and date drift. | Use `getDisplayValues()` for text fidelity. |
-| **Tightly Coupled Script-to-Sheet Assumptions** | Crashes production logbooks during dual-state lag. | Use tolerant fallbacks and lazy self-healing. |
+| **Tightly Coupled Script-to-Sheet Assumptions** | Crashes production logbooks during dual-state lag. | Use tolerant fallbacks, lazy self-healing, and mandatory invariants. |
+| **Allowing Users to Disable Mandatory Invariants** | Leaves sheet with missing Named Ranges or broken formulas. | Enforce mandatory components automatically regardless of sheet gating. |
+
