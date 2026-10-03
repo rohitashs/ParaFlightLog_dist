@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-10-02 20:48:43
+ * Updated: 2026-10-02 21:35:41
  */
 /**
  * Paragliding Flight Log - Activity Logging Engine
@@ -92,11 +92,11 @@ var LOG = {
 
     try {
       var ss = SpreadsheetApp.getActive();
-      var sheetName = (typeof TABS !== 'undefined' && TABS.APP_LOG) ? TABS.APP_LOG.name : 'Activity Logs';
+      var sheetName = (typeof TABS !== 'undefined' && TABS.ACTIVITY) ? TABS.ACTIVITY.name : 'Activity Logs';
       var sh = ss ? ss.getSheetByName(sheetName) : null;
       if (!sh) {
-        // Fallback check for legacy App_Log
-        sh = ss ? ss.getSheetByName('App_Log') : null;
+        // Fallback check for legacy App_Log (migration bridge)
+        sh = ss ? ss.getSheetByName('App_Log') : null; // Legacy migration bridge
       }
       if (!sh) return;
 
@@ -137,9 +137,9 @@ var LOG = {
 
     try {
       var ss = SpreadsheetApp.getActive();
-      var sheetName = (typeof TABS !== 'undefined' && TABS.APP_LOG) ? TABS.APP_LOG.name : 'Activity Logs';
+      var sheetName = (typeof TABS !== 'undefined' && TABS.ACTIVITY) ? TABS.ACTIVITY.name : 'Activity Logs';
       var sh = ss ? ss.getSheetByName(sheetName) : null;
-      if (!sh && ss) sh = ss.getSheetByName('App_Log');
+      if (!sh && ss) sh = ss.getSheetByName('App_Log'); // Legacy migration bridge
       if (!sh) return;
 
       var lastRow = Math.max(2, sh.getLastRow());
@@ -212,9 +212,9 @@ var LOG = {
       var maxDays = Number(daysToKeep) || Number(params.LOG_TIME_TO_KEEP_DAYS) || 90;
 
       var ss = SpreadsheetApp.getActive();
-      var sheetName = (typeof TABS !== 'undefined' && TABS.APP_LOG) ? TABS.APP_LOG.name : 'Activity Logs';
+      var sheetName = (typeof TABS !== 'undefined' && TABS.ACTIVITY) ? TABS.ACTIVITY.name : 'Activity Logs';
       var sh = ss ? ss.getSheetByName(sheetName) : null;
-      if (!sh && ss) sh = ss.getSheetByName('App_Log');
+      if (!sh && ss) sh = ss.getSheetByName('App_Log'); // Legacy migration bridge
       if (!sh) return { success: false, cleaned: 0, reason: 'Activity Logs sheet not found' };
 
       var totalRows = Math.max(0, sh.getLastRow() - 2); // Exclude 2 frozen header rows

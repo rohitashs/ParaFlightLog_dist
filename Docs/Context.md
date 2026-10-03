@@ -158,6 +158,22 @@ The backlog has 5 strict sections:
 *   **Protocol**: Always wait for Google Drive sync **before** opening VS Code. Acknowledge the risk of Git inside Drive.
 *   **Hand-off**: Commit & Push on A -> Wait for Sync -> Pull on B.
 
+### 12. Continuous Workflow & Meta-Process Evolution Protocol
+*   **Core Tenet**: Development workflows (`.agent/workflows/*.md`) and static audit tools (`tools/*.js`) are **living meta-specifications**, not static "write-once" documents. As the codebase matures, engineering patterns are formalized, or new documentation tiers are created, the workflows and automated audit tools must evolve in tandem to prevent verification decay and false-pass audits.
+*   **Code Check Re-Evaluation Trigger**:
+    *   Whenever a new engineering pattern, invariant, or anti-pattern is added to [`Docs/Patterns_and_Practices.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/Docs/Patterns_and_Practices.md):
+        1. Add an automated assertion into [`tools/code_check_audit.js`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/tools/code_check_audit.js).
+        2. Update the corresponding dimension in [`.agent/workflows/code_check.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/.agent/workflows/code_check.md).
+    *   Whenever identifiers, tabs, parameters, or vocabularies are retired or renamed:
+        1. Add them to the `legacyBlacklist` in `tools/code_check_audit.js`.
+        2. Verify zero active code uses the retired terms outside tagged migration bridges (`// Legacy migration bridge`).
+    *   Whenever entity counts change (Pilot Profile fields, Parameters, Lookups): update baseline assertions in both `tools/code_check_audit.js` and `code_check.md`.
+*   **Doc Check Re-Evaluation Trigger**:
+    *   Whenever documentation structure evolves (e.g. adding new Tier 1–5 files like `Roadmap.md`, `Brochure.md`, `User_Guide.md`, or the `Docs/Design/` subsystem folder, or new audit templates in `Plans/AuditReports/`):
+        1. Update the discovery scope and audit dimensions in [`.agent/workflows/doc_check.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/.agent/workflows/doc_check.md).
+        2. Ensure cross-doc consistency checks explicitly verify synchronization across all active documents.
+*   **Mandatory Automation Gate**: Code reviews (`/code_check`) must **never** claim `PASS` on subjective inspection alone. The automated scanner (`node tools/code_check_audit.js`) and offline test suite (`node tools/run_all_offline_tests.js`) must exit with code 0 before a report can be certified.
+
 ---
 
 ## 💻 Development Infrastructure Setup (`DevInfraSetup`)

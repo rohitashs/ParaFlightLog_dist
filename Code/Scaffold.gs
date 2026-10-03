@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-10-02 20:48:43
+ * Updated: 2026-10-02 21:35:41
  */
 /**
  * Paragliding Flight Log v2.0 - Scaffolding & Setup
@@ -26,21 +26,21 @@ function scaffoldAll_() {
   ensureSheet_(ss, TABS.EQUIPMENT.name);
   ensureSheet_(ss, TABS.USER_GUIDE.name);
   ensureSheet_(ss, TABS.CONFIG.name);
-  ensureSheet_(ss, TABS.APP_LOG.name);
+  ensureSheet_(ss, TABS.ACTIVITY.name);
   ensureSheet_(ss, TABS.QUEUE.name);
   
-  // Clean up legacy tabs if present
+  // Clean up legacy tabs if present (migration bridges)
   var oldParamSheet = ss.getSheetByName('Parameters');
   var oldLookSheet = ss.getSheetByName('Lookups');
-  var oldAppLog = ss.getSheetByName('App_Log');
+  var oldAppLog = ss.getSheetByName('App_Log'); // Legacy migration bridge
   if (oldParamSheet && !ss.getSheetByName(TABS.CONFIG.name)) {
     oldParamSheet.setName(TABS.CONFIG.name);
   }
   if (oldLookSheet && oldLookSheet.getName() !== TABS.CONFIG.name) {
     try { ss.deleteSheet(oldLookSheet); } catch (e) {}
   }
-  if (oldAppLog && !ss.getSheetByName(TABS.APP_LOG.name)) {
-    oldAppLog.setName(TABS.APP_LOG.name);
+  if (oldAppLog && !ss.getSheetByName(TABS.ACTIVITY.name)) {
+    oldAppLog.setName(TABS.ACTIVITY.name);
   }
 
   // 2. Scaffolding Content
@@ -61,7 +61,7 @@ function scaffoldAll_() {
     TABS.EQUIPMENT.name, 
     TABS.USER_GUIDE.name,
     TABS.CONFIG.name, 
-    TABS.APP_LOG.name,
+    TABS.ACTIVITY.name,
     TABS.QUEUE.name
   ];
   
@@ -717,31 +717,31 @@ function scaffoldLookups_(ss) {
   scaffoldConfig_(ss);
 }
 
-function scaffoldAppLog_(ss) {
-  var sh = ss.getSheetByName(TABS.APP_LOG.name);
+function scaffoldActivityLogs_(ss) {
+  var sh = ss.getSheetByName(TABS.ACTIVITY.name);
   if (!sh) {
-    var oldSh = ss.getSheetByName('App_Log');
+    var oldSh = ss.getSheetByName('App_Log'); // Legacy migration bridge
     if (oldSh) {
-      oldSh.setName(TABS.APP_LOG.name);
+      oldSh.setName(TABS.ACTIVITY.name);
       sh = oldSh;
     } else {
-      sh = ss.insertSheet(TABS.APP_LOG.name, TABS.APP_LOG.index);
+      sh = ss.insertSheet(TABS.ACTIVITY.name, TABS.ACTIVITY.index);
     }
   }
   if (!sh) return;
-  sh.setTabColor(TABS.APP_LOG.color);
+  sh.setTabColor(TABS.ACTIVITY.color);
   ensureDimensions_(sh, 50, 4);
 
   // Set / refresh headers
   var lastCol = Math.max(4, sh.getLastColumn());
-  sh.getRange('A1:D1').setBackground(TABS.APP_LOG.color).setFontColor('white');
-  sh.getRange('A1').setValue(TABS.APP_LOG.name).setFontWeight('bold').setFontSize(12);
+  sh.getRange('A1:D1').setBackground(TABS.ACTIVITY.color).setFontColor('white');
+  sh.getRange('A1').setValue(TABS.ACTIVITY.name).setFontWeight('bold').setFontSize(12);
   if (lastCol > 4) {
     sh.getRange(1, 5, 1, lastCol - 4).clear();
     sh.getRange(2, 5, 1, lastCol - 4).clear();
   }
   
-  sh.getRange(2, 1, 1, 4).setValues([TABS.APP_LOG.columns]);
+  sh.getRange(2, 1, 1, 4).setValues([TABS.ACTIVITY.columns]);
   sh.getRange(2, 1, 1, 4).setFontWeight('bold').setBackground('#F5F5F5').setFontColor('#333333');
   sh.setFrozenRows(2);
 
@@ -754,6 +754,10 @@ function scaffoldAppLog_(ss) {
   // Text wrap on Activity and Info columns
   sh.getRange('C:D').setWrap(true);
   sh.getRange('B3:B').setNumberFormat('yyyy-mm-dd hh:mm:ss');
+}
+
+function scaffoldAppLog_(ss) {
+  scaffoldActivityLogs_(ss); // Backward-compatibility migration bridge
 }
 
 /**
@@ -1277,8 +1281,8 @@ function deleteSystemSheets_() {
       TABS.FLIGHTS.name, 
       TABS.EQUIPMENT.name, 
       TABS.CONFIG.name, 
-      TABS.APP_LOG.name, 
-      'App_Log',
+      TABS.ACTIVITY.name, 
+      'App_Log', // Legacy migration cleanup
       TABS.DASHBOARD.name,
       TABS.PILOT_PROFILE ? TABS.PILOT_PROFILE.name : 'Pilot_Profile',
       TABS.USER_GUIDE ? TABS.USER_GUIDE.name : 'User Guide',
@@ -1515,7 +1519,7 @@ function scaffoldUserGuide_(ss) {
   // Section 1: Overview
   addSection('1. System Overview & Architecture', '#37474F');
   addRow('Component', 'Function', 'Details', 'Pilot Benefit', true);
-  addRow('Google Sheets View', 'Primary User Interface', 'Organized logbook tabs: Dashboard, Flights, Pilot Profile, Equipment, User Guide, Config, App_Log.', 'Familiar, accessible on desktop & mobile.');
+  addRow('Google Sheets View', 'Primary User Interface', 'Organized logbook tabs: Dashboard, Flights, Pilot Profile, Equipment, User Guide, Config, Activity Logs.', 'Familiar, accessible on desktop & mobile.');
   addRow('Google Apps Script', 'Automated Processing Engine', 'Orchestrates file parsing, physics & thermal analysis, XC scoring, geo-enrichment, and weather queries.', 'Zero server hosting costs, runs completely inside Google Cloud.');
   addRow('Master Flight Log', 'Permanent Cloud Archive', 'Automatically mirrors processed IGCs into MASTER_LOG_FOLDER_ID with standardized names and public links.', 'Direct 1-click downloads and 3D SeeYou Cloud visualization.');
   addRow('Watcher Triggers', 'Background Automation', 'Runs automated scans of designated Google Drive folders every 5 to 15 minutes to ingest new flights automatically.', 'Drop files into Drive and your logbook updates hands-free.');
@@ -1964,11 +1968,15 @@ var SheetSpecialists = {
     }
   },
 
-  updateAppLog: function(elements, ss, logs) {
-    if (elements['Activity_Logs.headers'] || elements['App_Log.headers']) {
-      scaffoldAppLog_(ss);
+  updateActivityLogs: function(elements, ss, logs) {
+    if (elements['Activity_Logs.headers'] || elements['App_Log.headers']) { // Legacy alias migration bridge
+      scaffoldActivityLogs_(ss);
       logs.push('[Activity_Logs] Activity Logs schema & formatting verified.');
     }
+  },
+
+  updateAppLog: function(elements, ss, logs) {
+    this.updateActivityLogs(elements, ss, logs); // Legacy alias migration bridge
   },
 
   updateUserGuide: function(elements, ss, logs) {
@@ -2024,9 +2032,9 @@ var SystemMaintenanceOrchestrator = {
       }
     }
 
-    // Compatibility bridge: mirror Activity_Logs to App_Log in matrix if needed
-    if (matrix['Activity_Logs'] && !matrix['App_Log']) {
-      matrix['App_Log'] = matrix['Activity_Logs'];
+    // Compatibility bridge: mirror Activity_Logs to App_Log in matrix if needed (legacy migration bridge)
+    if (matrix['Activity_Logs'] && !matrix['App_Log']) { // Legacy migration bridge
+      matrix['App_Log'] = matrix['Activity_Logs']; // Legacy migration bridge
     }
 
     return {
@@ -2108,8 +2116,8 @@ var SystemMaintenanceOrchestrator = {
         appliedCount++;
       }
     }
-    // Handle alias commitments
-    if ((effectiveComponents['App_Log.headers'] || effectiveComponents['Activity_Logs.headers']) && SYSTEM_MANIFEST.components['Activity_Logs.headers']) {
+    // Handle alias commitments (migration bridges)
+    if ((effectiveComponents['App_Log.headers'] || effectiveComponents['Activity_Logs.headers']) && SYSTEM_MANIFEST.components['Activity_Logs.headers']) { // Legacy alias migration bridge
       var alDef = SYSTEM_MANIFEST.components['Activity_Logs.headers'];
       applied['Activity_Logs.headers'] = (typeof alDef === 'object' && alDef.version) ? alDef.version : alDef;
     }

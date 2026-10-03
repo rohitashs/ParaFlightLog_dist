@@ -1,7 +1,7 @@
 <!--
  * Paragliding Flight Log v2.0
  * System Maintenance Cockpit
- * Updated: 2026-10-02 20:48:43
+ * Updated: 2026-10-02 21:35:41
  -->
 <!DOCTYPE html>
 <html>
@@ -745,7 +745,7 @@
                     if (rowDef.key === 'formulas' && sName === 'Config') fullKey = 'Config.lookups';
                     if (rowDef.key === 'formulas' && sName === 'Flights') fullKey = 'Flights.formulas';
                     if (rowDef.key === 'notes' && (sName === 'User_Guide' || sName === 'User Guide')) fullKey = 'User_Guide.content';
-                    if (rowDef.key === 'headers' && (sName === 'Activity_Logs' || sName === 'App_Log')) fullKey = 'Activity_Logs.headers';
+                    if (rowDef.key === 'headers' && (sName === 'Activity_Logs' || sName === 'App_Log')) fullKey = 'Activity_Logs.headers'; // Legacy alias bridge
 
                     var comp = null;
                     if (data.matrix && data.matrix[sName]) {
@@ -756,7 +756,7 @@
                             var sheet = data.diff.sheets[sk];
                             if (sheet.sheetKey === sName || sheet.sheetName === sName || sheet.sheetName.replace(/\s+/g, '_') === sName) {
                                 for (var ck = 0; ck < sheet.components.length; ck++) {
-                                    if (sheet.components[ck].key === fullKey || (fullKey === 'Activity_Logs.headers' && sheet.components[ck].key === 'App_Log.headers')) {
+                                    if (sheet.components[ck].key === fullKey || (fullKey === 'Activity_Logs.headers' && sheet.components[ck].key === 'App_Log.headers')) { // Legacy alias bridge
                                         comp = sheet.components[ck];
                                         break;
                                     }

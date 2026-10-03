@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-10-02 20:48:43
+ * Updated: 2026-10-02 21:35:41
  */
 /**
  * Paragliding Flight Log v2.0 - Configuration
@@ -269,8 +269,8 @@ var TABS = {
     frozenRows: 0,
     columns: ['Parameter', 'Value', 'Description']
   },
-  APP_LOG: {
-    name: CFG.sheets.appLog,
+  ACTIVITY: {
+    name: CFG.sheets.activityLogs || CFG.sheets.appLog,
     color: '#D32F2F', // Dark Red
     index: 7,
     headerRow: 2,
@@ -287,11 +287,11 @@ var TABS = {
   }
 };
 
-// Backwards compatibility aliases
-TABS.PARAMETERS = TABS.CONFIG;
-TABS.LOOKUPS = TABS.CONFIG;
-TABS.ACTIVITY = TABS.APP_LOG;
-TABS.AUTOMATION_QUEUE = TABS.QUEUE;
+// Backwards compatibility aliases (legacy migration bridges)
+TABS.PARAMETERS = TABS.CONFIG;      // Legacy migration bridge
+TABS.LOOKUPS = TABS.CONFIG;         // Legacy migration bridge
+TABS.APP_LOG = TABS.ACTIVITY;       // Legacy migration bridge
+TABS.AUTOMATION_QUEUE = TABS.QUEUE; // Legacy migration bridge
 
 // Extensible Process and Message Registries
 CFG.LOG_PROCESSES = {
@@ -446,7 +446,7 @@ var MANIFEST_COMPONENT_LABELS = {
   'Pilot_Profile.keys': 'Pilot Profile Fields & Descriptions',
   'Automation_Queue.headers': 'Background Automation Queue Schema',
   'Activity_Logs.headers': 'Activity Logs Schema & Header Formatting',
-  'App_Log.headers': 'Activity Logs Schema & Header Formatting',
+  'App_Log.headers': 'Activity Logs Schema & Header Formatting', // Legacy migration bridge
   'User_Guide.content': 'Documentation, Metric Dictionary & Instructions'
 };
 
@@ -457,8 +457,8 @@ var MANIFEST_SHEET_METADATA = {
   'Equipment': { key: 'EQUIPMENT', name: TABS.EQUIPMENT ? TABS.EQUIPMENT.name : 'Equipment', icon: '🪂', color: '#00BCD4' },
   'Pilot_Profile': { key: 'PILOT_PROFILE', name: TABS.PILOT_PROFILE ? TABS.PILOT_PROFILE.name : 'Pilot_Profile', icon: '👤', color: '#9C27B0' },
   'Automation_Queue': { key: 'QUEUE', name: TABS.QUEUE ? TABS.QUEUE.name : 'Automation_Queue', icon: '📋', color: '#455A64' },
-  'Activity_Logs': { key: 'ACTIVITY_LOGS', name: TABS.APP_LOG ? TABS.APP_LOG.name : 'Activity Logs', icon: '📜', color: '#D32F2F' },
-  'App_Log': { key: 'ACTIVITY_LOGS', name: TABS.APP_LOG ? TABS.APP_LOG.name : 'Activity Logs', icon: '📜', color: '#D32F2F' },
+  'Activity_Logs': { key: 'ACTIVITY_LOGS', name: TABS.ACTIVITY ? TABS.ACTIVITY.name : 'Activity Logs', icon: '📜', color: '#D32F2F' },
+  'App_Log': { key: 'ACTIVITY_LOGS', name: TABS.ACTIVITY ? TABS.ACTIVITY.name : 'Activity Logs', icon: '📜', color: '#D32F2F' }, // Legacy migration bridge
   'User_Guide': { key: 'USER_GUIDE', name: TABS.USER_GUIDE ? TABS.USER_GUIDE.name : 'User Guide', icon: '📖', color: '#607D8B' }
 };
 
@@ -471,8 +471,8 @@ function getAppliedManifest_() {
     var raw = PropertiesService.getDocumentProperties().getProperty('APPLIED_MANIFEST');
     if (raw) {
       var parsed = JSON.parse(raw);
-      if (parsed['App_Log.headers'] && !parsed['Activity_Logs.headers']) {
-        parsed['Activity_Logs.headers'] = parsed['App_Log.headers'];
+      if (parsed['App_Log.headers'] && !parsed['Activity_Logs.headers']) { // Legacy migration bridge
+        parsed['Activity_Logs.headers'] = parsed['App_Log.headers']; // Legacy migration bridge
       }
       return parsed;
     }
@@ -502,9 +502,9 @@ function setAppliedManifest_(manifest) {
  */
 function diffManifests_(optApplied) {
   var applied = optApplied || getAppliedManifest_();
-  // Bridge legacy App_Log.headers in optApplied
-  if (applied['App_Log.headers'] && !applied['Activity_Logs.headers']) {
-    applied['Activity_Logs.headers'] = applied['App_Log.headers'];
+  // Bridge legacy App_Log.headers in optApplied (migration bridge)
+  if (applied['App_Log.headers'] && !applied['Activity_Logs.headers']) { // Legacy migration bridge
+    applied['Activity_Logs.headers'] = applied['App_Log.headers']; // Legacy migration bridge
   }
   var sheetsMap = {};
   var order = ['Flights', 'Dashboard', 'Config', 'Equipment', 'Pilot_Profile', 'Automation_Queue', 'Activity_Logs', 'User_Guide'];

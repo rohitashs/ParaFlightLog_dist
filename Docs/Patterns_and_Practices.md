@@ -198,6 +198,13 @@ Developing on this hybrid stack presents unique constraints and capabilities:
   3. Spreadsheet environment metadata (document ID, active timezone, user, GAS execution limits).
   4. Third-party engine attribution and direct hand-off to the maintenance cockpit when updates are pending.
 
+### Pattern 18: Living Meta-Processes & Continuous Workflow Verification
+* **Problem**: Architectural rules, naming conventions, and anti-pattern checklists documented only in prose inevitably suffer from "verification drift." Over time, code and doc audits degrade into rubber-stamp "PASS" approvals because checks are performed manually, allowing legacy tokens and anti-patterns to silently re-enter the codebase.
+* **Pattern**: An architectural rule without an automated assertion is merely a suggestion that will decay over time.
+  1. **Automate the Check**: Whenever an architectural invariant or anti-pattern is added, immediately add a corresponding programmatic rule or regex scanner to [`tools/code_check_audit.js`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/tools/code_check_audit.js).
+  2. **Synchronize the Workflows**: Update [`.agent/workflows/code_check.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/.agent/workflows/code_check.md) and [`.agent/workflows/doc_check.md`](file:///g:/My%20Drive/~RS2B/~Projects/ParaFlightLogProject/.agent/workflows/doc_check.md).
+  3. **Zero False-Pass Gate**: Require that `node tools/code_check_audit.js` exit with code 0 as a mandatory prerequisite for certifying `/code_check`.
+
 ---
 
 ## 7. Forbidden Code Smells & Anti-Patterns Checklist
@@ -214,4 +221,6 @@ Developing on this hybrid stack presents unique constraints and capabilities:
 | **`getValues()` for Date/Time comparison** | Causes timezone rollover and date drift. | Use `getDisplayValues()` for text fidelity. |
 | **Tightly Coupled Script-to-Sheet Assumptions** | Crashes production logbooks during dual-state lag. | Use tolerant fallbacks, lazy self-healing, and mandatory invariants. |
 | **Allowing Users to Disable Mandatory Invariants** | Leaves sheet with missing Named Ranges or broken formulas. | Enforce mandatory components automatically regardless of sheet gating. |
+| **Unverified Manual Audits (Rubber-Stamp PASS)** | Subjective review misses legacy names and manifest drift. | Enforce automated scanner (`tools/code_check_audit.js`) gate. |
+
 
