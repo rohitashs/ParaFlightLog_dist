@@ -38,6 +38,17 @@ This file is the single source of truth for **ToDos**, **Requirements**, **Chang
 - [ ] **Status**: Open | **Date**: 2026-10-01 | **Imp**: High | **Description**: **Design: AI-Driven & Automated End-to-End Testing Harness**: Explore and build automated browser UI testing (Playwright/subagents) and synthetic flight ingestion test suite. Tracked in CR-DEV-004.
 - [ ] **Status**: Open | **Date**: 2026-10-01 | **Imp**: Medium | **Description**: **Open Source Release Packaging & Governance Roadmap**: Prepare licensing, GitHub CI/CD, contributor guides, issue templates, and sanitized starter sheet. Tracked in RQ-SYS-011.
 - [ ] **Status**: Open | **Date**: 2026-10-01 | **Imp**: High | **Description**: **Pilot PII Privacy, Sensitive Data Scrubbing & Secrets Guardrail**: Implement automated pre-commit scanners to ensure personal pilot credentials, coordinates, and API keys are never published. Tracked in CR-SEC-001.
+- [ ] **Status**: Open | **Date**: 2026-10-02 | **Imp**: Medium | **Description**: **Header Row 4 Native Filter Capability for Flights Sheet**: Implement native Google Sheets filter/filter views anchored at Row 4 on the Flights sheet for key operational columns (Status, Site, Flight Type, Gear, City, Country, XC Flight Class). Tracked in CR-UI-022.
+- [ ] **Status**: Open | **Date**: 2026-10-02 | **Imp**: Medium | **Description**: **Customizable & Extensible Pilot Profile Schema**: Revamp the Pilot_Profile tab to support an open-ended, extensible schema allowing pilots to add custom attributes, sections, and credential fields without fixed row bounds. Tracked in CR-PRF-001.
+- [ ] **Status**: Open | **Date**: 2026-10-02 | **Imp**: Medium | **Description**: **Pilot Resources & Operational Knowledge Tab (`Resources`)**: Create a dedicated core sheet tab (`Resources`) for curated soaring resources, weather portals, airspace maps, webcams, emergency SAR contacts, checklists, and pilot notes. Tracked in RQ-SYS-012 / CR-SYS-012.
+- [ ] **Status**: Open | **Date**: 2026-10-02 | **Imp**: Medium | **Description**: **In-Sheet Checkbox Replacement with Binary Controlled Dropdowns**: Replace fragile native sheet cell checkboxes across the workbook with robust Yes/No or True/False binary data validation dropdowns to prevent accidental key deletion. Tracked in CR-SYS-013.
+- [ ] **Status**: Open | **Date**: 2026-10-02 | **Imp**: High | **Description**: **Flight Data & Master IGC Archive Export Utility (CSV & ZIP Archive)**: Implement interactive flight export utility to export filtered/selected flight records to CSV and generate a compressed ZIP archive of corresponding Master IGC tracks from Google Drive. Tracked in CR-EXP-001.
+- [ ] **Status**: Open | **Date**: 2026-10-02 | **Imp**: High | **Description**: **CSV Flight Import & Interactive Field Mapping**: Integrate CSV flight log import directly into the "Add Flights from Upload" workflow with automated CSV parsing and an interactive column mapping modal. Tracked in CR-ING-010.
+- [ ] **Status**: Open | **Date**: 2026-10-02 | **Imp**: High | **Description**: **Equipment Lifecycle Management & Online Spec Lookup**: Upgrade the Equipment tab to track full equipment lifecycles (hours/flights logged, inspection intervals, porosity tests, line trim, reserve repacks) and query online databases (DHV, Para2000, Para-Test) for technical specifications. Tracked in CR-EQP-001.
+- [ ] **Status**: Open | **Date**: 2026-10-02 | **Imp**: Medium | **Description**: **Equipment Import and Export Utility (CSV & JSON)**: Build dedicated import and export tools for equipment rosters and maintenance history supporting CSV and JSON formats with field mapping. Tracked in CR-EQP-002.
+- [ ] **Status**: Open | **Date**: 2026-10-02 | **Imp**: High | **Description**: **Automation Engine Root Master Switch (Heartbeat Config & Menu Toggle)**: Implement root-level control to enable or disable all background automations and triggers via a `HEARTBEAT_ENABLED` parameter in Config and an interactive Admin menu toggle. Tracked in CR-AUT-002.
+- [ ] **Status**: Open | **Date**: 2026-10-02 | **Imp**: Medium | **Description**: **Spreadsheet Menu Structure Reorganization & Streamlining**: Reorganize the `Flight Log` custom spreadsheet menu structure in `Code.gs` into a clean, intuitive hierarchy reflecting all recent architectural additions and separating daily actions from admin tools. Tracked in CR-UI-023.
+- [ ] **Status**: Open | **Date**: 2026-10-02 | **Imp**: High | **Description**: **Google Sheets UI/UX Modernization, Best Practices & Aesthetic Polish R&D**: Explore and implement advanced Google Sheets design patterns, executive color palettes, typography, KPI sparklines, progress bars, filter views, and soft protections to elevate aesthetic and functional excellence. Tracked in CR-UI-024.
 
 ---
 
@@ -116,6 +127,8 @@ This file is the single source of truth for **ToDos**, **Requirements**, **Chang
     - [ ] **RQ-SYS-011.1** | **Status**: Open | **Phase**: 3 | **Description**: Repository Legal & Community Infrastructure (LICENSE, CONTRIBUTING.md, CODE_OF_CONDUCT.md, SECURITY.md, bug/feature issue templates).
     - [ ] **RQ-SYS-011.2** | **Status**: Open | **Phase**: 3 | **Description**: Automated GitHub Actions CI Pipeline (linter, unit tests, static RPC checks, secret scanning on pull requests).
     - [ ] **RQ-SYS-011.3** | **Status**: Open | **Phase**: 3 | **Description**: Public Starter Template Sheet (zero personal pilot data, pre-formatted, pre-scaffolded, with first-time onboarding links).
+
+- [ ] **RQ-SYS-012** | **Status**: Open | **Phase**: 2 | **Description**: **Pilot Resources & Operational Knowledge Tab (`Resources`)**: Dedicated in-app tab for curated free-flight resources, soaring weather portals, live site cams, airspace maps, club repeaters/frequencies, emergency checklists, and pilot notes with rich categorized hyperlinks.
 
 ---
 
@@ -259,6 +272,71 @@ This file is the single source of truth for **ToDos**, **Requirements**, **Chang
     - **Header Whitespace & Case Proxy**: Enhance `getColumnMap_` with `.trim()`, lowercase indexing, and an ECMAScript `Proxy` wrapper to prevent silent drops from trailing spaces or casing differences.
     - **Open-Ended Validations & Graceful Enforcement**: Expand validations to `sh.getMaxRows()` and add `.setAllowInvalid(true)` so vintage/unlisted gear never blocks inputs.
     - **Immutable Sheet ID Resolution**: Implement `getSheetByIdOrName_` utilizing native `sheet.getSheetId()` to survive user tab renaming.
+
+- [ ] **CR-UI-022** | **Status**: Open | **Date**: 2026-10-02 | **Req**: RQ-SYS-002 | **Description**: **Header Row 4 Native Filter Capability for Flights Sheet**:
+    - **Header Row Anchor**: Implement native Google Sheets filter/filter views capability anchored at Header Row (Row 4) on the `Flights` sheet.
+    - **Candidate Filter Columns**: Provide quick multi-criteria filtering for primary operational columns: `Status`, `Launch Site`, `Flight Type`, `Wing`, `Harness`, `Reserve`, `City`, `Country`, and `XC Flight Class`.
+    - **Filter Views vs. Direct Filters**: Evaluate and implement named Filter Views (`FilterView`) to ensure individual pilot filtering does not disrupt simultaneous viewers or interfere with automated row insertion and sorting.
+    - **Script Resilience**: Ensure programmatic compatibility with `sortFlightsByDate_`, batch row appends, and header protection ranges (`setWarningOnly`).
+
+- [ ] **CR-PRF-001** | **Status**: Open | **Date**: 2026-10-02 | **Req**: RQ-SYS-009 | **Description**: **Customizable & Extensible Pilot Profile Schema**:
+    - **Dynamic Schema Architecture**: Revamp the `Pilot_Profile` tab from a rigid 34-row key-value structure into an extensible, user-customizable schema.
+    - **User-Defined Attributes**: Enable pilots to add arbitrary custom fields, dynamic section groups (e.g., SIV courses, maneuvers master list, club positions, insurance renewals, tandem ratings), and field data types (text, date, number, boolean, hyperlink).
+    - **Configuration Export/Import & Migration**: Update `Save Config` and `Load Config` (`Config.gs`) to serialize/restore dynamic profile schemas cleanly without fixed row boundaries.
+    - **Maintenance Scaffolding**: Ensure System Maintenance Orchestrator (`Scaffold.gs`) preserves all user-added profile fields and custom notes during updates.
+
+- [ ] **CR-SYS-012** | **Status**: Open | **Date**: 2026-10-02 | **Req**: RQ-SYS-002, RQ-SYS-012 | **Description**: **Pilot Resources & Operational Knowledge Tab (`Resources`)**:
+    - **Dedicated Core Tab**: Introduce a new core sheet tab (`Resources`) styled in Dark Blue / Slate with 2-row category headers and frozen column formatting.
+    - **Structured Directory Schema**: Support 5–6 standard resource sections: `[ Weather & Soaring Forecasts ]` (Windy, NOAA, meteoblue, Holfuy, local soundings), `[ Airspace & Navigation ]` (OpenAIP, sectional charts, XCPlanner, thermal maps), `[ Site Webcams & Weather Stations ]`, `[ Club & Safety ]` (frequencies, repeater offsets, USHPA/BHPA contacts, SAR emergency numbers), `[ Checklists & Guides ]` (pre-flight packing, first aid, mountain safety), and `[ Pilot Notes & Free Links ]`.
+    - **Interactive Link Formatting**: Hyperlink URLs with clean human-readable titles, status tags, and last-verified dates.
+    - **Orchestration Integration**: Register in `SYSTEM_MANIFEST` with grid, header, notes, and validation components under the System Maintenance Orchestrator.
+
+- [ ] **CR-SYS-013** | **Status**: Open | **Date**: 2026-10-02 | **Req**: RQ-SYS-001, RQ-SYS-002 | **Description**: **In-Sheet Checkbox Replacement with Resilient Binary Dropdowns**:
+    - **Vulnerability Mitigation**: Native Google Sheet cell checkboxes are frequently cleared or permanently destroyed when pilots press Delete/Backspace, clear rows, or paste tabular data.
+    - **Binary Controlled Dropdowns**: Replace cell checkboxes across core sheets (`Flights`, `Equipment`, `Dashboard`, `Pilot_Profile`) with robust `Yes / No` or `True / False` data validation dropdowns (or stylized binary status badges).
+    - **Graceful Error Handling**: Leverage `.setAllowInvalid(true)` with soft warning triangles so pasted inputs do not reject or crash downstream formulas.
+    - **Formula & Ingestion Synchronization**: Update formula references, parser outputs, and maintenance scripts to cleanly evaluate string `'Yes'`/`'No'` and boolean `TRUE`/`FALSE` interchangeably.
+
+- [ ] **CR-EXP-001** | **Status**: Open | **Date**: 2026-10-02 | **Req**: RQ-SYS-007, RQ-ING-001 | **Description**: **Flight Data & Master IGC Archive Export Utility (CSV & ZIP Archive)**:
+    - **Granular Scope Selection**: Interactive modal dialog allowing export of `All Flights`, `Filtered Flights`, or `Selected Rows`.
+    - **Standardized CSV Export**: Generate compliant CSV exports mapped to standard aviation/paragliding schemas with pilot-selectable column presets (Standard, Minimal, Complete, or Third-Party Logbook format).
+    - **Master IGC ZIP Archive**: Option to resolve all corresponding master IGC file IDs from Google Drive, bundle them into an in-memory ZIP archive (`Utilities.zip`), and provide a one-click direct Drive download link or browser blob download.
+    - **Tri-Mode Execution**: Support synchronous client download (`Run Here`), sidebar progress monitoring (`Run in Sidebar`), or asynchronous cloud bundling (`Run in Background`).
+
+- [ ] **CR-ING-010** | **Status**: Open | **Date**: 2026-10-02 | **Req**: RQ-ING-001 | **Description**: **CSV Flight Import & Interactive Field Mapping**:
+    - **Unified Ingestion Entry Point**: Integrate CSV flight import directly into the `Add flights from upload...` (`UploadDialog.html`) modal alongside `.igc`, `.zip`, and `.gz`.
+    - **Robust CSV Parser**: Handle diverse CSV dialects (comma, semicolon, tab), date formats (ISO, US, European), and duration formats (`hh:mm:ss`, total minutes, decimal hours).
+    - **Interactive Column Mapping Modal**: Present a dynamic column mapping UI that automatically guesses matches based on header similarity and lets pilots map CSV columns to ParaFlightLog schema (`Date`, `Launch Time`, `Duration`, `Distance`, `Site`, `Wing`, `Harness`, `Notes`, `Status`).
+    - **Pipeline Integration**: Ingested records flow through standard deduplication, chronological sorting, auto-capacity buffering, and post-import validation.
+
+- [ ] **CR-EQP-001** | **Status**: Open | **Date**: 2026-10-02 | **Req**: RQ-SYS-001.2 | **Description**: **Equipment Lifecycle Management & Online Spec Lookup**:
+    - **Lifecycle & Airworthiness Tracking**: Expand the `Equipment` sheet beyond basic inventory to track complete gear lifecycles: serial numbers, purchase/production dates, total logged airtime (hours/minutes automatically aggregated from `Flights`), flight count, inspection/checkup history, porosity test results, trim tuning logs, and reserve repack countdowns.
+    - **Airworthiness Status Indicators**: Color-coded status pills (`Airworthy`, `Inspection Due`, `Repack Due`, `Quarantined`, `Retired`).
+    - **Automated Online Spec Lookup**: Interface with free-flight databases and manufacturer registries (e.g., DHV certification database, Para2000, Para-Test) to query technical specs (EN/LTF category, take-off weight range min/max, flat/projected area, aspect ratio, trim speed, glide ratio) by glider make and model.
+
+- [ ] **CR-EQP-002** | **Status**: Open | **Date**: 2026-10-02 | **Req**: RQ-SYS-001.2 | **Description**: **Equipment Data Import and Export Utility (CSV & JSON)**:
+    - **Export Equipment Roster**: Export all wings, harnesses, reserves, and instruments with their lifecycle and inspection records to CSV or versioned JSON.
+    - **Bulk Import Equipment**: Import gear inventories from external spreadsheets or CSV files with interactive column mapping, category auto-assignment (`Wing`, `Harness`, `Reserve`, `Other`), and duplicate detection by serial number.
+    - **Configuration Integration**: Synchronize equipment rosters seamlessly with `Save Config` and `Load Config` modules.
+
+- [ ] **CR-AUT-002** | **Status**: Open | **Date**: 2026-10-02 | **Req**: RQ-SYS-001, CR-UI-019 | **Description**: **Automation Engine Root Master Switch (Heartbeat Config & Menu Toggle)**:
+    - **Root Automation Control**: Provide an authoritative kill-switch / master enablement control for all autonomous background processes (1-minute heartbeat trigger, queue runner, watch folder scanner).
+    - **Configuration Parameter**: Add `ENABLE_AUTOMATION_HEARTBEAT` (`Yes` / `No`) under `[ Ingestion & Automation ]` in the `Config` tab. When set to `No`, the heartbeat daemon exits immediately without polling the queue or executing tasks.
+    - **Interactive Menu Action**: Add `Flight Log > Admin > Automation & Services > [ ⚡ Toggle Master Automation Heartbeat ]` to toggle the parameter, install/uninstall project time triggers, and display clear user feedback.
+
+- [ ] **CR-UI-023** | **Status**: Open | **Date**: 2026-10-02 | **Req**: RQ-SYS-002 | **Description**: **Spreadsheet Menu Structure Reorganization & Streamlining**:
+    - **Top-Down Menu Audit**: Comprehensive review and restructuring of the `Flight Log` custom spreadsheet menu in `Code.gs` to streamline navigation following major Phase 2/3 additions.
+    - **User-Centric Hierarchy**:
+        - Group daily flight operations at the top level: `Add Flights...` (Upload, URL/Drive, Bulk Ingestion), `Flight Utilities...` (Flight Updates, Status Change, Duplicates, Inspector, Dashboard Refresh).
+        - Consolidate data management: `Equipment & Pilot...` (Equipment Lifecycle, Pilot Profile, Resources).
+        - Streamline system and administrative tooling under clean submenus: `System Maintenance & Health...` (System Maintenance Cockpit, System Info Inspector), `Configuration Management...` (Save/Load Config), `Data Backup...`, `Automation & Services...`, and `System Setup & Reset (Danger Zone)`.
+    - **Consistent Naming & Visual Hierarchy**: Ensure all menu labels use consistent capitalization, informative icons, and clean modal title synchronization.
+
+- [ ] **CR-UI-024** | **Status**: Open | **Date**: 2026-10-02 | **Req**: RQ-SYS-002 | **Description**: **Google Sheets UI/UX Modernization, Best Practices & Aesthetic Polish R&D**:
+    - **Aesthetic Refinement**: Apply modern corporate design standards: curated executive color palettes (muted pastels, dark mode accents, high-contrast badges), modern sans-serif typography, clean visual hierarchy, and intentional grid whitespace.
+    - **Native Visual Enhancements**: Implement Google Sheets native visual tools: inline KPI sparklines (`=SPARKLINE(...)`), horizontal progress bars, micro-charts, and subtle zebra striping.
+    - **Operational Ergonomics**: Optimize frozen pane thresholds, smart column group collapsing (`groupColumns()`), interactive Filter Views for focused analysis, and soft data protections (`setWarningOnly`) on formula and header cells.
+    - **Cross-Platform Mobile Usability**: Optimize column order, touch targets, and mobile view readability on Google Sheets Android and iOS apps.
 
 ---
 

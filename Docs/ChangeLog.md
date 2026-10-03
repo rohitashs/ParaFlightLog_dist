@@ -37,11 +37,19 @@
 *   `[Test]` **Automated Testing Suite Expansion (`Code/Test.gs`)**:
     *   Updated `testSystemMaintenanceAndManifest_()` in `Code/Test.gs`: validates manifest tier definitions, string and object version extraction in `diffManifests_()`, full match rollup, partial match rollup, and `SystemMaintenanceOrchestrator` methods.
     *   Verified 13/13 offline test suites pass with 0 failures across `scratch/run_all_offline_tests.js`.
-
-    *   **Diagnostic Inspector Modal (`Code/SystemInfoDialog.html`)**: Added `Flight Log > Admin > System Info & Health...` (`showSystemInfoDialog`) providing real-time transparency into core code version (`v2.1.0`) vs active spreadsheet schema.
-    *   **Sheet Accordion with Green/Amber Status Rollups**: Displays expandable cards per sheet. Shows Green pill (`✅ All Up-to-Date`) if all child components match latest code, or Amber pill (`⚡ Update Available (N pending)`) if any component has drifted or remains unapplied. Auto-expands pending sheets.
-    *   **Direct Maintenance Hand-off**: Banner provides a prominent `[ 🚀 Open System Maintenance... ]` button that jumps directly from the diagnostic view into the maintenance cockpit with pending updates pre-selected.
-    *   **Multi-Tab Architecture**: Includes tabs for Manifest & Schema Health, Active Spreadsheet Environment & Quotas, and Open-Source Attribution & Credits.
+*   `[Docs]` **Backlog Expansion & Feature Intake**:
+    *   Formalized and cataloged 11 major features and architectural enhancements in `Docs/Backlog.md` (ToDos, Requirements, and Change Requests):
+        *   `CR-UI-022`: Header Row 4 Native Filter Capability for Flights Sheet.
+        *   `CR-PRF-001`: Customizable & Extensible Pilot Profile Schema.
+        *   `RQ-SYS-012` / `CR-SYS-012`: Pilot Resources & Operational Knowledge Tab (`Resources`).
+        *   `CR-SYS-013`: In-Sheet Checkbox Replacement with Resilient Binary Dropdowns (`Yes/No` / `True/False`).
+        *   `CR-EXP-001`: Flight Data & Master IGC Archive Export Utility (CSV & ZIP Archive).
+        *   `CR-ING-010`: CSV Flight Import & Interactive Field Mapping in Upload Modal.
+        *   `CR-EQP-001`: Equipment Lifecycle Management & Online Spec Lookup (DHV/Para2000).
+        *   `CR-EQP-002`: Equipment Data Import and Export Utility (CSV & JSON).
+        *   `CR-AUT-002`: Automation Engine Root Master Switch (Heartbeat Config Parameter & Menu Toggle).
+        *   `CR-UI-023`: Spreadsheet Menu Structure Reorganization & Streamlining.
+        *   `CR-UI-024`: Google Sheets UI/UX Modernization, Best Practices & Aesthetic Polish R&D.
 *   `[Imp]` **CR-SYS-009 / AUD-RES-003 (Codebase Resiliency & Native Google Sheets Optimization)**:
     *   **Native Named Ranges**: Registered workbook-scoped Named Ranges in `Code/Scaffold.gs`: `LOOKUP_EQUIPMENT_CATS` (`Config!$E$3:$E`), `LOOKUP_FLIGHT_STATUSES` (`Config!$F$3:$F`), `LOOKUP_FLIGHT_TYPES` (`Config!$G$3:$G`), `LOOKUP_XC_CLASSES` (`Config!$H$3:$H`), `LOOKUP_ACTIVE_WINGS` (`Config!$K$3:$K`), `LOOKUP_ACTIVE_HARNESSES` (`Config!$L$3:$L`), `LOOKUP_ACTIVE_RESERVES` (`Config!$M$3:$M`), `LOOKUP_ACTIVE_OTHER` (`Config!$N$3:$N`), and `DASHBOARD_REVIEW_FILTER` (`Dashboard!$B$2`). Binds data validations and formulas to Named Ranges so that Google Sheets natively auto-tracks cell/column coordinates when columns or rows are added, removed, or moved.
     *   **Native Equipment Lookups (`SORT(FILTER(...))`)**: Replaced string SQL `QUERY()` statements in `Config` K3:N3 with native `=IFERROR(SORT(FILTER(Equipment!$B$3:$B, Equipment!$A$3:$A="Wing", Equipment!$H$3:$H=FALSE)), "")`. Eliminates unparseable string-based column letters, enabling Google Sheets to natively auto-update references when columns are reordered in the `Equipment` tab.
