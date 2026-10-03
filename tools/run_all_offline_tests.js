@@ -52,6 +52,8 @@ eval(fs.readFileSync(path.join(codeDir, 'Scoring.gs'), 'utf8'));
 eval(fs.readFileSync(path.join(codeDir, 'FileHandling.gs'), 'utf8'));
 eval(fs.readFileSync(path.join(codeDir, 'TimeBudget.gs'), 'utf8'));
 eval(fs.readFileSync(path.join(codeDir, 'QueueService.gs'), 'utf8'));
+eval(fs.readFileSync(path.join(codeDir, 'AutomationConfig.gs'), 'utf8'));
+eval(fs.readFileSync(path.join(codeDir, 'Automation.gs'), 'utf8'));
 eval(fs.readFileSync(path.join(codeDir, 'Scaffold.gs'), 'utf8'));
 eval(fs.readFileSync(path.join(codeDir, 'Code.gs'), 'utf8'));
 eval(fs.readFileSync(path.join(rootDir, 'tests', 'Test.gs'), 'utf8'));
@@ -103,6 +105,7 @@ results.push(testDedupeEngineEnhancements_());
 results.push(testStatusChangeUtility_());
 results.push(testDynamicFormulaResilience_());
 results.push(testSystemMaintenanceAndManifest_());
+results.push(testAutomationEngine_());
 
 const failures = results.filter(r => !r.idx || r.error);
 console.log('Results summary: Total=' + results.length + ', Passed=' + (results.length - failures.length) + ', Failed=' + failures.length);

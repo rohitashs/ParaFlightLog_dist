@@ -31,8 +31,9 @@ function scaffoldAll_() {
   ensureSheet_(ss, TABS.EQUIPMENT.name);
   ensureSheet_(ss, TABS.USER_GUIDE.name);
   ensureSheet_(ss, TABS.CONFIG.name);
-  ensureSheet_(ss, TABS.ACTIVITY.name);
+  ensureSheet_(ss, TABS.AUTOMATION_RULES.name);
   ensureSheet_(ss, TABS.QUEUE.name);
+  ensureSheet_(ss, TABS.ACTIVITY.name);
   
   // Clean up legacy tabs if present (migration bridges)
   var oldParamSheet = ss.getSheetByName('Parameters');
@@ -55,8 +56,9 @@ function scaffoldAll_() {
   scaffoldPilotProfile_(ss);
   scaffoldEquipment_(ss);
   scaffoldUserGuide_(ss);
-  scaffoldAppLog_(ss);
+  scaffoldAutomation_(ss);
   scaffoldQueue_(ss);
+  scaffoldAppLog_(ss);
   
   // 3. Reorder Tabs
   var sheets = [
@@ -66,8 +68,9 @@ function scaffoldAll_() {
     TABS.EQUIPMENT.name, 
     TABS.USER_GUIDE.name,
     TABS.CONFIG.name, 
-    TABS.ACTIVITY.name,
-    TABS.QUEUE.name
+    TABS.AUTOMATION_RULES.name,
+    TABS.QUEUE.name,
+    TABS.ACTIVITY.name
   ];
   
   for (var i = 0; i < sheets.length; i++) {
@@ -821,6 +824,126 @@ function scaffoldQueue_(ss) {
   sh.getRange('H2:H').setWrap(true);
   sh.getRange('D2:D').setHorizontalAlignment('center');
   sh.getRange('E2:F').setNumberFormat('yyyy-mm-dd hh:mm:ss');
+}
+
+/**
+ * Scaffolds the Automation_Rules sheet per DSGN-AUT-001 Rev 2.1
+ * Provides persistent, table-driven automation rule definitions.
+ */
+function scaffoldAutomation_(ss) {
+  var tabName = TABS.AUTOMATION_RULES ? TABS.AUTOMATION_RULES.name : 'Automation_Rules';
+  var sh = ss.getSheetByName(tabName);
+  if (!sh) {
+    sh = ss.insertSheet(tabName);
+  }
+  if (!sh) return;
+  registerSheetId_(ss, 'AUTOMATION_RULES', sh);
+
+  var tabColor = (TABS.AUTOMATION_RULES && TABS.AUTOMATION_RULES.color) ? TABS.AUTOMATION_RULES.color : '#00897B';
+  sh.setTabColor(tabColor);
+  ensureDimensions_(sh, 50, 9);
+
+  // Row 1: Title Banner
+  sh.getRange('A1:I1').merge()
+    .setValue('⚡ FLIGHT LOG - AUTOMATION RULES ENGINE')
+    .setBackground(tabColor)
+    .setFontColor('#FFFFFF')
+    .setFontWeight('bold')
+    .setFontSize(11)
+    .setHorizontalAlignment('center')
+    .setVerticalAlignment('middle');
+  sh.setRowHeight(1, 32);
+
+  // Row 2: Headers
+  var headers = TABS.AUTOMATION_RULES.columns;
+  sh.getRange(2, 1, 1, headers.length)
+    .setValues([headers])
+    .setBackground('#E0F2F1')
+    .setFontColor('#004D40')
+    .setFontWeight('bold')
+    .setFontSize(10)
+    .setVerticalAlignment('middle');
+  sh.setRowHeight(2, 26);
+
+  sh.setFrozenRows(2);
+  sh.setFrozenColumns(2);
+
+  // Column widths per DSGN-AUT-001
+  sh.setColumnWidth(1, 75);  // Active?
+  sh.setColumnWidth(2, 220); // Automation Name
+  sh.setColumnWidth(3, 180); // Action
+  sh.setColumnWidth(4, 140); // Trigger Type
+  sh.setColumnWidth(5, 140); // Trigger Config
+  sh.setColumnWidth(6, 200); // Condition
+  sh.setColumnWidth(7, 280); // Parameters
+  sh.setColumnWidth(8, 160); // Last Run
+  sh.setColumnWidth(9, 260); // Last Result
+
+  // Dropdown Validations
+  // Col A: Active? (Yes / No)
+  var ruleActive = SpreadsheetApp.newDataValidation()
+    .requireValueInList(['Yes', 'No'], true)
+    .setAllowInvalid(true)
+    .build();
+  sh.getRange('A3:A50').setDataValidation(ruleActive).setHorizontalAlignment('center');
+
+  // Col C: Action (Vetted production actions)
+  var availableActions = (typeof AUTOMATION_REGISTRY !== 'undefined' && AUTOMATION_REGISTRY.getAvailableActionKeys)
+    ? AUTOMATION_REGISTRY.getAvailableActionKeys()
+    : ['SCAN_WATCH_FOLDER', 'CLEAN_LOGS', 'PROCESS_QUEUE'];
+  var ruleAction = SpreadsheetApp.newDataValidation()
+    .requireValueInList(availableActions, true)
+    .setAllowInvalid(true)
+    .build();
+  sh.getRange('C3:C50').setDataValidation(ruleAction);
+
+  // Col D: Trigger Type
+  var triggerTypes = ['Time (Minutes)', 'Time (Days)', 'Event (Lifecycle)', 'Manual Execution Only'];
+  var ruleTriggerType = SpreadsheetApp.newDataValidation()
+    .requireValueInList(triggerTypes, true)
+    .setAllowInvalid(true)
+    .build();
+  sh.getRange('D3:D50').setDataValidation(ruleTriggerType);
+
+  // Data Column Formats
+  sh.getRange('G3:G50').setFontFamily('monospace');
+  sh.getRange('H3:H50').setNumberFormat('yyyy-mm-dd hh:mm:ss');
+  sh.getRange('I3:I50').setWrap(true);
+
+  // Seed Predefined Templates if sheet is empty of rules (row 3 is blank)
+  var existingName = sh.getRange('B3').getValue();
+  if (!existingName) {
+    seedAutomationTemplates_(sh, ss);
+  }
+}
+
+/**
+ * Seeds the 3 core automation rule templates into Automation_Rules
+ * Migrates legacy watch folder config if present.
+ */
+function seedAutomationTemplates_(sh, ss) {
+  var watchActive = 'Yes';
+  var watchInterval = 15;
+  var watchMove = 'Yes';
+
+  try {
+    var params = (typeof getParameters_ === 'function') ? getParameters_() : {};
+    if (params.ENABLE_WATCH_FOLDER === 'FALSE') watchActive = 'No';
+    if (params.WATCH_PERIOD_MIN && !isNaN(Number(params.WATCH_PERIOD_MIN))) {
+      watchInterval = Number(params.WATCH_PERIOD_MIN);
+    }
+    if (params.MOVE_FROM_WATCH_FOLDER === 'FALSE') watchMove = 'No';
+  } catch (e) {
+    console.warn('Could not read legacy params for automation seed:', e);
+  }
+
+  var defaultRows = [
+    [watchActive, 'Poll Watch Folders', 'SCAN_WATCH_FOLDER', 'Time (Minutes)', watchInterval, '', 'MoveToTrash=' + watchMove + '; MaxFiles=20', '', 'Ready'],
+    ['Yes', 'Prune Activity Logs', 'CLEAN_LOGS', 'Time (Days)', 3, '', 'KeepRows=2000; KeepDays=90', '', 'Ready'],
+    ['Yes', 'Process Background Queue', 'PROCESS_QUEUE', 'Time (Minutes)', 5, '', 'BatchSize=5; MaxExecutionSeconds=240', '', 'Ready']
+  ];
+
+  sh.getRange(3, 1, defaultRows.length, 9).setValues(defaultRows);
 }
 
 function scaffoldFlights_(ss) {
@@ -2066,6 +2189,13 @@ var SheetSpecialists = {
     }
   },
 
+  updateAutomation: function(elements, ss, logs) {
+    if (elements['Automation_Rules.grid'] || elements['Automation_Rules.headers'] || elements['Automation_Rules.validations'] || elements['Automation_Rules.templates']) {
+      scaffoldAutomation_(ss);
+      logs.push('[Automation_Rules] Automation Rules schema, headers, dropdowns, and templates synchronized.');
+    }
+  },
+
   updateActivityLogs: function(elements, ss, logs) {
     if (elements['Activity_Logs.headers'] || elements['App_Log.headers']) { // Legacy alias migration bridge
       scaffoldActivityLogs_(ss);
@@ -2127,6 +2257,7 @@ var SystemMaintenanceOrchestrator = {
         if (cType === 'content') matrix[sName]['notes'] = item;
         if (cType === 'keys') matrix[sName]['parameters'] = item;
         if (cType === 'lookups') matrix[sName]['formulas'] = item;
+        if (cType === 'templates') matrix[sName]['parameters'] = item;
       }
     }
 
@@ -2200,6 +2331,7 @@ var SystemMaintenanceOrchestrator = {
       SheetSpecialists.updateDashboard(effectiveComponents, ss, logs);
     } else if (phase === 'reference') {
       SheetSpecialists.updatePilotProfile(effectiveComponents, ss, logs);
+      SheetSpecialists.updateAutomation(effectiveComponents, ss, logs);
       SheetSpecialists.updateQueue(effectiveComponents, ss, logs);
       SheetSpecialists.updateAppLog(effectiveComponents, ss, logs);
       SheetSpecialists.updateUserGuide(effectiveComponents, ss, logs);

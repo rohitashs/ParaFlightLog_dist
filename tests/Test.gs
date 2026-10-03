@@ -33,6 +33,7 @@ function runAllTests() {
   results.push(testDynamicFormulaResilience_());
   results.push(testNativeSheetsResilience_());
   results.push(testSystemMaintenanceAndManifest_());
+  results.push(testAutomationEngine_());
   
   var failures = results.filter(function(r) { return !r.idx || r.error; });
   if (failures.length > 0) {
@@ -1173,6 +1174,126 @@ function testSystemMaintenanceAndManifest_() {
   }
 
   return { module: 'SystemMaintenanceAndManifest', idx: true };
+}
+
+function testAutomationEngine_() {
+  // 1. Registry existence & structure
+  if (typeof AUTOMATION_REGISTRY === 'undefined') {
+    return { module: 'AutomationEngine', error: 'AUTOMATION_REGISTRY is not defined' };
+  }
+  if (!AUTOMATION_REGISTRY.triggers || !AUTOMATION_REGISTRY.actions || !AUTOMATION_REGISTRY.templates) {
+    return { module: 'AutomationEngine', error: 'AUTOMATION_REGISTRY missing triggers, actions, or templates' };
+  }
+
+  // 2. Progressive Feature Flagging (actionAvailable)
+  var availableKeys = AUTOMATION_REGISTRY.getAvailableActionKeys();
+  if (availableKeys.indexOf('SCAN_WATCH_FOLDER') === -1 || 
+      availableKeys.indexOf('CLEAN_LOGS') === -1 || 
+      availableKeys.indexOf('PROCESS_QUEUE') === -1) {
+    return { module: 'AutomationEngine', error: 'Missing core production actions from getAvailableActionKeys' };
+  }
+  if (availableKeys.indexOf('ENRICH_FLIGHT_GEO') !== -1 ||
+      availableKeys.indexOf('ENRICH_FLIGHT_WEATHER') !== -1 ||
+      availableKeys.indexOf('PURGE_STAGED_FLIGHTS') !== -1) {
+    return { module: 'AutomationEngine', error: 'Candidate actions with actionAvailable:false must NOT be returned in getAvailableActionKeys' };
+  }
+
+  // 3. Predefined templates
+  var templates = AUTOMATION_REGISTRY.getTemplates();
+  if (templates.length < 3) {
+    return { module: 'AutomationEngine', error: 'Expected at least 3 templates, got ' + templates.length };
+  }
+  var tplIds = templates.map(function(t) { return t.id; });
+  if (tplIds.indexOf('TPL_WATCH_FOLDER') === -1 || tplIds.indexOf('TPL_CLEAN_LOGS') === -1 || tplIds.indexOf('TPL_PROCESS_QUEUE') === -1) {
+    return { module: 'AutomationEngine', error: 'Core templates missing from registry' };
+  }
+
+  // 4. Parameter parsing and schema default fallback (Pattern 21 & DSGN-AUT-001)
+  var cleanAction = AUTOMATION_REGISTRY.getAction('CLEAN_LOGS');
+  var parsedFull = parseAutomationParams_('KeepRows=1500; KeepDays=45', cleanAction);
+  if (parsedFull.KeepRows !== 1500 || parsedFull.KeepDays !== 45) {
+    return { module: 'AutomationEngine', error: 'parseAutomationParams_ full pair mismatch: ' + JSON.stringify(parsedFull) };
+  }
+
+  // Partial parameters: schema fallback
+  var parsedPartial = parseAutomationParams_('KeepRows=800', cleanAction);
+  if (parsedPartial.KeepRows !== 800 || parsedPartial.KeepDays !== 90) {
+    return { module: 'AutomationEngine', error: 'parseAutomationParams_ partial fallback failed: ' + JSON.stringify(parsedPartial) };
+  }
+
+  // Empty parameters: all schema defaults
+  var parsedEmpty = parseAutomationParams_('', cleanAction);
+  if (parsedEmpty.KeepRows !== 2000 || parsedEmpty.KeepDays !== 90) {
+    return { module: 'AutomationEngine', error: 'parseAutomationParams_ empty string fallback failed: ' + JSON.stringify(parsedEmpty) };
+  }
+
+  // Boolean and number type conversions
+  var watchAction = AUTOMATION_REGISTRY.getAction('SCAN_WATCH_FOLDER');
+  var parsedWatch = parseAutomationParams_('MoveToTrash=Yes; MaxFiles=10', watchAction);
+  if (parsedWatch.MoveToTrash !== true || parsedWatch.MaxFiles !== 10) {
+    return { module: 'AutomationEngine', error: 'parseAutomationParams_ boolean/number parsing failed: ' + JSON.stringify(parsedWatch) };
+  }
+
+  // 5. Parameter serialization
+  var serialized = serializeAutomationParams_({ KeepRows: 2000, KeepDays: 90 });
+  if (serialized !== 'KeepRows=2000; KeepDays=90') {
+    return { module: 'AutomationEngine', error: 'serializeAutomationParams_ mismatch: ' + serialized };
+  }
+
+  // 6. Due Interval Calculation (isRuleDue_)
+  var now = new Date();
+  var ruleNoLastRun = { active: 'Yes', triggerType: 'Time (Minutes)', triggerConfig: 15, lastRun: '' };
+  if (!isRuleDue_(ruleNoLastRun, now)) {
+    return { module: 'AutomationEngine', error: 'Rule with no lastRun should be due immediately' };
+  }
+
+  var ruleInactive = { active: 'No', triggerType: 'Time (Minutes)', triggerConfig: 15, lastRun: '' };
+  if (isRuleDue_(ruleInactive, now)) {
+    return { module: 'AutomationEngine', error: 'Inactive rule should never be due' };
+  }
+
+  var twentyMinsAgo = new Date(now.getTime() - (20 * 60 * 1000));
+  var ruleDue = { active: 'Yes', triggerType: 'Time (Minutes)', triggerConfig: 15, lastRun: twentyMinsAgo };
+  if (!isRuleDue_(ruleDue, now)) {
+    return { module: 'AutomationEngine', error: 'Rule elapsed 20m with 15m interval should be due' };
+  }
+
+  var twoMinsAgo = new Date(now.getTime() - (2 * 60 * 1000));
+  var ruleNotDue = { active: 'Yes', triggerType: 'Time (Minutes)', triggerConfig: 15, lastRun: twoMinsAgo };
+  if (isRuleDue_(ruleNotDue, now)) {
+    return { module: 'AutomationEngine', error: 'Rule elapsed 2m with 15m interval should NOT be due' };
+  }
+
+  var ruleEvent = { active: 'Yes', triggerType: 'Event (Lifecycle)', triggerConfig: 'INGESTION_COMPLETED', lastRun: '' };
+  if (isRuleDue_(ruleEvent, now)) {
+    return { module: 'AutomationEngine', error: 'Event-driven rule should not be due on heartbeat' };
+  }
+
+  // 7. Condition Evaluation (evaluateCondition_)
+  var condBlank = evaluateCondition_('', 'CLEAN_LOGS', {});
+  if (!condBlank.met) {
+    return { module: 'AutomationEngine', error: 'Blank condition should evaluate to met: true' };
+  }
+
+  var condMet = evaluateCondition_('QUEUE_SIZE > 0', 'PROCESS_QUEUE', { QUEUE_SIZE: 3 });
+  if (!condMet.met) {
+    return { module: 'AutomationEngine', error: 'QUEUE_SIZE (3) > 0 should be met: true' };
+  }
+
+  var condNotMet = evaluateCondition_('QUEUE_SIZE > 0', 'PROCESS_QUEUE', { QUEUE_SIZE: 0 });
+  if (condNotMet.met) {
+    return { module: 'AutomationEngine', error: 'QUEUE_SIZE (0) > 0 should be met: false' };
+  }
+
+  // 8. TABS & Manifest alignment
+  if (!TABS.AUTOMATION_RULES || TABS.AUTOMATION_RULES.name !== 'Automation_Rules') {
+    return { module: 'AutomationEngine', error: 'TABS.AUTOMATION_RULES definition missing or wrong name' };
+  }
+  if (!SYSTEM_MANIFEST.components['Automation_Rules.headers'] || !SYSTEM_MANIFEST.components['Automation_Rules.templates']) {
+    return { module: 'AutomationEngine', error: 'Automation_Rules components missing from SYSTEM_MANIFEST' };
+  }
+
+  return { module: 'AutomationEngine', idx: true };
 }
 
 

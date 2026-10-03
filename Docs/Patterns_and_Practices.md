@@ -222,7 +222,27 @@ Developing on this hybrid stack presents unique constraints and capabilities:
      * Never comment obvious JavaScript syntax.
      * Document non-negotiable invariants (`// INVARIANT: ...`), design patterns (`// PATTERN X: ...`), and platform traps (`// GAS QUOTA LIMIT: ...`).
      * Use comprehensive JSDoc (`@param`, `@returns`) on all public interface functions so AI agents infer correct types and boundaries zero-shot.
-  4. **Dual-Track View Separation**: Keep Functional Problem Space (what flight capabilities exist) strictly decoupled from Cross-Cutting Technical Concerns (how Apps Script execution limits, quotas, and Google Sheets storage behave).
+### Pattern 21: Subsystem Domain Decoupling (Domain Configuration vs. Domain Engine)
+* **Problem**: In Google Apps Script, putting large declarative schemas, metadata registries, parameter definitions, and UI templates into procedural engine files causes monolithic code bloat (e.g. 1000+ line files), intertwines data declarations with procedural execution, and makes it difficult to maintain and test schema boundaries.
+* **Pattern**: Distinct subsystems (such as `Automation`, `Maintenance`, `Ingestion`) must strictly isolate declarative metadata in `<Domain>Config.gs` (e.g. `Code/AutomationConfig.gs`) and operational execution logic in `<Domain>.gs` (e.g. `Code/Automation.gs`):
+  1. `<Domain>Config.gs`: Contains static registries, triggers, actions, parameter schemas, and predefined rule templates. Zero side effects, zero sheet/Drive calls.
+  2. `<Domain>.gs`: Contains procedural dispatchers, parsers, execution loops, condition evaluators, and RPC gateways.
+
+### Pattern 22: Dual-Context Execution Invariant (Foreground Interactive vs. Headless Background)
+* **Problem**: Automation actions can be invoked in two fundamentally different contexts: foreground (user clicked a menu or modal button) and background (autonomous time-driven trigger or queue daemon). In background execution, calling `SpreadsheetApp.getUi()` throws a fatal runtime exception (`Cannot call SpreadsheetApp.getUi() from this context`), interactive alerts crash the trigger, and execution must respect strict time budgets.
+* **Pattern**: All action handlers registered in subsystem engines must adhere to 5 strict dual-context rules:
+  1. **UI Safety**: Never invoke `SpreadsheetApp.getUi()` unconditionally. Use `try/catch` or context detection guards (`isForeground_()`).
+  2. **Zero Interactive Prompts**: All operational decisions must be passed via the `params` object, never blocking background execution with prompts.
+  3. **Decoupled Telemetry**: Always log to `Activity Logs` (`LOG.write()`) and stamp `Last Run` & `Last Result` on the sheet, rather than relying on toasts or DOM updates.
+  4. **Time Budget Ceilings**: Handlers must accept a `timeBudget` tracker (`TimeBudgetService`) and yield or checkpoint before the 4.5-minute safety threshold.
+  5. **Script Locking**: Headless dispatchers must acquire `LockService.getScriptLock().tryLock(10000)` to prevent concurrent collision with foreground user sessions.
+
+### Pattern 23: Progressive Feature Flagging in Component Registries (`actionAvailable`)
+* **Problem**: Defining a comprehensive catalog of planned system actions without having fully vetted their edge cases, non-destructive safety parameters (e.g. `OverwriteObservations=Y/N`), or validation rules risks exposing unstable or premature capabilities to end users in the UI.
+* **Pattern**: Every action registered in a subsystem metadata registry must declare an explicit `actionAvailable: boolean` flag:
+  1. Fully vetted, tested, and safe actions set `actionAvailable: true` (e.g. `SCAN_WATCH_FOLDER`, `CLEAN_LOGS`, `PROCESS_QUEUE`).
+  2. Actions whose parameters or non-destructive safeguards are still under design set `actionAvailable: false` (e.g. `ENRICH_FLIGHT_GEO`, `ENRICH_FLIGHT_WEATHER`).
+  3. User-facing interfaces (Rule Builder modal dialogs and in-sheet data validation dropdowns) strictly filter their options to display only actions where `actionAvailable === true`. This allows the architecture to maintain an exhaustive future capability catalog without exposing unvetted actions to pilots.
 
 ---
 
@@ -242,5 +262,7 @@ Developing on this hybrid stack presents unique constraints and capabilities:
 | **Allowing Users to Disable Mandatory Invariants** | Leaves sheet with missing Named Ranges or broken formulas. | Enforce mandatory components automatically regardless of sheet gating. |
 | **Unverified Manual Audits (Rubber-Stamp PASS)** | Subjective review misses legacy names and manifest drift. | Enforce automated scanner (`tools/code_check_audit.js`) gate. |
 | **Co-locating Test/Audit Code in Production Runtime** | Pollutes global GAS scope, slows cold starts, bloats container. | Move test suites to `tests/` and tools to `tools/`; protect with `.claspignore`. |
+| **Calling `SpreadsheetApp.getUi()` in Headless Background** | Throws fatal runtime exception on time triggers. | Guard with `isForeground_()` or parameterize completely. |
+| **Exposing Unvetted Actions in UI Registries** | Leads to accidental pilot execution of incomplete features. | Gate candidate actions with `actionAvailable: false`. |
 
 

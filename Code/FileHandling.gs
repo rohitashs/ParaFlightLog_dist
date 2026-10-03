@@ -21,22 +21,27 @@ var FILE_HANDLING = FILE_HANDLING || {};
  * Triggered by Time-Based Trigger or manual menu click.
  * Scans configured Watch Folder(s) for new flight log files.
  */
-function scanWatchFolderNow_() {
+function scanWatchFolderNow_(options) {
+  options = options || {};
   var stats = { processed: 0, skipped: 0, errors: 0, flights: 0, log: [] };
   
   console.log('Starting Watch Folder Scan...');
   var config = getParameters_();
   var rawFolderIds = config.WATCH_FOLDER_ID || '';
   
-  // Check Enable Switch (Handle boolean or string)
+  // Check Enable Switch (Handle boolean or string, bypass if options.force === true)
   var enabled = String(config.ENABLE_WATCH_FOLDER).toUpperCase();
   console.log('Watch Config: Enable=' + enabled + ', FolderIDs=' + rawFolderIds);
 
-  if (enabled !== 'TRUE' && enabled !== 'YES') {
+  if (!options.force && enabled !== 'TRUE' && enabled !== 'YES') {
      var msg = 'Watch Folder is DISABLED in Config. Skipping.';
      console.warn(msg);
      stats.log.push(msg);
      return stats;
+  }
+  
+  if (options.moveToTrash !== undefined) {
+    config.MOVE_FROM_WATCH_FOLDER = options.moveToTrash ? 'TRUE' : 'FALSE';
   }
   
   var folderCheck = validateRequiredFolders_(['WATCH_FOLDER_ID', 'MASTER_LOG_FOLDER_ID', 'ERROR_FOLDER_ID'], config);
@@ -49,7 +54,7 @@ function scanWatchFolderNow_() {
   
   var folderIds = rawFolderIds.split(',').map(function(id) { return cleanDriveId_(id.trim()); }).filter(Boolean);
   
-  var maxProcess = 25; // Cap to avoid execution timeouts per run
+  var maxProcess = (options.maxFiles && !isNaN(Number(options.maxFiles))) ? Number(options.maxFiles) : 25; // Cap to avoid execution timeouts per run
   var foundAny = false;
   
   for (var i = 0; i < folderIds.length; i++) {

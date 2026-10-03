@@ -28,19 +28,23 @@ var CFG = {
     dashboard: 'Dashboard',
     pilotProfile: 'Pilot_Profile',
     userGuide: 'User Guide',
-    queue: 'Automation_Queue'
+    queue: 'Automation_Queue',
+    automationRules: 'Automation_Rules',
+    automation: 'Automation_Rules' // Legacy alias
   },
   // Centralized Parameter Definitions (Source of Truth for Parameters Sheet)
   parameters: [
-    // Ingestion
-    { section: 'Ingestion', key: 'WATCH_FOLDER_ID', val: '', desc: 'Google Drive Folder ID(s) to watch for .igc files (comma separated)', input: true },
-    { section: 'Ingestion', key: 'MASTER_LOG_FOLDER_ID', val: '', desc: 'Google Drive ID for Master Log (Public)', input: true },
-    { section: 'Ingestion', key: 'UPLOAD_FOLDER_ID', val: '', desc: 'Google Drive Folder ID for manual uploads', input: true },
-    { section: 'Ingestion', key: 'ERROR_FOLDER_ID', val: '', desc: 'Google Drive Folder ID for failed imports', input: true },
-    { section: 'Ingestion', key: 'TRASH_FOLDER_ID', val: '', desc: 'Google Drive Trash/Discard folder for purged and duplicate files', input: true },
-    { section: 'Ingestion', key: 'ENABLE_WATCH_FOLDER', val: 'FALSE', desc: 'Enable automated scanning? (TRUE/FALSE)' },
-    { section: 'Ingestion', key: 'MOVE_FROM_WATCH_FOLDER', val: 'TRUE', desc: 'Move files from Watch Folder after success? (TRUE/FALSE)' },
-    { section: 'Ingestion', key: 'WATCH_PERIOD_MIN', val: 15, desc: 'How often (mins) the trigger runs' },
+    // Ingestion & Automation
+    { section: 'Ingestion & Automation', key: 'WATCH_FOLDER_ID', val: '', desc: 'Google Drive Folder ID(s) to watch for .igc files (comma separated)', input: true },
+    { section: 'Ingestion & Automation', key: 'MASTER_LOG_FOLDER_ID', val: '', desc: 'Google Drive ID for Master Log (Public)', input: true },
+    { section: 'Ingestion & Automation', key: 'UPLOAD_FOLDER_ID', val: '', desc: 'Google Drive Folder ID for manual uploads', input: true },
+    { section: 'Ingestion & Automation', key: 'ERROR_FOLDER_ID', val: '', desc: 'Google Drive Folder ID for failed imports', input: true },
+    { section: 'Ingestion & Automation', key: 'TRASH_FOLDER_ID', val: '', desc: 'Google Drive Trash/Discard folder for purged and duplicate files', input: true },
+    { section: 'Ingestion & Automation', key: 'HEARTBEAT_ENABLED', val: 'Yes', desc: 'Enable autonomous background processing? (Yes/No)' },
+    { section: 'Ingestion & Automation', key: 'HEARTBEAT_INTERVAL_MIN', val: 15, desc: 'Master heartbeat pulse interval in minutes (5, 10, 15, 30, 60)' },
+    { section: 'Ingestion & Automation', key: 'ENABLE_WATCH_FOLDER', val: 'FALSE', desc: '[Legacy Fallback] Enable automated scanning? (TRUE/FALSE)' },
+    { section: 'Ingestion & Automation', key: 'MOVE_FROM_WATCH_FOLDER', val: 'TRUE', desc: '[Legacy Fallback] Move files from Watch Folder after success? (TRUE/FALSE)' },
+    { section: 'Ingestion & Automation', key: 'WATCH_PERIOD_MIN', val: 15, desc: '[Legacy Fallback] How often (mins) the trigger runs' },
     
     // Integrations
     { section: 'Integrations', key: 'WEATHER_PROVIDERS', val: 'open_meteo, visual_crossing', desc: 'Weather Providers (comma-sep: open_meteo, visual_crossing)' },
@@ -362,17 +366,30 @@ var TABS = {
     headerRow: 1,
     frozenRows: 1,
     columns: ['Job ID', 'Type', 'Status', 'Progress', 'Started At', 'Updated At', 'Payload & State', 'Last Error']
+  },
+  AUTOMATION_RULES: {
+    name: CFG.sheets.automationRules || 'Automation_Rules',
+    color: '#00897B', // Dark Teal
+    index: 9,
+    headerRow: 2,
+    dataStartRow: 3,
+    frozenRows: 2,
+    frozenCols: 2,
+    columns: ['Active?', 'Automation Name', 'Action', 'Trigger Type', 'Trigger Config', 'Condition', 'Parameters', 'Last Run', 'Last Result']
   }
 };
 
 // Backwards compatibility aliases (legacy migration bridges)
-TABS.PARAMETERS = TABS.CONFIG;      // Legacy migration bridge
-TABS.LOOKUPS = TABS.CONFIG;         // Legacy migration bridge
-TABS.APP_LOG = TABS.ACTIVITY;       // Legacy migration bridge
-TABS.AUTOMATION_QUEUE = TABS.QUEUE; // Legacy migration bridge
+TABS.PARAMETERS = TABS.CONFIG;            // Legacy migration bridge
+TABS.LOOKUPS = TABS.CONFIG;               // Legacy migration bridge
+TABS.APP_LOG = TABS.ACTIVITY;             // Legacy migration bridge
+TABS.AUTOMATION_QUEUE = TABS.QUEUE;       // Legacy migration bridge
+TABS.AUTOMATION = TABS.AUTOMATION_RULES;  // Legacy migration bridge
 
 // Extensible Process and Message Registries
 CFG.LOG_PROCESSES = {
+  AUTOMATION:     'Automation Engine',
+  HEARTBEAT:      'Master Heartbeat',
   WATCH_FOLDER:   'Watch Folder',
   BULK_INGEST:    'Bulk Ingestion',
   URL_IMPORT:     'URL / Drive Import',
@@ -490,11 +507,15 @@ var SYSTEM_MANIFEST = {
     'Equipment.headers':   { version: 'v2.0-eq-schema',        tier: 'mandatory' },
     'Equipment.validations':{ version: 'v2.1-yn-dropdowns',   tier: 'recommended' },
 
-    // Reference Sheets
-    'Pilot_Profile.keys':  { version: 'v2.0-profile-fields',   tier: 'recommended' },
-    'Automation_Queue.headers': { version: 'v2.0-queue-schema', tier: 'mandatory' },
-    'Activity_Logs.headers':    { version: 'v2.0-log-schema',   tier: 'recommended' },
-    'User_Guide.content':  { version: 'v2.0-guide-content',    tier: 'optional' }
+    // Reference Sheets & Automation
+    'Pilot_Profile.keys':           { version: 'v2.0-profile-fields',   tier: 'recommended' },
+    'Automation_Rules.grid':        { version: 'v2.0-dim-50x9',         tier: 'recommended' },
+    'Automation_Rules.headers':     { version: 'v2.1-rules-9col',       tier: 'mandatory' },
+    'Automation_Rules.validations': { version: 'v2.0-action-dropdowns', tier: 'recommended' },
+    'Automation_Rules.templates':   { version: 'v2.1-default-rules',    tier: 'optional' },
+    'Automation_Queue.headers':     { version: 'v2.0-queue-schema',     tier: 'mandatory' },
+    'Activity_Logs.headers':        { version: 'v2.0-log-schema',       tier: 'recommended' },
+    'User_Guide.content':           { version: 'v2.0-guide-content',    tier: 'optional' }
   }
 };
 
@@ -522,6 +543,10 @@ var MANIFEST_COMPONENT_LABELS = {
   'Equipment.headers': 'Equipment Schema Headers (Row 2)',
   'Equipment.validations': 'Category Dropdown Validation Rule',
   'Pilot_Profile.keys': 'Pilot Profile Fields & Descriptions',
+  'Automation_Rules.grid': 'Grid Dimensions & Palette (50 Rows, 9 Cols)',
+  'Automation_Rules.headers': 'Automation Rules Headers & Structure (Row 2)',
+  'Automation_Rules.validations': 'Action & Active Dropdown Validations',
+  'Automation_Rules.templates': 'Predefined Automation Rule Templates',
   'Automation_Queue.headers': 'Background Automation Queue Schema',
   'Activity_Logs.headers': 'Activity Logs Schema & Header Formatting',
   'App_Log.headers': 'Activity Logs Schema & Header Formatting', // Legacy migration bridge
@@ -534,6 +559,7 @@ var MANIFEST_SHEET_METADATA = {
   'Config': { key: 'CONFIG', name: TABS.CONFIG ? TABS.CONFIG.name : 'Config', icon: '⚙️', color: '#FF9800' },
   'Equipment': { key: 'EQUIPMENT', name: TABS.EQUIPMENT ? TABS.EQUIPMENT.name : 'Equipment', icon: '🪂', color: '#00BCD4' },
   'Pilot_Profile': { key: 'PILOT_PROFILE', name: TABS.PILOT_PROFILE ? TABS.PILOT_PROFILE.name : 'Pilot_Profile', icon: '👤', color: '#9C27B0' },
+  'Automation_Rules': { key: 'AUTOMATION_RULES', name: TABS.AUTOMATION_RULES ? TABS.AUTOMATION_RULES.name : 'Automation_Rules', icon: '⚡', color: '#00897B' },
   'Automation_Queue': { key: 'QUEUE', name: TABS.QUEUE ? TABS.QUEUE.name : 'Automation_Queue', icon: '📋', color: '#455A64' },
   'Activity_Logs': { key: 'ACTIVITY_LOGS', name: TABS.ACTIVITY ? TABS.ACTIVITY.name : 'Activity Logs', icon: '📜', color: '#D32F2F' },
   'App_Log': { key: 'ACTIVITY_LOGS', name: TABS.ACTIVITY ? TABS.ACTIVITY.name : 'Activity Logs', icon: '📜', color: '#D32F2F' }, // Legacy migration bridge
@@ -585,7 +611,7 @@ function diffManifests_(optApplied) {
     applied['Activity_Logs.headers'] = applied['App_Log.headers']; // Legacy migration bridge
   }
   var sheetsMap = {};
-  var order = ['Flights', 'Dashboard', 'Config', 'Equipment', 'Pilot_Profile', 'Automation_Queue', 'Activity_Logs', 'User_Guide'];
+  var order = ['Flights', 'Dashboard', 'Config', 'Equipment', 'Pilot_Profile', 'Automation_Rules', 'Automation_Queue', 'Activity_Logs', 'User_Guide'];
   
   order.forEach(function(sName) {
     var meta = MANIFEST_SHEET_METADATA[sName] || { key: sName, name: sName.replace('_', ' '), icon: '📄', color: '#757575' };

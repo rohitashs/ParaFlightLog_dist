@@ -58,7 +58,11 @@ function onOpen(e) {
         .addSubMenu(ui.createMenu('Data Backup')
             .addItem('Backup System Sheets', 'backupSystemSheets'))
         .addSubMenu(ui.createMenu('Automation & Services')
-            .addItem('Setup / Reset 5-min Watcher Trigger', 'setupWatcherTrigger'))
+            .addItem('⚡ Automation Rule Builder...', 'showAutomationRuleBuilder')
+            .addItem('Toggle Master Heartbeat (Start/Stop)...', 'toggleMasterHeartbeat')
+            .addItem('Run Master Heartbeat Now', 'runMasterHeartbeatNow')
+            .addSeparator()
+            .addItem('Setup / Reset 5-min Watcher Trigger (Legacy)', 'setupWatcherTrigger'))
         .addSeparator()
         .addSubMenu(ui.createMenu('System Setup & Reset (Danger Zone)')
             .addItem('First Time Setup (Full Scaffold)', 'scaffoldAll')
@@ -1118,6 +1122,124 @@ function setupWatcherTrigger_() {
     .everyMinutes(5)
     .create();
   SpreadsheetApp.getUi().alert('Trigger set for every 5 minutes.');
+}
+
+/**
+ * Interactive toggle for the Master Heartbeat single-timer trigger.
+ * Checks HEARTBEAT_ENABLED in Config before starting.
+ * If running, stops the trigger. If stopped, installs the trigger.
+ */
+function toggleMasterHeartbeat_() {
+  var ui = SpreadsheetApp.getUi();
+  var triggers = ScriptApp.getProjectTriggers();
+  var heartbeatTrigger = null;
+
+  for (var i = 0; i < triggers.length; i++) {
+    if (triggers[i].getHandlerFunction() === 'masterHeartbeatDispatcher') {
+      heartbeatTrigger = triggers[i];
+      break;
+    }
+  }
+
+  // 1. If currently RUNNING, prompt to STOP
+  if (heartbeatTrigger) {
+    var resp = ui.alert(
+      'Master Heartbeat Trigger',
+      'The Master Heartbeat is currently ACTIVE and running.\n\nDo you want to STOP the Master Heartbeat trigger?',
+      ui.ButtonSet.YES_NO
+    );
+    if (resp === ui.Button.YES) {
+      ScriptApp.deleteTrigger(heartbeatTrigger);
+      LOG.write(CFG.LOG_PROCESSES.HEARTBEAT, '[STOP] Master Heartbeat timer trigger removed by user');
+      ui.alert('Master Heartbeat has been STOPPED.');
+    }
+    return;
+  }
+
+  // 2. If STOPPED, verify HEARTBEAT_ENABLED in Config
+  var params = getParameters_();
+  var enabled = String(params.HEARTBEAT_ENABLED || 'Yes').trim().toLowerCase();
+  if (enabled !== 'yes' && enabled !== 'true') {
+    ui.alert(
+      'Master Heartbeat Disabled',
+      'Cannot start the Master Heartbeat trigger because "HEARTBEAT_ENABLED" is currently set to "No" in the Config tab.\n\nPlease change HEARTBEAT_ENABLED to "Yes" in the Config sheet and try again.',
+      ui.ButtonSet.OK
+    );
+    return;
+  }
+
+  // 3. Read interval (minutes) from Config (default 15)
+  var rawInterval = Number(params.HEARTBEAT_INTERVAL_MIN) || 15;
+  // Supported GAS minute intervals: 1, 5, 10, 15, 30
+  var interval = 15;
+  if ([1, 5, 10, 15, 30].indexOf(rawInterval) !== -1) {
+    interval = rawInterval;
+  } else if (rawInterval >= 60) {
+    interval = 60;
+  } else if (rawInterval <= 5) {
+    interval = 5;
+  }
+
+  // 4. Create single project-level timer trigger
+  var builder = ScriptApp.newTrigger('masterHeartbeatDispatcher').timeBased();
+  if (interval === 60) {
+    builder.everyHours(1);
+  } else {
+    builder.everyMinutes(interval);
+  }
+  builder.create();
+
+  LOG.write(CFG.LOG_PROCESSES.HEARTBEAT, '[START] Master Heartbeat timer trigger installed by user', 'Interval: ' + interval + ' min');
+  ui.alert(
+    'Master Heartbeat Started',
+    'Master Heartbeat timer trigger successfully started!\n\nInterval: Every ' + interval + ' minute(s).\nHandler: masterHeartbeatDispatcher',
+    ui.ButtonSet.OK
+  );
+}
+
+/**
+ * Manually executes one pulse of the Master Heartbeat immediately.
+ */
+function runMasterHeartbeatNow_() {
+  SpreadsheetApp.getActive().toast('Running Master Heartbeat pulse...', 'Master Heartbeat', 3);
+  try {
+    masterHeartbeatDispatcher();
+    SpreadsheetApp.getActive().toast('Master Heartbeat pulse completed.', 'Master Heartbeat', 4);
+  } catch (e) {
+    SpreadsheetApp.getUi().alert('Master Heartbeat pulse failed: ' + e.message);
+  }
+}
+
+/**
+ * Opens the Table-Driven Automation Rule Builder modal dialog.
+ */
+function showAutomationRuleBuilder() {
+  var ss = SpreadsheetApp.getActive();
+  var sh = ss.getActiveSheet();
+  var selectedRowIndex = null;
+
+  var tabName = (typeof TABS !== 'undefined' && TABS.AUTOMATION_RULES) ? TABS.AUTOMATION_RULES.name : 'Automation_Rules';
+  if (sh && sh.getName() === tabName) {
+    var activeRow = sh.getActiveCell().getRow();
+    if (activeRow >= 3 && activeRow <= sh.getLastRow()) {
+      var rowName = sh.getRange(activeRow, 2).getValue();
+      if (rowName && String(rowName).trim()) {
+        selectedRowIndex = activeRow;
+      }
+    }
+  }
+
+  var tmpl = HtmlService.createTemplateFromFile('AutomationDialog');
+  var html = tmpl.evaluate()
+    .setWidth(760)
+    .setHeight(680)
+    .setTitle('⚡ Automation Rule Builder');
+
+  if (selectedRowIndex) {
+    html.append('<script>window.selectedRowIndex = ' + selectedRowIndex + ';</script>');
+  }
+
+  SpreadsheetApp.getUi().showModalDialog(html, '⚡ Automation Rule Builder');
 }
 
 
@@ -2709,6 +2831,8 @@ function scaffoldPilotProfile() { return scaffoldPilotProfile_(SpreadsheetApp.ge
 function deleteSystemSheets() { return deleteSystemSheets_(); }
 function backupSystemSheets() { return backupSystemSheets_(); }
 function setupWatcherTrigger() { return setupWatcherTrigger_(); }
+function toggleMasterHeartbeat() { return toggleMasterHeartbeat_(); }
+function runMasterHeartbeatNow() { return runMasterHeartbeatNow_(); }
 function uiRefreshDashboard() { return uiRefreshDashboard_(); }
 function uiRefreshUserGuide() { return uiRefreshUserGuide_(); }
 function updateValidationOnly() { return updateValidationOnly_(); }
