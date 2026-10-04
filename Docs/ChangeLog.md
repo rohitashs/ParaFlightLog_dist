@@ -1,5 +1,34 @@
 # Project Change Log
 
+## Session: Flight Updates Redesign: Check & Sync Data, Force IGC Overwrite & Standalone Batch Resync Flight IDs
+**Date**: 2026-10-03
+**Versions**: Core v2.2.2
+**Focus**: Flight Updates Modal Redesign (`CR-MNT-006`), Smart Check & Sync with MD5 Hash Comparison & Master Folder Relinking, Force IGC Overwrite Override, Standalone Batch Resync Flight IDs (`rpcResyncFlightIdsBatch` / `resyncFlightIdsBatch_`), Launch Time 12h/24h Chronological Sorting, SeeYou Cloud Hyperlink Formula Preservation, and Reciprocal Duplicate Cross-Reference Synchronization in Notes.
+
+*   `[Feat]` **CR-MNT-006 (Flight Updates Modal Redesign & Standalone FlightID Resync)**:
+    *   **UI Modernization (`FlightMaintenanceDialog.html`)**:
+        *   Renamed "Update from Linked IGC" -> "Check and Sync flight data".
+        *   Added nested, indented sub-checkbox "Force update from IGC" (automatically toggled and disabled when parent is unchecked).
+        *   Decoupled "Resync Flight IDs" into an independent, top-level checkbox that executes as a fast standalone batch process without requiring Google Drive API round-trips.
+        *   Added fast-path routing in `onRowsReceived`: when only batch operations (`resyncIds` / `sort`) are selected, skips row-by-row iteration and executes batch operations directly.
+    *   **Smart Check & Sync Backend (`Code/Code.gs`)**:
+        *   If `IGC File` contains a file name without a hyperlink, searches the `MASTER_LOG_FOLDER_ID` folder in Google Drive, applies the direct download link, and links `FlightID` to SeeYou Cloud 3D track visualization.
+        *   Calculates MD5 file hash and compares against `IGC Hash`: if identical and Force is unchecked, fills **only missing** telemetry fields to preserve manual pilot edits.
+        *   If hash differs, file is newly linked, or "Force update from IGC" is checked, completely overwrites telemetry.
+        *   Strictly preserves all pilot edits (`Notes`, `Status`, `Flight Type`, `Wing`, `Harness`, `Reserve 1/2`, `Flight No`).
+    *   **Deterministic Batch Resync Flight IDs (`rpcResyncFlightIdsBatch` / `resyncFlightIdsBatch_`)**:
+        *   Groups targeted flights by flight date (re-sequencing all flights on affected dates to prevent partial-selection duplicates).
+        *   Normalizes launch times across 12-hour AM/PM and 24-hour formats via `parseTimeToMinutes_`.
+        *   Deterministically sorts flights chronologically: earliest launch time first, flights without launch times at tail end, preserving existing suffix or flight number as tie-breaker.
+        *   Reassigns suffixes `_01`, `_02`, ... starting from 1.
+        *   Preserves SeeYou Cloud `=HYPERLINK(..., "label")` formulas, updating only the display label.
+        *   Automatically updates reciprocal duplicate cross-references (`[DupRef: D01 | Others: ...]`, `[DupRef: D01 | Primary: ...]`) across the `Notes` column.
+    *   **Tri-Mode Runner Parity**: Integrated into modal (`Run Here`), sidebar (`Run in Sidebar`), and background queue execution (`finalizeWorkerJob` case `'MAINTENANCE'`).
+*   `[Test]` **Automated Test & Architectural Audit Parity**:
+    *   Added `tools/test_resync_flight_ids.js` covering 12h/24h time parsing, multi-date flight ID resync, hyperlink preservation, and duplicate cross-reference updates.
+    *   Added `testResyncFlightIds_()` to `tools/run_all_offline_tests.js` (18/18 tests passing).
+    *   Verified 0 Critical Errors and 0 Warnings across all 6 dimensions in `node tools/code_check_audit.js`.
+
 ## Session: Dashboard Leaderboards Decoupling, Standardized Formatting & Manifest Synchronization
 **Date**: 2026-10-03
 **Versions**: Core v2.2.2 (Dashboard.formulas v2.3-leaderboard-site-date)

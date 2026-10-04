@@ -121,6 +121,19 @@ function testWorkerBatchRouting_() {
   return { idx: true };
 }
 
+function testResyncFlightIds_() {
+  if (typeof rpcResyncFlightIdsBatch !== 'function') return { idx: false, error: 'rpcResyncFlightIdsBatch missing' };
+  if (typeof resyncFlightIdsBatch_ !== 'function') return { idx: false, error: 'resyncFlightIdsBatch_ missing' };
+  if (typeof parseTimeToMinutes_ !== 'function') return { idx: false, error: 'parseTimeToMinutes_ missing' };
+
+  if (parseTimeToMinutes_('9:30 AM') !== 570) return { idx: false, error: 'parseTimeToMinutes_ failed on 9:30 AM' };
+  if (parseTimeToMinutes_('2:30 PM') !== 870) return { idx: false, error: 'parseTimeToMinutes_ failed on 2:30 PM' };
+  if (parseTimeToMinutes_('12:00 AM') !== 0) return { idx: false, error: 'parseTimeToMinutes_ failed on 12:00 AM' };
+  if (parseTimeToMinutes_('14:30') !== 870) return { idx: false, error: 'parseTimeToMinutes_ failed on 24h format' };
+
+  return { idx: true };
+}
+
 const results = [];
 results.push(testParser_());
 results.push(testAnalysis_());
@@ -139,6 +152,7 @@ results.push(testSystemMaintenanceAndManifest_());
 results.push(testAutomationEngine_());
 results.push(testAutoSummaryFormat_());
 results.push(testDateTimeInvariants_());
+results.push(testResyncFlightIds_());
 
 const failures = results.filter(r => !r.idx || r.error);
 console.log('Results summary: Total=' + results.length + ', Passed=' + (results.length - failures.length) + ', Failed=' + failures.length);

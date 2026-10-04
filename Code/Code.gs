@@ -660,12 +660,13 @@ function executeFlightMaintenanceRow(rowNum, opConfig) {
   var updated = [];
   var config = getParameters_();
 
-  // 0. Update from Linked IGC (CR-MNT-005) - Executes FIRST to feed fresh GPS telemetry
-  if (opConfig.reTelemetry) {
+  // 0. Check and Sync flight data (CR-MNT-005 / CR-ING-012) - Executes FIRST to feed fresh GPS telemetry
+  if (opConfig.syncIgc || opConfig.reTelemetry) {
     try {
-      var igcVal = String(getV('IGC File') || '');
+      var igcVal = String(getV('IGC File') || '').trim();
       var masterFolderId = cleanDriveId_(config.MASTER_LOG_FOLDER_ID);
       var mFile = null;
+      var isNewlyLinked = false;
 
       var fNameMatch = igcVal.match(/,\s*"([^"]+)"\)/);
       var rawFName = fNameMatch ? fNameMatch[1] : igcVal;
@@ -678,12 +679,32 @@ function executeFlightMaintenanceRow(rowNum, opConfig) {
         try {
           var fld = DriveApp.getFolderById(masterFolderId);
           var mFiles = fld.getFilesByName(rawFName);
-          if (mFiles.hasNext()) mFile = mFiles.next();
+          if (mFiles.hasNext()) {
+            mFile = mFiles.next();
+            isNewlyLinked = true;
+            var dlPattern = config.GDRIVE_DOWNLOAD_URL_PATTERN || 'https://drive.google.com/uc?export=download&id={ID}';
+            var directDlUrl = dlPattern.replace('{ID}', mFile.getId());
+            setV('IGC File', '=HYPERLINK("' + directDlUrl + '", "' + (mFile.getName() || rawFName) + '")');
+            var rawFlightId = String(getV('FlightID') || '').replace(/=HYPERLINK\("[^"]*",\s*"([^"]+)"\)/, '$1');
+            if (rawFlightId && config.SEEYOU_CLOUD_URL_PATTERN) {
+              var syUrl = config.SEEYOU_CLOUD_URL_PATTERN.replace('{URL}', encodeURIComponent(directDlUrl));
+              setV('FlightID', '=HYPERLINK("' + syUrl + '", "' + rawFlightId + '")');
+            }
+            updated.push('Linked IGC');
+          }
         } catch(eFld) {}
       }
 
       if (mFile) {
         var mBlob = mFile.getBlob();
+        var rawBytes = mBlob.getBytes();
+        var dBytes = Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, rawBytes);
+        var fileHash = dBytes.map(function(b) { return ('0' + (b & 0xFF).toString(16)).slice(-2); }).join('');
+        var existingHash = String(getV('IGC Hash') || '').trim();
+        var hashMatches = (fileHash === existingHash && existingHash !== '');
+        var forceUpdate = Boolean(opConfig.forceIgc);
+        var shouldUpdateAll = forceUpdate || isNewlyLinked || !hashMatches;
+
         var mParsed = PARSER.parseIgc(mBlob.getDataAsString(), mFile.getName());
         if (mParsed && mParsed.fixes && mParsed.fixes.length > 5) {
           var pTz = String(getV('Time Zone') || 'UTC');
@@ -694,64 +715,82 @@ function executeFlightMaintenanceRow(rowNum, opConfig) {
           if (!eTimeSec || isNaN(eTimeSec)) eTimeSec = mParsed.stats.startTime + mParsed.stats.durationSec;
           var mUtcDates = UTILS.computeFlightUtcDates(mParsed.meta && mParsed.meta.dateIso, mParsed.stats.startTime, eTimeSec);
           var mLocalDate = UTILS.formatFlightDate(mUtcDates.launchDateUtc, pTz, dateFmt);
+
+          var setOrFill = function(colName, newVal) {
+            if (newVal === '' || newVal === undefined || newVal === null) return;
+            if (shouldUpdateAll) {
+              setV(colName, newVal);
+            } else {
+              var cur = getV(colName);
+              if (cur === '' || cur === null || cur === undefined) {
+                setV(colName, newVal);
+              }
+            }
+          };
+
           if (mLocalDate) {
-            setV('Date', mLocalDate);
-            var curFlightIdFormula = String(getV('FlightID') || '');
-            var targetDateStr = mLocalDate.replace(/-/g, '');
-            var idMatch = curFlightIdFormula.match(/F(\d{8})_(\d+)/);
-            if (idMatch && idMatch[1] !== targetDateStr) {
-              var newIdStr = 'F' + targetDateStr + '_' + idMatch[2];
-              var updatedFlightIdVal = curFlightIdFormula.replace(idMatch[0], newIdStr);
-              setV('FlightID', updatedFlightIdVal);
-              updated.push('FlightID');
+            if (shouldUpdateAll) {
+              setV('Date', mLocalDate);
+              var curFlightIdFormula = String(getV('FlightID') || '');
+              var targetDateStr = mLocalDate.replace(/-/g, '');
+              var idMatch = curFlightIdFormula.match(/F(\d{8})_(\d+)/);
+              if (idMatch && idMatch[1] !== targetDateStr) {
+                var newIdStr = 'F' + targetDateStr + '_' + idMatch[2];
+                var updatedFlightIdVal = curFlightIdFormula.replace(idMatch[0], newIdStr);
+                setV('FlightID', updatedFlightIdVal);
+                updated.push('FlightID Date');
+              }
+            } else {
+              if (!getV('Date')) setV('Date', mLocalDate);
             }
           }
-          
+
           var sTimeTz = UTILS.formatFlightTime(mUtcDates.launchDateUtc, pTz, timeFmt);
-          setV('Launch Time', sTimeTz);
+          setOrFill('Launch Time', sTimeTz);
           var eTimeTz = UTILS.formatFlightTime(mUtcDates.landDateUtc, pTz, timeFmt);
-          setV('Landing Time', eTimeTz);
+          setOrFill('Landing Time', eTimeTz);
 
           var mDurMin = Math.round(mParsed.stats.durationSec / 60);
           var mDurStr = Math.floor(mDurMin / 60) + ':' + ('0' + (mDurMin % 60)).slice(-2);
-          setV('Flight Duration', mDurStr);
+          setOrFill('Flight Duration', mDurStr);
 
-          if (mParsed.stats.totalDistance) setV('Track Length (km)', (mParsed.stats.totalDistance / 1000).toFixed(1));
-          if (mParsed.stats.straightDistance) setV('Straight Dist (km)', (mParsed.stats.straightDistance / 1000).toFixed(1));
+          if (mParsed.stats.totalDistance) setOrFill('Track Length (km)', (mParsed.stats.totalDistance / 1000).toFixed(1));
+          if (mParsed.stats.straightDistance) setOrFill('Straight Dist (km)', (mParsed.stats.straightDistance / 1000).toFixed(1));
 
-          if (mParsed.stats.maxAlt !== undefined) setV('Max Alt (m)', Math.round(mParsed.stats.maxAlt));
-          if (mParsed.stats.minAlt !== undefined) setV('Min Alt (m)', Math.round(mParsed.stats.minAlt));
-          if (mParsed.stats.altGain !== undefined) setV('Total Height Gain (m)', Math.round(mParsed.stats.altGain));
-          if (mParsed.stats.maxClimb !== undefined) setV('Max Ascent (m/s)', mParsed.stats.maxClimb.toFixed(1));
-          if (mParsed.stats.maxSink !== undefined) setV('Max Descent (m/s)', mParsed.stats.maxSink.toFixed(1));
-          if (mParsed.stats.maxSpeed !== undefined) setV('Max Groundspeed (km/h)', Math.round(mParsed.stats.maxSpeed));
-          if (mParsed.stats.avgSpeed !== undefined) setV('Avg Groundspeed (km/h)', Math.round(mParsed.stats.avgSpeed));
+          if (mParsed.stats.maxAlt !== undefined) setOrFill('Max Alt (m)', Math.round(mParsed.stats.maxAlt));
+          if (mParsed.stats.minAlt !== undefined) setOrFill('Min Alt (m)', Math.round(mParsed.stats.minAlt));
+          if (mParsed.stats.altGain !== undefined) setOrFill('Total Height Gain (m)', Math.round(mParsed.stats.altGain));
+          if (mParsed.stats.maxClimb !== undefined) setOrFill('Max Ascent (m/s)', mParsed.stats.maxClimb.toFixed(1));
+          if (mParsed.stats.maxSink !== undefined) setOrFill('Max Descent (m/s)', mParsed.stats.maxSink.toFixed(1));
+          if (mParsed.stats.maxSpeed !== undefined) setOrFill('Max Groundspeed (km/h)', Math.round(mParsed.stats.maxSpeed));
+          if (mParsed.stats.avgSpeed !== undefined) setOrFill('Avg Groundspeed (km/h)', Math.round(mParsed.stats.avgSpeed));
 
           var firstFix = mParsed.fixes[0];
           var lastFix = mParsed.fixes[mParsed.fixes.length - 1];
           if (firstFix) {
-            setV('Launch Alt (m)', Math.round(firstFix.alt));
-            setV('Launch Lat', firstFix.lat.toFixed(5));
-            setV('Launch Lon', firstFix.lon.toFixed(5));
+            setOrFill('Launch Alt (m)', Math.round(firstFix.alt));
+            setOrFill('Launch Lat', firstFix.lat.toFixed(5));
+            setOrFill('Launch Lon', firstFix.lon.toFixed(5));
           }
           if (lastFix) {
-            setV('Landing Alt (m)', Math.round(lastFix.alt));
-            setV('Landing Lat', lastFix.lat.toFixed(5));
-            setV('Landing Lon', lastFix.lon.toFixed(5));
+            setOrFill('Landing Alt (m)', Math.round(lastFix.alt));
+            setOrFill('Landing Lat', lastFix.lat.toFixed(5));
+            setOrFill('Landing Lon', lastFix.lon.toFixed(5));
           }
 
-          try {
-            var rawBytes = mBlob.getBytes();
-            var dBytes = Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, rawBytes);
-            var mHash = dBytes.map(function(b) { return ('0' + (b & 0xFF).toString(16)).slice(-2); }).join('');
-            setV('IGC Hash', mHash);
-          } catch(hErr) {}
+          if (fileHash && fileHash !== existingHash) {
+            setV('IGC Hash', fileHash);
+          }
 
-          updated.push('IGC Telemetry');
+          if (shouldUpdateAll) {
+            updated.push('Flight Info (Full)');
+          } else {
+            updated.push('Flight Info (Missing Filled)');
+          }
         }
       }
     } catch (telErr) {
-      console.warn('Maintenance IGC Re-Telemetry error row ' + rowNum, telErr);
+      console.warn('Maintenance IGC Check & Sync error row ' + rowNum, telErr);
     }
   }
 
@@ -1031,6 +1070,271 @@ function executeFlightMaintenanceRow(rowNum, opConfig) {
   }
 
   return { success: true, updated: updated };
+}
+
+/**
+ * Public RPC endpoint to batch resync Flight IDs across target rows or all flights.
+ * Callable from client-side HTML dialogs (FlightMaintenanceDialog.html).
+ * @param {Array<number|Object>} [targetRows] Optional array of row indices or items
+ * @return {Object} Result summary
+ */
+function rpcResyncFlightIdsBatch(targetRows) {
+  return resyncFlightIdsBatch_(targetRows);
+}
+
+/**
+ * Normalizes a time value into minutes from midnight (0..1439).
+ * Handles 12-hour AM/PM and 24-hour time strings or Date objects.
+ * @param {*} timeVal
+ * @return {number|null} Minutes from midnight, or null if invalid/missing
+ */
+function parseTimeToMinutes_(timeVal) {
+  if (timeVal === null || timeVal === undefined || timeVal === '') return null;
+  if (timeVal instanceof Date) {
+    if (isNaN(timeVal.getTime())) return null;
+    return timeVal.getHours() * 60 + timeVal.getMinutes();
+  }
+  var str = String(timeVal).trim();
+  if (!str) return null;
+
+  var match = str.match(/^(\d{1,2}):(\d{2})(?::\d{2})?(?:\s*([AaPp][Mm]))?/);
+  if (!match) return null;
+
+  var hours = parseInt(match[1], 10);
+  var minutes = parseInt(match[2], 10);
+  var ampm = match[3] ? match[3].toUpperCase() : null;
+
+  if (ampm) {
+    if (ampm === 'PM' && hours < 12) hours += 12;
+    if (ampm === 'AM' && hours === 12) hours = 0;
+  }
+  if (hours >= 0 && hours < 24 && minutes >= 0 && minutes < 60) {
+    return hours * 60 + minutes;
+  }
+  return null;
+}
+
+/**
+ * Batch re-indexes Flight IDs chronologically per date (CR-MNT-006).
+ * Groups flights by flight date, sorts chronologically by Launch Time
+ * (flights without launch time go to the tail end), and reassigns suffixes _01, _02, ...
+ * Also updates reciprocal duplicate cross-references in the Notes column.
+ *
+ * @param {Array<number|Object>} [targetRows] Optional list of row numbers (1-based)
+ * @return {Object} { success: boolean, updatedCount: number, datesCount: number, idMap: Object }
+ */
+function resyncFlightIdsBatch_(targetRows) {
+  var ss = SpreadsheetApp.getActive();
+  var sh = ss ? ss.getSheetByName(TABS.FLIGHTS.name) : null;
+  if (!sh) return { success: false, error: 'Flights sheet not found' };
+
+  var actualFlights = getActualFlightRows_(sh);
+  if (actualFlights.length === 0) {
+    return { success: true, updatedCount: 0, datesCount: 0, message: 'No flights found.' };
+  }
+
+  var minRow = actualFlights[0].row;
+  var maxRow = actualFlights[actualFlights.length - 1].row;
+  var numRows = maxRow - minRow + 1;
+  if (numRows <= 0) {
+    return { success: true, updatedCount: 0, datesCount: 0, message: 'No flights found.' };
+  }
+
+  var hasTargetScope = targetRows && Array.isArray(targetRows) && targetRows.length > 0;
+  var targetRowSet = {};
+  if (hasTargetScope) {
+    targetRows.forEach(function(r) {
+      var rNum = (typeof r === 'object') ? (r.row || r.rowNum) : Number(r);
+      if (!isNaN(rNum) && rNum >= minRow && rNum <= maxRow) {
+        targetRowSet[rNum] = true;
+      }
+    });
+  }
+
+  var map = getColumnMap_(sh);
+  var idCol = map['FlightID'] || 1;
+  var dateCol = map['Date'] || 8;
+  var launchTimeCol = map['Launch Time'] || 10;
+  var flightNoCol = map['Flight No'] || 3;
+  var notesCol = map['Notes'] || 6;
+
+  var ssTz = ss.getSpreadsheetTimeZone() || 'UTC';
+
+  var idFormulas = sh.getRange(minRow, idCol, numRows, 1).getFormulas();
+  var idValues = sh.getRange(minRow, idCol, numRows, 1).getValues();
+  var dateValues = sh.getRange(minRow, dateCol, numRows, 1).getValues();
+  var launchTimeValues = launchTimeCol ? sh.getRange(minRow, launchTimeCol, numRows, 1).getValues() : null;
+  var flightNoValues = flightNoCol ? sh.getRange(minRow, flightNoCol, numRows, 1).getValues() : null;
+  var notesValues = notesCol ? sh.getRange(minRow, notesCol, numRows, 1).getValues() : null;
+
+  var extractDigits = function(val) {
+    if (!val) return '';
+    if (val instanceof Date) {
+      if (isNaN(val.getTime())) return '';
+      return Utilities.formatDate(val, ssTz, 'yyyyMMdd');
+    }
+    var s = String(val).trim();
+    var isoM = s.match(/^(\d{4})[-/.](\d{2})[-/.](\d{2})/);
+    if (isoM) return isoM[1] + isoM[2] + isoM[3];
+    var usM = s.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})/);
+    if (usM) {
+      var mm = ('0' + usM[1]).slice(-2);
+      var dd = ('0' + usM[2]).slice(-2);
+      return usM[3] + mm + dd;
+    }
+    var digits = s.replace(/[^0-9]/g, '');
+    if (digits.length === 8) return digits;
+    return '';
+  };
+
+  var allFlightItems = [];
+  var targetDates = {};
+
+  for (var i = 0; i < numRows; i++) {
+    var rowNum = minRow + i;
+    var formula = idFormulas[i][0] || '';
+    var rawIdVal = String(idValues[i][0] || '').trim();
+    var linkDisplayMatch = formula.match(/=HYPERLINK\(\s*"[^"]+"\s*,\s*"([^"]+)"\s*\)/i);
+    var currentId = linkDisplayMatch ? linkDisplayMatch[1] : (formula ? '' : rawIdVal);
+    if (!currentId && rawIdVal) currentId = rawIdVal;
+
+    var dateVal = dateValues[i][0];
+    var dateDigits = extractDigits(dateVal);
+    var idMatch = currentId.match(/F(\d{8})_(\d+)/);
+    if (!dateDigits && idMatch) {
+      dateDigits = idMatch[1];
+    }
+    var existingSuffix = idMatch ? parseInt(idMatch[2], 10) : 0;
+
+    var lTimeVal = launchTimeValues ? launchTimeValues[i][0] : '';
+    var timeMin = parseTimeToMinutes_(lTimeVal);
+
+    var fNoVal = flightNoValues ? flightNoValues[i][0] : 0;
+    var fNoNum = typeof fNoVal === 'number' ? fNoVal : (parseInt(String(fNoVal).replace(/[^0-9]/g, ''), 10) || 0);
+
+    var isTarget = hasTargetScope ? (targetRowSet[rowNum] === true) : true;
+    if (isTarget && dateDigits) {
+      targetDates[dateDigits] = true;
+    }
+
+    allFlightItems.push({
+      rowNum: rowNum,
+      currentId: currentId,
+      formula: formula,
+      dateDigits: dateDigits,
+      timeMin: timeMin,
+      existingSuffix: existingSuffix,
+      flightNo: fNoNum
+    });
+  }
+
+  var dateGroups = {};
+  for (var j = 0; j < allFlightItems.length; j++) {
+    var item = allFlightItems[j];
+    if (!item.dateDigits) continue;
+    if (hasTargetScope && !targetDates[item.dateDigits]) continue;
+
+    if (!dateGroups[item.dateDigits]) {
+      dateGroups[item.dateDigits] = [];
+    }
+    dateGroups[item.dateDigits].push(item);
+  }
+
+  var idChangeMap = {};
+  var updatedCount = 0;
+
+  for (var dKey in dateGroups) {
+    var group = dateGroups[dKey];
+
+    // Chronological order: Earliest launch time first, missing launch times at tail end
+    group.sort(function(a, b) {
+      var aHasTime = (a.timeMin !== null);
+      var bHasTime = (b.timeMin !== null);
+
+      if (aHasTime && bHasTime) {
+        if (a.timeMin !== b.timeMin) {
+          return a.timeMin - b.timeMin;
+        }
+      } else if (aHasTime && !bHasTime) {
+        return -1;
+      } else if (!aHasTime && bHasTime) {
+        return 1;
+      }
+
+      // Tie-breaker 1: Existing suffix
+      if (a.existingSuffix && b.existingSuffix && a.existingSuffix !== b.existingSuffix) {
+        return a.existingSuffix - b.existingSuffix;
+      }
+      // Tie-breaker 2: Flight number ascending
+      if (a.flightNo && b.flightNo && a.flightNo !== b.flightNo) {
+        return a.flightNo - b.flightNo;
+      }
+      // Tie-breaker 3: Row order in sheet (older rows are lower down / higher rowNum)
+      return b.rowNum - a.rowNum;
+    });
+
+    for (var sIdx = 0; sIdx < group.length; sIdx++) {
+      var fl = group[sIdx];
+      var seq = sIdx + 1;
+      var suffixStr = (seq < 10 ? '0' : '') + seq;
+      var newId = 'F' + fl.dateDigits + '_' + suffixStr;
+
+      if (fl.currentId !== newId) {
+        if (fl.currentId) {
+          idChangeMap[fl.currentId] = newId;
+        }
+        var newCellVal = newId;
+        if (fl.formula) {
+          var linkRegex = /^(=HYPERLINK\(\s*"[^"]+"\s*,\s*)"[^"]+"(\s*\))$/i;
+          if (linkRegex.test(fl.formula)) {
+            newCellVal = fl.formula.replace(linkRegex, '$1"' + newId + '"$2');
+          } else if (fl.currentId && fl.formula.indexOf(fl.currentId) !== -1) {
+            newCellVal = fl.formula.replace(fl.currentId, newId);
+          }
+        }
+        sh.getRange(fl.rowNum, idCol).setValue(newCellVal);
+        updatedCount++;
+      }
+    }
+  }
+
+  // Update reciprocal duplicate references in Notes column
+  var oldIdKeys = Object.keys(idChangeMap);
+  if (notesCol && notesValues && oldIdKeys.length > 0) {
+    oldIdKeys.sort(function(a, b) {
+      return b.length - a.length;
+    });
+
+    for (var n = 0; n < numRows; n++) {
+      var rawNote = String(notesValues[n][0] || '');
+      if (!rawNote) continue;
+      var updatedNote = rawNote;
+      for (var k = 0; k < oldIdKeys.length; k++) {
+        var oldId = oldIdKeys[k];
+        var nId = idChangeMap[oldId];
+        if (oldId && nId && oldId !== nId && updatedNote.indexOf(oldId) !== -1) {
+          var reOld = new RegExp(oldId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?![0-9a-zA-Z_])', 'g');
+          updatedNote = updatedNote.replace(reOld, nId);
+        }
+      }
+      if (updatedNote !== rawNote) {
+        sh.getRange(minRow + n, notesCol).setValue(updatedNote);
+      }
+    }
+  }
+
+  LOG.write('RESYNC_FLIGHT_IDS', '[COMPLETE] Resynced Flight IDs for ' + updatedCount + ' flight(s) across ' + Object.keys(dateGroups).length + ' date(s)');
+  if (ss.toast) {
+    ss.toast('Resynced Flight IDs: ' + updatedCount + ' updated.', 'Flight Updates');
+  }
+
+  return {
+    success: true,
+    updatedCount: updatedCount,
+    datesCount: Object.keys(dateGroups).length,
+    idMap: idChangeMap,
+    message: 'Resynced Flight IDs for ' + updatedCount + ' flight(s) across ' + Object.keys(dateGroups).length + ' date(s).'
+  };
 }
 
 /**
@@ -2688,6 +2992,35 @@ function finalizeWorkerJob(jobType, jobId, stats) {
       }
       break;
     case 'MAINTENANCE':
+      var maintOptions = (stats && stats.options) || null;
+      var targetRowList = null;
+      if (jobId && typeof QueueService !== 'undefined') {
+        try {
+          var mJob = QueueService.getJob(jobId);
+          if (mJob && mJob.payload) {
+            if (!maintOptions && mJob.payload.options) maintOptions = mJob.payload.options;
+            if (mJob.payload.queue && Array.isArray(mJob.payload.queue)) {
+              targetRowList = mJob.payload.queue.map(function(item) {
+                return (typeof item === 'object') ? (item.row || item.rowNum) : item;
+              });
+            }
+          }
+        } catch (eMJob) {}
+      }
+      if (maintOptions && maintOptions.resyncIds) {
+        try {
+          var rowsToResync = maintOptions.targetRows || targetRowList;
+          resyncFlightIdsBatch_(rowsToResync);
+        } catch (eResync) {
+          console.warn('Post-maintenance flight ID resync warning:', eResync);
+        }
+      }
+      try {
+        sortFlightsByDate_();
+      } catch (e) {
+        console.warn('Post-job sort warning:', e);
+      }
+      break;
     case 'RESYNC':
     case 'WATCH_SCAN':
     case 'URL_DRIVE_INGEST':

@@ -55,6 +55,7 @@ This file is the single source of truth for **ToDos**, **Requirements**, **Chang
 - [x] **Status**: Completed | **Date**: 2026-10-03 | **Imp**: High | **Description**: **Dashboard Leaderboard Date 1899 Serial Epoch Coercion Fix**: Repaired all 8 Leaderboard card formulas in `scaffoldDashboardTab_` by wrapping date references in `TEXT(colDate, dateFmt)`, eliminating Google Sheets December 29, 1899 raw fractional day serial string coercion. Tracked in Bug-UI-012.
 - [x] **Status**: Completed | **Date**: 2026-10-03 | **Imp**: High | **Description**: **Platform-Wide Unified Date & Time Formatting Architecture**: Defined strict timezone domain invariants (Flight domain = site local `geo.tz`, System domain = pilot/script timezone), standard formatting presets, and centralized helper functions (`UTILS.computeFlightUtcDates`, `UTILS.formatFlightDate`, `UTILS.formatFlightTime`, `UTILS.formatSystemTimestamp`). Tracked in CR-SYS-014.
 - [x] **Status**: Completed | **Date**: 2026-10-03 | **Imp**: High | **Description**: **Dashboard Leaderboards Decoupling, Standardized Card Formatting & Manifest Synchronization**: Decoupled all 8 Dashboard leaderboard cards completely from Auto Summary into the standardized format: 'Flight nnn: <metric> (flight date, Site)' with graceful fallback when Site is empty ('(flight date)'). Implemented specific metric rules: [h]:mm hrs duration, conditional integer km distance (e.g. 25 km vs 25.7 km), #,##0 m altitudes, dual duration and percentage for thermalling/soaring (e.g. 2:15 hrs, 55%), and 0.0 pts / km/h. Bumped Dashboard.formulas manifest version to 'v2.3-leaderboard-site-date' and system manifest to 2.2.2. Tracked in CR-DSH-003.
+- [x] **Status**: Completed | **Date**: 2026-10-03 | **Imp**: High | **Description**: **Flight Updates: Check & Sync Data, Force IGC Overwrite & Standalone Batch Resync Flight IDs**: Redesigned the Flight Updates maintenance dialog (`FlightMaintenanceDialog.html`) and backend execution (`Code/Code.gs`). Renamed 'Update from Linked IGC' to 'Check and Sync flight data', added nested sub-checkbox 'Force update from IGC' (with MD5 hash comparison to preserve pilot edits when hashes match and update all telemetry when hash differs or forced, plus smart Master folder relinking), and decoupled 'Resync Flight IDs' into a fast, standalone batch operation (`rpcResyncFlightIdsBatch` / `resyncFlightIdsBatch_`). Resync groups flights by date, parses 12h/24h launch times, deterministically re-indexes suffixes `_01`, `_02`, ... starting from 1 with tail-end placement for missing launch times, preserves SeeYou Cloud hyperlink track formulas, and updates reciprocal duplicate cross-references in `Notes`. Integrated into modal, sidebar, and background Tri-Mode runners (`finalizeWorkerJob`). Tracked in CR-MNT-006.
 
 ---
 
@@ -376,6 +377,25 @@ This file is the single source of truth for **ToDos**, **Requirements**, **Chang
     - **Timezone Domain Invariants**: Established strict two-domain authority: Flight Domain strictly follows the launch site's local timezone (`geo.tz` / `Time Zone` column); System Domain strictly follows the pilot/script execution timezone (`Session.getScriptTimeZone()`).
     - **Centralized Format Helpers**: Added `UTILS.computeFlightUtcDates`, `UTILS.formatFlightDate`, `UTILS.formatFlightTime`, and `UTILS.formatSystemTimestamp` to `Code/Utils.gs` and exported to `UTILS` namespace.
     - **Zero Raw DateTime Displays**: Prohibited unformatted date/time string concatenation across all dashboard formulas and inspectors. Standardized on `yyyy-MM-dd` / `MM/dd/yyyy`, `h:mm a`, and `yyyy-MM-dd HH:mm:ss`.
+
+- [x] **CR-MNT-006** | **Status**: Implemented | **Date**: 2026-10-03 | **Req**: RQ-SYS-007, RQ-ING-001 | **Description**: **Flight Updates: Check & Sync Flight Data, Force IGC Overwrite & Standalone Batch Resync Flight IDs**:
+    - **Dialog Redesign (`FlightMaintenanceDialog.html`)**:
+        - Renamed "Update from Linked IGC" -> "Check and Sync flight data".
+        - Added nested sub-checkbox "Force update from IGC" (auto-disabled when parent is unchecked).
+        - Decoupled "Resync Flight IDs" into an independent, top-level batch operation that can run standalone without requiring Drive calls.
+    - **Smart Check & Sync Backend (`Code/Code.gs`)**:
+        - If `IGC File` contains a file name without a hyperlink, searches the `MASTER_LOG_FOLDER_ID` folder in Google Drive, applies the direct download link, and links `FlightID` to SeeYou Cloud 3D track visualization.
+        - Calculates MD5 file hash and compares against `IGC Hash`: if identical and Force is unchecked, fills **only missing** telemetry fields to preserve manual pilot edits.
+        - If hash differs, file is newly linked, or "Force update from IGC" is checked, completely overwrites telemetry.
+        - Strictly preserves all pilot edits (`Notes`, `Status`, `Flight Type`, `Wing`, `Harness`, `Reserve 1/2`, `Flight No`).
+    - **Deterministic Batch Resync Flight IDs (`rpcResyncFlightIdsBatch` / `resyncFlightIdsBatch_`)**:
+        - Groups targeted flights by flight date (re-sequencing all flights on affected dates to prevent partial-selection duplicates).
+        - Normalizes launch times across 12-hour AM/PM and 24-hour formats via `parseTimeToMinutes_`.
+        - Deterministically sorts flights chronologically: earliest launch time first, flights without launch times at tail end, preserving existing suffix or flight number as tie-breaker.
+        - Reassigns suffixes `_01`, `_02`, ... starting from 1.
+        - Preserves SeeYou Cloud `=HYPERLINK(..., "label")` formulas, updating only the display label.
+        - Automatically updates reciprocal duplicate cross-references (`[DupRef: D01 | Others: ...]`, `[DupRef: D01 | Primary: ...]`) across the `Notes` column.
+    - **Tri-Mode Runner Parity**: Integrated into modal (`Run Here`), sidebar (`Run in Sidebar`), and background queue execution (`finalizeWorkerJob` case `'MAINTENANCE'`).
 
 ---
 
