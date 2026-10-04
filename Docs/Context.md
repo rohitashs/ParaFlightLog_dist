@@ -69,14 +69,50 @@ The project follows a strict folder hierarchy. `Docs/Context.md` is the source o
 
 ## 🛠 Ways of Working (Standard Operating Procedures)
 
-### 1. Plan-First & Intent Alignment (Strict Pre-Execution Gate)
-*   **Trigger**: Anytime the user requests an action involving modifying or adding code, configuration, or documentation.
-*   **Mandatory Pre-Execution Protocol**:
-    1.  **Analyze Intent**: Deeply analyze the user's intent, core motivation, edge cases, and functional ripple effects across the system.
-    2.  **Surface Objections & Decisions**: Proactively surface any architectural trade-offs, potential pitfalls, design decisions, alternative approaches, or suggestions.
-    3.  **Present an Unambiguous Plan**: Clearly lay out the proposed implementation plan, affected modules, schema impacts, and testing strategy.
-    4.  **Iterate Collaboratively**: If the user has feedback or questions, iterate and refine the design until total alignment is reached.
-    5.  **Wait for Explicit Approval**: **NEVER edit code or persistent documentation prematurely**. Only when an unambiguous plan has been presented and the user explicitly gives the command to **"execute"** (or unambiguous go-ahead) should execution begin.
+### 1. Three-Mode Governance & Strict Pre-Execution Gate
+All project work strictly operates within one of three sequential modes to prevent premature execution, dropped requirements, and unauthorized scope creep:
+
+```mermaid
+flowchart TD
+    subgraph Brainstorming ["MODE 1: Brainstorming & Design"]
+        A[User Intent / Idea] --> B[Explore Alternatives & Proactively Challenge]
+        B --> C[Iterate on Edge Cases & Trade-offs]
+    end
+
+    subgraph Gate ["MODE 2: The Approval Gate"]
+        C --> D[Generate Consolidated Execution Plan]
+        D --> E{User Explicitly Approves?}
+        E -- No / Refine --> C
+    end
+
+    subgraph Execution ["MODE 3: Gated Execution"]
+        E -- Yes --> F[Execute Strictly What Was Approved]
+        F --> G[Run Automated Offline Tests & Audit]
+        G --> H[Report Results & Verification]
+    end
+
+    style Brainstorming fill:#E3F2FD,stroke:#1565C0,stroke-width:2px
+    style Gate fill:#FFF8E1,stroke:#FFA000,stroke-width:2px
+    style Execution fill:#E8F5E9,stroke:#2E7D32,stroke-width:2px
+```
+
+*   **Mode 1: Brainstorming & Design (Full Creative Latitude)**:
+    *   When exploring requirements, ideas, proposals, or troubleshooting: The AI assistant has full latitude to proactively challenge assumptions, propose alternative patterns, suggest optimizations, and bring up edge cases.
+    *   **Strict Invariant**: No production code, configuration, persistent documentation, or Google Sheets UI elements are modified during this mode.
+*   **Mode 2: The Consolidated Execution Contract (The Approval Gate)**:
+    *   When brainstorming concludes or multiple iterative discussions have occurred, the AI assistant must produce a single, freshly synthesized, comprehensive Execution Plan.
+    *   **The Plan must explicitly enumerate**:
+        1. Exact files to modify, create, or delete.
+        2. Exact parameters, schemas, and manifest version bumps.
+        3. Every user-facing UI touchpoint (menus, dialogs, sidebars, sheets, headers). If a UI item is not in the plan, it does not exist.
+        4. Testing and verification criteria.
+    *   **Strict Invariant**: Execution cannot proceed on fragmented past messages. The consolidated plan is the sole contract.
+*   **Mode 3: Gated Execution (Strict Discipline)**:
+    *   Triggered **ONLY** when the user explicitly provides unambiguous approval (e.g., *"Approved"*, *"Execute"*, or *"Go ahead"*).
+    *   **Strict Invariants**:
+        1. **Zero Out-of-Scope Changes**: Implement strictly what was approved in the plan—no unilateral "drive-by" features or "convenience" helpers.
+        2. **Google Sheets UI Immutability**: Changes to the Google Sheet UI (menus, custom sidebars, modal dialogs, sheet tabs, header structures, column notes) require explicit intent, documentation, and an approved plan. Unapproved menu items or UI affordances are strictly forbidden.
+        3. **Verification Invariant**: Automated tests (`tools/run_all_offline_tests.js`) and architectural audits (`tools/code_check_audit.js`) must be executed and achieve 100% pass before work is declared complete.
 
 ### 2. Document-First Development
 *   **`Roadmap.md`**: Define the *strategic vision, non-negotiable tenets, and evolution horizons*.
