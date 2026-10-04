@@ -244,6 +244,23 @@ Developing on this hybrid stack presents unique constraints and capabilities:
   2. Actions whose parameters or non-destructive safeguards are still under design set `actionAvailable: false` (e.g. `ENRICH_FLIGHT_GEO`, `ENRICH_FLIGHT_WEATHER`).
   3. User-facing interfaces (Rule Builder modal dialogs and in-sheet data validation dropdowns) strictly filter their options to display only actions where `actionAvailable === true`. This allows the architecture to maintain an exhaustive future capability catalog without exposing unvetted actions to pilots.
 
+### Pattern 24: Dual-Tier Logging & Orchestrator-Worker Telemetry Contract (DSGN-LOG-002)
+* **Problem**: Emitting row-level stepping telemetry directly to the spreadsheet (`LOG.write`) inside batch loops floods the persistent log tab with hundreds of micro-step rows, degrades Apps Script I/O responsiveness, and consumes quota. Conversely, suppressing telemetry leaves pilots blind in the UI console while operations run, while background cron triggers either spam the sheet with empty runs or run completely dark.
+* **Pattern**: Strictly separate the **Ephemeral UI Activity Stream** from the **Persistent System Log Storage**, and enforce a two-tier contract between Orchestrators and Workers:
+  1. **Dual-Tier Decoupling**:
+     * **`Activity Log` (Client Stream)**: High-frequency stepping updates rendered live in HTML modal consoles and `ExecutionSidebar.html`. Strictly DOM-bound; 0 sheet I/O writes.
+     * **`System Log` (Spreadsheet Tab)**: Permanent audit log tab (Dark Red `#D32F2F`) recording macro lifecycle boundaries (`[START]`, `[DISCOVERY]`, batch checkpoints, `[COMPLETE]`, errors).
+  2. **Orchestrator Contract ("Boundary, Context & Commit")**:
+     * Resolves effective `logLevel` (Rule parameter $\to$ Category in `Config` $\to$ Global Default $\to$ `'Normal'`).
+     * Initializes session logger: `var session = LOG.createSession(processKey, effectiveLogLevel)`.
+     * Emits macro milestones (`[START]`, `[DISCOVERY]`).
+     * Enforces the commit gate: on `session.complete(stats)`, if `logLevel === 'Silent unless some activity'` and `stats.processed === 0 && stats.errors === 0`, it drops the buffer (0 sheet writes). Otherwise, flushes atomically via `LOG.writeBatch()`.
+  3. **Worker Contract ("Execute, Stream to UI, Return Normalized Stats")**:
+     * **Zero Direct Sheet Appends**: Workers must NEVER call `LOG.write()` inside row/file loops.
+     * Streams micro-steps to live UI console (`logLine`).
+     * Reports critical milestones/warnings to parent session (`session.info`, `session.warn`).
+     * Returns normalized outcome stats: `{ success, processed, updated, skipped, errors, message }`.
+
 ---
 
 ## 7. Forbidden Code Smells & Anti-Patterns Checklist
@@ -264,5 +281,8 @@ Developing on this hybrid stack presents unique constraints and capabilities:
 | **Co-locating Test/Audit Code in Production Runtime** | Pollutes global GAS scope, slows cold starts, bloats container. | Move test suites to `tests/` and tools to `tools/`; protect with `.claspignore`. |
 | **Calling `SpreadsheetApp.getUi()` in Headless Background** | Throws fatal runtime exception on time triggers. | Guard with `isForeground_()` or parameterize completely. |
 | **Exposing Unvetted Actions in UI Registries** | Leads to accidental pilot execution of incomplete features. | Gate candidate actions with `actionAvailable: false`. |
+| **Calling `LOG.write()` inside tight loops** | Causes compounding sheet write latency and grid locks. | Stream to UI console; buffer in `LOG.createSession()`. |
+| **Hardcoding `'Activity Logs'` tab name** | Breaks tab name resolution after `System Log` migration. | Use `TABS.SYSTEM_LOG.name` or `TABS.ACTIVITY.name`. |
+| **Discarding worker stats without commit evaluation** | Bypasses "Silent unless activity" no-op suppression. | Pass stats to `session.complete(stats)` before flushing. |
 
 

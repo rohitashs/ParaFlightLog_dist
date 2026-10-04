@@ -276,6 +276,12 @@ if (ingestionGs.includes('findHeuristicOverlap_')) {
   }
 }
 
+// Check Pattern 24 (Dual-Tier Logging & Orchestrator-Worker Contract)
+const loggerGs = allGsContent['Logger.gs'] || '';
+if (loggerGs.includes('createSession')) {
+  console.log(`  [PASS] Session logger and buffered batch logging available (Pattern 24 & DSGN-LOG-002).`);
+}
+
 // 8. Dimension: Entity Count Parity Checks
 console.log(`\n[DIMENSION 5] Entity Count Parity Verification:`);
 

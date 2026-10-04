@@ -25,7 +25,7 @@ Audit all files under `Code/*.gs` and `Code/*.html` across the following 12 crit
 ### 2. Taxonomy & Nomenclature Parity
 - **Sheet Names & Tab Constants**:
   - Verify consistent use of `TABS.*.name` throughout the entire codebase. Never hardcode tab names that diverge from `CFG.tabs` or `CFG.sheets`.
-  - Ensure canonical tab keys: `ACTIVITY` (`'Activity Logs'`), `CONFIG` (`'Config'`), `QUEUE` (`'Automation_Queue'`), `PILOT_PROFILE` (`'Pilot_Profile'`), `USER_GUIDE` (`'User Guide'`), `EQUIPMENT` (`'Equipment'`), `FLIGHTS` (`'Flights'`), `DASHBOARD` (`'Dashboard'`).
+  - Ensure canonical tab keys: `SYSTEM_LOG` (`'System Log'`, with backward-compatibility alias `TABS.ACTIVITY`), `CONFIG` (`'Config'`), `QUEUE` (`'Automation_Queue'`), `PILOT_PROFILE` (`'Pilot_Profile'`), `USER_GUIDE` (`'User Guide'`), `EQUIPMENT` (`'Equipment'`), `FLIGHTS` (`'Flights'`), `DASHBOARD` (`'Dashboard'`).
 - **Lookups & Controlled Vocabularies**:
   - Ensure lookup names (e.g., `Equipment Categories`, `Flight Status`, `Flight Type`, `XC Classes`, `Date Formats`, `Time Formats`) match 1:1 between `Config.gs`, `Scaffold.gs`, `Ingestion.gs`, and validation rules.
 - **System Parameters**:
@@ -81,6 +81,7 @@ Audit all files under `Code/*.gs` and `Code/*.html` across the following 12 crit
 - **Native Named Ranges (Pattern 2)**: Lookups and control cells must bind to workbook Named Ranges (`LOOKUP_*`, `DASHBOARD_REVIEW_FILTER`).
 - **Open-Ended Validations (Pattern 4)**: Data validations must span to `sh.getMaxRows()` with `.setAllowInvalid(true)` to gracefully handle unlisted gear.
 - **Soft Guardrails (Pattern 5)**: Critical ranges (Headers, `Flight No`, Dashboard summaries) must use native range protection with `setWarningOnly(true)`.
+- **Dual-Tier Logging & Orchestrator-Worker Contract (Pattern 24 & DSGN-LOG-002)**: Workers must NEVER call `LOG.write()` inside tight loops; stream micro-steps to live UI Activity Log (`#logConsole`) and report milestones to `LOG.createSession()`; orchestrators enforce category/rule log level filtering and commit gates before flushing to `System Log`.
 
 ### 11. Deprecated & Legacy Identifiers Blacklist Scan
 - **Zero Legacy Pollution**:
