@@ -20,7 +20,7 @@ This document defines the low-level **Code Organization**, **Algorithms**, and *
 2.  **Config (`Config.gs`)**: Static Definitions (`TABS`, `CFG`, `SYSTEM_MANIFEST`).
     *   *Rule*: Never hardcode column indices. Use `Config` maps.
     *   Defines `TABS.CONFIG` (Amber `#FF9800`, index 6) combining Parameters and Lookups into a single sheet.
-    *   Defines `SYSTEM_MANIFEST`: The authoritative 23-component registry declaring versions, dependencies, and operational tiers (`MANDATORY`, `RECOMMENDED`, `OPTIONAL`).
+    *   Defines `SYSTEM_MANIFEST`: The authoritative 27-component registry declaring versions, dependencies, and operational tiers (`MANDATORY`, `RECOMMENDED`, `OPTIONAL`).
 3.  **Scaffold & Maintenance Orchestrator (`Scaffold.gs`)**: View Controller & Atomic Maintenance Engine (`DSGN-MNT-001`, `CR-SYS-006`, `CR-SYS-010`).
     *   `scaffoldConfig_`: Unifies Parameters (Cols A:C) and Lookups (Cols E:N, spacer Col D) into 8 core tabs.
     *   `SYSTEM_ORCHESTRATOR`: Atomic 3-tier maintenance orchestrator executing granular sheet updates (Grid, Headers, Notes, Validations, Formulas, Parameters, Guardrails) with mandatory invariant enforcement, dual pre-flight backups, and manifest synchronization.
@@ -29,7 +29,7 @@ This document defines the low-level **Code Organization**, **Algorithms**, and *
 4.  **File Handling Service (`FileHandling.gs`)**: Drive I/O, Watch Folder scanning, Staged Uploads, ZIP extractions, File cleanup, and Master Log copying.
 5.  **Ingestion Service (`Ingestion.gs`)**: Pipeline Controller. Parse/Score orchestration, deduplication, and row mapping.
     *   *Map*: `RQ-ING-001`, `RQ-ING-001.4`, `CR-ING-008`.
-6.  **Utilities (`Utils.gs`)**: Consolidated math (Haversine, Bearing, AngleDiff) and time formatting helpers.
+6.  **Utilities (`Utils.gs`)**: Consolidated math (Haversine, Bearing, AngleDiff), timezone conversions, and centralized date/time formatting helpers (`UTILS.computeFlightUtcDates`, `UTILS.formatFlightDate`, `UTILS.formatFlightTime`, `UTILS.formatSystemTimestamp`).
 7.  **Weather Service (`Weather.gs`)**: Automated historical & forecast weather enrichment (`RQ-SCR-004`). Open-Meteo archive with 7-day forecast API fallback (primary) and Visual Crossing Timeline API (backup), Lawrence cloudbase spread estimation, and cardinal wind formatting.
 8.  **Domain Logic**:
     *   **`Parser.gs`**: IGC extraction (B-Records, H-Records).
@@ -41,6 +41,7 @@ This document defines the low-level **Code Organization**, **Algorithms**, and *
 10. **Persistent Job Queue Service (`QueueService.gs`)**: Job manager operating on the `Automation_Queue` tab (`DSGN-UI-001`). Enqueues tasks, tracks progress, and saves serialized state without `PropertiesService` quota limits.
 11. **Time Budget Service (`TimeBudget.gs`)**: Universal 4.5-minute safety threshold manager (`TimeBudgetService`) preventing GAS 6-minute timeout aborts by committing data and scheduling self-continuation triggers.
 12. **Test Harness (`tests/Test.gs`)**: Comprehensive offline unit test suite and regression runner (Pattern 19: Local & CI only, excluded from production GAS bundle via `.claspignore`).
+13. **Automation Engine (`Automation.gs` & `AutomationConfig.gs`)**: Table-Driven Automation Engine (`DSGN-AUT-001 Rev 2.1`, `CR-AUT-001`, `CR-AUT-002`). Dispatches autonomous background actions (`SCAN_WATCH_FOLDER`, `CLEAN_LOGS`, `PROCESS_QUEUE`) based on the `Automation_Rules` sheet tab with 5-minute to 60-minute heartbeat polling, parameter parsing, and single-trigger scheduling.
 
 ---
 
