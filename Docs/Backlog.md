@@ -51,6 +51,7 @@ This file is the single source of truth for **ToDos**, **Requirements**, **Chang
 - [ ] **Status**: Open | **Date**: 2026-10-02 | **Imp**: Medium | **Description**: **Spreadsheet Menu Structure Reorganization & Streamlining**: Reorganize the `Flight Log` custom spreadsheet menu structure in `Code.gs` into a clean, intuitive hierarchy reflecting all recent architectural additions and separating daily actions from admin tools. Tracked in CR-UI-023.
 - [ ] **Status**: Open | **Date**: 2026-10-02 | **Imp**: High | **Description**: **Google Sheets UI/UX Modernization, Best Practices & Aesthetic Polish R&D**: Explore and implement advanced Google Sheets design patterns, executive color palettes, typography, KPI sparklines, progress bars, filter views, and soft protections to elevate aesthetic and functional excellence. Tracked in CR-UI-024.
 - [ ] **Status**: Open | **Date**: 2026-10-03 | **Imp**: Medium | **Description**: **Pilot-Configurable Auto Summary Format Template in Sheet**: Allow pilots to customize their Auto Summary title format (e.g. `{duration}, {distance}, {altitude}, {site}`) directly in spreadsheet settings or Pilot Profile rather than relying on fixed code. Tracked in CR-UI-025.
+- [ ] **Status**: Open | **Date**: 2026-10-03 | **Imp**: High | **Description**: **Codebase Restructuring & Modularization for Human Readability**: Research, architect, and prototype a clean directory hierarchy and file decomposition to eliminate monolithic files (`Code.gs` >3,300 lines, `Scaffold.gs` ~1,800 lines, `Ingestion.gs` ~1,800 lines, `Config.gs`), evaluate `clasp`-compatible subfolder structures (`UI/`, `Services/`, `Modules/`, `Config/`), isolate public RPC gateways from business logic, and modularize config/manifest declarations. Tracked in CR-DEV-005.
 - [x] **Status**: Completed | **Date**: 2026-10-03 | **Imp**: High | **Description**: **Flight Local Timezone Parity & FlightID Negative UTC Rollback Fix**: Resolved -1 day discrepancy between generated `FlightID` and the `Date` column under negative UTC offsets (America/Denver, America/Los_Angeles) and 1-hour DST distortion from Unix epoch 1970 instantiation. Implemented UTC date anchoring (`UTILS.computeFlightUtcDates`) and formatted all flight dates, launch/landing times, and FlightIDs strictly in launch site local timezone (`geo.tz`). Added `repairFlightDatesAndIds_` maintenance utility. Tracked in Bug-ING-011.
 - [x] **Status**: Completed | **Date**: 2026-10-03 | **Imp**: High | **Description**: **Dashboard Leaderboard Date 1899 Serial Epoch Coercion Fix**: Repaired all 8 Leaderboard card formulas in `scaffoldDashboardTab_` by wrapping date references in `TEXT(colDate, dateFmt)`, eliminating Google Sheets December 29, 1899 raw fractional day serial string coercion. Tracked in Bug-UI-012.
 - [x] **Status**: Completed | **Date**: 2026-10-03 | **Imp**: High | **Description**: **Platform-Wide Unified Date & Time Formatting Architecture**: Defined strict timezone domain invariants (Flight domain = site local `geo.tz`, System domain = pilot/script timezone), standard formatting presets, and centralized helper functions (`UTILS.computeFlightUtcDates`, `UTILS.formatFlightDate`, `UTILS.formatFlightTime`, `UTILS.formatSystemTimestamp`). Tracked in CR-SYS-014.
@@ -225,6 +226,33 @@ This file is the single source of truth for **ToDos**, **Requirements**, **Chang
     - **AI-Driven Browser / UI Testing**: Headless browser automation (Playwright / Puppeteer or Antigravity browser subagent) capable of driving Google Sheets modals and sidebars, clicking buttons, testing input validations, and verifying DOM updates.
     - **Synthetic Flight Log Test Suite**: Curated library of edge-case IGC files (zero fixes, corrupted headers, extreme durations, international dates, midnight crossings, triangle flights) to run through ingestion pipelines.
     - **Automated Regression CI**: Pre-commit / GitHub Actions workflow that executes all unit, RPC, and simulation tests on pull requests.
+
+- [ ] **CR-DEV-005** | **Status**: Open | **Date**: 2026-10-03 | **Req**: RQ-SYS-001 | **Description**: **Codebase Restructuring, Domain Decomposition & Structural Readability Exploration**: Comprehensive architectural exploration and design specification to break down monolithic files and establish a clean, human-readable directory structure:
+    - **Decomposition of Monolithic Files**:
+        - **`Code.gs` (>3,300 lines)**: Decouple into focused, single-responsibility files:
+            - `Menu.gs`: Spreadsheet UI menus, submenu hierarchies, and `onOpen` lifecycle hooks.
+            - `RpcGateway.gs`: Public client-callable gateway functions mapped to `google.script.run`.
+            - `Maintenance.gs`: Row maintenance execution, telemetry reconciliation, and batch flight ID re-indexing.
+            - `WorkerDispatcher.gs`: Tri-Mode batch workers (`executeWorkerBatch`, `finalizeWorkerJob`).
+            - `SortService.gs`: Logbook sorting, sequence formula maintenance, and range protections.
+        - **`Scaffold.gs` (~1,800 lines)**: Decompose into dedicated sheet scaffolding specialists:
+            - `ScaffoldFlights.gs`, `ScaffoldDashboard.gs`, `ScaffoldConfig.gs`, `ScaffoldEquipment.gs`, `ScaffoldValidations.gs`, `ScaffoldGuardrails.gs`.
+        - **`Config.gs`**: Modularize monolithic configuration into:
+            - `ConfigParams.gs` (parameter definitions and defaults).
+            - `ConfigColumns.gs` (Flights column definitions and group metadata).
+            - `Manifest.gs` (`SYSTEM_MANIFEST` and component versions).
+            - `Lookups.gs` (controlled vocabularies and dropdown lists).
+        - **`Ingestion.gs` (~1,800 lines)**: Separate heuristic deduplication scoring (`DedupeEngine.gs`), row data synthesis (`RowBuilder.gs`), and batch orchestration (`BulkIngest.gs`).
+    - **Folder Hierarchy & Clasp Compatibility**:
+        - Investigate and validate subfolder structuring supported natively by Google Apps Script / Clasp:
+            - `Code/UI/` or `Code/Dialogs/`: All `.html` dialogs, sidebars, and `Style.html`.
+            - `Code/Core/` or `Code/Services/`: `QueueService.gs`, `TimeBudget.gs`, `Logger.gs`, `Utils.gs`.
+            - `Code/Modules/`: Domain-specific engines (`Ingestion/`, `Scoring/`, `Analysis/`, `Weather/`, `Geo/`, `Automation/`).
+            - `Code/Config/`: Schemas, lookups, parameters, and manifest.
+        - Validate that `clasp push` and `clasp pull` preserve script project integrity without namespace collisions or global variable shadowing.
+    - **Architectural Rules & Maintainability Standards**:
+        - Establish standard file banners, table of contents, and domain namespaces (`CFG.*`, `INGESTION.*`, `UTILS.*`, `MAINTENANCE.*`).
+        - Ensure offline test runner (`tools/run_all_offline_tests.js`) and static audit (`tools/code_check_audit.js`) seamlessly discover and audit multi-directory layouts.
 
 - [ ] **CR-SEC-001** | **Status**: Open | **Date**: 2026-10-01 | **Req**: RQ-SYS-001 | **Description**: **Pilot PII Privacy, Sensitive Data Scrubbing & Secrets Guardrail**: Establish strict data privacy protections ensuring pilot sensitive information (home takeoff coordinates, emergency contacts, medical notes, tracking URLs) and API keys (Visual Crossing, custom tokens) are never committed to git, shared in template sheets, or leaked in logs:
     - Automated pre-commit hook scanning for API keys, email addresses, phone numbers, and coordinate signatures.
