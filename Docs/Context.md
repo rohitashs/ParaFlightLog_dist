@@ -2,8 +2,8 @@
 
 ## 🧠 Agent Memory & Context
 **Status**: Active Production & Continuous Evolution (v2.2.2)
-**Last Session Focus**: Flight Updates Redesign (`CR-MNT-006`: Check & Sync with MD5 Hash Comparison, Force IGC Overwrite, and Standalone Batch Resync Flight IDs), Codebase Restructuring & Modularization Exploration (`CR-DEV-005`), Dashboard Leaderboards Decoupling (`CR-DSH-003`), Unified Date/Time Architecture (`CR-SYS-014`), Flight Local Timezone Parity (`Bug-ING-011`), and Leaderboard Epoch Coercion Fix (`Bug-UI-012`).
-**Next Focus**: Codebase Restructuring & Architectural Modularization (`CR-DEV-005`), Header Row 4 Native Filter Capability (`CR-UI-022`), Pilot Resources Directory (`CR-SYS-012`), Flight Data Export Utility (`CR-EXP-001`), and CSV Flight Import (`CR-ING-010`).
+**Last Session Focus**: Flight Updates Sidebar Resync Flight IDs Execution, Authoritative Date Column Parity Repair, Full-Height Sidebar Console, and Complete Activity Logs Telemetry (`Bug-UI-013`), Flight Updates Redesign (`CR-MNT-006`), Codebase Restructuring & Modularization Exploration (`CR-DEV-005`), Dashboard Leaderboards Decoupling (`CR-DSH-003`).
+**Next Focus**: Codebase Restructuring & Architectural Modularization (`CR-DEV-005`), Pilot Resources Directory (`CR-SYS-012`), Flight Data Export Utility (`CR-EXP-001`), and CSV Flight Import (`CR-ING-010`).
 
 This file is the **long-term memory** for the project. Read this first to understand *how* we work and *where* we are.
 

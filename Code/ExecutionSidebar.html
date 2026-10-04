@@ -1,6 +1,6 @@
 <!--
  * Paragliding Flight Log v2.0
- * Updated: 2026-10-03 01:40:27
+ * Updated: 2026-10-04 09:43:52
  -->
 <!DOCTYPE html>
 <html>
@@ -87,12 +87,14 @@
       flex: 1 1 auto;
       min-height: 180px;
       margin-bottom: 12px;
+      overflow: hidden;
     }
     .log-header-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
       margin-bottom: 6px;
+      flex-shrink: 0;
     }
     .log-heading {
       font-size: 12px;
@@ -126,8 +128,8 @@
       font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
       font-size: 11px;
       line-height: 1.45;
-      height: 240px;
-      max-height: 300px;
+      height: 100%;
+      max-height: none;
       display: flex;
       flex-direction: column;
       gap: 3px;
@@ -322,6 +324,16 @@
         finishExecution(true);
         return;
       }
+
+      // Check if job is batch-only (e.g. only Resync IDs and/or Sort selected in Flight Maintenance)
+      if (job.jobType === 'MAINTENANCE' && job.options && job.options.hasRowOps === false) {
+        isRunning = true;
+        logLine('No row-level telemetry operations selected. Skipping row loop...', 'info');
+        logLine('Proceeding directly to batch operations (Resync Flight IDs / Sort)...', 'info');
+        updateProgress(job.totalItems, job.totalItems, 'Running batch operations...');
+        finalizeJob();
+        return;
+      }
       
       isRunning = true;
       logLine('Starting ' + (job.title || 'execution') + ' (' + job.totalItems + ' items)...', 'info');
@@ -366,7 +378,7 @@
       if (res.logs && Array.isArray(res.logs)) {
         res.logs.forEach(function(l) {
           var type = 'info';
-          if (l.indexOf('[OK]') !== -1 || l.indexOf('Ingested') !== -1 || l.indexOf('Purged') !== -1) type = 'success';
+          if (l.indexOf('[OK]') !== -1 || l.indexOf('Ingested') !== -1 || l.indexOf('Purged') !== -1 || l.indexOf('Repaired') !== -1) type = 'success';
           else if (l.indexOf('[DUPE]') !== -1 || l.indexOf('Duplicate') !== -1) type = 'warn';
           else if (l.indexOf('[ERR]') !== -1 || l.indexOf('Error') !== -1) type = 'error';
           logLine(l, type);
@@ -410,8 +422,22 @@
       logLine('Finalizing and sorting logbook...', 'info');
       updateProgress(job.totalItems, job.totalItems, 'Finalizing...');
 
+      var currentDone = parseInt(document.getElementById('pillDone').textContent, 10) || 0;
+      var currentDupe = parseInt(document.getElementById('pillDupe').textContent, 10) || 0;
+      var currentErr = parseInt(document.getElementById('pillErr').textContent, 10) || 0;
+      var finalStats = {
+        options: job.options || {},
+        totalItems: job.totalItems || 0,
+        processedCount: currentDone,
+        duplicateCount: currentDupe,
+        errorCount: currentErr
+      };
+
       google.script.run
-        .withSuccessHandler(function() {
+        .withSuccessHandler(function(res) {
+          if (res && res.message) {
+            logLine(res.message, 'info');
+          }
           logLine('=== Operation Completed Successfully ===', 'success');
           finishExecution(true);
         })
@@ -419,7 +445,7 @@
           logLine('Finalization warning: ' + (err.message || err), 'warn');
           finishExecution(true);
         })
-        .finalizeWorkerJob(job.jobType, job.jobId);
+        .finalizeWorkerJob(job.jobType, job.jobId, finalStats);
     }
 
     function finishExecution(isSuccess) {

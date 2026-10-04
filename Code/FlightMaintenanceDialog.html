@@ -1,6 +1,6 @@
 <!--
  * Paragliding Flight Log v2.0
- * Updated: 2026-10-03 01:40:27
+ * Updated: 2026-10-04 09:43:52
  -->
 <!--
  * Paragliding Flight Log v2.0
@@ -356,12 +356,26 @@
                 return;
             }
 
+            var hasRowOps = Boolean(opConfig.syncIgc || opConfig.weather || opConfig.geo || opConfig.xcontest || opConfig.physics || opConfig.scoring || opConfig.summary);
+            opConfig.hasRowOps = hasRowOps;
+
+            var activeOpNames = [];
+            if (opConfig.syncIgc) activeOpNames.push(opConfig.forceIgc ? 'ForceSyncIGC' : 'CheckSyncIGC');
+            if (opConfig.resyncIds) activeOpNames.push('ResyncFlightIDs');
+            if (opConfig.weather) activeOpNames.push('Weather');
+            if (opConfig.geo) activeOpNames.push('Geo');
+            if (opConfig.xcontest) activeOpNames.push('XContest');
+            if (opConfig.physics) activeOpNames.push('Physics');
+            if (opConfig.scoring) activeOpNames.push('Scoring');
+            if (opConfig.summary) activeOpNames.push('AutoSummary');
+            if (opConfig.sort) activeOpNames.push('Sort');
+
             var selectedScope = document.querySelector('input[name="scope"]:checked').value;
             setActionButtonsEnabled(false);
 
             setStatus('Fetching flight rows...', '10%');
-            log('Starting maintenance. Mode: ' + mode + ' | Scope: ' + selectedScope);
-            google.script.run.logClientActivity('MAINTENANCE', '[START] Starting flight maintenance (' + selectedScope + ', ' + mode + ')');
+            log('Starting maintenance. Mode: ' + mode + ' | Scope: ' + selectedScope + ' | Ops: ' + activeOpNames.join(', '));
+            google.script.run.logClientActivity('MAINTENANCE', '[START] Starting flight maintenance (' + selectedScope + ', ' + mode + ') | Ops: ' + activeOpNames.join(', '));
 
             google.script.run
                 .withSuccessHandler(function(rows) {
@@ -390,6 +404,7 @@
             }
 
             log('Found ' + targetRows.length + ' flights to process.');
+            google.script.run.logClientActivity('MAINTENANCE', '[DISCOVERY] Identified ' + targetRows.length + ' flight(s) (' + selectedScope + ') for maintenance');
             opConfig.targetRows = targetRows.map(function(item) { return item.row; });
 
             // Mode 2: Run in Sidebar (DSGN-UI-001)

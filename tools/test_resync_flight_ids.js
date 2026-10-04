@@ -66,11 +66,13 @@ const mockGrid = [
   // Row 7: Flight with no launch time
   { row: 7, id: 'F20240515_12', formula: '', date: '2024-05-15', time: '', flightNo: 103, notes: 'Standalone flight' },
   // Row 8: Flight on different date
-  { row: 8, id: 'F20240516_10', formula: '', date: '2024-05-16', time: '11:00 AM', flightNo: 104, notes: '' }
+  { row: 8, id: 'F20240516_10', formula: '', date: '2024-05-16', time: '11:00 AM', flightNo: 104, notes: '' },
+  // Row 9: Date mismatch test (Date col is 2024-05-20, FlightID has old 1-day offset F20240519_01)
+  { row: 9, id: 'F20240519_01', formula: '', date: '2024-05-20', time: '10:00 AM', flightNo: 105, notes: '' }
 ];
 
 const mockSheet = {
-  getLastRow: () => 8,
+  getLastRow: () => 9,
   getSpreadsheetTimeZone: () => 'UTC',
   getRange: (r, c, nr, nc) => {
     nr = nr || 1;
@@ -96,6 +98,19 @@ const mockSheet = {
         }
         return out;
       },
+      getDisplayValues: () => {
+        const out = [];
+        for (let idx = 0; idx < nr; idx++) {
+          const item = mockGrid[r - 5 + idx];
+          if (c === 1) out.push([item.id]);
+          else if (c === 8) out.push([item.date]);
+          else if (c === 10) out.push([item.time]);
+          else if (c === 3) out.push([String(item.flightNo)]);
+          else if (c === 6) out.push([item.notes]);
+          else out.push(['']);
+        }
+        return out;
+      },
       setValue: (val) => {
         const item = mockGrid[r - 5];
         if (c === 1) {
@@ -110,7 +125,7 @@ const mockSheet = {
 };
 
 global.getActualFlightRows_ = () => [
-  { row: 5 }, { row: 6 }, { row: 7 }, { row: 8 }
+  { row: 5 }, { row: 6 }, { row: 7 }, { row: 8 }, { row: 9 }
 ];
 
 global.SpreadsheetApp = {
@@ -124,7 +139,8 @@ global.SpreadsheetApp = {
 const result = resyncFlightIdsBatch_();
 console.log('Result:', result);
 assert.strictEqual(result.success, true);
-assert.strictEqual(result.updatedCount, 4);
+assert.strictEqual(result.updatedCount, 5);
+assert.strictEqual(result.dateMismatchCount, 1);
 
 // Row 6 (9:30 AM) was earliest on 2024-05-15 -> F20240515_01
 assert.strictEqual(mockGrid[1].id, 'F20240515_01');
@@ -137,6 +153,9 @@ assert.strictEqual(mockGrid[2].id, 'F20240515_03');
 
 // Row 8 (different date) -> F20240516_01
 assert.strictEqual(mockGrid[3].id, 'F20240516_01');
+
+// Row 9 (repaired date mismatch from F20240519_01 to F20240520_01)
+assert.strictEqual(mockGrid[4].id, 'F20240520_01');
 
 // Reciprocal duplicate notes:
 // Row 5 old was F20240515_10, Row 6 old was F20240515_11

@@ -1,5 +1,26 @@
 # Project Change Log
 
+## Session: Flight Updates Sidebar Resync Flight IDs, Date Parity Repair & Full-Height Sidebar
+**Date**: 2026-10-04
+**Versions**: Core v2.2.2
+**Focus**: Flight Updates Sidebar Resync Flight IDs Execution (`Bug-UI-013`), Authoritative Date Column Mismatch Repair, Timezone-Immune Display Value Extraction, Full-Height Execution Sidebar CSS, and Complete Activity Logs Telemetry.
+
+*   `[Fix]` **Bug-UI-013 (Sidebar Resync Flight IDs, Date Parity Repair & Full-Height Sidebar)**:
+    *   **Sidebar Finalization & Batch-Only Bypass (`ExecutionSidebar.html`)**:
+        *   Fixed missing options in `finalizeJob()` by passing `finalStats` (with `job.options` and execution counts) to `finalizeWorkerJob(jobType, jobId, stats)`.
+        *   Added intelligent batch-only bypass in `startExecution()`: when only batch operations (`resyncIds` / `sort`) are selected, skips the phantom 228-row stepping loop entirely and runs batch operations directly with immediate progress.
+        *   Fixed activity log console layout by replacing `height: 240px; max-height: 300px;` with `height: 100%; max-height: none;` and adding `overflow: hidden;` to `.log-section`, allowing the log console to expand to 100% of the sidebar height.
+    *   **Authoritative Date Column Mismatch Repair (`Code/Code.gs`)**:
+        *   Upgraded `resyncFlightIdsBatch_` to read the `Date` column using `getDisplayValues()`, eliminating JavaScript Date object timezone coercion and midnight rollbacks.
+        *   Implemented explicit date mismatch detection: compares the `Date` column ground truth (`dateDigits`) with the date token in the current `FlightID` (`idDateDigits`), repairing mismatches (e.g. `F20240519_##` -> `F20240520_##`) and logging each repair.
+        *   Decoupled Date and FlightID parity checks in `executeFlightMaintenanceRow` so that even if Force is unchecked and file hash matches, any discrepancy between the physical IGC local date and the sheet date/FlightID is immediately corrected.
+    *   **Activity Logs Sheet Telemetry**:
+        *   Enriched `FlightMaintenanceDialog.html` to log active operation names at `[START]` and record `[DISCOVERY]` with target flight counts.
+        *   Added `[START]`, `[DISCOVERY]`, and `[COMPLETE]` logging in `resyncFlightIdsBatch_` detailing scanned flights, unique dates, repaired date mismatches, and re-indexed counts.
+        *   Added comprehensive `[COMPLETE]` logging in `finalizeWorkerJob` for `MAINTENANCE` recording total items processed, operations performed, and resync outcome.
+    *   **Offline Test Parity (`tools/test_resync_flight_ids.js`)**:
+        *   Added mock `getDisplayValues()` implementation and test assertion verifying automatic detection and repair of date mismatches (`F20240519_01` -> `F20240520_01` based on Date column `2024-05-20`).
+
 ## Session: Flight Updates Redesign: Check & Sync Data, Force IGC Overwrite & Standalone Batch Resync Flight IDs
 **Date**: 2026-10-03
 **Versions**: Core v2.2.2

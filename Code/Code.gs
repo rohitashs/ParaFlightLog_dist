@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-10-03 01:40:27
+ * Updated: 2026-10-04 09:43:52
  * Test access verification: Verified GAS write access on 2026-09-25 08:26:00.
  * 
  * CORE MODULE: Orchestration Only.
@@ -729,16 +729,23 @@ function executeFlightMaintenanceRow(rowNum, opConfig) {
           };
 
           if (mLocalDate) {
-            if (shouldUpdateAll) {
-              setV('Date', mLocalDate);
-              var curFlightIdFormula = String(getV('FlightID') || '');
-              var targetDateStr = mLocalDate.replace(/-/g, '');
-              var idMatch = curFlightIdFormula.match(/F(\d{8})_(\d+)/);
+            var curDateVal = String(getV('Date') || '').trim();
+            var targetDateStr = mLocalDate.replace(/[^0-9]/g, '');
+            var curFlightIdFormula = String(getV('FlightID') || '');
+            var idMatch = curFlightIdFormula.match(/F(\d{8})_(\d+)/);
+
+            var needsDateRepair = (curDateVal !== mLocalDate) || (idMatch && idMatch[1] !== targetDateStr);
+
+            if (shouldUpdateAll || needsDateRepair) {
+              if (curDateVal !== mLocalDate) {
+                setV('Date', mLocalDate);
+                updated.push('Date (' + mLocalDate + ')');
+              }
               if (idMatch && idMatch[1] !== targetDateStr) {
                 var newIdStr = 'F' + targetDateStr + '_' + idMatch[2];
                 var updatedFlightIdVal = curFlightIdFormula.replace(idMatch[0], newIdStr);
                 setV('FlightID', updatedFlightIdVal);
-                updated.push('FlightID Date');
+                updated.push('FlightID (' + newIdStr + ')');
               }
             } else {
               if (!getV('Date')) setV('Date', mLocalDate);
@@ -1130,14 +1137,14 @@ function resyncFlightIdsBatch_(targetRows) {
 
   var actualFlights = getActualFlightRows_(sh);
   if (actualFlights.length === 0) {
-    return { success: true, updatedCount: 0, datesCount: 0, message: 'No flights found.' };
+    return { success: true, updatedCount: 0, datesCount: 0, dateMismatchCount: 0, message: 'No flights found.' };
   }
 
   var minRow = actualFlights[0].row;
   var maxRow = actualFlights[actualFlights.length - 1].row;
   var numRows = maxRow - minRow + 1;
   if (numRows <= 0) {
-    return { success: true, updatedCount: 0, datesCount: 0, message: 'No flights found.' };
+    return { success: true, updatedCount: 0, datesCount: 0, dateMismatchCount: 0, message: 'No flights found.' };
   }
 
   var hasTargetScope = targetRows && Array.isArray(targetRows) && targetRows.length > 0;
@@ -1162,33 +1169,51 @@ function resyncFlightIdsBatch_(targetRows) {
 
   var idFormulas = sh.getRange(minRow, idCol, numRows, 1).getFormulas();
   var idValues = sh.getRange(minRow, idCol, numRows, 1).getValues();
-  var dateValues = sh.getRange(minRow, dateCol, numRows, 1).getValues();
+  var dateRange = sh.getRange(minRow, dateCol, numRows, 1);
+  var dateValues = dateRange.getValues();
+  var dateDisplayValues = dateRange.getDisplayValues();
   var launchTimeValues = launchTimeCol ? sh.getRange(minRow, launchTimeCol, numRows, 1).getValues() : null;
   var flightNoValues = flightNoCol ? sh.getRange(minRow, flightNoCol, numRows, 1).getValues() : null;
   var notesValues = notesCol ? sh.getRange(minRow, notesCol, numRows, 1).getValues() : null;
 
-  var extractDigits = function(val) {
-    if (!val) return '';
-    if (val instanceof Date) {
-      if (isNaN(val.getTime())) return '';
-      return Utilities.formatDate(val, ssTz, 'yyyyMMdd');
+  var extractDigits = function(displayVal, rawVal) {
+    var s = String(displayVal || '').trim();
+    if (s) {
+      // 1. ISO: YYYY-MM-DD, YYYY/MM/DD, YYYY.MM.DD
+      var isoM = s.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/);
+      if (isoM) {
+        var mm = ('0' + isoM[2]).slice(-2);
+        var dd = ('0' + isoM[3]).slice(-2);
+        return isoM[1] + mm + dd;
+      }
+      // 2. US: MM-DD-YYYY or MM/DD/YYYY
+      var usM = s.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})/);
+      if (usM) {
+        var mm = ('0' + usM[1]).slice(-2);
+        var dd = ('0' + usM[2]).slice(-2);
+        return usM[3] + mm + dd;
+      }
+      // 3. Compact 8-digit: YYYYMMDD
+      var digitsOnly = s.replace(/[^0-9]/g, '');
+      if (digitsOnly.length === 8 && (digitsOnly.indexOf('20') === 0 || digitsOnly.indexOf('19') === 0)) {
+        return digitsOnly;
+      }
     }
-    var s = String(val).trim();
-    var isoM = s.match(/^(\d{4})[-/.](\d{2})[-/.](\d{2})/);
-    if (isoM) return isoM[1] + isoM[2] + isoM[3];
-    var usM = s.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})/);
-    if (usM) {
-      var mm = ('0' + usM[1]).slice(-2);
-      var dd = ('0' + usM[2]).slice(-2);
-      return usM[3] + mm + dd;
+    // Fallback to raw value if display value was empty
+    if (rawVal instanceof Date && !isNaN(rawVal.getTime())) {
+      return Utilities.formatDate(rawVal, ssTz, 'yyyyMMdd');
     }
-    var digits = s.replace(/[^0-9]/g, '');
-    if (digits.length === 8) return digits;
+    var rawStr = String(rawVal || '').trim();
+    var rawIso = rawStr.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/);
+    if (rawIso) {
+      return rawIso[1] + ('0' + rawIso[2]).slice(-2) + ('0' + rawIso[3]).slice(-2);
+    }
     return '';
   };
 
   var allFlightItems = [];
   var targetDates = {};
+  var initialMismatchCount = 0;
 
   for (var i = 0; i < numRows; i++) {
     var rowNum = minRow + i;
@@ -1198,13 +1223,24 @@ function resyncFlightIdsBatch_(targetRows) {
     var currentId = linkDisplayMatch ? linkDisplayMatch[1] : (formula ? '' : rawIdVal);
     if (!currentId && rawIdVal) currentId = rawIdVal;
 
-    var dateVal = dateValues[i][0];
-    var dateDigits = extractDigits(dateVal);
+    var dateDisp = dateDisplayValues ? dateDisplayValues[i][0] : '';
+    var dateRaw = dateValues ? dateValues[i][0] : '';
+    var dateDigits = extractDigits(dateDisp, dateRaw);
+    
     var idMatch = currentId.match(/F(\d{8})_(\d+)/);
-    if (!dateDigits && idMatch) {
-      dateDigits = idMatch[1];
-    }
+    var idDateDigits = idMatch ? idMatch[1] : '';
     var existingSuffix = idMatch ? parseInt(idMatch[2], 10) : 0;
+
+    // Detect date mismatch between authoritative Date column and current FlightID
+    var isDateMismatch = Boolean(dateDigits && idDateDigits && dateDigits !== idDateDigits);
+    if (isDateMismatch) {
+      initialMismatchCount++;
+    }
+
+    // Fall back to FlightID date only if Date column was completely blank
+    if (!dateDigits && idDateDigits) {
+      dateDigits = idDateDigits;
+    }
 
     var lTimeVal = launchTimeValues ? launchTimeValues[i][0] : '';
     var timeMin = parseTimeToMinutes_(lTimeVal);
@@ -1222,6 +1258,8 @@ function resyncFlightIdsBatch_(targetRows) {
       currentId: currentId,
       formula: formula,
       dateDigits: dateDigits,
+      idDateDigits: idDateDigits,
+      isDateMismatch: isDateMismatch,
       timeMin: timeMin,
       existingSuffix: existingSuffix,
       flightNo: fNoNum
@@ -1240,8 +1278,13 @@ function resyncFlightIdsBatch_(targetRows) {
     dateGroups[item.dateDigits].push(item);
   }
 
+  var targetCount = hasTargetScope ? Object.keys(targetRowSet).length : allFlightItems.length;
+  LOG.write('RESYNC_FLIGHT_IDS', '[START] Starting batch Flight ID resync (target: ' + targetCount + ' flight(s))');
+  LOG.write('RESYNC_FLIGHT_IDS', '[DISCOVERY] Scanned ' + allFlightItems.length + ' flight(s) across ' + Object.keys(dateGroups).length + ' date(s). Detected ' + initialMismatchCount + ' date mismatch(es) between Date column and FlightID.');
+
   var idChangeMap = {};
   var updatedCount = 0;
+  var repairedMismatchCount = 0;
 
   for (var dKey in dateGroups) {
     var group = dateGroups[dKey];
@@ -1294,6 +1337,11 @@ function resyncFlightIdsBatch_(targetRows) {
         }
         sh.getRange(fl.rowNum, idCol).setValue(newCellVal);
         updatedCount++;
+
+        if (fl.isDateMismatch) {
+          repairedMismatchCount++;
+          LOG.write('RESYNC_FLIGHT_IDS', 'Row ' + fl.rowNum + ': Repaired FlightID date mismatch (' + fl.currentId + ' -> ' + newId + ') based on Date col (' + fl.dateDigits + ')');
+        }
       }
     }
   }
@@ -1323,17 +1371,18 @@ function resyncFlightIdsBatch_(targetRows) {
     }
   }
 
-  LOG.write('RESYNC_FLIGHT_IDS', '[COMPLETE] Resynced Flight IDs for ' + updatedCount + ' flight(s) across ' + Object.keys(dateGroups).length + ' date(s)');
+  LOG.write('RESYNC_FLIGHT_IDS', '[COMPLETE] Resynced Flight IDs for ' + updatedCount + ' flight(s) (' + repairedMismatchCount + ' date repairs, ' + (updatedCount - repairedMismatchCount) + ' re-indexed) across ' + Object.keys(dateGroups).length + ' date(s)');
   if (ss.toast) {
-    ss.toast('Resynced Flight IDs: ' + updatedCount + ' updated.', 'Flight Updates');
+    ss.toast('Resynced Flight IDs: ' + updatedCount + ' updated (' + repairedMismatchCount + ' date repairs).', 'Flight Updates');
   }
 
   return {
     success: true,
     updatedCount: updatedCount,
     datesCount: Object.keys(dateGroups).length,
+    dateMismatchCount: repairedMismatchCount,
     idMap: idChangeMap,
-    message: 'Resynced Flight IDs for ' + updatedCount + ' flight(s) across ' + Object.keys(dateGroups).length + ' date(s).'
+    message: 'Resynced Flight IDs for ' + updatedCount + ' flight(s) (' + repairedMismatchCount + ' date mismatch repairs, ' + (updatedCount - repairedMismatchCount) + ' re-indexed) across ' + Object.keys(dateGroups).length + ' date(s).'
   };
 }
 
@@ -3007,10 +3056,11 @@ function finalizeWorkerJob(jobType, jobId, stats) {
           }
         } catch (eMJob) {}
       }
+      var resyncRes = null;
       if (maintOptions && maintOptions.resyncIds) {
         try {
           var rowsToResync = maintOptions.targetRows || targetRowList;
-          resyncFlightIdsBatch_(rowsToResync);
+          resyncRes = resyncFlightIdsBatch_(rowsToResync);
         } catch (eResync) {
           console.warn('Post-maintenance flight ID resync warning:', eResync);
         }
@@ -3020,6 +3070,21 @@ function finalizeWorkerJob(jobType, jobId, stats) {
       } catch (e) {
         console.warn('Post-job sort warning:', e);
       }
+
+      var totalItemsProcessed = (stats && (stats.processedCount || stats.totalItems)) || (targetRowList ? targetRowList.length : 'all');
+      var opSummaryList = [];
+      if (maintOptions) {
+        if (maintOptions.syncIgc) opSummaryList.push(maintOptions.forceIgc ? 'ForceSyncIGC' : 'CheckSyncIGC');
+        if (maintOptions.resyncIds) opSummaryList.push('ResyncFlightIDs' + (resyncRes && resyncRes.updatedCount !== undefined ? ' (' + resyncRes.updatedCount + ' updated)' : ''));
+        if (maintOptions.weather) opSummaryList.push('Weather');
+        if (maintOptions.geo) opSummaryList.push('Geo');
+        if (maintOptions.xcontest) opSummaryList.push('XContest');
+        if (maintOptions.physics) opSummaryList.push('Physics');
+        if (maintOptions.scoring) opSummaryList.push('Scoring');
+        if (maintOptions.summary) opSummaryList.push('AutoSummary');
+        if (maintOptions.sort) opSummaryList.push('Sort');
+      }
+      LOG.write('MAINTENANCE', '[COMPLETE] Flight maintenance finished for ' + totalItemsProcessed + ' flight(s)' + (opSummaryList.length > 0 ? ' | Ops: ' + opSummaryList.join(', ') : ''));
       break;
     case 'RESYNC':
     case 'WATCH_SCAN':
