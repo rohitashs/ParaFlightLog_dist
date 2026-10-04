@@ -23,7 +23,9 @@ var CFG = {
     config: 'Config',
     parameters: 'Config', // Legacy alias
     lookups: 'Config',    // Legacy alias
-    appLog: 'Activity Logs',
+    systemLog: 'System Log',
+    activityLogs: 'System Log', // Legacy migration bridge
+    appLog: 'System Log',       // Legacy migration bridge
     sites: 'Sites',
     dashboard: 'Dashboard',
     pilotProfile: 'Pilot_Profile',
@@ -104,12 +106,18 @@ var CFG = {
     { section: 'Dashboard & Currency', key: 'TIMELINE_HOURS_LOW', val: 1 / 24, desc: 'Monthly duration low threshold (Orange < X, [h]:mm "hrs")' },
     { section: 'Dashboard & Currency', key: 'TIMELINE_HOURS_MED', val: 4 / 24, desc: 'Monthly duration med threshold (Yellow X..Y, Green >= Y, [h]:mm "hrs")' },
 
-    // Logging & Admin
-    { section: 'Logging & Admin', key: 'LOG_LEVEL', val: 'Normal', desc: 'Spreadsheet log verbosity (Brief, Normal, Debug)' },
-    { section: 'Logging & Admin', key: 'LOG_AUTO_CLEAN', val: 'Yes', desc: 'Automatically prune historical activity logs (Yes/No)' },
-    { section: 'Logging & Admin', key: 'LOG_CLEAN_FREQUENCY_DAYS', val: 3, desc: 'Days between automated log cleanup checks' },
-    { section: 'Logging & Admin', key: 'LOG_ROWS_TO_KEEP', val: 2000, desc: 'Minimum activity log rows to retain before pruning' },
-    { section: 'Logging & Admin', key: 'LOG_TIME_TO_KEEP_DAYS', val: 90, desc: 'Minimum age (days) of logs to retain before pruning' }
+    // System Logging & Maintenance
+    { section: 'System Logging', key: 'LOG_LEVEL_DEFAULT', val: 'Normal', desc: 'Default verbosity for unconfigured services (Silent, Silent unless some activity, Exceptions, Summary, Normal, Debug)' },
+    { section: 'System Logging', key: 'LOG_LEVEL_HEARTBEAT', val: 'Silent unless some activity', desc: 'Master Heartbeat pulse logging (Silent, Silent unless some activity, Exceptions, Summary, Normal, Debug)' },
+    { section: 'System Logging', key: 'LOG_LEVEL_INGESTION', val: 'Normal', desc: 'Flight Ingestion verbosity (Silent, Silent unless some activity, Exceptions, Summary, Normal, Debug)' },
+    { section: 'System Logging', key: 'LOG_LEVEL_MAINTENANCE', val: 'Normal', desc: 'Flight & System Maintenance verbosity (Silent, Silent unless some activity, Exceptions, Summary, Normal, Debug)' },
+    { section: 'System Logging', key: 'LOG_LEVEL_ADMIN', val: 'Summary', desc: 'Admin & Config verbosity (Silent, Silent unless some activity, Exceptions, Summary, Normal, Debug)' },
+    { section: 'System Logging', key: 'LOG_LEVEL_INTEGRATIONS', val: 'Exceptions', desc: 'External Integrations verbosity (Silent, Silent unless some activity, Exceptions, Summary, Normal, Debug)' },
+    { section: 'System Logging', key: 'LOG_LEVEL', val: 'Normal', desc: '[Legacy Alias] Maintained for backward compatibility; routes to LOG_LEVEL_DEFAULT' },
+    { section: 'System Logging', key: 'LOG_AUTO_CLEAN', val: 'Yes', desc: 'Automatically prune historical system logs (Yes/No)' },
+    { section: 'System Logging', key: 'LOG_CLEAN_FREQUENCY_DAYS', val: 3, desc: 'Days between automated log cleanup checks' },
+    { section: 'System Logging', key: 'LOG_ROWS_TO_KEEP', val: 2000, desc: 'Minimum system log rows to retain before pruning' },
+    { section: 'System Logging', key: 'LOG_TIME_TO_KEEP_DAYS', val: 90, desc: 'Minimum age (days) of logs to retain before pruning' }
   ],
   
   // Helper to get defaults map
@@ -351,8 +359,8 @@ var TABS = {
     frozenRows: 0,
     columns: ['Parameter', 'Value', 'Description']
   },
-  ACTIVITY: {
-    name: CFG.sheets.activityLogs || CFG.sheets.appLog,
+  SYSTEM_LOG: {
+    name: CFG.sheets.systemLog || 'System Log',
     color: '#D32F2F', // Dark Red
     index: 7,
     headerRow: 2,
@@ -382,9 +390,50 @@ var TABS = {
 // Backwards compatibility aliases (legacy migration bridges)
 TABS.PARAMETERS = TABS.CONFIG;            // Legacy migration bridge
 TABS.LOOKUPS = TABS.CONFIG;               // Legacy migration bridge
-TABS.APP_LOG = TABS.ACTIVITY;             // Legacy migration bridge
+TABS.ACTIVITY = TABS.SYSTEM_LOG;          // Legacy migration bridge
+TABS.APP_LOG = TABS.SYSTEM_LOG;           // Legacy migration bridge
 TABS.AUTOMATION_QUEUE = TABS.QUEUE;       // Legacy migration bridge
 TABS.AUTOMATION = TABS.AUTOMATION_RULES;  // Legacy migration bridge
+
+// Canonical Granular Log Levels (DSGN-LOG-002)
+CFG.LOG_LEVELS = [
+  'Silent',
+  'Silent unless some activity',
+  'Exceptions',
+  'Summary',
+  'Normal',
+  'Debug'
+];
+
+// Mapping of individual processes to their controlling category parameters
+CFG.LOG_CATEGORY_MAP = {
+  'AUTOMATION':         'AUTOMATION',
+  'BACKGROUND_QUEUE':   'AUTOMATION',
+  'HEARTBEAT':          'HEARTBEAT',
+  'WATCH_FOLDER':       'INGESTION',
+  'BULK_INGEST':        'INGESTION',
+  'URL_IMPORT':         'INGESTION',
+  'URL_CUSTOM':         'INGESTION',
+  'FILE_UPLOAD':        'INGESTION',
+  'MANUAL_ENTRY':       'INGESTION',
+  'MASTER_RESYNC':      'INGESTION',
+  'MAINTENANCE':        'MAINTENANCE',
+  'RESYNC_FLIGHT_IDS':  'MAINTENANCE',
+  'SORT_LOGBOOK':       'MAINTENANCE',
+  'SORT_FLIGHTS':       'MAINTENANCE',
+  'DUPE_TRIAGE':        'MAINTENANCE',
+  'PURGE_FLIGHTS':      'MAINTENANCE',
+  'STATUS_CHANGE':      'MAINTENANCE',
+  'SAVE_CONFIG':        'ADMIN',
+  'LOAD_CONFIG':        'ADMIN',
+  'SYSTEM_SETUP':       'ADMIN',
+  'LOG_CLEAN':          'ADMIN',
+  'SYSTEM_MAINTENANCE': 'ADMIN',
+  'WEATHER':            'INTEGRATIONS',
+  'GEO':                'INTEGRATIONS',
+  'XCONTEST':           'INTEGRATIONS',
+  'SEEYOU':             'INTEGRATIONS'
+};
 
 // Extensible Process and Message Registries
 CFG.LOG_PROCESSES = {
@@ -478,7 +527,7 @@ function getSheetByIdOrName_(ss, tabKey, defaultName) {
    ========================================================================================== */
 
 var SYSTEM_MANIFEST = {
-  version: '2.2.2',
+  version: '2.3.0',
   components: {
     // Flights
     'Flights.grid':        { version: 'v2.0-dim-2000x70',     tier: 'recommended' },
@@ -496,7 +545,7 @@ var SYSTEM_MANIFEST = {
     // Config
     'Config.grid':         { version: 'v2.0-dim-60x14',        tier: 'recommended' },
     'Config.headers':      { version: 'v2.0-config-headers',   tier: 'optional' },
-    'Config.parameters':   { version: 'v2.2-heartbeat-params', tier: 'mandatory' },
+    'Config.parameters':   { version: 'v2.3-logging-params',   tier: 'mandatory' },
     'Config.lookups':      { version: 'v2.3-flight-types-restore', tier: 'mandatory' },
     'Config.namedRanges':  { version: 'v2.1-lookup-ranges',    tier: 'mandatory' },
     'Config.validations':  { version: 'v2.0-config-validation',tier: 'recommended' },
@@ -512,9 +561,9 @@ var SYSTEM_MANIFEST = {
     'Automation_Rules.grid':        { version: 'v2.0-dim-50x9',         tier: 'recommended' },
     'Automation_Rules.headers':     { version: 'v2.1-rules-9col',       tier: 'mandatory' },
     'Automation_Rules.validations': { version: 'v2.0-action-dropdowns', tier: 'recommended' },
-    'Automation_Rules.templates':   { version: 'v2.1-default-rules',    tier: 'optional' },
+    'Automation_Rules.templates':   { version: 'v2.2-loglevel-templates', tier: 'optional' },
     'Automation_Queue.headers':     { version: 'v2.0-queue-schema',     tier: 'mandatory' },
-    'Activity_Logs.headers':        { version: 'v2.0-log-schema',       tier: 'recommended' },
+    'System_Log.headers':           { version: 'v2.1-system-log-schema', tier: 'recommended' },
     'User_Guide.content':           { version: 'v2.0-guide-content',    tier: 'optional' }
   }
 };
@@ -534,7 +583,7 @@ var MANIFEST_COMPONENT_LABELS = {
   'Dashboard.guardrails': 'Soft Guardrail Protections (KPI Cards & Lists)',
   'Config.grid': 'Grid Dimensions & Column Widths (60 Rows, 14 Cols)',
   'Config.headers': 'Header Banners & Section Separators',
-  'Config.parameters': 'System Parameters (Heartbeat & Automation Config)',
+  'Config.parameters': 'System Parameters (Heartbeat, Automation & Log Levels)',
   'Config.lookups': 'Native Equipment Auto-Lookups & Restored Flight Types Vocabulary',
   'Config.namedRanges': 'Workbook-Scoped Named Ranges (LOOKUP_*)',
   'Config.validations': 'Format & Setting Input Validations',
@@ -548,8 +597,9 @@ var MANIFEST_COMPONENT_LABELS = {
   'Automation_Rules.validations': 'Action & Active Dropdown Validations',
   'Automation_Rules.templates': 'Predefined Automation Rule Templates',
   'Automation_Queue.headers': 'Background Automation Queue Schema',
-  'Activity_Logs.headers': 'Activity Logs Schema & Header Formatting',
-  'App_Log.headers': 'Activity Logs Schema & Header Formatting', // Legacy migration bridge
+  'System_Log.headers': 'System Log Schema & Header Formatting',
+  'Activity_Logs.headers': 'System Log Schema & Header Formatting', // Legacy migration bridge
+  'App_Log.headers': 'System Log Schema & Header Formatting', // Legacy migration bridge
   'User_Guide.content': 'Documentation, Metric Dictionary & Instructions'
 };
 
@@ -561,8 +611,9 @@ var MANIFEST_SHEET_METADATA = {
   'Pilot_Profile': { key: 'PILOT_PROFILE', name: TABS.PILOT_PROFILE ? TABS.PILOT_PROFILE.name : 'Pilot_Profile', icon: '👤', color: '#9C27B0' },
   'Automation_Rules': { key: 'AUTOMATION_RULES', name: TABS.AUTOMATION_RULES ? TABS.AUTOMATION_RULES.name : 'Automation_Rules', icon: '⚡', color: '#00897B' },
   'Automation_Queue': { key: 'QUEUE', name: TABS.QUEUE ? TABS.QUEUE.name : 'Automation_Queue', icon: '📋', color: '#455A64' },
-  'Activity_Logs': { key: 'ACTIVITY_LOGS', name: TABS.ACTIVITY ? TABS.ACTIVITY.name : 'Activity Logs', icon: '📜', color: '#D32F2F' },
-  'App_Log': { key: 'ACTIVITY_LOGS', name: TABS.ACTIVITY ? TABS.ACTIVITY.name : 'Activity Logs', icon: '📜', color: '#D32F2F' }, // Legacy migration bridge
+  'System_Log': { key: 'SYSTEM_LOG', name: TABS.SYSTEM_LOG ? TABS.SYSTEM_LOG.name : 'System Log', icon: '📜', color: '#D32F2F' },
+  'Activity_Logs': { key: 'SYSTEM_LOG', name: TABS.SYSTEM_LOG ? TABS.SYSTEM_LOG.name : 'System Log', icon: '📜', color: '#D32F2F' }, // Legacy migration bridge
+  'App_Log': { key: 'SYSTEM_LOG', name: TABS.SYSTEM_LOG ? TABS.SYSTEM_LOG.name : 'System Log', icon: '📜', color: '#D32F2F' }, // Legacy migration bridge
   'User_Guide': { key: 'USER_GUIDE', name: TABS.USER_GUIDE ? TABS.USER_GUIDE.name : 'User Guide', icon: '📖', color: '#607D8B' }
 };
 
@@ -606,12 +657,15 @@ function setAppliedManifest_(manifest) {
  */
 function diffManifests_(optApplied) {
   var applied = optApplied || getAppliedManifest_();
-  // Bridge legacy App_Log.headers in optApplied (migration bridge)
-  if (applied['App_Log.headers'] && !applied['Activity_Logs.headers']) { // Legacy migration bridge
-    applied['Activity_Logs.headers'] = applied['App_Log.headers']; // Legacy migration bridge
+  // Bridge legacy headers in optApplied (migration bridge)
+  if (applied['App_Log.headers'] && !applied['System_Log.headers']) { // Legacy migration bridge
+    applied['System_Log.headers'] = applied['App_Log.headers']; // Legacy migration bridge
+  }
+  if (applied['Activity_Logs.headers'] && !applied['System_Log.headers']) { // Legacy migration bridge
+    applied['System_Log.headers'] = applied['Activity_Logs.headers']; // Legacy migration bridge
   }
   var sheetsMap = {};
-  var order = ['Flights', 'Dashboard', 'Config', 'Equipment', 'Pilot_Profile', 'Automation_Rules', 'Automation_Queue', 'Activity_Logs', 'User_Guide'];
+  var order = ['Flights', 'Dashboard', 'Config', 'Equipment', 'Pilot_Profile', 'Automation_Rules', 'Automation_Queue', 'System_Log', 'User_Guide'];
   
   order.forEach(function(sName) {
     var meta = MANIFEST_SHEET_METADATA[sName] || { key: sName, name: sName.replace('_', ' '), icon: '📄', color: '#757575' };

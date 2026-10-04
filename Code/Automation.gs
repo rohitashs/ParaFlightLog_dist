@@ -321,29 +321,33 @@ function masterHeartbeatDispatcher() {
       }
 
       var parsedParams = parseAutomationParams_(rule.parameters, actionDef);
-      LOG.write(CFG.LOG_PROCESSES.AUTOMATION, '[START] Rule: ' + rule.name, 'Action: ' + rule.action + ' | Interval: ' + rule.triggerType);
+      var ruleLogLevel = parsedParams.LogLevel || (actionDef ? actionDef.defaultLogLevel : null) || LOG.getLogLevel('AUTOMATION');
+      var session = LOG.createSession(CFG.LOG_PROCESSES.AUTOMATION, ruleLogLevel);
+      session.start('Rule: ' + rule.name, 'Action: ' + rule.action + ' | Interval: ' + rule.triggerType);
 
       var resultMsg = '';
       try {
         if (rule.action === 'SCAN_WATCH_FOLDER') {
-          resultMsg = executeWatchFolderScan_(rule, parsedParams, budget);
+          resultMsg = executeWatchFolderScan_(rule, parsedParams, budget, session);
         } else if (rule.action === 'CLEAN_LOGS') {
-          resultMsg = executeCleanLogs_(rule, parsedParams, budget);
+          resultMsg = executeCleanLogs_(rule, parsedParams, budget, session);
         } else if (rule.action === 'PROCESS_QUEUE') {
-          resultMsg = executeProcessQueue_(rule, parsedParams, budget);
+          resultMsg = executeProcessQueue_(rule, parsedParams, budget, session);
         } else if (actionDef.handlerName && typeof this[actionDef.handlerName] === 'function') {
-          resultMsg = this[actionDef.handlerName](rule, parsedParams, budget);
+          resultMsg = this[actionDef.handlerName](rule, parsedParams, budget, session);
         } else {
           resultMsg = 'Warning: No handler found for ' + rule.action;
         }
       } catch (err) {
         resultMsg = 'Error: ' + err.message;
-        LOG.write(CFG.LOG_PROCESSES.AUTOMATION, '[ERR] ' + rule.name + ' failed: ' + err.message, err.stack);
+        session.err(rule.name + ' failed: ' + err.message, err.stack);
+        session.recordStats({ errors: 1 });
       }
 
       sh.getRange(rowNum, 8).setValue(nowStr);
       sh.getRange(rowNum, 9).setValue(resultMsg);
-      LOG.write(CFG.LOG_PROCESSES.AUTOMATION, '[COMPLETE] Rule: ' + rule.name, resultMsg);
+      session.complete('Rule: ' + rule.name, resultMsg);
+      session.flush();
     }
 
     SpreadsheetApp.flush();
@@ -361,7 +365,7 @@ function masterHeartbeatDispatcher() {
 /**
  * Handler for SCAN_WATCH_FOLDER.
  */
-function executeWatchFolderScan_(rule, params, budget) {
+function executeWatchFolderScan_(rule, params, budget, session) {
   if (typeof scanWatchFolderNow_ !== 'function') {
     return 'Error: scanWatchFolderNow_ not found';
   }
@@ -374,6 +378,16 @@ function executeWatchFolderScan_(rule, params, budget) {
 
   var stats = scanWatchFolderNow_(options);
   if (!stats) return 'Completed (No stats returned)';
+
+  if (session) {
+    session.recordStats({
+      processed: stats.processed || 0,
+      updated: stats.flights || 0,
+      skipped: stats.skipped || 0,
+      errors: stats.errors || 0
+    });
+  }
+
   if (stats.errors > 0) {
     return 'Partial: ' + stats.processed + ' processed, ' + stats.skipped + ' skipped, ' + stats.errors + ' errors';
   }
@@ -383,14 +397,25 @@ function executeWatchFolderScan_(rule, params, budget) {
 /**
  * Handler for CLEAN_LOGS.
  */
-function executeCleanLogs_(rule, params, budget) {
+function executeCleanLogs_(rule, params, budget, session) {
   var keepRows = Number(params.KeepRows) || 2000;
   var keepDays = Number(params.KeepDays) || 90;
 
   var res = LOG.cleanLogs(keepRows, keepDays, true);
   if (!res || !res.success) {
+    if (session) session.recordStats({ errors: 1 });
     return 'Error: ' + (res ? res.reason : 'Clean logs failed');
   }
+
+  if (session) {
+    session.recordStats({
+      processed: res.cleaned || 0,
+      updated: res.cleaned || 0,
+      skipped: res.preserved || 0,
+      errors: 0
+    });
+  }
+
   if (res.cleaned > 0) {
     return 'Success: ' + res.cleaned + ' rows pruned (' + res.preserved + ' retained)';
   }
@@ -400,21 +425,25 @@ function executeCleanLogs_(rule, params, budget) {
 /**
  * Handler for PROCESS_QUEUE.
  */
-function executeProcessQueue_(rule, params, budget) {
+function executeProcessQueue_(rule, params, budget, session) {
   if (typeof QueueService === 'undefined') {
+    if (session) session.recordStats({ errors: 1 });
     return 'Error: QueueService not available';
   }
 
   var job = QueueService.getNextActiveJob();
   if (!job) {
+    if (session) session.recordStats({ processed: 0, updated: 0, skipped: 0, errors: 0 });
     return 'Idle: Queue empty';
   }
 
   if (typeof processBackgroundQueue === 'function') {
     processBackgroundQueue();
+    if (session) session.recordStats({ processed: 1, updated: 1, skipped: 0, errors: 0 });
     return 'Success: Processed job ' + job.jobId + ' (' + job.jobType + ')';
   }
 
+  if (session) session.recordStats({ errors: 1 });
   return 'Error: processBackgroundQueue runner not found';
 }
 
@@ -470,26 +499,31 @@ function emitAutomationEvent(eventName, payload) {
       if (!condResult.met) continue;
 
       var parsedParams = parseAutomationParams_(rule.parameters, actionDef);
-      LOG.write(CFG.LOG_PROCESSES.AUTOMATION, '[EVENT: ' + eventName + '] Triggered Rule: ' + rule.name);
+      var ruleLogLevel = parsedParams.LogLevel || (actionDef ? actionDef.defaultLogLevel : null) || LOG.getLogLevel('AUTOMATION');
+      var session = LOG.createSession(CFG.LOG_PROCESSES.AUTOMATION, ruleLogLevel);
+      session.start('[EVENT: ' + eventName + '] Triggered Rule: ' + rule.name);
 
       var resultMsg = '';
       try {
         if (rule.action === 'SCAN_WATCH_FOLDER') {
-          resultMsg = executeWatchFolderScan_(rule, parsedParams, null);
+          resultMsg = executeWatchFolderScan_(rule, parsedParams, null, session);
         } else if (rule.action === 'CLEAN_LOGS') {
-          resultMsg = executeCleanLogs_(rule, parsedParams, null);
+          resultMsg = executeCleanLogs_(rule, parsedParams, null, session);
         } else if (rule.action === 'PROCESS_QUEUE') {
-          resultMsg = executeProcessQueue_(rule, parsedParams, null);
+          resultMsg = executeProcessQueue_(rule, parsedParams, null, session);
         } else if (actionDef.handlerName && typeof this[actionDef.handlerName] === 'function') {
-          resultMsg = this[actionDef.handlerName](rule, parsedParams, null);
+          resultMsg = this[actionDef.handlerName](rule, parsedParams, null, session);
         }
       } catch (err) {
         resultMsg = 'Event Error: ' + err.message;
+        session.err(rule.name + ' event error: ' + err.message, err.stack);
+        session.recordStats({ errors: 1 });
       }
 
       sh.getRange(rowNum, 8).setValue(nowStr);
       sh.getRange(rowNum, 9).setValue(resultMsg);
-      LOG.write(CFG.LOG_PROCESSES.AUTOMATION, '[EVENT: ' + eventName + '] Finished: ' + rule.name, resultMsg);
+      session.complete('[EVENT: ' + eventName + '] Finished: ' + rule.name, resultMsg);
+      session.flush();
     }
   } catch (e) {
     console.warn('emitAutomationEvent error:', e);

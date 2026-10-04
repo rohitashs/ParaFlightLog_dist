@@ -47,7 +47,7 @@ function onOpen(e) {
         .addSeparator()
         .addItem('System Info & Health...', 'showSystemInfoDialog')
         .addItem('System Maintenance...', 'showSystemMaintenanceDialog')
-        .addItem('Clean Activity Logs Now...', 'cleanActivityLogs')
+        .addItem('Clean System Log Now...', 'cleanSystemLog')
         .addSeparator()
         .addSubMenu(ui.createMenu('Folder Configuration')
             .addItem('Set Watch Folder(s)...', 'uiUpdateWatchFolder')
@@ -1279,8 +1279,9 @@ function resyncFlightIdsBatch_(targetRows) {
   }
 
   var targetCount = hasTargetScope ? Object.keys(targetRowSet).length : allFlightItems.length;
-  LOG.write('RESYNC_FLIGHT_IDS', '[START] Starting batch Flight ID resync (target: ' + targetCount + ' flight(s))');
-  LOG.write('RESYNC_FLIGHT_IDS', '[DISCOVERY] Scanned ' + allFlightItems.length + ' flight(s) across ' + Object.keys(dateGroups).length + ' date(s). Detected ' + initialMismatchCount + ' date mismatch(es) between Date column and FlightID.');
+  var session = LOG.createSession('RESYNC_FLIGHT_IDS');
+  session.start('Starting batch Flight ID resync (target: ' + targetCount + ' flight(s))');
+  session.discovery('Scanned ' + allFlightItems.length + ' flight(s) across ' + Object.keys(dateGroups).length + ' date(s). Detected ' + initialMismatchCount + ' date mismatch(es) between Date column and FlightID.');
 
   var idChangeMap = {};
   var updatedCount = 0;
@@ -1340,7 +1341,7 @@ function resyncFlightIdsBatch_(targetRows) {
 
         if (fl.isDateMismatch) {
           repairedMismatchCount++;
-          LOG.write('RESYNC_FLIGHT_IDS', 'Row ' + fl.rowNum + ': Repaired FlightID date mismatch (' + fl.currentId + ' -> ' + newId + ') based on Date col (' + fl.dateDigits + ')');
+          session.info('Row ' + fl.rowNum + ': Repaired FlightID date mismatch (' + fl.currentId + ' -> ' + newId + ') based on Date col (' + fl.dateDigits + ')');
         }
       }
     }
@@ -1371,7 +1372,9 @@ function resyncFlightIdsBatch_(targetRows) {
     }
   }
 
-  LOG.write('RESYNC_FLIGHT_IDS', '[COMPLETE] Resynced Flight IDs for ' + updatedCount + ' flight(s) (' + repairedMismatchCount + ' date repairs, ' + (updatedCount - repairedMismatchCount) + ' re-indexed) across ' + Object.keys(dateGroups).length + ' date(s)');
+  session.recordStats({ processed: allFlightItems.length, updated: updatedCount, errors: 0 });
+  session.complete('Resynced Flight IDs for ' + updatedCount + ' flight(s) (' + repairedMismatchCount + ' date repairs, ' + (updatedCount - repairedMismatchCount) + ' re-indexed) across ' + Object.keys(dateGroups).length + ' date(s)');
+  session.flush();
   if (ss.toast) {
     ss.toast('Resynced Flight IDs: ' + updatedCount + ' updated (' + repairedMismatchCount + ' date repairs).', 'Flight Updates');
   }

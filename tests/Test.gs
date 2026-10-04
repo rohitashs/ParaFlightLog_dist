@@ -636,33 +636,65 @@ function testLogProcessResolution_() {
 function testLogLevelFiltering_() {
   if (typeof LOG === 'undefined') return { module: 'LogLevelFiltering', error: 'LOG service undefined' };
 
-  // Brief level: allows discovery ([INFO]), lifecycle ([START], [COMPLETE]), alerts ([WARN], [ERR]); filters transactions ([OK], [DUPE]) and [DEBUG]
-  if (LOG.shouldLog('Brief', '[INFO] Discovered 5 flights') !== true) {
-    return { module: 'LogLevelFiltering', error: 'Brief should allow discovery [INFO]' };
+  // 1. Silent level: suppresses all messages
+  if (LOG.shouldLog('Silent', '[START] Ingestion') !== false) {
+    return { module: 'LogLevelFiltering', error: 'Silent should suppress [START]' };
   }
-  if (LOG.shouldLog('Brief', '[START] Bulk Ingestion') !== true) {
-    return { module: 'LogLevelFiltering', error: 'Brief should allow [START]' };
-  }
-  if (LOG.shouldLog('Brief', '[COMPLETE] Ingestion done') !== true) {
-    return { module: 'LogLevelFiltering', error: 'Brief should allow [COMPLETE]' };
-  }
-  if (LOG.shouldLog('Brief', '[WARN] Missing site') !== true) {
-    return { module: 'LogLevelFiltering', error: 'Brief should allow [WARN]' };
-  }
-  if (LOG.shouldLog('Brief', '[ERR] Parse error') !== true) {
-    return { module: 'LogLevelFiltering', error: 'Brief should allow [ERR]' };
-  }
-  if (LOG.shouldLog('Brief', '[OK] Imported flight 123') !== false) {
-    return { module: 'LogLevelFiltering', error: 'Brief should filter out transaction [OK]' };
-  }
-  if (LOG.shouldLog('Brief', '[DUPE] Duplicate flight') !== false) {
-    return { module: 'LogLevelFiltering', error: 'Brief should filter out transaction [DUPE]' };
-  }
-  if (LOG.shouldLog('Brief', '[DEBUG] Internal parser details') !== false) {
-    return { module: 'LogLevelFiltering', error: 'Brief should filter out [DEBUG]' };
+  if (LOG.shouldLog('Silent', '[ERR] Fatal crash') !== false) {
+    return { module: 'LogLevelFiltering', error: 'Silent should suppress [ERR]' };
   }
 
-  // Normal level: mimics dialog console (lifecycle, discovery, transactions, alerts); filters only deep [DEBUG]
+  // 2. Exceptions level: only allows alerts ([ERR], [WARN], [FATAL])
+  if (LOG.shouldLog('Exceptions', '[START] Ingestion') !== false) {
+    return { module: 'LogLevelFiltering', error: 'Exceptions should suppress [START]' };
+  }
+  if (LOG.shouldLog('Exceptions', '[INFO] Scanning') !== false) {
+    return { module: 'LogLevelFiltering', error: 'Exceptions should suppress [INFO]' };
+  }
+  if (LOG.shouldLog('Exceptions', '[OK] Imported flight') !== false) {
+    return { module: 'LogLevelFiltering', error: 'Exceptions should suppress [OK]' };
+  }
+  if (LOG.shouldLog('Exceptions', '[WARN] Missing site') !== true) {
+    return { module: 'LogLevelFiltering', error: 'Exceptions should allow [WARN]' };
+  }
+  if (LOG.shouldLog('Exceptions', '[ERR] Parse error') !== true) {
+    return { module: 'LogLevelFiltering', error: 'Exceptions should allow [ERR]' };
+  }
+
+  // 3. Summary (and legacy Brief) level: allows discovery, lifecycle, alerts; filters transactions ([OK], [DUPE]) and [DEBUG]
+  var summaryLevels = ['Summary', 'Brief'];
+  for (var i = 0; i < summaryLevels.length; i++) {
+    var sLvl = summaryLevels[i];
+    if (LOG.shouldLog(sLvl, '[INFO] Discovered 5 flights') !== true) {
+      return { module: 'LogLevelFiltering', error: sLvl + ' should allow discovery [INFO]' };
+    }
+    if (LOG.shouldLog(sLvl, '[DISCOVERY] Scanned 10 files') !== true) {
+      return { module: 'LogLevelFiltering', error: sLvl + ' should allow [DISCOVERY]' };
+    }
+    if (LOG.shouldLog(sLvl, '[START] Bulk Ingestion') !== true) {
+      return { module: 'LogLevelFiltering', error: sLvl + ' should allow [START]' };
+    }
+    if (LOG.shouldLog(sLvl, '[COMPLETE] Ingestion done') !== true) {
+      return { module: 'LogLevelFiltering', error: sLvl + ' should allow [COMPLETE]' };
+    }
+    if (LOG.shouldLog(sLvl, '[WARN] Missing site') !== true) {
+      return { module: 'LogLevelFiltering', error: sLvl + ' should allow [WARN]' };
+    }
+    if (LOG.shouldLog(sLvl, '[ERR] Parse error') !== true) {
+      return { module: 'LogLevelFiltering', error: sLvl + ' should allow [ERR]' };
+    }
+    if (LOG.shouldLog(sLvl, '[OK] Imported flight 123') !== false) {
+      return { module: 'LogLevelFiltering', error: sLvl + ' should filter out transaction [OK]' };
+    }
+    if (LOG.shouldLog(sLvl, '[DUPE] Duplicate flight') !== false) {
+      return { module: 'LogLevelFiltering', error: sLvl + ' should filter out transaction [DUPE]' };
+    }
+    if (LOG.shouldLog(sLvl, '[DEBUG] Internal parser details') !== false) {
+      return { module: 'LogLevelFiltering', error: sLvl + ' should filter out [DEBUG]' };
+    }
+  }
+
+  // 4. Normal level: allows lifecycle, discovery, transactions, alerts; filters only [DEBUG]
   if (LOG.shouldLog('Normal', '[INFO] Discovered 5 flights') !== true) {
     return { module: 'LogLevelFiltering', error: 'Normal should allow discovery [INFO]' };
   }
@@ -688,12 +720,69 @@ function testLogLevelFiltering_() {
     return { module: 'LogLevelFiltering', error: 'Normal should filter out [DEBUG]' };
   }
 
-  // Debug level: allows everything
+  // 5. Debug level: allows everything
   if (LOG.shouldLog('Debug', '[INFO] Discovered 5 flights') !== true) {
     return { module: 'LogLevelFiltering', error: 'Debug should allow [INFO]' };
   }
   if (LOG.shouldLog('Debug', '[DEBUG] Internal parser details') !== true) {
     return { module: 'LogLevelFiltering', error: 'Debug should allow [DEBUG]' };
+  }
+
+  // 6. Direct category mapping & cascade tests
+  if (LOG.resolveCategory('WATCH_FOLDER') !== 'INGESTION') {
+    return { module: 'LogLevelFiltering', error: 'WATCH_FOLDER category resolution failed' };
+  }
+  if (LOG.resolveCategory('HEARTBEAT') !== 'HEARTBEAT') {
+    return { module: 'LogLevelFiltering', error: 'HEARTBEAT category resolution failed' };
+  }
+  if (LOG.resolveCategory('RESYNC_FLIGHT_IDS') !== 'MAINTENANCE') {
+    return { module: 'LogLevelFiltering', error: 'RESYNC_FLIGHT_IDS category resolution failed' };
+  }
+  if (LOG.getLogLevel('Debug') !== 'Debug') {
+    return { module: 'LogLevelFiltering', error: 'Direct getLogLevel("Debug") should return Debug' };
+  }
+
+  // 7. Session Logger & No-op suppression test
+  var written = [];
+  var origWriteBatch = LOG.writeBatch;
+  LOG.writeBatch = function(batch, lvl) {
+    written = written.concat(batch);
+  };
+
+  try {
+    // 7a. Silent unless some activity with 0 activity -> should NOT call writeBatch
+    written = [];
+    var sessIdle = LOG.createSession('HEARTBEAT', 'Silent unless some activity');
+    sessIdle.start('Heartbeat pulse');
+    sessIdle.complete('No due rules');
+    sessIdle.flush();
+    if (written.length !== 0) {
+      return { module: 'LogLevelFiltering', error: 'Silent unless some activity should suppress flush when 0 items processed' };
+    }
+
+    // 7b. Silent unless some activity with activity > 0 -> should flush to writeBatch
+    written = [];
+    var sessActive = LOG.createSession('WATCH_FOLDER', 'Silent unless some activity');
+    sessActive.start('Scanning folder');
+    sessActive.recordStats({ processed: 2, updated: 2, errors: 0 });
+    sessActive.complete('Imported 2 files');
+    sessActive.flush();
+    if (written.length === 0) {
+      return { module: 'LogLevelFiltering', error: 'Silent unless some activity should flush when activity > 0' };
+    }
+
+    // 7c. Silent -> should never write
+    written = [];
+    var sessSilent = LOG.createSession('MAINTENANCE', 'Silent');
+    sessSilent.start('Starting');
+    sessSilent.recordStats({ processed: 10, updated: 10, errors: 0 });
+    sessSilent.complete('Finished');
+    sessSilent.flush();
+    if (written.length !== 0) {
+      return { module: 'LogLevelFiltering', error: 'Silent should never flush to writeBatch' };
+    }
+  } finally {
+    LOG.writeBatch = origWriteBatch;
   }
 
   return { module: 'LogLevelFiltering', idx: true };
@@ -1089,8 +1178,8 @@ function testSystemMaintenanceAndManifest_() {
   if (typeof SYSTEM_MANIFEST === 'undefined' || !SYSTEM_MANIFEST.version || !SYSTEM_MANIFEST.components) {
     return { module: 'SystemMaintenanceAndManifest', error: 'SYSTEM_MANIFEST missing or invalid' };
   }
-  if (SYSTEM_MANIFEST.version !== '2.2.2') {
-    return { module: 'SystemMaintenanceAndManifest', error: 'SYSTEM_MANIFEST version expected 2.2.2, got ' + SYSTEM_MANIFEST.version };
+  if (SYSTEM_MANIFEST.version !== '2.3.0') {
+    return { module: 'SystemMaintenanceAndManifest', error: 'SYSTEM_MANIFEST version expected 2.3.0, got ' + SYSTEM_MANIFEST.version };
   }
 
   // 2. Test diffManifests_ with empty applied manifest (Clean / Unapplied Sheet)

@@ -116,6 +116,16 @@ var AUTOMATION_REGISTRY = {
           defaultValue: 20,
           description: 'Maximum number of flight files to process in a single scan.',
           validation: function(v) { return !isNaN(v) && v > 0 && v <= 100; }
+        },
+        'LogLevel': {
+          parameterId: 'LogLevel',
+          parameterLabel: 'Log Verbosity',
+          valueType: 'Text',
+          valueInput: 'Dropdown',
+          valueSet: 'Silent, Silent unless some activity, Exceptions, Summary, Normal, Debug',
+          defaultValue: 'Silent unless some activity',
+          description: 'Log verbosity level for this automation rule.',
+          validation: function(v) { return typeof v === 'string'; }
         }
       }
     },
@@ -123,9 +133,9 @@ var AUTOMATION_REGISTRY = {
     'CLEAN_LOGS': {
       id: 'CLEAN_LOGS',
       actionAvailable: true,
-      label: 'Clean Activity Logs',
+      label: 'Clean System Log',
       category: 'Maintenance',
-      description: 'Prunes historical activity logs exceeding KeepRows if they are older than KeepDays.',
+      description: 'Prunes historical system logs exceeding KeepRows if they are older than KeepDays.',
       allowedTriggers: ['TIME_DAYS', 'MANUAL'],
       defaultTrigger: { type: 'TIME_DAYS', config: 3 },
       handlerName: 'executeCleanLogs_',
@@ -151,6 +161,16 @@ var AUTOMATION_REGISTRY = {
           defaultValue: 90,
           description: 'Minimum age (in days) of logs to retain before pruning.',
           validation: function(v) { return !isNaN(v) && v > 0; }
+        },
+        'LogLevel': {
+          parameterId: 'LogLevel',
+          parameterLabel: 'Log Verbosity',
+          valueType: 'Text',
+          valueInput: 'Dropdown',
+          valueSet: 'Silent, Silent unless some activity, Exceptions, Summary, Normal, Debug',
+          defaultValue: 'Summary',
+          description: 'Log verbosity level for this automation rule.',
+          validation: function(v) { return typeof v === 'string'; }
         }
       }
     },
@@ -186,6 +206,16 @@ var AUTOMATION_REGISTRY = {
           defaultValue: 240,
           description: 'Maximum runtime seconds before checkpointing progress.',
           validation: function(v) { return !isNaN(v) && v >= 30 && v <= 270; }
+        },
+        'LogLevel': {
+          parameterId: 'LogLevel',
+          parameterLabel: 'Log Verbosity',
+          valueType: 'Text',
+          valueInput: 'Dropdown',
+          valueSet: 'Silent, Silent unless some activity, Exceptions, Summary, Normal, Debug',
+          defaultValue: 'Silent unless some activity',
+          description: 'Log verbosity level for this automation rule.',
+          validation: function(v) { return typeof v === 'string'; }
         }
       }
     },
@@ -302,19 +332,19 @@ var AUTOMATION_REGISTRY = {
       triggerType: 'Time (Minutes)',
       triggerConfig: 15,
       condition: '',
-      parameters: 'MoveToTrash=Yes; MaxFiles=20',
+      parameters: 'MoveToTrash=Yes; MaxFiles=20; LogLevel=Silent unless some activity',
       description: 'Scans Google Drive watch folders every 15 minutes for new IGC flight logs.'
     },
     {
       id: 'TPL_CLEAN_LOGS',
       active: true,
-      name: 'Prune Activity Logs',
+      name: 'Prune System Log',
       action: 'CLEAN_LOGS',
       triggerType: 'Time (Days)',
       triggerConfig: 3,
       condition: '',
-      parameters: 'KeepRows=2000; KeepDays=90',
-      description: 'Prunes old log entries older than 90 days if the log exceeds 2,000 rows.'
+      parameters: 'KeepRows=2000; KeepDays=90; LogLevel=Summary',
+      description: 'Prunes old log entries older than 90 days if the system log exceeds 2,000 rows.'
     },
     {
       id: 'TPL_PROCESS_QUEUE',
@@ -324,7 +354,7 @@ var AUTOMATION_REGISTRY = {
       triggerType: 'Time (Minutes)',
       triggerConfig: 5,
       condition: '',
-      parameters: 'BatchSize=5; MaxExecutionSeconds=240',
+      parameters: 'BatchSize=5; MaxExecutionSeconds=240; LogLevel=Silent unless some activity',
       description: 'Processes pending background queue jobs (bulk imports, updates, purges).'
     }
   ],

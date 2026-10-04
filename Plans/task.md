@@ -1,7 +1,22 @@
 # Project Tasks & Status
 *This file tracks the active tasks for the Paragliding Flight Log Project.*
 
-## Completed in Latest Session (2026-10-02) - Dedupe Engine Overhaul, In-Memory Scoring & Logbook Scanner (v0.8.21)
+## Completed in Latest Session (2026-10-03 Part 2) - Flight Updates Redesign, Batch Flight ID Resync & Audit (v2.2.2)
+- [x] **[MNT-006]** Flight Updates Modal Redesign (`CR-MNT-006`): Renamed "Update from Linked IGC" -> "Check and Sync flight data", added nested "Force update from IGC" sub-checkbox with reactive enable/disable, and decoupled standalone "Resync Flight IDs" top-level checkbox.
+- [x] **[MNT-007]** Smart Master Folder Relinking & MD5 Hash Comparison: In `executeFlightMaintenanceRow`, unlinked IGC files are re-linked to `MASTER_LOG_FOLDER_ID`. MD5 digest calculation selectively fills only missing telemetry when hashes match, strictly preserving pilot edits. When forced or changed, full telemetry is updated.
+- [x] **[MNT-008]** Standalone Batch Resync Flight IDs (`rpcResyncFlightIdsBatch` / `resyncFlightIdsBatch_`): Reads purely from active sheet (zero Drive calls); parses 12h/24h launch times (`parseTimeToMinutes_`); sorts chronologically per date (earliest first, missing launch times at tail end); re-indexes `_01`, `_02`, ...; preserves SeeYou Cloud 3D track hyperlinks; and synchronizes reciprocal duplicate notes.
+- [x] **[MNT-009]** Tri-Mode Runner Integration: Wired `finalizeWorkerJob` case `'MAINTENANCE'` to automatically execute post-processing batch Flight ID resync and chronological sorting for Sidebar and Background Queue runs.
+- [x] **[DEV-005]** Codebase Restructuring & Modularization Backlog (`CR-DEV-005`): Detailed architectural exploration plan to decompose monolithic source files (`Code.gs`, `Scaffold.gs`, `Ingestion.gs`, `Config.gs`) and establish `clasp`-compatible subfolder hierarchies (`UI/`, `Services/`, `Modules/`, `Config/`).
+- [x] **[AUD-004]** Automated Static Analysis & Test Suite (`/code_check`): Verified 168 public / 155 private functions, 92 client RPCs, 30 menu callbacks, 27 manifest components, and 18 offline test suites (`Plans/CodeCheckReports/2026-10-03_CodeCheck.md` - Status: PASS).
+- [x] **[AUD-005]** Comprehensive 5-Tier Documentation Audit (`/doc_check`): Synchronized `Docs/Context.md` (v2.2.2, 37 files), `Docs/Technical_Specification.md` (27 components, Module 13 Automation Engine), and `Docs/Features.md` (redesigned Flight Updates capabilities). All 5 tiers 100% in sync (`Plans/DocCheckReports/2026-10-03_DocCheck.md` - Status: PASS).
+
+## Completed Earlier (2026-10-03 Part 1) - Operational Ergonomics, Timezone Parity & Leaderboard Decoupling (v2.2.1)
+- [x] **[DSH-003]** Dashboard Leaderboards Decoupling (`CR-DSH-003`): Decoupled all 8 Top-5 leaderboard cards from Auto Summary into standardized `Flight nnn: <metric> (flight date, Site)` format with graceful fallback, conditional integer km, and dual duration/percentage for thermal/soaring flights.
+- [x] **[ING-016]** Flight Local Timezone Parity & UTC Date Anchoring (`Bug-ING-011`, `CR-SYS-014`): Resolved -1 day discrepancy under negative UTC offsets and epoch 1970 DST distortion via `computeFlightUtcDates_` and strict launch site local timezone formatting (`geo.tz`). Added `repairFlightDatesAndIds_()`.
+- [x] **[UI-022]** Dashboard Leaderboard Date 1899 Serial Epoch Coercion Fix (`Bug-UI-012`): Wrapped date references in `TEXT(colDate, dateFmt)`.
+- [x] **[SYS-014]** Platform-Wide Unified Date & Time Architecture (`CR-SYS-014`): Defined two-domain timezone invariants and centralized helpers in `Code/Utils.gs`.
+
+## Completed in Earlier Session (2026-10-02) - Dedupe Engine Overhaul, In-Memory Scoring & Logbook Scanner (v0.8.21)
 - [x] **[ING-009]** Dedupe Engine Overhaul & Heuristic Quality Scoring (`CR-ING-009`): in-memory row quality scoring (`scoreFlightQualityFromRow_`) eliminating compounding Drive fetch loop (`Bug-ING-007`).
 - [x] **[ING-010]** Timezone-Immune String Extraction (`getDisplayValues()` in `findHeuristicOverlap_` and `getFlightSummariesForOverlap_`), eliminating timezone translation shift and midnight epoch drift (`Bug-ING-008`).
 - [x] **[ING-011]** Concise Throwaway Tags & Reciprocal Notes (`D01`, `D02`, ...) with `Others: ...` on Primary and `Primary: ...` on Duplicates; full support for N-way clusters.

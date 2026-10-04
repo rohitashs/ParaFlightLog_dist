@@ -736,17 +736,19 @@ function scaffoldConfig_(ss) {
   var dateRule = SpreadsheetApp.newDataValidation().requireValueInRange(dateRange, true).build();
   var timeRule = SpreadsheetApp.newDataValidation().requireValueInRange(timeRange, true).build();
 
-  var logLevelRule = SpreadsheetApp.newDataValidation().requireValueInList(['Brief', 'Normal', 'Debug'], true).build();
+  var logLevels = (typeof CFG !== 'undefined' && CFG.LOG_LEVELS) ? CFG.LOG_LEVELS : ['Silent', 'Silent unless some activity', 'Exceptions', 'Summary', 'Normal', 'Debug'];
+  var logLevelRule = SpreadsheetApp.newDataValidation().requireValueInList(logLevels, true).build();
   var yesNoRule = SpreadsheetApp.newDataValidation().requireValueInList(['Yes', 'No'], true).build();
   var intervalRule = SpreadsheetApp.newDataValidation().requireValueInList(['5', '10', '15', '30', '60'], true).build();
 
   for (var i = 0; i < rows.length; i++) {
-    if (rows[i][0] === 'DATE_FORMAT') sh.getRange(i + 3, 2).setNumberFormat('@').setDataValidation(dateRule);
-    if (rows[i][0] === 'TIME_FORMAT') sh.getRange(i + 3, 2).setNumberFormat('@').setDataValidation(timeRule);
-    if (rows[i][0] === 'LOG_LEVEL') sh.getRange(i + 3, 2).setDataValidation(logLevelRule);
-    if (rows[i][0] === 'LOG_AUTO_CLEAN' || rows[i][0] === 'HEARTBEAT_ENABLED') sh.getRange(i + 3, 2).setDataValidation(yesNoRule);
-    if (rows[i][0] === 'HEARTBEAT_INTERVAL_MIN') sh.getRange(i + 3, 2).setDataValidation(intervalRule);
-    if (['ENABLE_WATCH_FOLDER', 'MOVE_FROM_WATCH_FOLDER'].indexOf(rows[i][0]) > -1) {
+    var pKey = String(rows[i][0] || '');
+    if (pKey === 'DATE_FORMAT') sh.getRange(i + 3, 2).setNumberFormat('@').setDataValidation(dateRule);
+    if (pKey === 'TIME_FORMAT') sh.getRange(i + 3, 2).setNumberFormat('@').setDataValidation(timeRule);
+    if (pKey.indexOf('LOG_LEVEL') === 0) sh.getRange(i + 3, 2).setDataValidation(logLevelRule);
+    if (pKey === 'LOG_AUTO_CLEAN' || pKey === 'HEARTBEAT_ENABLED') sh.getRange(i + 3, 2).setDataValidation(yesNoRule);
+    if (pKey === 'HEARTBEAT_INTERVAL_MIN') sh.getRange(i + 3, 2).setDataValidation(intervalRule);
+    if (['ENABLE_WATCH_FOLDER', 'MOVE_FROM_WATCH_FOLDER'].indexOf(pKey) > -1) {
       var boolRule = SpreadsheetApp.newDataValidation().requireValueInList(['TRUE', 'FALSE'], true).build();
       sh.getRange(i + 3, 2).setDataValidation(boolRule);
     }
@@ -792,31 +794,36 @@ function scaffoldLookups_(ss) {
   scaffoldConfig_(ss);
 }
 
-function scaffoldActivityLogs_(ss) {
-  var sh = ss.getSheetByName(TABS.ACTIVITY.name);
+function scaffoldSystemLog_(ss) {
+  var tabDef = (typeof TABS !== 'undefined' && TABS.SYSTEM_LOG) ? TABS.SYSTEM_LOG : { name: 'System Log', color: '#D32F2F', index: 7, columns: ['Process', 'Timestamp', 'Activity / Event', 'Additional Info'] };
+  var targetName = tabDef.name || 'System Log';
+  var sh = ss.getSheetByName(targetName);
   if (!sh) {
-    var oldSh = ss.getSheetByName('App_Log'); // Legacy migration bridge
+    // Auto-detect and gracefully rename legacy Activity Logs or App_Log to preserve user history
+    var oldSh = ss.getSheetByName('Activity Logs') || ss.getSheetByName('App_Log'); // Legacy migration bridge
     if (oldSh) {
-      oldSh.setName(TABS.ACTIVITY.name);
+      oldSh.setName(targetName);
       sh = oldSh;
     } else {
-      sh = ss.insertSheet(TABS.ACTIVITY.name, TABS.ACTIVITY.index);
+      sh = ss.insertSheet(targetName, tabDef.index || 7);
     }
   }
   if (!sh) return;
-  sh.setTabColor(TABS.ACTIVITY.color);
+  registerSheetId_(ss, 'SYSTEM_LOG', sh);
+  sh.setTabColor(tabDef.color || '#D32F2F');
   ensureDimensions_(sh, 50, 4);
 
   // Set / refresh headers
   var lastCol = Math.max(4, sh.getLastColumn());
-  sh.getRange('A1:D1').setBackground(TABS.ACTIVITY.color).setFontColor('white');
-  sh.getRange('A1').setValue(TABS.ACTIVITY.name).setFontWeight('bold').setFontSize(12);
+  sh.getRange('A1:D1').setBackground(tabDef.color || '#D32F2F').setFontColor('white');
+  sh.getRange('A1').setValue(targetName).setFontWeight('bold').setFontSize(12);
   if (lastCol > 4) {
     sh.getRange(1, 5, 1, lastCol - 4).clear();
     sh.getRange(2, 5, 1, lastCol - 4).clear();
   }
   
-  sh.getRange(2, 1, 1, 4).setValues([TABS.ACTIVITY.columns]);
+  var cols = tabDef.columns || ['Process', 'Timestamp', 'Activity / Event', 'Additional Info'];
+  sh.getRange(2, 1, 1, 4).setValues([cols]);
   sh.getRange(2, 1, 1, 4).setFontWeight('bold').setBackground('#F5F5F5').setFontColor('#333333');
   sh.setFrozenRows(2);
 
@@ -831,8 +838,12 @@ function scaffoldActivityLogs_(ss) {
   sh.getRange('B3:B').setNumberFormat('yyyy-mm-dd hh:mm:ss');
 }
 
+function scaffoldActivityLogs_(ss) {
+  scaffoldSystemLog_(ss); // Migration bridge
+}
+
 function scaffoldAppLog_(ss) {
-  scaffoldActivityLogs_(ss); // Backward-compatibility migration bridge
+  scaffoldSystemLog_(ss); // Backward-compatibility migration bridge
 }
 
 /**
@@ -2265,15 +2276,19 @@ var SheetSpecialists = {
     }
   },
 
-  updateActivityLogs: function(elements, ss, logs) {
-    if (elements['Activity_Logs.headers'] || elements['App_Log.headers']) { // Legacy alias migration bridge
-      scaffoldActivityLogs_(ss);
-      logs.push('[Activity_Logs] Activity Logs schema & formatting verified.');
+  updateSystemLog: function(elements, ss, logs) {
+    if (elements['System_Log.headers'] || elements['Activity_Logs.headers'] || elements['App_Log.headers']) { // Legacy migration bridge
+      scaffoldSystemLog_(ss);
+      logs.push('[System_Log] System Log schema & formatting verified.');
     }
   },
 
+  updateActivityLogs: function(elements, ss, logs) {
+    this.updateSystemLog(elements, ss, logs); // Legacy alias migration bridge
+  },
+
   updateAppLog: function(elements, ss, logs) {
-    this.updateActivityLogs(elements, ss, logs); // Legacy alias migration bridge
+    this.updateSystemLog(elements, ss, logs); // Legacy alias migration bridge
   },
 
   updateUserGuide: function(elements, ss, logs) {
@@ -2402,7 +2417,7 @@ var SystemMaintenanceOrchestrator = {
       SheetSpecialists.updatePilotProfile(effectiveComponents, ss, logs);
       SheetSpecialists.updateAutomation(effectiveComponents, ss, logs);
       SheetSpecialists.updateQueue(effectiveComponents, ss, logs);
-      SheetSpecialists.updateAppLog(effectiveComponents, ss, logs);
+      SheetSpecialists.updateSystemLog(effectiveComponents, ss, logs);
       SheetSpecialists.updateUserGuide(effectiveComponents, ss, logs);
     } else if (phase === 'finalize') {
       var applied = getAppliedManifest_();
@@ -2414,9 +2429,9 @@ var SystemMaintenanceOrchestrator = {
           appliedCount++;
         }
       }
-      if ((effectiveComponents['App_Log.headers'] || effectiveComponents['Activity_Logs.headers']) && SYSTEM_MANIFEST.components['Activity_Logs.headers']) { // Legacy migration bridge
-        var alDef = SYSTEM_MANIFEST.components['Activity_Logs.headers'];
-        applied['Activity_Logs.headers'] = (typeof alDef === 'object' && alDef.version) ? alDef.version : alDef;
+      if ((effectiveComponents['System_Log.headers'] || effectiveComponents['App_Log.headers'] || effectiveComponents['Activity_Logs.headers']) && SYSTEM_MANIFEST.components['System_Log.headers']) { // Legacy migration bridge
+        var slDef = SYSTEM_MANIFEST.components['System_Log.headers'];
+        applied['System_Log.headers'] = (typeof slDef === 'object' && slDef.version) ? slDef.version : slDef;
       }
       if ((effectiveComponents['User_Guide.notes'] || effectiveComponents['User_Guide.content']) && SYSTEM_MANIFEST.components['User_Guide.content']) {
         var ugDef = SYSTEM_MANIFEST.components['User_Guide.content'];

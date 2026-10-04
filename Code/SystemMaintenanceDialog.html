@@ -676,7 +676,7 @@
 
     <script>
         var systemStatus = null;
-        var sheetOrder = ['Flights', 'Dashboard', 'Config', 'Equipment', 'Pilot_Profile', 'Automation_Rules', 'Automation_Queue', 'Activity_Logs', 'User_Guide'];
+        var sheetOrder = ['Flights', 'Dashboard', 'Config', 'Equipment', 'Pilot_Profile', 'Automation_Rules', 'Automation_Queue', 'System_Log', 'User_Guide'];
         var elementRows = [
             { id: 'rowGrid', key: 'grid' },
             { id: 'rowHeaders', key: 'headers' },
@@ -712,7 +712,7 @@
                 var sData = null;
                 for (var i = 0; i < data.diff.sheets.length; i++) {
                     var curS = data.diff.sheets[i];
-                    if (curS.sheetKey === sName || curS.sheetName === sName || (sName === 'Activity_Logs' && curS.sheetName === 'Activity Logs')) {
+                    if (curS.sheetKey === sName || curS.sheetName === sName || ((sName === 'System_Log' || sName === 'Activity_Logs') && (curS.sheetName === 'System Log' || curS.sheetName === 'Activity Logs'))) {
                         sData = curS;
                         break;
                     }
