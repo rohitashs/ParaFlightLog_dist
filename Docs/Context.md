@@ -85,10 +85,13 @@ flowchart TD
         E -- No / Refine --> C
     end
 
-    subgraph Execution ["MODE 3: Gated Execution"]
-        E -- Yes --> F[Execute Strictly What Was Approved]
-        F --> G[Run Automated Offline Tests & Audit]
-        G --> H[Report Results & Verification]
+    subgraph Execution ["MODE 3: Gated Execution & Autonomous Lifecycle"]
+        E -- Yes --> F[1. Execute Strictly What Was Approved]
+        F --> G[2. Run Offline Tests & Code Audit]
+        G --> H[3. Synchronize Persistent Docs]
+        H --> I[4. Deploy to GAS: clasp push]
+        I --> J[5. Sync to Git: git commit & push]
+        J --> K[6. Report Verification & Completion]
     end
 
     style Brainstorming fill:#E3F2FD,stroke:#1565C0,stroke-width:2px
@@ -107,12 +110,16 @@ flowchart TD
         3. Every user-facing UI touchpoint (menus, dialogs, sidebars, sheets, headers). If a UI item is not in the plan, it does not exist.
         4. Testing and verification criteria.
     *   **Strict Invariant**: Execution cannot proceed on fragmented past messages. The consolidated plan is the sole contract.
-*   **Mode 3: Gated Execution (Strict Discipline)**:
+*   **Mode 3: Gated Execution (Strict Discipline & Autonomous Lifecycle)**:
     *   Triggered **ONLY** when the user explicitly provides unambiguous approval (e.g., *"Approved"*, *"Execute"*, or *"Go ahead"*).
     *   **Strict Invariants**:
         1. **Zero Out-of-Scope Changes**: Implement strictly what was approved in the plan—no unilateral "drive-by" features or "convenience" helpers.
         2. **Google Sheets UI Immutability**: Changes to the Google Sheet UI (menus, custom sidebars, modal dialogs, sheet tabs, header structures, column notes) require explicit intent, documentation, and an approved plan. Unapproved menu items or UI affordances are strictly forbidden.
-        3. **Verification Invariant**: Automated tests (`tools/run_all_offline_tests.js`) and architectural audits (`tools/code_check_audit.js`) must be executed and achieve 100% pass before work is declared complete.
+        3. **Verification Invariant**: Automated tests (`tools/run_all_offline_tests.js`) and architectural audits (`tools/code_check_audit.js`) must be executed and achieve 100% pass before declaring completion.
+        4. **Mandatory Documentation Synchronization**: Persistent documentation (`Context.md`, `Backlog.md`, `ChangeLog.md`, and any relevant `Architecture.md` / `Features.md`) must be synchronized in the same execution turn.
+        5. **Mandatory Apps Script Deployment (`clasp push`)**: Whenever files in `Code/` are modified, the assistant must directly execute `clasp push` via `run_command`. Deployment is NEVER offloaded to the user.
+        6. **Mandatory Git Synchronization (`git push`)**: All changed files must be staged, committed with descriptive conventional commit messages (citing ticket IDs), and pushed to `origin/master` via `run_command`.
+        7. **Autonomous Completion Contract**: Work is never declared complete until tests pass, docs are synchronized, `clasp push` succeeds, and `git push` succeeds. The final response must present verified results and require zero manual CLI actions from the user.
 
 ### 2. Document-First Development
 *   **`Roadmap.md`**: Define the *strategic vision, non-negotiable tenets, and evolution horizons*.
