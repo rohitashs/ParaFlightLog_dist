@@ -1,6 +1,6 @@
 /**
  * Paragliding Flight Log v2.0
- * Updated: 2026-10-03 21:45:00
+ * Updated: 2026-10-03 22:15:00
  * 
  * MODULE: Configuration
  * 
@@ -478,7 +478,7 @@ function getSheetByIdOrName_(ss, tabKey, defaultName) {
    ========================================================================================== */
 
 var SYSTEM_MANIFEST = {
-  version: '2.2.1',
+  version: '2.2.2',
   components: {
     // Flights
     'Flights.grid':        { version: 'v2.0-dim-2000x70',     tier: 'recommended' },
@@ -490,7 +490,7 @@ var SYSTEM_MANIFEST = {
 
     // Dashboard
     'Dashboard.grid':      { version: 'v2.0-clean-bounds',     tier: 'recommended' },
-    'Dashboard.formulas':  { version: 'v2.2-leaderboard-datefmt', tier: 'mandatory' },
+    'Dashboard.formulas':  { version: 'v2.3-leaderboard-site-date', tier: 'mandatory' },
     'Dashboard.guardrails':{ version: 'v2.1-card-soft-warn',   tier: 'recommended' },
 
     // Config

@@ -54,6 +54,7 @@ This file is the single source of truth for **ToDos**, **Requirements**, **Chang
 - [x] **Status**: Completed | **Date**: 2026-10-03 | **Imp**: High | **Description**: **Flight Local Timezone Parity & FlightID Negative UTC Rollback Fix**: Resolved -1 day discrepancy between generated `FlightID` and the `Date` column under negative UTC offsets (America/Denver, America/Los_Angeles) and 1-hour DST distortion from Unix epoch 1970 instantiation. Implemented UTC date anchoring (`UTILS.computeFlightUtcDates`) and formatted all flight dates, launch/landing times, and FlightIDs strictly in launch site local timezone (`geo.tz`). Added `repairFlightDatesAndIds_` maintenance utility. Tracked in Bug-ING-011.
 - [x] **Status**: Completed | **Date**: 2026-10-03 | **Imp**: High | **Description**: **Dashboard Leaderboard Date 1899 Serial Epoch Coercion Fix**: Repaired all 8 Leaderboard card formulas in `scaffoldDashboardTab_` by wrapping date references in `TEXT(colDate, dateFmt)`, eliminating Google Sheets December 29, 1899 raw fractional day serial string coercion. Tracked in Bug-UI-012.
 - [x] **Status**: Completed | **Date**: 2026-10-03 | **Imp**: High | **Description**: **Platform-Wide Unified Date & Time Formatting Architecture**: Defined strict timezone domain invariants (Flight domain = site local `geo.tz`, System domain = pilot/script timezone), standard formatting presets, and centralized helper functions (`UTILS.computeFlightUtcDates`, `UTILS.formatFlightDate`, `UTILS.formatFlightTime`, `UTILS.formatSystemTimestamp`). Tracked in CR-SYS-014.
+- [x] **Status**: Completed | **Date**: 2026-10-03 | **Imp**: High | **Description**: **Dashboard Leaderboards Decoupling, Standardized Card Formatting & Manifest Synchronization**: Decoupled all 8 Dashboard leaderboard cards completely from Auto Summary into the standardized format: 'Flight nnn: <metric> (flight date, Site)' with graceful fallback when Site is empty ('(flight date)'). Implemented specific metric rules: [h]:mm hrs duration, conditional integer km distance (e.g. 25 km vs 25.7 km), #,##0 m altitudes, dual duration and percentage for thermalling/soaring (e.g. 2:15 hrs, 55%), and 0.0 pts / km/h. Bumped Dashboard.formulas manifest version to 'v2.3-leaderboard-site-date' and system manifest to 2.2.2. Tracked in CR-DSH-003.
 
 ---
 
@@ -338,6 +339,20 @@ This file is the single source of truth for **ToDos**, **Requirements**, **Chang
     - **Root Automation Control**: Provides an authoritative kill-switch / master enablement control for all autonomous background processes.
     - **Configuration Parameters**: Added `HEARTBEAT_ENABLED` (`Yes` / `No`) and `HEARTBEAT_INTERVAL_MIN` (`5`, `10`, `15`, `30`, `60`) under `[ Ingestion & Automation ]` in the `Config` tab.
     - **Interactive Menu Action**: Added `Flight Log > Admin > Automation & Services > [ Toggle Master Heartbeat (Start/Stop)... ]` to inspect active triggers, enforce `HEARTBEAT_ENABLED`, install or delete the single time-driven trigger (`masterHeartbeatDispatcher`), and display clear user feedback.
+
+- [x] **CR-DSH-003** | **Status**: Implemented | **Date**: 2026-10-03 | **Req**: RQ-DSH-001, RQ-SYS-001 | **Description**: **Dashboard Leaderboards Decoupling, Standardized Card Formatting & Manifest Synchronization**:
+    - **Decoupling from Auto Summary**: Decoupled all 8 Top-5 leaderboard cards completely from `Auto Summary` column dependencies, giving each leaderboard dedicated column extraction and formatting tailored to its specific analytical purpose.
+    - **Standardized Card Display Format**: Standardized all 8 cards to: `Flight nnn: <metric> (flight date, Site)`.
+    - **Graceful Site Fallback**: If `Launch Site` is blank/empty, dynamically renders `(flight date)` without a trailing comma or orphaned punctuation.
+    - **Granular Metric Specifications**:
+        - **Top 5 by Duration**: `[h]:mm hrs` (e.g. `2:15 hrs`).
+        - **Top 5 by Distance**: Conditional integer formatting: displays integer without decimal if whole (e.g. `25 km`), or 1 decimal place if fractional (e.g. `25.7 km`).
+        - **Top 5 by Max Altitude & Top 5 by Altitude Gain**: `#,##0 m` (e.g. `3,150 m` / `1,820 m`).
+        - **Top 5 Thermal Flights**: Duration and Thermal %: `2:15 hrs, 55%` (sorted descending by thermalling time).
+        - **Top 5 Soaring Flights**: Duration and Soaring %: `1:45 hrs, 70%` (sorted descending by soaring time).
+        - **Top 5 by XC Score**: `0.0 pts` (e.g. `48.5 pts`).
+        - **Top 5 by Max Groundspeed**: `0.0 km/h` (e.g. `62.4 km/h`).
+    - **System Maintenance Manifest Parity**: Bumped `SYSTEM_MANIFEST.version` to `2.2.2` and `Dashboard.formulas` component version to `v2.3-leaderboard-site-date` so the System Maintenance Orchestrator flags pending updates and updates live sheets upon execution.
 
 - [ ] **CR-UI-023** | **Status**: Open | **Date**: 2026-10-02 | **Req**: RQ-SYS-002 | **Description**: **Spreadsheet Menu Structure Reorganization & Streamlining**:
     - **Top-Down Menu Audit**: Comprehensive review and restructuring of the `Flight Log` custom spreadsheet menu in `Code.gs` to streamline navigation following major Phase 2/3 additions.

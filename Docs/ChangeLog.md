@@ -1,5 +1,32 @@
 # Project Change Log
 
+## Session: Dashboard Leaderboards Decoupling, Standardized Formatting & Manifest Synchronization
+**Date**: 2026-10-03
+**Versions**: Core v2.2.2 (Dashboard.formulas v2.3-leaderboard-site-date)
+**Focus**: Dashboard Leaderboards Decoupling from Auto Summary (`CR-DSH-003`), Standardized Card Formatting (`Flight nnn: <metric> (flight date, Site)`), Conditional Distance Integer Formatting, Duration & Percentage Metric Synchronization, and System Maintenance Manifest Parity.
+
+*   `[Feat]` **CR-DSH-003 (Dashboard Leaderboards Decoupling & Standardized Card Formatting)**:
+    *   **Auto Summary Decoupling**: Fully decoupled all 8 Top-5 leaderboard cards on the `Dashboard` sheet from `Auto Summary` column dependencies, giving each leaderboard dedicated column extraction and formatting tailored to its specific analytical purpose.
+    *   **Unified Card Display Format**: Standardized all 8 leaderboard cards to the canonical format: `Flight nnn: <metric> (flight date, Site)`.
+    *   **Dynamic Site Fallback**: If `Launch Site` is blank/empty, dynamically renders `(flight date)` without a trailing comma or orphaned punctuation.
+    *   **Granular Metric Implementations**:
+        1. **Top 5 by Duration**: `[h]:mm hrs` (e.g. `2:15 hrs`).
+        2. **Top 5 by Distance**: Conditional integer formatting: displays integer without decimal if whole (e.g. `25 km`), or 1 decimal place if fractional (e.g. `25.7 km`).
+        3. **Top 5 by Max Altitude**: `#,##0 m` (e.g. `3,150 m`).
+        4. **Top 5 by Altitude Gain**: `#,##0 m` (e.g. `1,820 m`).
+        5. **Top 5 Thermal Flights**: Duration and Thermal %: `2:15 hrs, 55%` (sorted descending by thermalling time).
+        6. **Top 5 Soaring Flights**: Duration and Soaring %: `1:45 hrs, 70%` (sorted descending by soaring time).
+        7. **Top 5 by XC Score**: `0.0 pts` (e.g. `48.5 pts`).
+        8. **Top 5 by Max Groundspeed**: `0.0 km/h` (e.g. `62.4 km/h`).
+*   `[Mnt]` **System Maintenance Manifest Synchronization**:
+    *   Bumped `SYSTEM_MANIFEST.version` in `Code/Config.gs` from `2.2.1` to `2.2.2`.
+    *   Bumped `Dashboard.formulas` component version to `v2.3-leaderboard-site-date`.
+    *   Updated `tests/Test.gs` manifest version assertion to expect `2.2.2`.
+    *   Ensured `System Maintenance` cockpit will immediately flag pending formula updates and apply them cleanly to active spreadsheets.
+*   `[Test]` **Automated Test & Architectural Audit Parity**:
+    *   Verified 17/17 offline unit and integration tests passing (`node tools/run_all_offline_tests.js`).
+    *   Verified 0 Critical Errors and 0 Warnings across all 6 dimensions in `node tools/code_check_audit.js`.
+
 ## Session: Flight Temporal Grounding, Site Timezone Parity, Leaderboard Epoch Fix & Unified Date/Time Policy
 **Date**: 2026-10-03
 **Versions**: Core v2.2.1 (Dashboard.formulas v2.2-leaderboard-datefmt)
