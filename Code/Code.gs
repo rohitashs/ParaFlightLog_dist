@@ -43,9 +43,7 @@ function onOpen(e) {
         .addSeparator()
         .addSubMenu(ui.createMenu('Configuration Management')
             .addItem('Save Config (Export JSON)...', 'showSaveConfigDialog')
-            .addItem('Load Config (Import JSON)...', 'showLoadConfigDialog')
-            .addSeparator()
-            .addItem('Sync Config Tab (Parameters & Lookups)', 'syncConfigParameters'))
+            .addItem('Load Config (Import JSON)...', 'showLoadConfigDialog'))
         .addSeparator()
         .addItem('System Info & Health...', 'showSystemInfoDialog')
         .addItem('System Maintenance...', 'showSystemMaintenanceDialog')
@@ -2969,24 +2967,6 @@ function runSystemMaintenance(selectedComponents, options) {
   return SystemMaintenanceOrchestrator.execute(selectedComponents, options);
 }
 
-/**
- * Standalone helper to immediately synchronize Config parameters and lookups
- * without executing full multi-sheet maintenance.
- */
-function syncConfigParameters() {
-  var ss = SpreadsheetApp.getActive();
-  scaffoldConfig_(ss);
-  try {
-    var applied = getAppliedManifest_();
-    applied['Config.parameters'] = SYSTEM_MANIFEST.components['Config.parameters'].version;
-    setAppliedManifest_(applied);
-  } catch (e) {
-    console.warn('Could not update APPLIED_MANIFEST for Config.parameters:', e);
-  }
-  if (ss.toast) {
-    ss.toast('Config parameters synchronized successfully.', 'Config', 4);
-  }
-}
 
 
 
