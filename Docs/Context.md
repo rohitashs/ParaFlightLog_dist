@@ -334,7 +334,18 @@ git status
 
 ---
 
-## 📌 Guiding Principles
+## 📌 Guiding Principles & Invariants
 *   **Config Authority**: The `Parameters` sheet is the runtime source of truth. `Config.gs` defines the default schema and constants.
 *   **Graceful Validation**: Detailed errors and partial failures should be recorded in `Activity Logs` (via centralized `LOG.write`) or `Notes` (pipe-separated) rather than failing silently.
 *   **Document-First Integrity**: Always sync `Docs/` whenever features, parameters, or architecture change.
+*   **Unified Date & Time Policy**:
+    *   **Flight Domain**: Flight events must always be resolved and formatted in the **launch site's local timezone** (`geo.tz` / `Time Zone` column). This applies to the `Date` column, `Launch Time`, `Landing Time`, and the date token inside `FlightID` (`FYYYYMMDD_##`). Flights are never resolved against the server or script host timezone.
+    *   **System Domain**: Operations, batch jobs, activity logging (`Activity Logs`), queue tasks, and backups run in the **system/pilot timezone** (`Session.getScriptTimeZone()`).
+    *   **Zero Raw DateTime Coercion**: Spreadsheet formulas must NEVER concatenate raw date/time cells into text strings without explicit wrapping in `TEXT(cell, dateFmt)`. Raw string coercion in Google Sheets exposes fractional day serials and causes the December 29/30, 1899 epoch base bug.
+    *   **Standard Formatting Presets**:
+        *   `Flight Date`: `yyyy-MM-dd` (or pilot-configured display format).
+        *   `Flight Time`: `h:mm a`.
+        *   `FlightID Date`: `yyyyMMdd`.
+        *   `System Timestamp`: `yyyy-MM-dd HH:mm:ss`.
+    *   **UTC Temporal Anchoring**: Never construct flight dates at Unix epoch `1970-01-01`, as Apps Script evaluates DST rules for January, inducing 1-hour offsets on summer/autumn flights. Always anchor UTC seconds-from-midnight to `meta.dateIso` via `UTILS.computeFlightUtcDates`.
+

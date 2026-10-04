@@ -90,6 +90,10 @@ Every subsystem in ParaFlightLog must adhere to five non-negotiable architectura
 5. **Tenet 5: Non-Destructive Invariant Scaffolding & Dynamic Formulas**:
    * System setup and updates must never delete or overwrite user data rows, custom columns, or manual notes.
    * Formula links in `Dashboard` and summary views utilize resilient string-constructed formulas (`INDIRECT("Flights!..." & startRow & ":...")`), ensuring that row sorting, row insertion, or flight purges never cause `#REF!` errors.
+6. **Tenet 6: Temporal Grounding & Site-Local Timezone Authority**:
+   * Flight events represent physical aeronautical events anchored to a specific geographic takeoff location. All flight dates, launch times, landing times, and date tokens inside `FlightID` (`FYYYYMMDD_##`) are strictly evaluated in the local timezone of the launch site (`geo.tz`).
+   * JavaScript timestamps must never be instantiated at Unix epoch `1970-01-01` because Apps Script evaluates DST against January rules, creating 1-hour distortions for summer/autumn flights. Ingestion anchors seconds-from-midnight to `meta.dateIso` (`UTILS.computeFlightUtcDates`), providing timezone-immune UTC dates that format cleanly under negative and positive UTC offsets.
+   * Spreadsheet formulas linking to dates and times must wrap targets in `TEXT(cell, format)` to eliminate Google Sheets raw date base serial number coercion (`Fri Dec 29 1899 ...`).
 
 ---
 
@@ -154,7 +158,7 @@ Code/
 
 ### 2.3 Layer 3: Domain & Business Logic Services
 * **File Pipeline (`FileHandling.gs`)**: Manages Google Drive folder validation, recursive archive traversal (up to 10 folder levels), staged temporary uploads, and strict isolation between `MASTER_LOG_FOLDER_ID`, `TRASH_FOLDER_ID`, and `ERROR_FOLDER_ID`.
-* **Ingestion & Deduplication (`Ingestion.gs`)**: Orchestrates the multi-stage ingestion pipeline. Implements row-based MD5 checksum deduplication, multi-criteria heuristic candidate matching (Date $\pm 15$ min launch time, $\le 1{,}000$m distance), and device quality scoring (0–100 pts) to resolve `Dup-Primary` vs `Dup-Others`.
+* **Ingestion & Deduplication (`Ingestion.gs`)**: Orchestrates the multi-stage ingestion pipeline. Implements row-based MD5 checksum deduplication, multi-criteria heuristic candidate matching (Date $\pm 15$ min launch time, $\le 1{,}000$m distance), and device quality scoring (0–100 pts) to resolve `Dup-Primary` vs `Dup-Others`. Anchors UTC timestamps via `UTILS.computeFlightUtcDates` to guarantee site-local timezone accuracy across negative and positive UTC offsets, preventing -1 day rollback and 1-hour DST distortion.
 * **Aeronautical Physics Engine (`Parser.gs`, `Analysis.gs`, `Utils.gs`)**:
   * Extracts FAI-standard B-records (timestamp, lat, lon, GPS alt, pressure alt) and H-records (glider, pilot, instrument).
   * Sliding-window mode detection classifies flight segments into **Thermal** ($V_z > 0.3\text{ m/s}$, $\omega > 8^\circ/\text{s}$), **Soaring** ($V_z > -0.2\text{ m/s}$, S-turn heading reversals $> 90^\circ$), and **Glide** ($V_z < 0.2\text{ m/s}$, $\omega < 5^\circ/\text{s}$).

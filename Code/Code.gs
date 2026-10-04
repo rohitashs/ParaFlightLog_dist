@@ -351,14 +351,12 @@ function getInspectorData() {
            // Heuristic: If column name contains 'Time' or 'Duration' -> Time Format?
            // Actually, standard Date objects in Sheets are 'Date' type.
            if (val instanceof Date) {
-              // Check if it's a "Date" column or "Time" column based on Header Name
+              var tzIndex = headers.indexOf('Time Zone');
+              var flightTz = (tzIndex > -1 && values[tzIndex]) ? String(values[tzIndex]).trim() : Session.getScriptTimeZone();
               if (colName.match(/Time|Duration/i)) {
-                 // Check if it's a Duration value (number) or Date object?
-                 // In Sheets, Time is Date object.
-                 val = Utilities.formatDate(val, Session.getScriptTimeZone(), timeFormat);
+                 val = UTILS.formatFlightTime(val, flightTz, timeFormat);
               } else {
-                 // Assume Date
-                 val = Utilities.formatDate(val, Session.getScriptTimeZone(), dateFormat);
+                 val = UTILS.formatFlightDate(val, flightTz, dateFormat);
               }
            }
            
@@ -688,16 +686,30 @@ function executeFlightMaintenanceRow(rowNum, opConfig) {
         var mBlob = mFile.getBlob();
         var mParsed = PARSER.parseIgc(mBlob.getDataAsString(), mFile.getName());
         if (mParsed && mParsed.fixes && mParsed.fixes.length > 5) {
-          if (mParsed.meta && mParsed.meta.dateIso) setV('Date', mParsed.meta.dateIso);
-          
           var pTz = String(getV('Time Zone') || 'UTC');
-          var timeFmt = config.TIME_FORMAT || 'HH:mm';
-          var sTimeTz = GEO.formatInTimezone(new Date(mParsed.stats.startTime * 1000), pTz, timeFmt);
-          setV('Launch Time', sTimeTz);
+          var timeFmt = config.TIME_FORMAT || 'h:mm a';
+          var dateFmt = config.DATE_FORMAT || 'yyyy-MM-dd';
 
           var eTimeSec = mParsed.stats.endTime;
           if (!eTimeSec || isNaN(eTimeSec)) eTimeSec = mParsed.stats.startTime + mParsed.stats.durationSec;
-          var eTimeTz = GEO.formatInTimezone(new Date(eTimeSec * 1000), pTz, timeFmt);
+          var mUtcDates = UTILS.computeFlightUtcDates(mParsed.meta && mParsed.meta.dateIso, mParsed.stats.startTime, eTimeSec);
+          var mLocalDate = UTILS.formatFlightDate(mUtcDates.launchDateUtc, pTz, dateFmt);
+          if (mLocalDate) {
+            setV('Date', mLocalDate);
+            var curFlightIdFormula = String(getV('FlightID') || '');
+            var targetDateStr = mLocalDate.replace(/-/g, '');
+            var idMatch = curFlightIdFormula.match(/F(\d{8})_(\d+)/);
+            if (idMatch && idMatch[1] !== targetDateStr) {
+              var newIdStr = 'F' + targetDateStr + '_' + idMatch[2];
+              var updatedFlightIdVal = curFlightIdFormula.replace(idMatch[0], newIdStr);
+              setV('FlightID', updatedFlightIdVal);
+              updated.push('FlightID');
+            }
+          }
+          
+          var sTimeTz = UTILS.formatFlightTime(mUtcDates.launchDateUtc, pTz, timeFmt);
+          setV('Launch Time', sTimeTz);
+          var eTimeTz = UTILS.formatFlightTime(mUtcDates.landDateUtc, pTz, timeFmt);
           setV('Landing Time', eTimeTz);
 
           var mDurMin = Math.round(mParsed.stats.durationSec / 60);
@@ -2967,6 +2979,53 @@ function runSystemMaintenance(selectedComponents, options) {
   return SystemMaintenanceOrchestrator.execute(selectedComponents, options);
 }
 
+/**
+ * Maintenance helper to repair historical flight rows where FlightID date is mismatched
+ * with the Date column, and refresh Dashboard leaderboards.
+ */
+function repairFlightDatesAndIds_() {
+  var ss = SpreadsheetApp.getActive();
+  var sh = ss.getSheetByName(TABS.FLIGHTS.name);
+  if (!sh || sh.getLastRow() < 5) return { success: true, count: 0 };
+  
+  var map = getColumnMap_(sh);
+  var idCol = map['FlightID'];
+  var dateCol = map['Date'];
+  if (!idCol || !dateCol) return { success: false, error: 'Missing columns' };
 
+  var numRows = sh.getLastRow() - 4;
+  var idRange = sh.getRange(5, idCol, numRows, 1);
+  var dateRange = sh.getRange(5, dateCol, numRows, 1);
+  var idFormulas = idRange.getFormulas();
+  var idValues = idRange.getValues();
+  var dateValues = dateRange.getValues();
+  var dateDisplayValues = dateRange.getDisplayValues();
 
+  var updatedCount = 0;
+  for (var i = 0; i < numRows; i++) {
+    var rawDate = dateDisplayValues[i][0] || dateValues[i][0];
+    if (!rawDate) continue;
+    var dStr = String(rawDate).trim().replace(/-/g, '').slice(0, 8);
+    if (!/^\d{8}$/.test(dStr)) continue;
 
+    var curVal = idFormulas[i][0] || idValues[i][0] || '';
+    var match = String(curVal).match(/F(\d{8})_(\d+)/);
+    if (match && match[1] !== dStr) {
+      var newId = 'F' + dStr + '_' + match[2];
+      var newVal = curVal.replace(match[0], newId);
+      sh.getRange(i + 5, idCol).setValue(newVal);
+      updatedCount++;
+    }
+  }
+
+  // Refresh Dashboard
+  scaffoldDashboardTab_(ss);
+  return { success: true, count: updatedCount };
+}
+
+/**
+ * Public RPC gateway to repair mismatched FlightID dates and refresh dashboard leaderboards.
+ */
+function rpcRepairFlightDatesAndIds() {
+  return repairFlightDatesAndIds_();
+}

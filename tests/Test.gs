@@ -35,6 +35,7 @@ function runAllTests() {
   results.push(testSystemMaintenanceAndManifest_());
   results.push(testAutomationEngine_());
   results.push(testAutoSummaryFormat_());
+  results.push(testDateTimeInvariants_());
   
   var failures = results.filter(function(r) { return !r.idx || r.error; });
   if (failures.length > 0) {
@@ -1337,6 +1338,59 @@ function testAutoSummaryFormat_() {
   return { module: 'AutoSummaryFormat', idx: true };
 }
 
+function testDateTimeInvariants_() {
+  if (typeof UTILS === 'undefined' || !UTILS.computeFlightUtcDates) {
+    return { module: 'DateTimeInvariants', error: 'UTILS.computeFlightUtcDates not found' };
+  }
 
+  // 1. Anchored UTC calculation: 2024-05-20, launch at 14:00:00 UTC (50400s), landing at 15:30:00 UTC (55800s)
+  var res1 = UTILS.computeFlightUtcDates('2024-05-20', 50400, 55800);
+  if (res1.launchDateUtc.toISOString() !== '2024-05-20T14:00:00.000Z') {
+    return { module: 'DateTimeInvariants', error: 'launchDateUtc mismatch: ' + res1.launchDateUtc.toISOString() };
+  }
+  if (res1.landDateUtc.toISOString() !== '2024-05-20T15:30:00.000Z') {
+    return { module: 'DateTimeInvariants', error: 'landDateUtc mismatch: ' + res1.landDateUtc.toISOString() };
+  }
 
+  // 2. Midnight crossover: launch at 23:30 UTC (84600s), landing at 00:45 UTC (2700s)
+  var res2 = UTILS.computeFlightUtcDates('2024-05-20', 84600, 2700);
+  if (res2.launchDateUtc.toISOString() !== '2024-05-20T23:30:00.000Z') {
+    return { module: 'DateTimeInvariants', error: 'Midnight crossover launchDateUtc mismatch: ' + res2.launchDateUtc.toISOString() };
+  }
+  if (res2.landDateUtc.toISOString() !== '2024-05-21T00:45:00.000Z') {
+    return { module: 'DateTimeInvariants', error: 'Midnight crossover landDateUtc mismatch: ' + res2.landDateUtc.toISOString() };
+  }
 
+  // 3. Local date formatting under negative UTC offsets (America/Denver is UTC-6 in May)
+  // 14:00 UTC on 2024-05-20 -> 08:00 MDT on 2024-05-20
+  var localDate = UTILS.formatFlightDate(res1.launchDateUtc, 'America/Denver', 'yyyy-MM-dd');
+  var idDate = UTILS.formatFlightDate(res1.launchDateUtc, 'America/Denver', 'yyyyMMdd');
+  var launchTime = UTILS.formatFlightTime(res1.launchDateUtc, 'America/Denver', 'h:mm a');
+  if (localDate !== '2024-05-20') {
+    return { module: 'DateTimeInvariants', error: 'Expected local date 2024-05-20 in America/Denver, got ' + localDate };
+  }
+  if (idDate !== '20240520') {
+    return { module: 'DateTimeInvariants', error: 'Expected FlightID date 20240520 in America/Denver, got ' + idDate };
+  }
+  var cleanLaunchTime = launchTime.toLowerCase().replace(/\s+/g, '');
+  if (cleanLaunchTime !== '8:00am' && cleanLaunchTime !== '08:00am') {
+    return { module: 'DateTimeInvariants', error: 'Expected launch time 8:00 am in America/Denver, got ' + launchTime };
+  }
+
+  // 4. Test rollover in negative timezone:
+  // Flight at 02:00 UTC on 2024-05-20 in America/Los_Angeles (UTC-7 in summer) -> 19:00 PDT on 2024-05-19!
+  var res3 = UTILS.computeFlightUtcDates('2024-05-20', 7200, 10800);
+  var rollLocalDate = UTILS.formatFlightDate(res3.launchDateUtc, 'America/Los_Angeles', 'yyyy-MM-dd');
+  var rollIdDate = UTILS.formatFlightDate(res3.launchDateUtc, 'America/Los_Angeles', 'yyyyMMdd');
+  if (rollLocalDate !== '2024-05-19') {
+    return { module: 'DateTimeInvariants', error: 'Expected local date 2024-05-19 for late evening LA takeoff, got ' + rollLocalDate };
+  }
+  if (rollIdDate !== '20240519') {
+    return { module: 'DateTimeInvariants', error: 'Expected FlightID date 20240519 for late evening LA takeoff, got ' + rollIdDate };
+  }
+  if (rollIdDate !== rollLocalDate.replace(/-/g, '')) {
+    return { module: 'DateTimeInvariants', error: 'FlightID date and local date mismatch: ' + rollIdDate + ' vs ' + rollLocalDate };
+  }
+
+  return { module: 'DateTimeInvariants', idx: true };
+}

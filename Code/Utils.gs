@@ -221,6 +221,107 @@ function getColLetter_(mapOrSheet, colName, fallbackLetter) {
   return columnToLetter_(idx);
 }
 
+/**
+ * Accurately anchors a flight's IGC UTC seconds-from-midnight to its IGC date string (YYYY-MM-DD),
+ * producing exact UTC Date objects for launch and landing.
+ * Handles midnight crossovers (when endTimeSec < startTimeSec).
+ *
+ * @param {string} dateIso - Flight date from IGC HFDTE (e.g. "2024-05-20")
+ * @param {number} startTimeSec - Start time in seconds from midnight UTC
+ * @param {number} endTimeSec - End time in seconds from midnight UTC
+ * @return {{ launchDateUtc: Date, landDateUtc: Date }} Exact UTC Date objects
+ */
+function computeFlightUtcDates_(dateIso, startTimeSec, endTimeSec) {
+  var dStr = String(dateIso || '').trim();
+  var match = dStr.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+  var now = new Date();
+  var y = now.getUTCFullYear();
+  var m = now.getUTCMonth();
+  var d = now.getUTCDate();
+  if (match) {
+    y = parseInt(match[1], 10);
+    m = parseInt(match[2], 10) - 1;
+    d = parseInt(match[3], 10);
+  }
+  var baseUtcMs = Date.UTC(y, m, d, 0, 0, 0);
+  var sSec = Number(startTimeSec) || 0;
+  var eSec = (endTimeSec !== undefined && endTimeSec !== null && !isNaN(endTimeSec)) ? Number(endTimeSec) : sSec;
+  if (eSec < sSec) {
+    eSec += 86400; // Midnight rollover
+  }
+  var launchDateUtc = new Date(baseUtcMs + sSec * 1000);
+  var landDateUtc = new Date(baseUtcMs + eSec * 1000);
+  return {
+    launchDateUtc: launchDateUtc,
+    landDateUtc: landDateUtc
+  };
+}
+
+/**
+ * Formats a flight Date in the takeoff site's local timezone.
+ * Standard presets:
+ * - 'yyyy-MM-dd' (ISO, default)
+ * - 'MM/dd/yyyy' (Short US)
+ * - 'dd/MM/yyyy' (Short Int)
+ * - 'EEE, MMM d yyyy' (Long Date)
+ *
+ * @param {Date} dateObj - The exact UTC date object
+ * @param {string} [timeZone] - The site's IANA timezone (e.g. "America/Denver")
+ * @param {string} [optFormat] - Desired date format
+ * @return {string} Formatted local date string
+ */
+function formatFlightDate_(dateObj, timeZone, optFormat) {
+  if (!dateObj) return '';
+  var tz = timeZone || 'UTC';
+  var fmt = optFormat || 'yyyy-MM-dd';
+  try {
+    return Utilities.formatDate(dateObj, tz, fmt);
+  } catch (e) {
+    return Utilities.formatDate(dateObj, 'UTC', fmt);
+  }
+}
+
+/**
+ * Formats a flight Time in the takeoff site's local timezone.
+ * Standard presets:
+ * - 'h:mm a' (e.g. '2:24 pm', default)
+ * - 'HH:mm' (24-hour)
+ *
+ * @param {Date} dateObj - The exact UTC date object
+ * @param {string} [timeZone] - The site's IANA timezone (e.g. "America/Denver")
+ * @param {string} [optFormat] - Desired time format
+ * @return {string} Formatted local time string
+ */
+function formatFlightTime_(dateObj, timeZone, optFormat) {
+  if (!dateObj) return '';
+  var tz = timeZone || 'UTC';
+  var fmt = optFormat || 'h:mm a';
+  try {
+    return Utilities.formatDate(dateObj, tz, fmt);
+  } catch (e) {
+    return Utilities.formatDate(dateObj, 'UTC', fmt);
+  }
+}
+
+/**
+ * Formats a system timestamp (e.g. for Activity Logs, Backups, Queue) using the user/script timezone.
+ *
+ * @param {Date} [dateObj] - Date to format (defaults to now)
+ * @param {string} [optTz] - Timezone (defaults to Session.getScriptTimeZone())
+ * @param {string} [optFormat] - Timestamp format (defaults to "yyyy-MM-dd HH:mm:ss")
+ * @return {string} Formatted system timestamp
+ */
+function formatSystemTimestamp_(dateObj, optTz, optFormat) {
+  var d = dateObj || new Date();
+  var tz = optTz || (typeof Session !== 'undefined' ? Session.getScriptTimeZone() : 'UTC');
+  var fmt = optFormat || 'yyyy-MM-dd HH:mm:ss';
+  try {
+    return Utilities.formatDate(d, tz, fmt);
+  } catch (e) {
+    return Utilities.formatDate(d, 'UTC', fmt);
+  }
+}
+
 // Export to UTILS namespace
 UTILS.haversine = haversine_;
 UTILS.bearing = bearing_;
@@ -232,3 +333,8 @@ UTILS.cleanDriveId = cleanDriveId_;
 UTILS.normalizeXcClass = normalizeXcClass_;
 UTILS.columnToLetter = columnToLetter_;
 UTILS.getColLetter = getColLetter_;
+UTILS.computeFlightUtcDates = computeFlightUtcDates_;
+UTILS.formatFlightDate = formatFlightDate_;
+UTILS.formatFlightTime = formatFlightTime_;
+UTILS.formatSystemTimestamp = formatSystemTimestamp_;
+

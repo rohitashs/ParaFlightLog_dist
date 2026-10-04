@@ -51,6 +51,9 @@ This file is the single source of truth for **ToDos**, **Requirements**, **Chang
 - [ ] **Status**: Open | **Date**: 2026-10-02 | **Imp**: Medium | **Description**: **Spreadsheet Menu Structure Reorganization & Streamlining**: Reorganize the `Flight Log` custom spreadsheet menu structure in `Code.gs` into a clean, intuitive hierarchy reflecting all recent architectural additions and separating daily actions from admin tools. Tracked in CR-UI-023.
 - [ ] **Status**: Open | **Date**: 2026-10-02 | **Imp**: High | **Description**: **Google Sheets UI/UX Modernization, Best Practices & Aesthetic Polish R&D**: Explore and implement advanced Google Sheets design patterns, executive color palettes, typography, KPI sparklines, progress bars, filter views, and soft protections to elevate aesthetic and functional excellence. Tracked in CR-UI-024.
 - [ ] **Status**: Open | **Date**: 2026-10-03 | **Imp**: Medium | **Description**: **Pilot-Configurable Auto Summary Format Template in Sheet**: Allow pilots to customize their Auto Summary title format (e.g. `{duration}, {distance}, {altitude}, {site}`) directly in spreadsheet settings or Pilot Profile rather than relying on fixed code. Tracked in CR-UI-025.
+- [x] **Status**: Completed | **Date**: 2026-10-03 | **Imp**: High | **Description**: **Flight Local Timezone Parity & FlightID Negative UTC Rollback Fix**: Resolved -1 day discrepancy between generated `FlightID` and the `Date` column under negative UTC offsets (America/Denver, America/Los_Angeles) and 1-hour DST distortion from Unix epoch 1970 instantiation. Implemented UTC date anchoring (`UTILS.computeFlightUtcDates`) and formatted all flight dates, launch/landing times, and FlightIDs strictly in launch site local timezone (`geo.tz`). Added `repairFlightDatesAndIds_` maintenance utility. Tracked in Bug-ING-011.
+- [x] **Status**: Completed | **Date**: 2026-10-03 | **Imp**: High | **Description**: **Dashboard Leaderboard Date 1899 Serial Epoch Coercion Fix**: Repaired all 8 Leaderboard card formulas in `scaffoldDashboardTab_` by wrapping date references in `TEXT(colDate, dateFmt)`, eliminating Google Sheets December 29, 1899 raw fractional day serial string coercion. Tracked in Bug-UI-012.
+- [x] **Status**: Completed | **Date**: 2026-10-03 | **Imp**: High | **Description**: **Platform-Wide Unified Date & Time Formatting Architecture**: Defined strict timezone domain invariants (Flight domain = site local `geo.tz`, System domain = pilot/script timezone), standard formatting presets, and centralized helper functions (`UTILS.computeFlightUtcDates`, `UTILS.formatFlightDate`, `UTILS.formatFlightTime`, `UTILS.formatSystemTimestamp`). Tracked in CR-SYS-014.
 
 ---
 
@@ -350,6 +353,15 @@ This file is the single source of truth for **ToDos**, **Requirements**, **Chang
     - **Operational Ergonomics**: Optimize frozen pane thresholds, smart column group collapsing (`groupColumns()`), interactive Filter Views for focused analysis, and soft data protections (`setWarningOnly`) on formula and header cells.
     - **Cross-Platform Mobile Usability**: Optimize column order, touch targets, and mobile view readability on Google Sheets Android and iOS apps.
 
+- [ ] **CR-UI-025** | **Status**: Open | **Date**: 2026-10-03 | **Req**: RQ-SYS-002 | **Description**: **Pilot-Configurable Auto Summary Format Template in Sheet**:
+    - Allow pilots to define custom Auto Summary title format strings directly within spreadsheet configuration or Pilot Profile (e.g. `{duration}, {distance}, {altitude}, {site}`).
+    - Support flexible tokens with automatic unit truncation rules (e.g. `24 km` vs `24.5 km`, `min` vs `hrs`).
+
+- [x] **CR-SYS-014** | **Status**: Implemented | **Date**: 2026-10-03 | **Req**: RQ-SYS-001, RQ-SYS-002 | **Description**: **Platform-Wide Unified Date & Time Architecture & Formatting Invariants**:
+    - **Timezone Domain Invariants**: Established strict two-domain authority: Flight Domain strictly follows the launch site's local timezone (`geo.tz` / `Time Zone` column); System Domain strictly follows the pilot/script execution timezone (`Session.getScriptTimeZone()`).
+    - **Centralized Format Helpers**: Added `UTILS.computeFlightUtcDates`, `UTILS.formatFlightDate`, `UTILS.formatFlightTime`, and `UTILS.formatSystemTimestamp` to `Code/Utils.gs` and exported to `UTILS` namespace.
+    - **Zero Raw DateTime Displays**: Prohibited unformatted date/time string concatenation across all dashboard formulas and inspectors. Standardized on `yyyy-MM-dd` / `MM/dd/yyyy`, `h:mm a`, and `yyyy-MM-dd HH:mm:ss`.
+
 ---
 
 ## 5. Bugs (`Bug`)
@@ -402,5 +414,16 @@ This file is the single source of truth for **ToDos**, **Requirements**, **Chang
 - [x] **Bug-CFG-003** | **Status**: Fixed | **Date**: 2026-10-03 | **Req**: RQ-SYS-001 | **Description**: **Free Fly Omitted and XC Classes Clobbered in Config Lookups Maintenance**:
     - **Defect**: In `AtomicUpdaters.updateConfigLookupsAndNamedRanges`, Column G (`LOOKUP_FLIGHT_TYPES`) hardcoded 5 items omitting `Free Fly`, `XC`, `Soaring`, `Comp`, `Training`, and `Other`. Column H (`LOOKUP_XC_CLASSES`) was clobbered with wing certification classes instead of geometric track classes.
     - **Resolution**: Restored the comprehensive canonical flight types (`Free Fly`, `XC`, `Thermal XC`, `Ridge Soaring`, `Hike & Fly`, `Tandem`, `SIV / Maneuvers`, `Comp`, `Training`, `Other`) and correct XC classes (`Free Flight`, `Flat Triangle`, `FAI Triangle`, `Out-and-Return`). Implemented safe merge logic to preserve any user-added custom flight types. Bumped manifest version `Config.lookups` to `v2.3-flight-types-restore`.
+
+- [x] **Bug-ING-011** | **Status**: Fixed | **Date**: 2026-10-03 | **Req**: RQ-ING-001, RQ-SYS-002 | **Description**: **Flight Local Timezone Parity & FlightID Negative UTC Rollback**:
+    - **Defect**: Ingested flights exhibited a -1 day discrepancy between the generated `FlightID` (e.g. `F20240519_01`) and the `Date` column (`2024-05-20`). Launch and landing times also suffered a 1-hour DST distortion for summer and autumn flights.
+    - **Root Cause**: `new Date("YYYY-MM-DD")` evaluates as UTC midnight (`00:00:00Z`). In negative UTC offsets (e.g. Mountain Time UTC-6), calling `.getDate()` or formatting in local time rolls back to the previous evening (18:00 MDT). Additionally, creating Date objects via `data.stats.startTime * 1000` instantiated timestamps at Unix epoch (`1970-01-01`), causing Apps Script to evaluate January Standard Time rules instead of summer Daylight Saving Time.
+    - **Resolution**: Implemented `computeFlightUtcDates_(dateIso, startTimeSec, endTimeSec)` in `Code/Utils.gs` to anchor seconds-from-midnight directly to the IGC flight date into exact UTC timestamps, with midnight crossover protection. Formatted all flight dates, launch times, landing times, and FlightIDs strictly in the takeoff site's local timezone (`geo.tz` / `bulkSiteTz`). Added `repairFlightDatesAndIds_()` to scan and reconcile existing rows.
+
+- [x] **Bug-UI-012** | **Status**: Fixed | **Date**: 2026-10-03 | **Req**: RQ-DSH-001, RQ-SYS-002 | **Description**: **Dashboard Leaderboard Date 1899 Serial Epoch Coercion**:
+    - **Defect**: All 8 Top-5 leaderboard cards on the Dashboard displayed `Fri Dec 29 1899 14:24:50 GMT-0800` instead of a clean, formatted flight date.
+    - **Root Cause**: In Google Sheets, string concatenation of time-only cells with `&` coerces the fractional serial number into Google Sheets' base epoch (December 30, 1899, evaluating as Dec 29 in negative UTC offsets).
+    - **Resolution**: Updated all 8 leaderboard card formulas in `scaffoldDashboardTab_` (`Code/Scaffold.gs`) to query the flight's actual date column wrapped explicitly in `TEXT(colDate, dateFmt)`, completely eliminating the raw epoch serial string coercion.
+
 
 

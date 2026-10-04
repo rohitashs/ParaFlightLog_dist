@@ -476,14 +476,16 @@ function findHeuristicOverlap_(parsed, launchFix, rawText, fileName, timeZone, s
   var result = { matched: false };
   if (!sh || sh.getLastRow() < 5) return result;
   
-  var incomingDate = parsed.meta.dateIso || '';
+  var tEnd = parsed.stats.endTime || (parsed.stats.startTime + parsed.stats.durationSec);
+  var utcDates = UTILS.computeFlightUtcDates(parsed.meta.dateIso, parsed.stats.startTime, tEnd);
+  var incomingDate = UTILS.formatFlightDate(utcDates.launchDateUtc, timeZone, 'yyyy-MM-dd');
   if (!incomingDate) return result;
 
   var incomingScore = scoreFlightQuality_(parsed, rawText, fileName);
   
   // Incoming launch time formatted in local time zone
-  var timeFmt = (config && config.TIME_FORMAT) || 'HH:mm';
-  var incomingLaunchTimeStr = GEO.formatInTimezone(new Date(parsed.stats.startTime * 1000), timeZone, timeFmt);
+  var timeFmt = (config && config.TIME_FORMAT) || 'h:mm a';
+  var incomingLaunchTimeStr = UTILS.formatFlightTime(utcDates.launchDateUtc, timeZone, timeFmt);
   var incomingLaunchMin = parseTimeToMinutes_(incomingLaunchTimeStr);
   if (incomingLaunchMin === null) return result;
 
@@ -807,11 +809,10 @@ function uiAddManualFlight_() {
   ensureFlightCapacity_(sh, 50);
   
   // 1. Generate ID
-  var dateObj = new Date();
-  var yyyy = dateObj.getFullYear();
-  var mm = ('0' + (dateObj.getMonth() + 1)).slice(-2);
-  var dd = ('0' + dateObj.getDate()).slice(-2);
-  var dateStr = yyyy + mm + dd;
+  var config = getParameters_();
+  var tz = Session.getScriptTimeZone();
+  var now = new Date();
+  var dateStr = UTILS.formatFlightDate(now, tz, 'yyyyMMdd');
   var idSuffix = getNextDailyId_(sh, dateStr);
   var flightId = 'F' + dateStr + '_' + idSuffix;
   
@@ -841,9 +842,9 @@ function uiAddManualFlight_() {
   setVal('Notes', '');
   setVal('Flight Type', 'Free Fly');
   setVal('Closed?', 'N');
-  setVal('Date', dateObj);
-  setVal('Time Zone', Session.getScriptTimeZone());
-  setVal('Launch Time', formatTime_(dateObj.getTime()/1000));
+  setVal('Date', UTILS.formatFlightDate(now, tz, (config && config.DATE_FORMAT) || 'yyyy-MM-dd'));
+  setVal('Time Zone', tz);
+  setVal('Launch Time', UTILS.formatFlightTime(now, tz, (config && config.TIME_FORMAT) || 'h:mm a'));
   
   setVal('Wing', prevGear.wing || eq.wing);
   setVal('Harness', prevGear.harness || eq.harness);
@@ -866,17 +867,18 @@ function insertFlightRow_(data, fileId, outerName, status, notes, analysis, scor
   var prevGear = getPreviousGear_(sh);
   var defGear = lookupDefaultEquipment_();
 
-  var dateObj = new Date(data.meta.dateIso || Date.now());
-  var yyyy = dateObj.getFullYear();
-  var mm = ('0' + (dateObj.getMonth() + 1)).slice(-2);
-  var dd = ('0' + dateObj.getDate()).slice(-2);
-  var dateStr = yyyy + mm + dd;
+  // Compute exact flight UTC timestamps anchored to flight date and site timezone
+  var tEnd = data.stats.endTime;
+  if (!tEnd || isNaN(tEnd)) { tEnd = data.stats.startTime + data.stats.durationSec; }
+  var utcDates = UTILS.computeFlightUtcDates(data.meta.dateIso, data.stats.startTime, tEnd);
+  var siteTz = (geo && geo.tz) || 'UTC';
+  var dateStr = UTILS.formatFlightDate(utcDates.launchDateUtc, siteTz, 'yyyyMMdd');
   
   var idSuffix = getNextDailyId_(sh, dateStr);
   var flightId = 'F' + dateStr + '_' + idSuffix;
 
   // Build standard 60-column row array
-  var row = buildFlightRowArray_(data, fileId, outerName, status, notes, analysis, scoring, igcFileName, masterFileId, geo, xcStatus, weather, hashStr, sh, map, config, prevGear, defGear, flightId);
+  var row = buildFlightRowArray_(data, fileId, outerName, status, notes, analysis, scoring, igcFileName, masterFileId, geo, xcStatus, weather, hashStr, sh, map, config, prevGear, defGear, flightId, utcDates);
 
   // Standard Ingestion: Insert before row 5 (top insertion preserved)
   sh.insertRowBefore(5);
@@ -888,7 +890,7 @@ function insertFlightRow_(data, fileId, outerName, status, notes, analysis, scor
  * Constructs the standard 60-column row array for a flight.
  * Shared by both standard insertFlightRow_ (top insert) and processBulkBatch (bottom insert).
  */
-function buildFlightRowArray_(data, fileId, outerName, status, notes, analysis, scoring, igcFileName, masterFileId, geo, xcStatus, weather, hashStr, sh, map, config, prevGear, defGear, flightId) {
+function buildFlightRowArray_(data, fileId, outerName, status, notes, analysis, scoring, igcFileName, masterFileId, geo, xcStatus, weather, hashStr, sh, map, config, prevGear, defGear, flightId, optUtcDates) {
   geo = geo || { l:{}, ls:'', d:{}, ds:'', tz:'UTC' };
   map = map || getColumnMap_(sh);
   config = config || getParameters_();
@@ -911,15 +913,17 @@ function buildFlightRowArray_(data, fileId, outerName, status, notes, analysis, 
   var fType = scoring.flightType || 'Free Fly';
   var autoSummary = buildAutoSummary_(site, data.stats.durationSec, trackDistKm, maxAltM, fType);
 
-  // Times
-  var timeFmt = (config && config.TIME_FORMAT) || 'HH:mm';
-  var startTimeTz = GEO.formatInTimezone(new Date(data.stats.startTime * 1000), geo.tz, timeFmt);
-  var endTimeTz = '';
+  // Dates & Times anchored in site local timezone
   var tEnd = data.stats.endTime;
   if (!tEnd || isNaN(tEnd)) { tEnd = data.stats.startTime + data.stats.durationSec; }
-  if (tEnd && !isNaN(tEnd)) {
-     endTimeTz = GEO.formatInTimezone(new Date(tEnd * 1000), geo.tz, timeFmt);
-  }
+  var flightUtc = optUtcDates || UTILS.computeFlightUtcDates(data.meta.dateIso, data.stats.startTime, tEnd);
+  var siteTz = (geo && geo.tz) || 'UTC';
+  var timeFmt = (config && config.TIME_FORMAT) || 'h:mm a';
+  var dateFmt = (config && config.DATE_FORMAT) || 'yyyy-MM-dd';
+
+  var localFlightDate = UTILS.formatFlightDate(flightUtc.launchDateUtc, siteTz, dateFmt);
+  var startTimeTz = UTILS.formatFlightTime(flightUtc.launchDateUtc, siteTz, timeFmt);
+  var endTimeTz = UTILS.formatFlightTime(flightUtc.landDateUtc, siteTz, timeFmt);
 
   // Duration
   var durMin = Math.round(data.stats.durationSec / 60);
@@ -959,8 +963,8 @@ function buildFlightRowArray_(data, fileId, outerName, status, notes, analysis, 
   setVal('IGC File', igcFileVal);
   setVal('Notes', notes);
   setVal('Flight Type', scoring.flightType || 'Free Fly');
-  setVal('Date', data.meta.dateIso);
-  setVal('Time Zone', geo.tz || 'UTC');
+  setVal('Date', localFlightDate);
+  setVal('Time Zone', siteTz);
   setVal('Launch Time', startTimeTz);
   setVal('Landing Time', endTimeTz);
   setVal('Flight Duration', durStr);
@@ -1225,11 +1229,11 @@ function processBulkBatch(batchFiles, options) {
         }
 
         // 8. Generate Flight ID early with in-memory suffix tracking
-        var dateObj = new Date(parsed.meta.dateIso || Date.now());
-        var yyyy = dateObj.getFullYear();
-        var mm = ('0' + (dateObj.getMonth() + 1)).slice(-2);
-        var dd = ('0' + dateObj.getDate()).slice(-2);
-        var dateStr = yyyy + mm + dd;
+        var bEnd = parsed.stats.endTime;
+        if (!bEnd || isNaN(bEnd)) { bEnd = parsed.stats.startTime + parsed.stats.durationSec; }
+        var bulkUtcDates = UTILS.computeFlightUtcDates(parsed.meta.dateIso, parsed.stats.startTime, bEnd);
+        var bulkSiteTz = timeZone || (geoLaunch && geoLaunch.tz) || 'UTC';
+        var dateStr = UTILS.formatFlightDate(bulkUtcDates.launchDateUtc, bulkSiteTz, 'yyyyMMdd');
 
         if (nextIdByDate[dateStr] === undefined) {
           var currentMax = getNextDailyId_(sh, dateStr);
@@ -1290,16 +1294,16 @@ function processBulkBatch(batchFiles, options) {
           l: geoLaunch, ls: siteLaunch,
           d: geoLand, ds: siteLand,
           tz: timeZone
-        }, xcStatus, weatherData, hashStr, sh, map, config, prevGear, defGear, flightId);
+        }, xcStatus, weatherData, hashStr, sh, map, config, prevGear, defGear, flightId, bulkUtcDates);
 
         var currentBatchRowIndex = batchRows.length;
         batchRows.push(rowData);
         sheetHashes[hashStr] = true;
 
         // In-memory summary for intra-batch overlap
-        var incomingLaunchMin = parseTimeToMinutes_(GEO.formatInTimezone(new Date(parsed.stats.startTime * 1000), timeZone, config.TIME_FORMAT || 'HH:mm'));
+        var incomingLaunchMin = parseTimeToMinutes_(UTILS.formatFlightTime(bulkUtcDates.launchDateUtc, bulkSiteTz, config.TIME_FORMAT || 'h:mm a'));
         existingSummaries.push({
-          dateIso: parsed.meta.dateIso,
+          dateIso: UTILS.formatFlightDate(bulkUtcDates.launchDateUtc, bulkSiteTz, 'yyyy-MM-dd'),
           launchMin: incomingLaunchMin,
           durMin: Math.round((parsed.stats.durationSec || 0) / 60),
           lat: launchFix.lat,
@@ -1414,12 +1418,14 @@ function findHeuristicOverlapInMemory_(parsed, launchFix, rawText, fileName, tim
   var result = { matched: false };
   if (!summaries || summaries.length === 0) return result;
 
-  var incomingDate = parsed.meta.dateIso || '';
+  var tEnd = parsed.stats.endTime || (parsed.stats.startTime + parsed.stats.durationSec);
+  var utcDates = UTILS.computeFlightUtcDates(parsed.meta.dateIso, parsed.stats.startTime, tEnd);
+  var incomingDate = UTILS.formatFlightDate(utcDates.launchDateUtc, timeZone, 'yyyy-MM-dd');
   if (!incomingDate) return result;
 
   var incomingScore = scoreFlightQuality_(parsed, rawText, fileName);
-  var timeFmt = (config && config.TIME_FORMAT) || 'HH:mm';
-  var incomingLaunchTimeStr = GEO.formatInTimezone(new Date(parsed.stats.startTime * 1000), timeZone, timeFmt);
+  var timeFmt = (config && config.TIME_FORMAT) || 'h:mm a';
+  var incomingLaunchTimeStr = UTILS.formatFlightTime(utcDates.launchDateUtc, timeZone, timeFmt);
   var incomingLaunchMin = parseTimeToMinutes_(incomingLaunchTimeStr);
   if (incomingLaunchMin === null) return result;
 

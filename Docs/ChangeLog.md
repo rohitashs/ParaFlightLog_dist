@@ -1,5 +1,32 @@
 # Project Change Log
 
+## Session: Flight Temporal Grounding, Site Timezone Parity, Leaderboard Epoch Fix & Unified Date/Time Policy
+**Date**: 2026-10-03
+**Versions**: Core v2.2.1 (Dashboard.formulas v2.2-leaderboard-datefmt)
+**Focus**: Flight Local Timezone Parity (`Bug-ING-011`), Dashboard Leaderboard 1899 Serial Epoch Coercion Fix (`Bug-UI-012`), Platform-Wide Unified Date & Time Architecture (`CR-SYS-014`), Auto Summary Formatting Refinement (`CR-UI-025`), and Automated Invariant Test Coverage.
+
+*   `[Fix]` **Bug-ING-011 (Flight Local Timezone Parity & FlightID Negative UTC Rollback)**:
+    *   **Root Cause**: `new Date("YYYY-MM-DD")` evaluates as UTC midnight (`00:00:00Z`). In negative UTC offsets (e.g. Mountain Time UTC-6, Pacific Time UTC-7), calling `.getDate()` rolls back to the previous evening (18:00 MDT), inducing a -1 day discrepancy in generated `FlightID` (e.g. `F20240519_01` vs `2024-05-20`). Additionally, creating Date objects via `data.stats.startTime * 1000` instantiated timestamps at Unix epoch (`1970-01-01`), causing Apps Script to evaluate January Standard Time rules instead of summer Daylight Saving Time.
+    *   **Resolution**: Implemented `computeFlightUtcDates_(dateIso, startTimeSec, endTimeSec)` in `Code/Utils.gs` to anchor seconds-from-midnight directly to the IGC flight date into exact UTC timestamps, with midnight crossover protection.
+    *   Standardized `buildFlightRowArray_`, `insertFlightRow_`, `insertManualRow_`, and `processBulkBatch` to format all flight dates, launch times, landing times, and FlightIDs strictly in launch site local timezone (`geo.tz` / `bulkSiteTz`).
+    *   Added `repairFlightDatesAndIds_()` and public RPC `rpcRepairFlightDatesAndIds()` to scan and reconcile existing logbook rows and recompute FlightIDs where dates drifted.
+*   `[Fix]` **Bug-UI-012 (Dashboard Leaderboard Date 1899 Serial Epoch Coercion)**:
+    *   **Defect**: All 8 Top-5 leaderboard cards on the Dashboard displayed `Fri Dec 29 1899 14:24:50 GMT-0800` instead of a clean, formatted flight date.
+    *   **Root Cause**: In Google Sheets, string concatenation of time-only cells with `&` coerces the fractional serial number into Google Sheets' base epoch (December 30, 1899, evaluating as Dec 29 in negative UTC offsets).
+    *   **Resolution**: Updated all 8 leaderboard card formulas in `scaffoldDashboardTab_` (`Code/Scaffold.gs`) to query `colDate` wrapped explicitly in `TEXT(colDate, dateFmt)`, completely eliminating the raw epoch serial string coercion.
+*   `[Feat]` **CR-SYS-014 (Platform-Wide Unified Date & Time Architecture & Formatting Invariants)**:
+    *   **Timezone Domain Invariants**: Established strict two-domain authority: Flight Domain strictly follows the launch site's local timezone (`geo.tz` / `Time Zone` column); System Domain strictly follows the pilot/script execution timezone (`Session.getScriptTimeZone()`).
+    *   **Centralized Format Helpers**: Added `UTILS.computeFlightUtcDates`, `UTILS.formatFlightDate`, `UTILS.formatFlightTime`, and `UTILS.formatSystemTimestamp` to `Code/Utils.gs` and exported to `UTILS` namespace.
+    *   **Zero Raw DateTime Displays**: Prohibited unformatted date/time string concatenation across all dashboard formulas and inspectors. Standardized on `yyyy-MM-dd` / `MM/dd/yyyy`, `h:mm a`, and `yyyy-MM-dd HH:mm:ss`.
+*   `[Feat]` **Auto Summary Formatting Refinement (`CR-UI-025`)**:
+    *   Standardized Auto Summary string synthesis to `"{duration}, {trackDist}, {maxAlt}, {site}"` (e.g. `"1:30 hrs, 24 km, 3100 m, Lookout Mountain"`).
+    *   Duration format: `h:mm hrs` when $\ge 1$ hour, `m min` when $< 1$ hour.
+    *   Track distance: integer-truncated (`24 km` vs `24.5 km` when exact integer).
+*   `[Test]` **Automated Invariant Test Coverage (`tests/Test.gs` & `tools/run_all_offline_tests.js`)**:
+    *   Added `testDateTimeInvariants_()` covering summer, winter, midnight crossover, negative UTC offsets, and FlightID parity.
+    *   Enhanced offline test runner with realistic `Utilities.formatDate` mock using Node's `Intl.DateTimeFormat`.
+    *   17/17 tests passing with 0 failures and 0 architectural audit warnings.
+
 ## Session: Operational Ergonomics Bundle, Modal Layout Standardization, Real-Time Progress Streaming, and Vocabularies Restoration
 **Date**: 2026-10-03
 **Versions**: Core v2.2.0 (Flights.formulas v2.2-max-sequence, Config.lookups v2.3-flight-types-restore)

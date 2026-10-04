@@ -28,10 +28,41 @@ global.PropertiesService = {
 };
 global.Session = {
 
-  getScriptTimeZone: () => 'UTC'
+  getScriptTimeZone: () => 'America/Denver'
 };
 global.Utilities = {
-  formatDate: (d, tz, fmt) => d.toISOString(),
+  formatDate: (d, tz, fmt) => {
+    const dateObj = new Date(d);
+    const targetTz = tz || 'UTC';
+    const dtf = new Intl.DateTimeFormat('en-US', {
+      timeZone: targetTz,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: 'numeric',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    });
+    const parts = {};
+    dtf.formatToParts(dateObj).forEach(p => { parts[p.type] = p.value; });
+    const rawHour = parseInt(parts.hour, 10);
+    const hour24 = rawHour === 24 ? 0 : rawHour;
+    const hour12 = hour24 % 12 || 12;
+    const ampm = hour24 >= 12 ? 'PM' : 'AM';
+
+    let res = fmt;
+    res = res.replace(/yyyy/g, parts.year);
+    res = res.replace(/MM/g, parts.month);
+    res = res.replace(/dd/g, parts.day);
+    res = res.replace(/HH/g, String(hour24).padStart(2, '0'));
+    res = res.replace(/hh/g, String(hour12).padStart(2, '0'));
+    res = res.replace(/h/g, String(hour12));
+    res = res.replace(/mm/g, parts.minute);
+    res = res.replace(/ss/g, parts.second);
+    res = res.replace(/a/g, ampm);
+    return res;
+  },
   computeDigest: (algo, text) => {
     const crypto = require('crypto');
     const hash = crypto.createHash('md5').update(text).digest();
@@ -107,6 +138,7 @@ results.push(testDynamicFormulaResilience_());
 results.push(testSystemMaintenanceAndManifest_());
 results.push(testAutomationEngine_());
 results.push(testAutoSummaryFormat_());
+results.push(testDateTimeInvariants_());
 
 const failures = results.filter(r => !r.idx || r.error);
 console.log('Results summary: Total=' + results.length + ', Passed=' + (results.length - failures.length) + ', Failed=' + failures.length);
