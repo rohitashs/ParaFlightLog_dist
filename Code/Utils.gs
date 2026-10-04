@@ -73,14 +73,15 @@ function friendlyDuration_(sec) {
 }
 
 /**
- * Synthesizes the concise flight title: "Site, Duration, Track Dist, Max Altitude, Flight Type"
- * e.g. "Bir Billing, 1:30 hrs, 24.5 km, 3100 m, XC"
+ * Synthesizes the concise flight title: "Duration, Track Dist, Max Altitude, Site"
+ * e.g. "1:30 hrs, 24.5 km, 3100 m, Bir Billing" or "45 min, 24 km, 1250 m, Torrey Pines"
+ * Truncates track distance if no decimal part (e.g. 24 km vs 24.5 km).
  * Omits empty or missing components cleanly.
  */
 function buildAutoSummary_(site, durationStrOrSec, trackDistKm, maxAltM, flightType) {
   var parts = [];
-  if (site && String(site).trim()) parts.push(String(site).trim());
-  
+
+  // 1. Duration (h:mm hrs or mm min)
   var durStr = '';
   if (typeof durationStrOrSec === 'number') {
     durStr = friendlyDuration_(durationStrOrSec);
@@ -101,17 +102,22 @@ function buildAutoSummary_(site, durationStrOrSec, trackDistKm, maxAltM, flightT
   }
   if (durStr) parts.push(durStr);
 
+  // 2. Track Length (nn km, truncated if no post-decimal value)
   if (trackDistKm !== undefined && trackDistKm !== null && trackDistKm !== '') {
     var d = parseFloat(trackDistKm);
-    if (!isNaN(d) && d > 0) parts.push(d.toFixed(1) + ' km');
+    if (!isNaN(d) && d > 0) {
+      parts.push(parseFloat(d.toFixed(1)) + ' km');
+    }
   }
 
+  // 3. Max Altitude (nn m)
   if (maxAltM !== undefined && maxAltM !== null && maxAltM !== '') {
     var a = parseFloat(maxAltM);
     if (!isNaN(a) && a > 0) parts.push(Math.round(a) + ' m');
   }
 
-  if (flightType && String(flightType).trim()) parts.push(String(flightType).trim());
+  // 4. Site (at the end)
+  if (site && String(site).trim()) parts.push(String(site).trim());
 
   return parts.join(', ');
 }

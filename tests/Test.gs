@@ -34,6 +34,7 @@ function runAllTests() {
   results.push(testNativeSheetsResilience_());
   results.push(testSystemMaintenanceAndManifest_());
   results.push(testAutomationEngine_());
+  results.push(testAutoSummaryFormat_());
   
   var failures = results.filter(function(r) { return !r.idx || r.error; });
   if (failures.length > 0) {
@@ -1303,6 +1304,39 @@ function testAutomationEngine_() {
 
   return { module: 'AutomationEngine', idx: true };
 }
+
+function testAutoSummaryFormat_() {
+  if (typeof buildAutoSummary_ !== 'function') {
+    return { module: 'AutoSummaryFormat', error: 'buildAutoSummary_ function not found' };
+  }
+
+  // 1. Long flight (>= 1 hour) with decimal distance
+  var s1 = buildAutoSummary_('Bir Billing', 5400, 24.5, 3100, 'XC');
+  if (s1 !== '1:30 hrs, 24.5 km, 3100 m, Bir Billing') {
+    return { module: 'AutoSummaryFormat', error: 'Expected "1:30 hrs, 24.5 km, 3100 m, Bir Billing", got "' + s1 + '"' };
+  }
+
+  // 2. Short flight (< 1 hour) with integer distance (truncated .0)
+  var s2 = buildAutoSummary_('Torrey Pines', 2700, 24.0, 1250, 'Ridge Soaring');
+  if (s2 !== '45 min, 24 km, 1250 m, Torrey Pines') {
+    return { module: 'AutoSummaryFormat', error: 'Expected "45 min, 24 km, 1250 m, Torrey Pines", got "' + s2 + '"' };
+  }
+
+  // 3. String duration input (e.g. from maintenance: "2:15")
+  var s3 = buildAutoSummary_('Interlaken', '2:15', 30.2, 2800);
+  if (s3 !== '2:15 hrs, 30.2 km, 2800 m, Interlaken') {
+    return { module: 'AutoSummaryFormat', error: 'Expected "2:15 hrs, 30.2 km, 2800 m, Interlaken", got "' + s3 + '"' };
+  }
+
+  // 4. Missing site and altitude (omits cleanly)
+  var s4 = buildAutoSummary_('', 1800, 5.0, 0);
+  if (s4 !== '30 min, 5 km') {
+    return { module: 'AutoSummaryFormat', error: 'Expected "30 min, 5 km", got "' + s4 + '"' };
+  }
+
+  return { module: 'AutoSummaryFormat', idx: true };
+}
+
 
 
 

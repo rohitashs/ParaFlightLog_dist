@@ -904,7 +904,7 @@ function buildFlightRowArray_(data, fileId, outerName, status, notes, analysis, 
   var fNoColLetter = getColLetter_(map, 'Flight No', 'C');
   var flightNoFormula = '=IFERROR(MAX(INDIRECT("' + fNoColLetter + '" & (ROW()+1) & ":' + fNoColLetter + '")), 0) + 1';
   
-  // Auto Summary: "Site, Duration, Track Dist, Max Altitude, Flight Type"
+  // Auto Summary: "Duration, Track Dist, Max Altitude, Site"
   var site = geo.ls || (geo.l && geo.l.town) || '';
   var trackDistKm = (data.stats.totalDistance / 1000);
   var maxAltM = (analysis && analysis.stats && analysis.stats.maxAlt);

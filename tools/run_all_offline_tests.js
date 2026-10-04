@@ -106,6 +106,7 @@ results.push(testStatusChangeUtility_());
 results.push(testDynamicFormulaResilience_());
 results.push(testSystemMaintenanceAndManifest_());
 results.push(testAutomationEngine_());
+results.push(testAutoSummaryFormat_());
 
 const failures = results.filter(r => !r.idx || r.error);
 console.log('Results summary: Total=' + results.length + ', Passed=' + (results.length - failures.length) + ', Failed=' + failures.length);

@@ -166,7 +166,7 @@ var TABS = {
       'FlightID': 'Unique flight identifier. Click to view 3D flight track in SeeYou Cloud.',
       'Status': 'Flight validation state: Valid, Review?, Dup-Primary, Dup-Others, Invalid?, Remove. Dashboard KPIs count "Valid" flights.',
       'Flight No': 'Sequential flight number from first flight to present. Automatically adjusts on sort.',
-      'Auto Summary': 'Concise human-readable flight summary: Site, Duration, Track Dist, Max Altitude, Flight Type.',
+      'Auto Summary': 'Concise human-readable flight summary: Duration, Track Dist, Max Altitude, Site.',
       'IGC File': 'Click to download raw source IGC track file from Google Drive.',
       'Notes': 'Pilot notes, manual observations, and paired duplicate cross-references [DupRef: ...].',
       'Flight Type': 'Free Fly, XC, Soaring, Thermalling, Hike & Fly, Tandem, SIV/Acro, or Training.',

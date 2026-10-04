@@ -1714,7 +1714,7 @@ function scaffoldUserGuide_(ss) {
   addRow('Flight Info', 'Status', 'Valid, Review?, Dup-Primary, Dup-Others, Invalid?, Remove', 'Flight validation state. Dashboard KPIs strictly count "Valid" flights. New files default to "Review?". Overlap winners are "Dup-Primary" (gold) and backups "Dup-Others" (orange). Mark unwanted flights as "Remove" to purge.');
   addRow('Flight Info', 'FlightID', 'F{YYYYMMDD}_{DailySeq}', 'Unique flight identifier linking directly to 3D SeeYou Cloud track visualization.');
   addRow('Flight Info', 'Flight No', '=IFERROR(MAX(INDIRECT("' + fNoCol + '" & (ROW()+1) & ":' + fNoCol + '")), 0) + 1', 'Sequential flight counter from first flight to present. Automatically adjusts on sort.');
-  addRow('Flight Info', 'Auto Summary', 'Duration + Flight Type + Site + Max Alt', 'Concise human-readable flight summary (e.g. "2h 15m XC at Bir Billing 3100m").');
+  addRow('Flight Info', 'Auto Summary', 'Duration + Track Dist + Max Alt + Site', 'Concise human-readable flight summary (e.g. "1:30 hrs, 24.5 km, 3100 m, Bir Billing").');
   addRow('Flight Info', 'Duration', 'Landing Time - Launch Time', 'Total flight duration in h:mm format.');
   addRow('Flight Info', 'Track Length (km)', 'Sum of Haversine fix intervals', 'Cumulative distance flown through the air along the GPS track.');
   addRow('Flight Info', 'Straight Dist (km)', 'Haversine(Launch, Landing)', 'Direct straight-line distance from launch to landing.');
