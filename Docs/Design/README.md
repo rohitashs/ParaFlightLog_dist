@@ -25,6 +25,8 @@ Every significant subsystem, engine, and feature follows the standardized templa
 | [`DSGN-SYS-002`](./DSGN-SYS-002_Platform_Access_Control_and_Contributor_Framework.md) | Platform RBAC & Contributor Framework | `Draft` | `Rev 1.0` | None (Root) | [`Code/Access.gs`](../../Code/Access.gs) | Role-Based Access Control (Admin/Developer/Designer/Pilot), dynamic menu curation, server-side gating, and No-GitHub contributor loop. |
 | [`DSGN-SYS-003`](./DSGN-SYS-003_Reverse_Schema_Extraction_and_Personalization.md) | Reverse Schema Extraction & Personalization | `Draft` | `Rev 1.0` | [`DSGN-SYS-002`](./DSGN-SYS-002_Platform_Access_Control_and_Contributor_Framework.md) | [`Code/Config.gs`](../../Code/Config.gs) | Sheet-as-Visual-Designer introspection, user layout manifest (`user_layout.json`), dynamic formula resilience, and non-destructive column movement. |
 | [`DSGN-MNT-001`](./DSGN-MNT-001_Unified_Update_Manager_and_Maintenance_Orchestrator.md) | Unified Update Manager & Maintenance Orchestrator | `Implemented` | `Rev 2.1` | None (Root) | [`Code/Scaffold.gs`](../../Code/Scaffold.gs) | Unified Update Manager & Atomic Maintenance Orchestrator with 2D matrix scope, 3-tier component invariants, and pre-update safety snapshots. |
+| [`DSGN-SYS-004`](./DSGN-SYS-004_Multi_Environment_Lifecycle_and_Distribution_Architecture.md) | Multi-Environment Lifecycle & Distribution | `Under Review` | `Rev 1.0` | None (Root) | [`Code/UpdateManager.gs`](../../Code/UpdateManager.gs) | 4-sheet environment topology (Dev/Test/Prod/Demo), Git branching strategy, Method 1 In-Sheet REST API Self-Patcher, and Phase 2 Google Workspace Editor Add-on. |
+
 
 ---
 

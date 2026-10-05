@@ -104,9 +104,13 @@ timeline
 
 * **Target Milestone**: v2.5
 * **Key Milestones**:
-  * **Comprehensive System Updater & Distribution Engine (`RQ-SYS-010`)**:
-    * Seamless mechanism to distribute platform updates to hundreds of pilot instances without overwriting their flight data or personal configurations.
-    * Non-destructive schema migration engine: dynamically detects and adds new columns, updates system formulas, and refreshes script code while preserving pilot rows.
+  * **Multi-Environment Topology & Clasp Multi-Target Pipeline (`DSGN-SYS-004`)**:
+    * 4-sheet environment topology: Dev, Test, Personal Production, and Demo Showcase.
+    * Git branch synchronization (`dev` -> `test` -> `master`) with multi-target `.clasp.dev.json` and `.clasp.test.json` isolating developer experimentation from live flight logs.
+  * **In-Sheet REST API Self-Patcher (Method 1) (`RQ-SYS-010`, `CR-SYS-015`, `DSGN-SYS-004`)**:
+    * Seamless mechanism for distributed container-bound pilot sheets to self-patch code in 3 seconds directly from GitHub Releases via `projects.updateContent` and `ScriptApp.getOAuthToken()`.
+    * Interactive 2-step Update Setup Wizard (`UpdateSetupWizard.html`) guiding pilots through the 1-time Google Apps Script API account toggle and verifying connectivity.
+    * Downstream hand-off to the System Maintenance Orchestrator (`DSGN-MNT-001`) to apply schema, formula, and validation updates while guaranteeing zero flight data loss.
   * **Complex Task Wizards (`RQ-SYS-011`)**:
     * Guided wizard interfaces for system health checks, year-end flight log archiving, gear transitions, and bulk metadata repairs.
   * **Pre-Open-Source Architecture & Security Audit (`CR-DEV-003`)**:
@@ -125,11 +129,16 @@ timeline
 
 * **Target Milestone**: v3.0
 * **Key Milestones**:
+  * **Google Workspace Editor Add-on Distribution (Method 2) (`RQ-SYS-013`, `DSGN-SYS-004`)**:
+    * Package the centralized application as an official Google Workspace Editor Add-on (unlisted or public marketplace).
+    * Centralized cloud updates: 100% of pilot sheets receive code updates instantaneously upon deployment with zero manual pulling.
+    * Sheet-as-Data substrate: Golden Template contains zero bound script code; custom menus, sidebars, and execution services attach natively via the Add-on.
   * **Public Open-Source Release**:
     * Public GitHub repository release under a permissive open-source license (MIT / Apache 2.0).
     * Comprehensive `CONTRIBUTING.md`, Code of Conduct, and RFC (Request for Comments) design process for community contributions.
-  * **Golden Starter Template**:
+  * **Golden Starter Template & Demo Showcase**:
     * One-click "Make a Copy" Google Sheet pre-configured with embedded Google Apps Script code and automated First-Time Setup Wizard.
+    * Public interactive Demo Sheet pre-seeded with realistic flight data and automated reset capabilities.
     * Zero-developer onboarding: non-technical pilots can deploy and configure their own instance in under 3 minutes.
   * **Public Documentation Portal & Video Tutorials**:
     * GitHub Pages documentation hub hosting the [Product Brochure](./Brochure.md), [Systems Architecture](./Architecture.md), and [User Guide](./User_Guide.md).
@@ -175,11 +184,11 @@ The following matrix connects our strategic horizons directly to tracked work un
 | **H2** | Tri-Mode Execution Subsystem | `CR-UI-019`, `CR-UI-020` | [`DSGN-UI-001`](./Design/DSGN-UI-001_Tri_Mode_Execution_and_Universal_Sidebar.md) | **Designed / Ready** |
 | **H2** | Table-Driven Automation Engine | `RQ-AUT-001` – `RQ-AUT-005` | [`DSGN-AUT-001`](./Design/DSGN-AUT-001_Table_Driven_Automation_Engine.md) | **Designed / Ready** |
 | **H2** | First-Time Setup Wizard | `RQ-SYS-008.2` | Planned RFC | **Backlogged** |
-| **H3** | Multi-Instance Distribution & Updater | `RQ-SYS-010`, `CR-SCH-002` | Planned RFC | **Backlogged** |
+| **H3** | Multi-Environment Topology & In-Sheet Self-Patcher (Method 1) | `RQ-SYS-010`, `CR-SYS-015`, `CR-SCH-002` | [`DSGN-SYS-004`](./Design/DSGN-SYS-004_Multi_Environment_Lifecycle_and_Distribution_Architecture.md) | **Designed / Ready** |
 | **H3** | Complex Task Wizards | `RQ-SYS-011` | Planned RFC | **Backlogged** |
 | **H3** | Pre-OSS Quality & Security Audit | `CR-DEV-003`, `CR-SEC-001` | Audit Plan | **Backlogged** |
 | **H3** | Automated AI Test Harness | `CR-DEV-004` | Testing Plan | **Backlogged** |
-| **H4** | Public Open-Source Launch | `CR-OSS-001` | Community Charter | **Planned** |
+| **H4** | Google Workspace Editor Add-on Distribution (Method 2) | `RQ-SYS-013`, `CR-OSS-001` | [`DSGN-SYS-004`](./Design/DSGN-SYS-004_Multi_Environment_Lifecycle_and_Distribution_Architecture.md) | **Planned** |
 | **H5** | Gear Lifecycle & Airworthiness | `RQ-GEAR-001` (Future) | Planned RFC | **Planned** |
 | **H5** | Site Intelligence & Weather Matrix | `RQ-SITE-001` (Future) | Planned RFC | **Planned** |
 | **H5** | Pilot Education & Progression | `RQ-EDU-001` (Future) | Planned RFC | **Planned** |
