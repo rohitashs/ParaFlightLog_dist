@@ -25,4 +25,6 @@ Plans/**
 External/**
 Other Files/**
 .agent/**
+DevFilesIgnore/**
+TestFilesIgnore/**
 node_modules/**

@@ -2,9 +2,14 @@
 node_modules
 .DS_Store
 
-# CLASP credentials
-
+# CLASP credentials & multi-target configs
 .clasp-dev.json
+.clasp.dev.json
+.clasp.test.json
+
+# Local Sheet Storage Folders
+DevFilesIgnore/
+TestFilesIgnore/
 
 # Image/Video artifacts
 *.webp
