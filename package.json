@@ -1,0 +1,13 @@
+{
+  "name": "paraflightlog",
+  "version": "2.3.0",
+  "description": "Paragliding Flight Logbook & Telemetry Substrate for Google Sheets",
+  "scripts": {
+    "test": "node tools/run_all_offline_tests.js",
+    "audit": "node tools/code_check_audit.js",
+    "push:dev": "npx @google/clasp push -P .clasp.dev.json -f",
+    "push:test": "npx @google/clasp push -P .clasp.test.json -f"
+  },
+  "author": "Rohitash S",
+  "license": "MIT"
+}
